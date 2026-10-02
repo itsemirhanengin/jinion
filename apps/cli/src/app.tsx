@@ -1,4 +1,4 @@
-import { useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import {
   AskPanel,
   Box,
@@ -16,6 +16,8 @@ import {
   usePanels,
   useTheme,
   useView,
+  type ModelOption,
+  type ModelSelection,
   type NoticeTone,
   type PermissionDecision,
   type PermissionRequest,
@@ -25,23 +27,42 @@ import {
 import type { Agent } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { agentCommands, CommandRegistry } from './commands/registry.js';
-import { JinionContext, type AppActions, type AppInfo, type Jinion } from './context.js';
-import { createSession, reduce, toSaved, type Action, type Session } from './session.js';
+import {
+  JinionContext,
+  modelLabel,
+  type AppActions,
+  type AppInfo,
+  type Jinion,
+  type ModelState,
+} from './context.js';
+import {
+  createSession,
+  fromSaved,
+  reduce,
+  resumeOf,
+  toSaved,
+  type Action,
+  type SavedSession,
+  type Session,
+} from './session.js';
 import type { SessionStore } from './session-store.js';
+import { saveModel } from './settings.js';
 import { EntryView } from './ui/entry.js';
 
 export interface AppProps {
   agent: Agent;
   info: AppInfo;
   sessions: SessionStore;
+  /** A saved conversation to open with, e.g. for `--continue`. The agent is expected to continue it already. */
+  initial?: SavedSession;
 }
 
-export function App({ agent, info, sessions }: AppProps) {
+export function App({ agent, info, sessions, initial }: AppProps) {
   const theme = useTheme();
   const { exit } = useApp();
   const { toggleExpanded } = useView();
   const panels = usePanels();
-  const [session, dispatch] = useReducer(reduce, 200_000, createSession);
+  const [session, dispatch] = useReducer(reduce, initial, (saved) => (saved ? fromSaved(saved) : createSession(200_000)));
   const [draft, setDraft] = useState('');
   const [submitted, setSubmitted] = useState<string[]>([]);
   const controller = useRef<AbortController>(undefined);
@@ -52,12 +73,49 @@ export function App({ agent, info, sessions }: AppProps) {
 
   const notice = (text: string, tone?: NoticeTone) => dispatch({ type: 'notice', text, tone });
 
-  const switchSession = (action: Extract<Action, { type: 'clear' | 'load' }>) => {
-    if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
+  const [selection, setSelection] = useState(agent.selection);
+  const [models, setModels] = useState<ModelOption[]>();
+  useEffect(() => {
+    agent.models().then(setModels, () => setModels([]));
+  }, [agent]);
+  const model: ModelState = {
+    agent: agent.name,
+    selection,
+    options: models,
+    name: models?.find((option) => option.id === selection.model)?.name ?? selection.model,
+  };
+
+  const selectModel = (next: ModelSelection) => {
+    agent.select(next).then(
+      () => {
+        setSelection(next);
+        saveModel(agent.name, next);
+        const name = models?.find((option) => option.id === next.model)?.name ?? next.model;
+        notice(`Switched to ${modelLabel({ ...model, name, selection: next })}.`);
+      },
+      (error: unknown) => notice(`Couldn't switch the model: ${error instanceof Error ? error.message : error}`, 'error'),
+    );
+  };
+
+  const save = () => {
     const saved = toSaved(session);
     if (saved) sessions.save(saved);
-    // Resumed conversations start fresh for now: agents don't restore their own context yet.
-    agent.reset?.();
+  };
+
+  // Saved after every turn, so quitting or a crash loses at most the turn in progress.
+  useEffect(() => {
+    if (!busy) save();
+  }, [busy]);
+
+  const quit = () => {
+    save();
+    exit();
+  };
+
+  const switchSession = (action: Extract<Action, { type: 'clear' | 'load' }>) => {
+    if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
+    save();
+    agent.reset?.(action.type === 'load' ? resumeOf(action.session) : undefined);
     dispatch(action);
   };
 
@@ -138,11 +196,12 @@ export function App({ agent, info, sessions }: AppProps) {
     notice,
     newSession: () => switchSession({ type: 'clear' }),
     resume: (saved) => switchSession({ type: 'load', session: saved }),
+    selectModel,
     toggleExpanded,
-    exit,
+    exit: quit,
   };
 
-  const jinion: Jinion = { info, actions, panels, commands, sessions, sessionId: session.id };
+  const jinion: Jinion = { info, model, actions, panels, commands, sessions, sessionId: session.id };
 
   useInput((input, key) => {
     if (key.ctrl && input === 'o') return toggleExpanded();
@@ -152,7 +211,7 @@ export function App({ agent, info, sessions }: AppProps) {
       if (busy) return controller.current?.abort();
       if (panels.top) return panels.close();
       if (draft) return setDraft('');
-      return exit();
+      return quit();
     }
   });
 
@@ -197,7 +256,7 @@ export function App({ agent, info, sessions }: AppProps) {
           <StatusBar
             items={[
               <Text color={theme.muted}>jinion</Text>,
-              <Tag name="M" value={info.model} color={theme.status.model} />,
+              <Tag name="M" value={modelLabel(model)} color={theme.status.model} />,
               <Tag name="D" value={shortPath(info.cwd)} color={theme.status.directory} />,
               <Text>
                 ctx: {formatTokens(session.usage.contextTokens)}/{formatTokens(session.usage.contextWindow)}

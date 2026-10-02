@@ -41,16 +41,22 @@ export class ClaudeEvents {
   private readonly tasks = new Map<string, TodoItem>();
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
   private model?: string;
+  private session?: string;
   private last?: AgentEvent['type'];
 
   constructor(
     private readonly cwd: string,
-    /** Spent by earlier conversations, so the cost keeps adding up across `/clear`. */
+    /** Spent before this process took over the conversation, e.g. when it was resumed. */
     private readonly baseCost = 0,
   ) {}
 
   get cost() {
     return this.usage.cost;
+  }
+
+  /** Claude Code's session id, once the process reported it. */
+  get sessionId() {
+    return this.session;
   }
 
   *map(message: SDKMessage): Generator<AgentEvent> {
@@ -63,7 +69,10 @@ export class ClaudeEvents {
   private *events(message: SDKMessage): Generator<AgentEvent> {
     switch (message.type) {
       case 'system':
-        if (message.subtype === 'init') this.model = message.model;
+        if (message.subtype !== 'init') return;
+        this.model = message.model;
+        this.session = message.session_id;
+        yield { type: 'session', id: message.session_id };
         return;
       case 'stream_event':
         if (message.parent_tool_use_id === null) yield* this.stream(message.event);

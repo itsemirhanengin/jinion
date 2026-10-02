@@ -1,6 +1,14 @@
 import { randomUUID } from 'node:crypto';
-import { query, type CanUseTool, type Query, type SDKMessage, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import type { Agent, AgentCommand, AgentEvent, RunContext } from '../types.js';
+import {
+  query,
+  type CanUseTool,
+  type EffortLevel,
+  type Query,
+  type SDKMessage,
+  type SDKUserMessage,
+} from '@anthropic-ai/claude-agent-sdk';
+import type { ModelOption, ModelSelection } from '@jinion/tui';
+import type { Agent, AgentCommand, AgentEvent, AgentResume, RunContext } from '../types.js';
 import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
 import { systemPrompt } from './prompt.js';
@@ -48,8 +56,8 @@ const READ_ONLY = new Set(['WebFetch', 'WebSearch']);
 
 export interface ClaudeAgentOptions {
   cwd: string;
-  /** A Claude Code model alias or id, such as `opus` or `sonnet`. */
-  model: string;
+  /** A Claude Code model alias or id, such as `opus` or `sonnet`, and optionally an effort level. Opus by default. */
+  selection?: ModelSelection;
 }
 
 interface Conversation {
@@ -62,19 +70,55 @@ interface Conversation {
 
 /** Drives Claude Code headless, with Jinion's system prompt and project instructions instead of Claude Code's own. */
 export class ClaudeAgent implements Agent {
-  readonly model: string;
+  readonly name = 'Claude';
   readonly commands: AgentCommand[] = [];
+  private current: ModelSelection;
+  private modelList?: Promise<ModelOption[]>;
   private conversation?: Conversation;
+  /** The conversation the next process continues. */
+  private resume?: AgentResume;
   private turn?: RunContext;
-  private spent = 0;
   private stderr = '';
   private readonly permissions: ProjectPermissions;
   /** Whole tools the user allowed. They are checked here, since bare allow rules would bypass `canUseTool`. */
   private readonly allowedTools = new Set<string>();
 
   constructor(private readonly options: ClaudeAgentOptions) {
-    this.model = options.model;
+    this.current = options.selection ?? { model: 'opus' };
     this.permissions = new ProjectPermissions(options.cwd);
+  }
+
+  get selection() {
+    return this.current;
+  }
+
+  /** Asks Claude Code, which knows what the account can use. The process it starts takes the next prompt. */
+  models() {
+    this.modelList ??= (async () => {
+      const conversation = (this.conversation ??= this.start());
+      const models = await conversation.query.supportedModels();
+      return models.map((model) => ({
+        id: model.value,
+        name: model.displayName,
+        description: model.description,
+        efforts: model.supportedEffortLevels ?? [],
+      }));
+    })().catch((error: unknown) => {
+      this.modelList = undefined;
+      throw error;
+    });
+    return this.modelList;
+  }
+
+  async select(selection: ModelSelection) {
+    const previous = this.current;
+    this.current = selection;
+    const running = this.conversation?.query;
+    if (!running) return;
+    if (selection.model !== previous.model) await running.setModel(selection.model);
+    if (selection.effort !== previous.effort) {
+      await running.applyFlagSettings({ effortLevel: (selection.effort as EffortLevel | undefined) ?? null });
+    }
   }
 
   async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
@@ -102,12 +146,15 @@ export class ClaudeAgent implements Agent {
         if (message.type !== 'result' || !answers(message, uuid)) continue;
 
         context.signal.throwIfAborted();
-        if (message.is_error) throw new Error(errorOf(message));
+        if (message.is_error) throw new TurnFailed(errorOf(message));
         return;
       }
     } catch (error) {
-      // A failed process can't take another turn; the next prompt starts a new one.
-      if (!context.signal.aborted) this.reset();
+      // A process that died can't take another turn; the next prompt continues the conversation in a new one.
+      if (!context.signal.aborted && !(error instanceof TurnFailed)) {
+        const { sessionId, cost } = conversation.events;
+        this.reset(sessionId ? { sessionId, cost } : undefined);
+      }
       throw error;
     } finally {
       context.signal.removeEventListener('abort', interrupt);
@@ -115,9 +162,9 @@ export class ClaudeAgent implements Agent {
     }
   }
 
-  reset() {
+  reset(resume?: AgentResume) {
+    this.resume = resume;
     if (!this.conversation) return;
-    this.spent = this.conversation.events.cost;
     this.conversation.input.close();
     this.conversation.query.close();
     this.conversation = undefined;
@@ -128,7 +175,10 @@ export class ClaudeAgent implements Agent {
   }
 
   private start(): Conversation {
-    const { cwd, model } = this.options;
+    const { cwd } = this.options;
+    const { model, effort } = this.current;
+    const resume = this.resume;
+    this.resume = undefined;
     // Forced colors would put escape codes into command output the model reads.
     const { FORCE_COLOR: _, ...env } = process.env;
     const input = new Inbox<SDKUserMessage>();
@@ -140,6 +190,8 @@ export class ClaudeAgent implements Agent {
       options: {
         cwd,
         model,
+        effort: effort as EffortLevel | undefined,
+        resume: resume?.sessionId,
         systemPrompt: systemPrompt(cwd),
         // Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai connectors stay out.
         settingSources: [],
@@ -163,8 +215,9 @@ export class ClaudeAgent implements Agent {
       query: conversation,
       input,
       output: conversation[Symbol.asyncIterator](),
-      events: new ClaudeEvents(cwd, this.spent),
-      turns: 0,
+      events: new ClaudeEvents(cwd, resume?.cost),
+      // A resumed conversation already has its title.
+      turns: resume ? 1 : 0,
     };
   }
 
@@ -220,6 +273,9 @@ export class ClaudeAgent implements Agent {
     return detail ? `Claude Code exited:\n${detail}` : 'Claude Code exited unexpectedly.';
   }
 }
+
+/** Claude Code reported an error for the turn, e.g. a rate limit; the process can still take the next one. */
+class TurnFailed extends Error {}
 
 /** Whether `result` ends the turn started by the prompt with this uuid. */
 function answers(result: Extract<SDKMessage, { type: 'result' }>, uuid: string) {

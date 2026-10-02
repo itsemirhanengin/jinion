@@ -1,5 +1,5 @@
 import type { NoticeTone, Status, TodoGroup } from '@jinion/tui';
-import type { AgentEvent, ToolRun, Usage } from './agent/types.js';
+import type { AgentEvent, AgentResume, ToolRun, Usage } from './agent/types.js';
 
 export type Entry =
   | { id: string; kind: 'banner' }
@@ -19,6 +19,8 @@ export interface Session {
   usage: Usage;
   title?: string;
   busySince?: number;
+  /** The agent's own id for this conversation, used to continue it after `/resume`. */
+  agentSession?: string;
 }
 
 /** What a session store keeps of a conversation. */
@@ -33,7 +35,9 @@ export type Action =
   | { type: 'load'; session: SavedSession };
 
 let sequence = 0;
-export const nextId = () => String(++sequence);
+/** Saved sessions come back in later runs, so ids carry a per-run prefix to stay unique next to their entries. */
+const run = Math.random().toString(36).slice(2, 8);
+export const nextId = () => `${run}${++sequence}`;
 
 export function createSession(contextWindow: number): Session {
   return {
@@ -55,6 +59,15 @@ export function toSaved(session: Session): SavedSession | undefined {
   const { busySince: _, title, ...rest } = session;
   return { ...rest, title: title ?? prompt, updatedAt: Date.now() };
 }
+
+export function fromSaved(saved: SavedSession): Session {
+  const { updatedAt: _, ...session } = saved;
+  return session;
+}
+
+/** What the agent needs to continue a saved conversation, if it can. */
+export const resumeOf = (saved: SavedSession): AgentResume | undefined =>
+  saved.agentSession ? { sessionId: saved.agentSession, cost: saved.usage.cost } : undefined;
 
 const notice = (text: string, tone: NoticeTone): Entry => ({ id: nextId(), kind: 'notice', text, tone });
 
@@ -81,11 +94,9 @@ export function reduce(session: Session, action: Action): Session {
     case 'notice':
       return { ...session, entries: [...session.entries, notice(action.text, action.tone ?? 'muted')] };
     case 'clear':
-      return { ...createSession(session.usage.contextWindow), usage: session.usage };
-    case 'load': {
-      const { updatedAt: _, ...saved } = action.session;
-      return saved;
-    }
+      return createSession(session.usage.contextWindow);
+    case 'load':
+      return fromSaved(action.session);
   }
 }
 
@@ -128,6 +139,8 @@ function apply(session: Session, event: AgentEvent): Session {
       return { ...session, usage: event.usage };
     case 'title':
       return { ...session, title: event.title };
+    case 'session':
+      return { ...session, agentSession: event.id };
   }
 }
 

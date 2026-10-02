@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { Frame, FrameDivider } from '../primitives/frame.js';
+import { NoteLine, OptionRow, optionIndent } from '../primitives/option-row.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
 import { PromptInput } from './prompt-input.js';
@@ -27,8 +28,6 @@ export interface QuestionAnswer {
 }
 
 const OTHER: QuestionOption = { label: 'Other (type your own)' };
-/** Width of the `> ( ) ` marker, so descriptions and notes line up under the label. */
-export const INDENT = 6;
 
 interface Editing {
   kind: 'note' | 'other';
@@ -47,9 +46,9 @@ export interface AskPanelProps {
  *     +- Ask ---------------------------+
  *     | Which project?                  |
  *     +---------------------------------+
- *     | > ( ) api (Recommended)         |
- *     |       NestJS backend            |
- *     |   ( ) Other (type your own)     |
+ *     | > 1. api (Recommended)          |
+ *     |      NestJS backend             |
+ *     |   2. Other (type your own)      |
  *     +---------------------------------+
  *     | Enter select · n note · ...     |
  *     +---------------------------------+
@@ -106,7 +105,7 @@ export function AskPanel({ questions, onSubmit, onCancel }: AskPanelProps) {
   if (!question) return null;
 
   const editor = editing && (
-    <Box paddingLeft={INDENT}>
+    <Box paddingLeft={optionIndent(options.length)}>
       {editing.kind === 'note' && <Text color={theme.muted}>note: </Text>}
       <PromptInput
         value={editing.value}
@@ -143,56 +142,19 @@ export function AskPanel({ questions, onSubmit, onCancel }: AskPanelProps) {
       }
     >
       {options.map((option, index) => (
-        <OptionRow key={index} option={option} focused={index === focus} note={notes[index]}>
-          {index === focus ? editor : undefined}
+        <OptionRow
+          key={index}
+          number={index + 1}
+          count={options.length}
+          label={option.recommended ? `${option.label} (Recommended)` : option.label}
+          description={option.description}
+          focused={index === focus}
+          note={notes[index]}
+        >
+          {index === focus ? editor || undefined : undefined}
         </OptionRow>
       ))}
     </Panel>
-  );
-}
-
-interface OptionRowProps {
-  option: QuestionOption;
-  focused: boolean;
-  note?: string;
-  /** Replaces the note line, e.g. with an editor. */
-  children?: ReactNode;
-}
-
-export function OptionRow({ option, focused, note, children }: OptionRowProps) {
-  const theme = useTheme();
-  const color = focused ? theme.selection : undefined;
-
-  return (
-    <Box flexDirection="column">
-      <Box>
-        <Box flexShrink={0}>
-          <Text color={color}>{focused ? '> ( ) ' : '  ( ) '}</Text>
-        </Box>
-        <Prose color={color}>
-          {option.label}
-          {option.recommended && ' (Recommended)'}
-        </Prose>
-      </Box>
-      {option.description && (
-        <Box paddingLeft={INDENT}>
-          <Prose color={theme.muted}>{option.description}</Prose>
-        </Box>
-      )}
-      {children ?? (note && <NoteLine note={note} />)}
-    </Box>
-  );
-}
-
-export function NoteLine({ note }: { note: string }) {
-  const theme = useTheme();
-  return (
-    <Box paddingLeft={INDENT}>
-      <Prose>
-        <Text color={theme.muted}>note: </Text>
-        {note}
-      </Prose>
-    </Box>
   );
 }
 
@@ -220,6 +182,8 @@ export function AskResult({ questions, answers, cancelled = false }: AskResultPr
       {questions.flatMap((question, index) => {
         const answer = answers[index];
         const option = answer?.option === undefined ? undefined : question.options[answer.option];
+        // The chosen option keeps its number from the panel; "Other" is the one after the listed options.
+        const marker = `  ${(answer?.option ?? question.options.length) + 1}. `;
         return [
           index > 0 && <FrameDivider key={`divider-${question.id}`} />,
           <Box key={question.id} flexDirection="column">
@@ -227,7 +191,7 @@ export function AskResult({ questions, answers, cancelled = false }: AskResultPr
             {answer ? (
               <Box>
                 <Box flexShrink={0}>
-                  <Text color={theme.selection}>{'  (o) '}</Text>
+                  <Text color={theme.selection}>{marker}</Text>
                 </Box>
                 <Prose>
                   {option ? (
@@ -244,7 +208,7 @@ export function AskResult({ questions, answers, cancelled = false }: AskResultPr
             ) : (
               <Text color={theme.muted}>{cancelled ? '  cancelled' : '  no answer'}</Text>
             )}
-            {answer?.note && <NoteLine note={answer.note} />}
+            {answer?.note && <NoteLine note={answer.note} indent={marker.length} />}
           </Box>,
         ];
       })}

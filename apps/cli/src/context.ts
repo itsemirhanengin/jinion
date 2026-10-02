@@ -1,15 +1,24 @@
 import { createContext, useContext } from 'react';
-import type { NoticeTone, Panels } from '@jinion/tui';
+import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tui';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { SessionStore } from './session-store.js';
 
 export interface AppInfo {
   version: string;
-  model: string;
   cwd: string;
   /** Prompts the banner suggests trying. */
   examples?: string[];
+}
+
+export interface ModelState {
+  /** The agent the models belong to, e.g. `Claude`. */
+  agent: string;
+  selection: ModelSelection;
+  /** `undefined` until the agent has listed them. */
+  options?: ModelOption[];
+  /** The selected model's name, e.g. `Opus 5.5`, or its id until the models are known. */
+  name: string;
 }
 
 /** Everything commands, panels and key handlers may do to the app. */
@@ -25,12 +34,15 @@ export interface AppActions {
   newSession(): void;
   /** Saves the current conversation and switches to `session`. */
   resume(session: SavedSession): void;
+  /** Switches the model or effort from the next request on, and remembers it for later runs. */
+  selectModel(selection: ModelSelection): void;
   toggleExpanded(): void;
   exit(): void;
 }
 
 export interface Jinion {
   info: AppInfo;
+  model: ModelState;
   actions: AppActions;
   panels: Panels;
   commands: CommandRegistry;
@@ -38,6 +50,10 @@ export interface Jinion {
   /** The conversation on screen. */
   sessionId: string;
 }
+
+/** `Opus 5.5 · high`, or just the name when the model's default effort is used. */
+export const modelLabel = ({ name, selection }: ModelState) =>
+  selection.effort ? `${name} · ${selection.effort}` : name;
 
 export const JinionContext = createContext<Jinion | undefined>(undefined);
 

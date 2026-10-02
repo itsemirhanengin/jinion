@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
+import { OptionRow, optionIndent } from '../primitives/option-row.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
 import { ShellCommand } from '../content/shell.js';
-import { INDENT, OptionRow, type QuestionOption } from './ask.js';
+import type { QuestionOption } from './ask.js';
 import { PromptInput } from './prompt-input.js';
 
 export interface PermissionRequest {
@@ -37,9 +38,9 @@ export interface PermissionPanelProps {
  *     | jinion wants to run a command    |
  *     |   $ pnpm add zod                 |
  *     +----------------------------------+
- *     | > ( ) Yes                        |
- *     |   ( ) Yes, and don't ask again   |
- *     |   ( ) No                         |
+ *     | > 1. Yes                         |
+ *     |   2. Yes, and don't ask again    |
+ *     |   3. No                          |
  *     +----------------------------------+
  */
 export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanelProps) {
@@ -78,7 +79,7 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
   });
 
   const editor = editing !== undefined && (
-    <Box paddingLeft={INDENT}>
+    <Box paddingLeft={optionIndent(options.length)}>
       <Text color={theme.muted}>note: </Text>
       <PromptInput
         value={editing}
@@ -134,7 +135,10 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
       {options.map((option, index) => (
         <OptionRow
           key={option.decision}
-          option={option}
+          number={index + 1}
+          count={options.length}
+          label={option.label}
+          description={option.description}
           focused={index === focus}
           note={option.decision === 'deny' ? note || undefined : undefined}
         >

@@ -1,4 +1,12 @@
-import type { PermissionDecision, PermissionRequest, Question, QuestionAnswer, TodoGroup } from '@jinion/tui';
+import type {
+  ModelOption,
+  ModelSelection,
+  PermissionDecision,
+  PermissionRequest,
+  Question,
+  QuestionAnswer,
+  TodoGroup,
+} from '@jinion/tui';
 
 export interface FileRef {
   path: string;
@@ -47,7 +55,9 @@ export type AgentEvent =
   | { type: 'tool-output'; id: string; lines: string[] }
   | { type: 'tool-end'; id: string; ok: boolean; result?: ToolResult }
   | { type: 'usage'; usage: Usage }
-  | { type: 'title'; title: string };
+  | { type: 'title'; title: string }
+  /** The backend's own id for the conversation, which `Agent.reset` takes to continue it. */
+  | { type: 'session'; id: string };
 
 export interface RunContext {
   signal: AbortSignal;
@@ -66,11 +76,25 @@ export interface AgentCommand {
 }
 
 export interface Agent {
-  readonly model: string;
+  /** The backend, e.g. `Claude`. Model choices are kept per backend. */
+  readonly name: string;
+  /** The model and effort in use. */
+  readonly selection: ModelSelection;
+  /** What the user can switch to. */
+  models(): Promise<ModelOption[]>;
+  /** Takes effect from the next request, also in a conversation that is already running. */
+  select(selection: ModelSelection): Promise<void>;
   readonly commands: AgentCommand[];
   /** Agent commands arrive as `/name args` prompts. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
-  /** Forgets the conversation so the next prompt starts a new one. */
-  reset?(): void;
+  /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
+  reset?(resume?: AgentResume): void;
   close?(): void;
+}
+
+export interface AgentResume {
+  /** From the conversation's `session` event. */
+  sessionId: string;
+  /** What the conversation has cost so far, so the total keeps adding up. */
+  cost: number;
 }

@@ -1,14 +1,12 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import type { CanUseTool, PermissionRuleValue } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionRequest } from '@jinion/tui';
+import { readJson, writeJson } from '../../json-file.js';
+import { projectDir } from '../../paths.js';
 import { toolTitle } from './events.js';
 
 type Input = Record<string, unknown>;
 type RequestOptions = Parameters<CanUseTool>[2];
-
-const FILE = join(process.env.JINION_HOME ?? join(homedir(), '.jinion'), 'permissions.json');
 
 /**
  * What "don't ask again" would allow: the rules Claude Code suggests, such as `Bash(pnpm add *)`. It suggests none
@@ -61,28 +59,17 @@ function defaultTitle(name: string) {
 
 /** "Don't ask again" answers, kept per project as Claude Code permission rules such as `Bash(pnpm add:*)`. */
 export class ProjectPermissions {
-  constructor(
-    private readonly project: string,
-    private readonly file = FILE,
-  ) {}
+  private readonly file: string;
+
+  constructor(cwd: string) {
+    this.file = join(projectDir(cwd), 'permissions.json');
+  }
 
   list(): string[] {
-    return this.read()[this.project] ?? [];
+    return readJson<string[]>(this.file, []);
   }
 
   add(rules: string[]) {
-    const all = this.read();
-    all[this.project] = [...new Set([...(all[this.project] ?? []), ...rules])];
-    mkdirSync(dirname(this.file), { recursive: true });
-    writeFileSync(this.file, `${JSON.stringify(all, null, 2)}\n`);
-  }
-
-  private read(): Record<string, string[]> {
-    if (!existsSync(this.file)) return {};
-    try {
-      return JSON.parse(readFileSync(this.file, 'utf8')) as Record<string, string[]>;
-    } catch {
-      return {};
-    }
+    writeJson(this.file, [...new Set([...this.list(), ...rules])]);
   }
 }

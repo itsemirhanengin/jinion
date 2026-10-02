@@ -7,12 +7,12 @@
   "private": true,
   "type": "module",
   "bin": {
-    "jinion": "./dist/main.js"
+    "jinion": "./bin/jinion.js"
   },
   "scripts": {
     "dev": "tsx --tsconfig ../../tsconfig.json --conditions=development src/main.tsx",
     "build": "tsc -p tsconfig.build.json",
-    "start": "node dist/main.js",
+    "start": "node bin/jinion.js",
     "typecheck": "tsc"
   },
   "dependencies": {

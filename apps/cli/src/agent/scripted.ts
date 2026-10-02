@@ -1,4 +1,4 @@
-import type { Question, QuestionAnswer } from '@jinion/tui';
+import type { ModelOption, ModelSelection, Question, QuestionAnswer } from '@jinion/tui';
 import type { Agent, AgentCommand, AgentEvent, RunContext, ToolCall, ToolName, Tools, Usage } from './types.js';
 
 export interface Scenario {
@@ -10,7 +10,8 @@ export interface Scenario {
 
 /** Plays prewritten scenarios through the same event stream a real agent will produce. */
 export class ScriptedAgent implements Agent {
-  readonly model = 'scripted-demo';
+  readonly name = 'Demo';
+  selection: ModelSelection = { model: 'scripted-demo' };
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
 
   constructor(
@@ -25,6 +26,18 @@ export class ScriptedAgent implements Agent {
 
     yield { type: 'title', title: typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt) };
     yield* scenario.play(new Script(context, this.usage), prompt);
+  }
+
+  reset() {
+    Object.assign(this.usage, { contextTokens: 0, cost: 0 });
+  }
+
+  async models(): Promise<ModelOption[]> {
+    return [{ id: 'scripted-demo', name: 'Scripted demo', description: 'Plays prewritten scenarios', efforts: [] }];
+  }
+
+  async select(selection: ModelSelection) {
+    this.selection = selection;
   }
 }
 

@@ -1,10 +1,38 @@
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { readJson, writeJson } from './json-file.js';
+import { projectDir } from './paths.js';
 import { nextId, type Entry, type SavedSession } from './session.js';
 
-/** Where conversations are kept between `/clear`, `/resume` and, later, runs. */
+/** Where conversations are kept between `/clear`, `/resume` and runs. */
 export interface SessionStore {
   /** Most recently updated first. */
   list(): SavedSession[];
   save(session: SavedSession): void;
+}
+
+/** One project's conversations, a JSON file each, under `~/.jinion/projects/<project>/sessions`. */
+export class FileSessionStore implements SessionStore {
+  private readonly dir: string;
+
+  constructor(cwd: string) {
+    this.dir = join(projectDir(cwd), 'sessions');
+  }
+
+  list() {
+    if (!existsSync(this.dir)) return [];
+    return readdirSync(this.dir)
+      .filter((name) => name.endsWith('.json'))
+      .flatMap((name) => {
+        const session = readJson<SavedSession | undefined>(join(this.dir, name), undefined);
+        return session ? [session] : [];
+      })
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  save(session: SavedSession) {
+    writeJson(join(this.dir, `${session.id}.json`), session);
+  }
 }
 
 export class MemorySessionStore implements SessionStore {

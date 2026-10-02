@@ -27,6 +27,8 @@ export interface FrameProps {
   lead?: number;
   /** Stretches the first section so the frame fills its parent's height. */
   grow?: boolean;
+  /** As wide as its content instead of the full width. */
+  fit?: boolean;
   children?: ReactNode;
 }
 
@@ -50,7 +52,7 @@ export function FrameDivider(_props: FrameDividerProps) {
  *     | more content       |
  *     +--------------------+
  */
-export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = false, children }: FrameProps) {
+export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = false, fit = false, children }: FrameProps) {
   const theme = useTheme();
   const background = tone === 'plain' ? undefined : theme.surface[tone];
   const color = borderColor ?? theme.border;
@@ -67,7 +69,14 @@ export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = fal
   const fill = sections.some((section) => section.grow);
 
   return (
-    <Box flexDirection="column" width="100%" flexGrow={fill ? 1 : 0} backgroundColor={background}>
+    <Box
+      flexDirection="column"
+      width={fit ? undefined : '100%'}
+      maxWidth="100%"
+      alignSelf={fit ? 'flex-start' : undefined}
+      flexGrow={fill ? 1 : 0}
+      backgroundColor={background}
+    >
       {sections.map((section, index) => (
         <Box key={index} flexDirection="column" flexGrow={section.grow ? 1 : 0}>
           <Edge title={section.title} color={color} lead={lead} background={background} />
