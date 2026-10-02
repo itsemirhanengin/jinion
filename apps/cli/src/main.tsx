@@ -55,9 +55,10 @@ if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
 // Package managers run scripts from the package directory; INIT_CWD is where the user invoked them.
 const cwd = process.env.INIT_CWD ?? process.cwd();
 
-// Each project starts in the mode it was last left in.
+// Each project starts in the mode it was last left in, with the account last switched to.
 const { mode } = loadProjectSettings(cwd);
-const agent: Agent = values.demo ? new ScriptedAgent(scenarios, demoCommands) : new ClaudeAgent({ cwd, mode });
+const account = loadSettings().accounts?.Claude;
+const agent: Agent = values.demo ? new ScriptedAgent(scenarios, demoCommands) : new ClaudeAgent({ cwd, mode, account });
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;

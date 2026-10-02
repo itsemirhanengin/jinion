@@ -1,7 +1,7 @@
 import { basename } from 'node:path';
 import type { ReactNode } from 'react';
 import { countChanges, Meter, parsePatch, Tag, Text, type Theme } from '@jinion/tui';
-import type { AgentMode, LimitWindow } from '../agent/types.js';
+import { accountLabel, type AgentAccount, type AgentMode, type LimitWindow } from '../agent/types.js';
 import type { AppInfo, ModelState } from '../context.js';
 import { modeColor, MODES } from '../modes.js';
 import { tildify } from '../paths.js';
@@ -13,6 +13,8 @@ export interface StatusData {
   info: AppInfo;
   model: ModelState;
   mode: AgentMode;
+  /** Who the agent runs as, when it can tell. */
+  account?: AgentAccount;
   session: Session;
   git?: GitStatus;
   limits?: LimitWindow[];
@@ -59,6 +61,17 @@ export const SEGMENTS: Segment[] = [
       const effort = style === 'effort' && model.selection.effort;
       return <Tag name="M" value={effort ? `${model.name} · ${effort}` : model.name} color={theme.status.model} />;
     },
+  },
+  {
+    id: 'account',
+    name: 'Account',
+    description: 'Who the agent runs as, from /account',
+    styles: [
+      { id: 'plan', name: 'organization or email, and plan' },
+      { id: 'name', name: 'account name' },
+    ],
+    render: ({ account, theme }, style) =>
+      account && <Tag name="A" value={style === 'name' ? account.name : accountLabel(account)} color={theme.accent} />,
   },
   {
     id: 'mode',

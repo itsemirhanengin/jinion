@@ -45,7 +45,13 @@ In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 
 Every conversation is saved after each turn, per project, and `/resume` lists them. `jinion -c` (`--continue`) opens the last one. Resuming continues the Claude Code session too, so the agent remembers it.
 
-Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model picked per agent and the status line, and one folder per project with `sessions/*.json` and `permissions.json`.
+Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent and the status line, `limits.json` for the plan limits last seen per account, `accounts/` for the extra logins, and one folder per project with `sessions/*.json`, `permissions.json` and `settings.json` (its mode).
+
+### Accounts
+
+`/account` switches between your Claude logins and adds new ones. Each account is a Claude Code config directory of its own (`~/.jinion/accounts/claude/<name>`), next to Claude Code's own login in `~/.claude`, which is the `default` account. Jinion never handles the credentials: "Add an account" runs `claude auth login` for the new directory, you sign in in the browser, and paste the code it shows into the panel.
+
+Switching happens between turns, and a conversation in progress carries on under the other login: all accounts share one folder of Claude Code transcripts, so the new process resumes the same session. The banner says who you are signed in as, the organization for a team plan (`BUGECE · Team`) and the email for a personal one (`me@example.com · Max`), and so can the status line's Account segment. The panel shows each account's email, plan and the plan limits it had when last used. `/account <name>` switches straight away, and the pick carries over to later runs.
 
 ### Status line
 
@@ -56,6 +62,7 @@ Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for th
 | Jinion | `jinion` | |
 | Model | `[M] Opus 5.5 · high` | with effort, name only |
 | Mode | `Auto`, also always under the prompt | |
+| Account | `[A] work` | |
 | Directory | `[D] experiments/coding-agent` | last two folders, full path, folder name |
 | Git | `[G] main *3 ↑1` | with uncommitted files and commits ahead/behind, branch only |
 | Context | `ctx [====------] 41%` | tokens, percent, meter |
@@ -119,6 +126,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/clear` (`/new`) | Saves this conversation and starts a new one |
 | `/model [model]` | Picks the model and effort (up/down for the model, left/right for the effort), or switches straight to `model` |
 | `/effort [level]` | Opens the same picker, or sets the effort straight away; `default` leaves it to the model |
+| `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |

@@ -1,15 +1,17 @@
 import type { ReactNode } from 'react';
 import { Box, Frame, Text, useTheme } from '@jinion/tui';
 import { modelLabel, useJinion } from '../context.js';
+import { accountLabel } from '../agent/types.js';
 import { tildify } from '../paths.js';
 
 /**
  * As wide as its content:
  *
- *     +- jinion v0.1.0 ---------------------------+
- *     | model  Opus 5.5 · xhigh   /model to change |
- *     | cwd    ~/projects/experiments/coding-agent |
- *     +-------------------------------------------+
+ *     +- jinion v0.1.0 -----------------------------+
+ *     | model    Opus 5.5 · xhigh   /model to change |
+ *     | account  BUGECE · Team   /account to change  |
+ *     | cwd      ~/projects/experiments/coding-agent |
+ *     +---------------------------------------------+
  */
 export function Banner() {
   const theme = useTheme();
@@ -32,6 +34,12 @@ export function Banner() {
       <Row label="model" hint="/model to change">
         <Text color={theme.status.model}>{modelLabel(app.model)}</Text>
       </Row>
+      {app.accounts.identity && (
+        <Row label="account" hint={app.accounts.manager && '/account to change'}>
+          <Text color={theme.accent}>{accountLabel(app.accounts.identity)}</Text>
+          {app.accounts.identity.name !== 'default' && <Text color={theme.muted}> ({app.accounts.identity.name})</Text>}
+        </Row>
+      )}
       <Row label="cwd">
         <Text color={theme.status.directory}>{tildify(cwd)}</Text>
       </Row>
@@ -49,7 +57,7 @@ function Row({ label, hint, children }: { label: string; hint?: string; children
   const theme = useTheme();
   return (
     <Box>
-      <Box flexShrink={0} width={7}>
+      <Box flexShrink={0} width={9}>
         <Text color={theme.muted}>{label}</Text>
       </Box>
       <Box flexShrink={1}>{children}</Box>

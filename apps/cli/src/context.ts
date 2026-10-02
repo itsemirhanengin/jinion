@@ -1,9 +1,10 @@
 import { createContext, useContext } from 'react';
 import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tui';
-import type { AgentMode } from './agent/types.js';
+import type { AgentAccount, AgentAccounts, AgentMode } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { SessionStore } from './session-store.js';
+import type { SeenLimits } from './settings.js';
 import type { StatusItem } from './status/line.js';
 import type { StatusData } from './status/segments.js';
 
@@ -42,6 +43,8 @@ export interface AppActions {
   selectModel(selection: ModelSelection): void;
   /** Switches the agent's mode right away; the project starts in it next time. */
   selectMode(mode: AgentMode): void;
+  /** Switches to another of the agent's logins between turns; the conversation carries on there. */
+  selectAccount(name: string): void;
   /** Shows `items` in the status line until saved or reverted with `undefined`. */
   previewStatusLine(items: StatusItem[] | undefined): void;
   saveStatusLine(items: StatusItem[]): void;
@@ -55,6 +58,8 @@ export interface Jinion {
   modes: { current: AgentMode; available: AgentMode[] };
   /** The saved status line and the data its segments show. */
   status: { items: StatusItem[]; data: StatusData };
+  /** The agent's logins, if it has several, who it runs as, and the plan limits last seen for each. */
+  accounts: { manager?: AgentAccounts; current?: string; identity?: AgentAccount; seen: SeenLimits };
   actions: AppActions;
   panels: Panels;
   commands: CommandRegistry;

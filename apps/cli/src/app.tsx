@@ -25,7 +25,7 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
+import type { Agent, AgentAccount, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { agentCommands, CommandRegistry } from './commands/registry.js';
 import {
@@ -48,7 +48,16 @@ import {
 } from './session.js';
 import type { SessionStore } from './session-store.js';
 import { modeColor, MODES, nextMode } from './modes.js';
-import { loadSettings, saveModel, saveProjectSettings, saveStatusLine } from './settings.js';
+import {
+  limitsKey,
+  loadLimits,
+  loadSettings,
+  saveAccount,
+  saveLimits,
+  saveModel,
+  saveProjectSettings,
+  saveStatusLine,
+} from './settings.js';
 import { useGitStatus } from './status/git.js';
 import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } from './status/line.js';
 import { findSegment, type StatusData } from './status/segments.js';
@@ -81,10 +90,16 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const notice = (text: string, tone?: NoticeTone) => dispatch({ type: 'notice', text, tone });
 
   const [selection, setSelection] = useState(agent.selection);
+  const [account, setAccount] = useState(agent.accounts?.current);
   const [models, setModels] = useState<ModelOption[]>();
+  const [identity, setIdentity] = useState<AgentAccount>();
+  // Each account can offer other models, e.g. a team plan next to a personal one.
   useEffect(() => {
+    setModels(undefined);
+    setIdentity(undefined);
     agent.models().then(setModels, () => setModels([]));
-  }, [agent]);
+    agent.accounts?.active().then(setIdentity, () => setIdentity(undefined));
+  }, [agent, account]);
   const model: ModelState = {
     agent: agent.name,
     selection,
@@ -128,12 +143,20 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const [statusItems, setStatusItems] = useState(() => knownItems(loadSettings().statusLine ?? DEFAULT_STATUS_LINE));
   // `/statusline` shows its draft here while it is open.
   const [statusPreview, setStatusPreview] = useState<StatusItem[]>();
-  const [limits, setLimits] = useState<LimitWindow[]>();
+  const [seenLimits, setSeenLimits] = useState(loadLimits);
+  const limits = seenLimits[limitsKey(agent.name, account)]?.windows;
+  const recordLimits = (windows: LimitWindow[]) => {
+    setSeenLimits((current) => {
+      const next = { ...current, [limitsKey(agent.name, agent.accounts?.current)]: { windows, at: Date.now() } };
+      saveLimits(next);
+      return next;
+    });
+  };
   const shownItems = statusPreview ?? statusItems;
   const shownSegments = shownItems.map((item) => findSegment(item.id));
   const git = useGitStatus(info.cwd, shownSegments.some((segment) => segment?.git), busy);
   const now = useNow(shownSegments.some((segment) => segment?.ticks));
-  const statusData: StatusData = { info, model, mode, session, git, limits, now, theme };
+  const statusData: StatusData = { info, model, mode, account: identity, session, git, limits, now, theme };
   const statusLine = renderStatusLine(shownItems, statusData);
 
   const save = () => {
@@ -149,6 +172,30 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const quit = () => {
     save();
     exit();
+  };
+
+  /** The conversation carries on under the other login; only between turns, so no request is cut off. */
+  const selectAccount = (name: string) => {
+    const accounts = agent.accounts;
+    if (!accounts) return notice(`${agent.name} has a single login.`, 'warning');
+    if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
+    accounts
+      .list()
+      .then((all) => {
+        const target = all.find((candidate) => candidate.name === name);
+        if (!target) throw new Error(`there is no account called ${name}. Type /account to see them`);
+        if (!target.signedIn) throw new Error(`${name} isn't signed in. Type /account to sign in`);
+        return accounts.use(name);
+      })
+      .then(
+        () => {
+          setAccount(name);
+          saveAccount(agent.name, name);
+          notice(`Switched to the ${name} account${session.agentSession ? '; the conversation carries on there' : ''}.`);
+        },
+        (error: unknown) =>
+          notice(`Couldn't switch the account: ${error instanceof Error ? error.message : error}`, 'error'),
+      );
   };
 
   const switchSession = (action: Extract<Action, { type: 'clear' | 'load' }>) => {
@@ -219,7 +266,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
 
     try {
       for await (const event of agent.run(full, { signal: abort.signal, ask, approve, approvePlan })) {
-        if (event.type === 'limits') setLimits(event.windows);
+        if (event.type === 'limits') recordLimits(event.windows);
         if (event.type === 'mode') showMode(event.mode);
         dispatch({ type: 'event', event });
       }
@@ -255,6 +302,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     resume: (saved) => switchSession({ type: 'load', session: saved }),
     selectModel,
     selectMode,
+    selectAccount,
     previewStatusLine: setStatusPreview,
     saveStatusLine: (items) => {
       setStatusItems(items);
@@ -270,6 +318,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     model,
     modes: { current: mode, available: agent.modes },
     status: { items: statusItems, data: statusData },
+    accounts: { manager: agent.accounts, current: account, identity, seen: seenLimits },
     actions,
     panels,
     commands,

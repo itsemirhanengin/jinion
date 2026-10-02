@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import type { ModelSelection } from '@jinion/tui';
 import { readJson, writeJson } from './json-file.js';
 import { jinionHome, projectDir } from './paths.js';
-import type { AgentMode } from './agent/types.js';
+import type { AgentMode, LimitWindow } from './agent/types.js';
 import type { StatusItem } from './status/line.js';
 
 /** Choices that carry over between runs, in `~/.jinion/settings.json`. */
@@ -11,6 +11,8 @@ export interface Settings {
   models?: Record<string, ModelSelection>;
   /** What the status line shows, from `/statusline`. */
   statusLine?: StatusItem[];
+  /** The account last switched to for each agent, keyed by `Agent.name`. */
+  accounts?: Record<string, string>;
 }
 
 const file = () => join(jinionHome(), 'settings.json');
@@ -24,6 +26,21 @@ export function saveModel(agent: string, selection: ModelSelection) {
 }
 
 export const saveStatusLine = (items: StatusItem[]) => update({ statusLine: items });
+
+export function saveAccount(agent: string, account: string) {
+  update({ accounts: { ...loadSettings().accounts, [agent]: account } });
+}
+
+/** The plan limits last seen for each account, so accounts not in use still show how full they were. */
+export type SeenLimits = Record<string, { windows: LimitWindow[]; at: number }>;
+
+const limitsFile = () => join(jinionHome(), 'limits.json');
+
+export const limitsKey = (agent: string, account = 'default') => `${agent}/${account}`;
+
+export const loadLimits = () => readJson<SeenLimits>(limitsFile(), {});
+
+export const saveLimits = (limits: SeenLimits) => writeJson(limitsFile(), limits);
 
 /** Choices kept per project, in `~/.jinion/projects/<project>/settings.json`. */
 export interface ProjectSettings {

@@ -115,12 +115,54 @@ export interface Agent {
   readonly modes: AgentMode[];
   /** Takes effect right away, also in a running turn. */
   setMode(mode: AgentMode): Promise<void>;
+  /** The logins the user keeps for this backend. Backends with a single login leave it out. */
+  readonly accounts?: AgentAccounts;
   readonly commands: AgentCommand[];
   /** Agent commands arrive as `/name args` prompts. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
   /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
   reset?(resume?: AgentResume): void;
   close?(): void;
+}
+
+export interface AgentAccount {
+  /** What the user calls it, e.g. `work`. */
+  name: string;
+  signedIn: boolean;
+  email?: string;
+  /** e.g. `Max`, `Pro` or `Team`. */
+  plan?: string;
+  organization?: string;
+}
+
+/** `BUGECE · Team` for a plan that belongs to an organization, `me@example.com · Max` for a personal one. */
+export function accountLabel(account: AgentAccount) {
+  const shared = account.plan === 'Team' || account.plan === 'Enterprise';
+  const who = shared ? (account.organization ?? account.email) : (account.email ?? account.organization);
+  return [who, account.plan].filter(Boolean).join(' · ');
+}
+
+export interface AgentAccounts {
+  /** The account the agent runs with. */
+  readonly current: string;
+  /** Who the agent runs as right now, as the backend reports it. */
+  active(): Promise<AgentAccount>;
+  list(): Promise<AgentAccount[]>;
+  /** The next request goes out with this account; a conversation in progress carries on there. */
+  use(name: string): Promise<void>;
+  /** Signs in to `name` through the backend's own login, e.g. in the browser, adding the account when it is new. */
+  signIn(name: string, options: SignInOptions): Promise<AgentAccount>;
+}
+
+export interface SignInOptions {
+  signal: AbortSignal;
+  /** The page to sign in at, for when the browser didn't open on its own. */
+  onLink(url: string): void;
+  /**
+   * The login wants something typed, such as a code the browser showed; `answer` sends it. `problem` says why it
+   * asks again, e.g. a code that didn't work.
+   */
+  onPrompt(prompt: string, answer: (text: string) => void, problem?: string): void;
 }
 
 export interface AgentResume {

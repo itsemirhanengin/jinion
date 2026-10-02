@@ -1,5 +1,6 @@
 import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
+import { AccountPicker } from '../panels/account.js';
 import { ModePicker } from '../panels/mode.js';
 import { findModel, ModelPicker } from '../panels/model.js';
 import { MODES } from '../modes.js';
@@ -84,6 +85,21 @@ export const builtinCommands: Command[] = [
         return app.actions.notice(`No mode "${args.trim()}". Pick one of ${names}, or type /mode.`, 'error');
       }
       app.actions.selectMode(mode);
+    },
+  },
+  {
+    name: 'account',
+    description: 'Switch between your logins, or add one (account add <name>)',
+    source: 'builtin',
+    argumentHint: '[name | add <name>]',
+    run: (app, args) => {
+      if (!app.accounts.manager) return app.actions.notice(`${app.model.agent} has a single login.`, 'warning');
+      const [first = '', second = ''] = args.trim().split(/\s+/);
+      const open = (signIn?: string) =>
+        app.panels.open({ id: 'account', placement: 'bottom', element: <AccountPicker signIn={signIn} /> });
+      if (!first) return open();
+      if (first === 'add') return second ? open(second) : open();
+      app.actions.selectAccount(first);
     },
   },
   {

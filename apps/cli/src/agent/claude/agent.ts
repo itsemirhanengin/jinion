@@ -10,7 +10,18 @@ import {
   type SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import type { ModelOption, ModelSelection } from '@jinion/tui';
-import type { Agent, AgentCommand, AgentEvent, AgentMode, AgentResume, RunContext } from '../types.js';
+import type {
+  Agent,
+  AgentAccount,
+  AgentAccounts,
+  AgentCommand,
+  AgentEvent,
+  AgentMode,
+  AgentResume,
+  RunContext,
+  SignInOptions,
+} from '../types.js';
+import { accountEnv, accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
 import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
 import { guardReason } from './guard.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
@@ -77,6 +88,8 @@ export interface ClaudeAgentOptions {
   selection?: ModelSelection;
   /** `edits` by default. */
   mode?: AgentMode;
+  /** The account to sign in with, `default` (Claude Code's own login) when left out or unknown. */
+  account?: string;
 }
 
 interface Conversation {
@@ -93,7 +106,9 @@ export class ClaudeAgent implements Agent {
   readonly modes: AgentMode[] = ['manual', 'edits', 'plan', 'auto'];
   private current: ModelSelection;
   private currentMode: AgentMode;
+  private account: string;
   private modelList?: Promise<ModelOption[]>;
+  private accountInfo?: Promise<AgentAccount>;
   private conversation?: Conversation;
   /** The conversation the next process continues. */
   private resume?: AgentResume;
@@ -106,6 +121,7 @@ export class ClaudeAgent implements Agent {
   constructor(private readonly options: ClaudeAgentOptions) {
     this.current = options.selection ?? { model: 'opus' };
     this.currentMode = options.mode ?? 'edits';
+    this.account = options.account && accountNames().includes(options.account) ? options.account : DEFAULT_ACCOUNT;
     this.permissions = new ProjectPermissions(options.cwd);
   }
 
@@ -115,6 +131,51 @@ export class ClaudeAgent implements Agent {
 
   get mode() {
     return this.currentMode;
+  }
+
+  readonly accounts: AgentAccounts = ((agent: ClaudeAgent) => ({
+    get current() {
+      return agent.account;
+    },
+    active: () => agent.activeAccount(),
+    list: () => Promise.all(accountNames().map(accountStatus)),
+    use: (name: string) => agent.useAccount(name),
+    signIn: (name: string, options: SignInOptions) => {
+      const problem = checkName(name);
+      return problem ? Promise.reject(new Error(problem)) : signIn(name, options);
+    },
+  }))(this);
+
+  /** Asks the running Claude Code who it is signed in as; the process it starts takes the next prompt. */
+  private activeAccount() {
+    const name = this.account;
+    this.accountInfo ??= (async () => {
+      const conversation = (this.conversation ??= this.start());
+      const info = await conversation.query.accountInfo();
+      return {
+        name,
+        signedIn: info.email !== undefined,
+        email: info.email,
+        plan: planName(info.subscriptionType),
+        organization: info.organization,
+      };
+    })().catch((error: unknown) => {
+      this.accountInfo = undefined;
+      throw error;
+    });
+    return this.accountInfo;
+  }
+
+  private async useAccount(name: string) {
+    if (name === this.account) return;
+    if (!accountNames().includes(name)) throw new Error(`There is no account called ${name}.`);
+    // The conversation goes on under the new login: its transcript is shared between accounts.
+    const events = this.conversation?.events;
+    const resume = events?.sessionId ? { sessionId: events.sessionId, cost: events.cost } : this.resume;
+    this.account = name;
+    this.modelList = undefined;
+    this.accountInfo = undefined;
+    this.reset(resume);
   }
 
   async setMode(mode: AgentMode) {
@@ -237,7 +298,7 @@ export class ClaudeAgent implements Agent {
         hooks: { PreToolUse: [{ hooks: [this.guard] }] },
         includePartialMessages: true,
         // Background tasks finish after the turn and start turns of their own, which Jinion can't follow yet.
-        env: { ...env, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
+        env: { ...env, ...accountEnv(this.account), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
         stderr: (data) => {
           this.stderr = (this.stderr + data).slice(-2000);
         },
