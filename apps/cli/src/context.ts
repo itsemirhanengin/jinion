@@ -3,6 +3,7 @@ import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tu
 import type { AgentAccount, AgentAccounts, AgentMode } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
+import type { MemoryStore } from './memory/store.js';
 import type { SessionStore } from './session-store.js';
 import type { SeenLimits } from './settings.js';
 import type { StatusItem } from './status/line.js';
@@ -64,6 +65,7 @@ export interface Jinion {
   panels: Panels;
   commands: CommandRegistry;
   sessions: SessionStore;
+  memory: MemoryStore;
   /** The conversation on screen. */
   sessionId: string;
 }

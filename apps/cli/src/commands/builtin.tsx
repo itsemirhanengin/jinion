@@ -1,6 +1,8 @@
 import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
+import { importClaudeMemory } from '../memory/import.js';
 import { AccountPicker } from '../panels/account.js';
+import { MemoryPanel } from '../panels/memory.js';
 import { ModePicker } from '../panels/mode.js';
 import { findModel, ModelPicker } from '../panels/model.js';
 import { MODES } from '../modes.js';
@@ -100,6 +102,44 @@ export const builtinCommands: Command[] = [
       if (!first) return open();
       if (first === 'add') return second ? open(second) : open();
       app.actions.selectAccount(first);
+    },
+  },
+  {
+    name: 'remember',
+    description: 'Save a note the agent keeps in later conversations (remember user … for every project)',
+    source: 'builtin',
+    argumentHint: '<note>',
+    run: (app, args) => {
+      const [first = '', ...rest] = args.trim().split(/\s+/);
+      const scope = first === 'user' || first === 'project' ? first : 'project';
+      const content = (first === scope ? rest.join(' ') : args).trim();
+      if (!content) return app.actions.notice('Say what to remember, e.g. /remember use pnpm, not npm.', 'warning');
+      const line = content.split('\n')[0]!;
+      const memory = app.memory.save({
+        scope,
+        type: scope === 'user' ? 'preference' : 'fact',
+        title: line.length > 60 ? `${line.slice(0, 59)}…` : line,
+        description: line.length > 160 ? `${line.slice(0, 159)}…` : line,
+        content,
+      });
+      app.actions.notice(`Saved ${memory.scope}/${memory.id}. The agent sees it from the next conversation on.`, 'success');
+    },
+  },
+  {
+    name: 'memory',
+    description: 'The notes the agent keeps; memory import brings in Claude Code\'s',
+    source: 'builtin',
+    argumentHint: '[import]',
+    run: (app, args) => {
+      if (args.trim() !== 'import') return app.panels.open({ id: 'memory', placement: 'bottom', element: <MemoryPanel /> });
+      const { added, skipped } = importClaudeMemory(app.memory, app.info.cwd);
+      const note = skipped > 0 ? ` (${skipped} already here)` : '';
+      app.actions.notice(
+        added > 0
+          ? `Imported ${added} notes from Claude Code${note}. The agent sees them from the next conversation on.`
+          : `Nothing new to import from Claude Code${note}.`,
+        added > 0 ? 'success' : 'muted',
+      );
     },
   },
   {

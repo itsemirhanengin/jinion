@@ -46,6 +46,7 @@ import {
   type SavedSession,
   type Session,
 } from './session.js';
+import type { MemoryStore } from './memory/store.js';
 import type { SessionStore } from './session-store.js';
 import { modeColor, MODES, nextMode } from './modes.js';
 import {
@@ -68,11 +69,13 @@ export interface AppProps {
   agent: Agent;
   info: AppInfo;
   sessions: SessionStore;
+  /** The notes the agent keeps across conversations. */
+  memory: MemoryStore;
   /** A saved conversation to open with, e.g. for `--continue`. The agent is expected to continue it already. */
   initial?: SavedSession;
 }
 
-export function App({ agent, info, sessions, initial }: AppProps) {
+export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const theme = useTheme();
   const { exit } = useApp();
   const { toggleExpanded } = useView();
@@ -326,6 +329,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     panels,
     commands,
     sessions,
+    memory,
     sessionId: session.id,
   };
 

@@ -1,6 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { memorySection } from '../../memory/prompt.js';
+import type { MemoryStore } from '../../memory/store.js';
 
 const INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'];
 
@@ -25,8 +27,8 @@ const BASE = `You are Jinion, a coding agent working in the user's terminal. You
 - Write GitHub-flavored markdown. Reference code as \`path:line\`.
 - Before a long or risky action, say in one line what you're about to do.`;
 
-export function systemPrompt(cwd: string) {
-  return [BASE, environment(cwd), projectInstructions(cwd)].filter(Boolean).join('\n\n');
+export function systemPrompt(cwd: string, memory?: MemoryStore) {
+  return [BASE, environment(cwd), projectInstructions(cwd), memory && memorySection(memory)].filter(Boolean).join('\n\n');
 }
 
 function environment(cwd: string) {

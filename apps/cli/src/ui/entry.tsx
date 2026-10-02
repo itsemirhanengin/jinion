@@ -26,6 +26,8 @@ type ToolEntry = Extract<Entry, { kind: 'tool' }>;
 
 const MAX_TREE_ITEMS = 6;
 
+const MEMORY_VERBS = { remember: 'Remember', recall: 'Recall', forget: 'Forget' } as const;
+
 /** Entries are immutable, so unchanged ones skip re-rendering while the newest one streams. */
 export const EntryView = memo(function EntryView({ entry }: { entry: Entry }) {
   // A pending question lives in the AskPanel at the bottom until it is answered.
@@ -162,6 +164,14 @@ function ToolView({ entry }: { entry: ToolEntry }) {
     case 'ask':
       return (
         <AskResult questions={run.input.questions} answers={run.result?.answers ?? []} cancelled={status === 'cancelled'} />
+      );
+    case 'memory':
+      return (
+        <ToolLine
+          status={status}
+          name={MEMORY_VERBS[run.input.action]}
+          detail={<Text color={theme.muted}>{run.input.detail}</Text>}
+        />
       );
     case 'plan':
       return (

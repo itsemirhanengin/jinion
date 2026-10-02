@@ -6,6 +6,7 @@ import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
 import type { Agent } from './agent/types.js';
 import { App } from './app.js';
+import { MemoryStore } from './memory/store.js';
 import { resumeOf } from './session.js';
 import { loadProjectSettings, loadSettings } from './settings.js';
 import { demoSessions, FileSessionStore, MemorySessionStore, type SessionStore } from './session-store.js';
@@ -58,7 +59,10 @@ const cwd = process.env.INIT_CWD ?? process.cwd();
 // Each project starts in the mode it was last left in, with the account last switched to.
 const { mode } = loadProjectSettings(cwd);
 const account = loadSettings().accounts?.Claude;
-const agent: Agent = values.demo ? new ScriptedAgent(scenarios, demoCommands) : new ClaudeAgent({ cwd, mode, account });
+const memory = new MemoryStore(cwd);
+const agent: Agent = values.demo
+  ? new ScriptedAgent(scenarios, demoCommands)
+  : new ClaudeAgent({ cwd, mode, account, memory });
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;
@@ -75,7 +79,7 @@ const info = {
   examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
 };
 
-const instance = await run(<App agent={agent} info={info} sessions={sessions} initial={initial} />, {
+const instance = await run(<App agent={agent} info={info} sessions={sessions} memory={memory} initial={initial} />, {
   scheme: theme as ColorScheme | undefined,
 });
 await instance.waitUntilExit();

@@ -29,6 +29,8 @@ export interface Tools {
   edit: { input: { path: string; patch: string; created?: boolean }; result: { patch?: string } };
   todo: { input: { groups: TodoGroup[] }; result: Record<string, never> };
   ask: { input: { questions: Question[] }; result: { answers: QuestionAnswer[] } };
+  /** Jinion's own memory: `remember`, `recall` or `forget`, with what it is about. */
+  memory: { input: { action: 'remember' | 'recall' | 'forget'; detail: string }; result: Record<string, never> };
   /** A plan the agent wants approved before it changes anything. */
   plan: { input: { plan: string }; result: Record<string, never> };
   /** Any tool without a dedicated view, such as MCP tools or subagents. */

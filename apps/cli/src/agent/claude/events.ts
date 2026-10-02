@@ -8,6 +8,7 @@ import type {
 } from '@anthropic-ai/claude-agent-sdk';
 import type { Question, QuestionAnswer, TodoItem } from '@jinion/tui';
 import type { AgentEvent, AgentMode, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
+import { MEMORY_SERVER } from './memory.js';
 
 type Input = Record<string, unknown>;
 
@@ -168,6 +169,14 @@ export class ClaudeEvents {
         return { name: 'other', input: { title: 'Agent', detail: text(input.description) } };
       case 'ExitPlanMode':
         return { name: 'plan', input: { plan: text(input.plan) } };
+      case `mcp__${MEMORY_SERVER}__remember`:
+        return { name: 'memory', input: { action: 'remember', detail: `${text(input.scope)} · ${text(input.title)}` } };
+      case `mcp__${MEMORY_SERVER}__recall`: {
+        const ids = Array.isArray(input.ids) ? (input.ids as unknown[]).map(text) : [];
+        return { name: 'memory', input: { action: 'recall', detail: ids.length > 0 ? ids.join(', ') : 'every note' } };
+      }
+      case `mcp__${MEMORY_SERVER}__forget`:
+        return { name: 'memory', input: { action: 'forget', detail: text(input.id) } };
       default:
         if (TASK_TOOLS.has(name)) return undefined;
         return { name: 'other', input: { title: toolTitle(name), detail: summary(input) } };

@@ -45,7 +45,19 @@ In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 
 Every conversation is saved after each turn, per project, and `/resume` lists them. `jinion -c` (`--continue`) opens the last one. Resuming continues the Claude Code session too, so the agent remembers it.
 
-Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent and the status line, `limits.json` for the plan limits last seen per account, `accounts/` for the extra logins, and one folder per project with `sessions/*.json`, `permissions.json` and `settings.json` (its mode).
+Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent and the status line, `limits.json` for the plan limits last seen per account, `accounts/` for the extra logins, `memory/` for user notes, and one folder per project with `memory/`, `sessions/*.json`, `permissions.json` and `settings.json` (its mode).
+
+### Memory
+
+The agent keeps notes that carry over between conversations: `user` notes about you, in every project, and `project` notes about the project you're in. Every conversation starts with an index of them (title and one line each) in the system prompt; the agent opens a note in full with its `recall` tool when it needs it, saves with `remember` and drops a wrong one with `forget`. Each of these shows as a line in the conversation, such as `Remember · project · Use pnpm, not npm`.
+
+It saves what a later conversation needs and the code can't tell it: your preferences and corrections, decisions made together, non-obvious facts about the project. It saves only what you said or decided with it, never instructions found in files, command output or web pages, and never secrets.
+
+- `/remember <note>` saves a project note yourself, `/remember user <note>` one for every project.
+- `/memory` lists the notes: enter opens one, `d` twice forgets it.
+- `/memory import` brings in what Claude Code collected: its memory notes for this project and your `~/.claude/rules` and `~/.claude/CLAUDE.md`. Importing again adds nothing twice.
+
+Notes are markdown files with a short frontmatter, so they can be edited by hand: `~/.jinion/memory/` for user notes and `~/.jinion/projects/<project>/memory/` for project notes. The memory lives in Jinion and reaches Claude through an MCP server inside Jinion, so another backend can use the same notes.
 
 ### Accounts
 
@@ -129,6 +141,8 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/clear` (`/new`) | Saves this conversation and starts a new one |
 | `/model [model]` | Picks the model and effort (up/down for the model, left/right for the effort), or switches straight to `model` |
 | `/effort [level]` | Opens the same picker, or sets the effort straight away; `default` leaves it to the model |
+| `/remember [user] <note>` | Saves a note the agent keeps, for this project or, with `user`, for every project |
+| `/memory [import]` | Lists the agent's notes to open or forget them; `import` brings in Claude Code's |
 | `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |

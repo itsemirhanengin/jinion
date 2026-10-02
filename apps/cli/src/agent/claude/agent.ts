@@ -24,6 +24,8 @@ import type {
 import { accountEnv, accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
 import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
 import { guardReason } from './guard.js';
+import { isMemoryTool, MEMORY_SERVER, memoryServer } from './memory.js';
+import type { MemoryStore } from '../../memory/store.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
 import { systemPrompt } from './prompt.js';
 
@@ -90,6 +92,8 @@ export interface ClaudeAgentOptions {
   mode?: AgentMode;
   /** The account to sign in with, `default` (Claude Code's own login) when left out or unknown. */
   account?: string;
+  /** Notes the agent reads and keeps across conversations. */
+  memory?: MemoryStore;
 }
 
 interface Conversation {
@@ -286,7 +290,9 @@ export class ClaudeAgent implements Agent {
         model,
         effort: effort as EffortLevel | undefined,
         resume: resume?.sessionId,
-        systemPrompt: systemPrompt(cwd),
+        // Not snapshotted, so a resumed conversation sees the notes saved since it began.
+        systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, this.options.memory), snapshot: false },
+        mcpServers: this.options.memory ? { [MEMORY_SERVER]: memoryServer(this.options.memory) } : {},
         // Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai connectors stay out.
         settingSources: [],
         strictMcpConfig: true,
@@ -317,6 +323,10 @@ export class ClaudeAgent implements Agent {
   /** Runs before Claude Code's own checks, so what Jinion always asks about is asked in every mode. */
   private readonly guard: HookCallback = async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
+    // Jinion's own memory tools run without asking, and an allow rule for them would print a warning over the UI.
+    if (isMemoryTool(input.tool_name)) {
+      return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion memory' } };
+    }
     const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Record<string, unknown>, this.options.cwd);
     if (!reason) return {};
     return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };
