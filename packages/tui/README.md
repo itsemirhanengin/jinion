@@ -149,7 +149,8 @@ Chat
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
 | `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, and `pastes` turns long pastes into placeholders |
-| `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), and treats `atoms` as single characters |
+| `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), treats `atoms` as single characters, and colors `highlight` spans |
+| `MENTION`, `mention` | the `@path` pattern prompts and user messages highlight, and how a path is written as one |
 | `PastedTexts` | keeps long pastes as `[Pasted text #1 +42 lines]` and expands them when the prompt is sent |
 | `Working`, `StatusBar`, `Tag` | activity indicator and the status line, with items on the left and the right |
 

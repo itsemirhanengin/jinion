@@ -5,6 +5,7 @@ import { Highlight } from '../primitives/highlight.js';
 import { KeyHints } from '../primitives/panel.js';
 import { Rule } from '../primitives/rule.js';
 import { ListRow, SelectList, stepIndex } from '../primitives/select-list.js';
+import { MENTION } from './mentions.js';
 import { PASTED_TEXT, type PastedTexts } from './pasted-texts.js';
 import { PromptInput, type HiddenRows, type PromptInputProps } from './prompt-input.js';
 
@@ -37,7 +38,7 @@ export interface Completion {
 export type CompletionSource = (value: string, cursor: number) => Completion | undefined;
 
 export interface ComposerProps
-  extends Omit<PromptInputProps, 'onKeyDown' | 'onCursorChange' | 'onScroll' | 'onPaste' | 'atoms'> {
+  extends Omit<PromptInputProps, 'onKeyDown' | 'onCursorChange' | 'onScroll' | 'onPaste' | 'atoms' | 'highlight'> {
   completions?: CompletionSource[];
   /** Completion rows shown at once. */
   limit?: number;
@@ -104,6 +105,7 @@ export function Composer({ completions = [], limit = 8, pastes, footer, ...input
         onScroll={setHidden}
         onPaste={pastes && ((text) => pastes.add(text))}
         atoms={pastes && PASTED_TEXT}
+        highlight={MENTION}
       />
       <Rule
         title={

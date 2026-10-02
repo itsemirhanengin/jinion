@@ -62,6 +62,7 @@ import { useGitStatus } from './status/git.js';
 import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } from './status/line.js';
 import { findSegment, type StatusData } from './status/segments.js';
 import { EntryView } from './ui/entry.js';
+import { fileCompletion, useProjectFiles } from './files.js';
 
 export interface AppProps {
   agent: Agent;
@@ -85,7 +86,9 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const busy = session.busySince !== undefined;
 
   const commands = useMemo(() => new CommandRegistry([...builtinCommands, ...agentCommands(agent.commands)]), [agent]);
-  const completions = useMemo(() => [commands.completion()], [commands]);
+  // Listed again after each turn, which may have added or removed files.
+  const files = useProjectFiles(info.cwd, session.busySince === undefined);
+  const completions = useMemo(() => [commands.completion(), fileCompletion(files)], [commands, files]);
 
   const notice = (text: string, tone?: NoticeTone) => dispatch({ type: 'notice', text, tone });
 

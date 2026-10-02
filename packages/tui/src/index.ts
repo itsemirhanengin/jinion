@@ -86,6 +86,7 @@ export type { PermissionDecision, PermissionPanelProps, PermissionRequest } from
 export { PromptInput } from './chat/prompt-input.js';
 export type { HiddenRows, PromptInputProps } from './chat/prompt-input.js';
 export { PASTED_TEXT, PastedTexts } from './chat/pasted-texts.js';
+export { MENTION, mention } from './chat/mentions.js';
 export { Composer } from './chat/composer.js';
 export type { Completion, CompletionItem, CompletionSource, ComposerProps } from './chat/composer.js';
 export { StatusBar, Tag } from './chat/status-bar.js';

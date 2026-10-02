@@ -26,6 +26,8 @@ export interface PromptInputProps {
    * remove them whole, and they are drawn highlighted. Needs the `g` flag.
    */
   atoms?: RegExp;
+  /** Spans drawn highlighted but edited as plain text, such as @-mentions. Needs the `g` flag. */
+  highlight?: RegExp;
 }
 
 export interface HiddenRows {
@@ -41,6 +43,11 @@ interface Row {
 interface Span {
   start: number;
   end: number;
+}
+
+/** A span drawn in a color of its own: atoms in the accent, highlights in the code color. */
+interface Mark extends Span {
+  atom: boolean;
 }
 
 const WORD_LEFT = /\S+\s*$/;
@@ -64,6 +71,7 @@ export function PromptInput({
   onScroll,
   onPaste,
   atoms,
+  highlight,
 }: PromptInputProps) {
   const contentWidth = useContentWidth();
   const box = useRef<DOMElement>(null);
@@ -93,9 +101,15 @@ export function PromptInput({
 
   useEffect(() => onCursorChange?.(position), [position, onCursorChange]);
 
-  const spans: Span[] = atoms
-    ? [...value.matchAll(atoms)].map((match) => ({ start: match.index, end: match.index + match[0].length }))
-    : [];
+  const find = (pattern: RegExp | undefined): Span[] =>
+    pattern ? [...value.matchAll(pattern)].map((match) => ({ start: match.index, end: match.index + match[0].length })) : [];
+  const spans = find(atoms);
+  const marks: Mark[] = [
+    ...spans.map((span) => ({ ...span, atom: true })),
+    ...find(highlight)
+      .filter((span) => !spans.some((atom) => atom.start < span.end && span.start < atom.end))
+      .map((span) => ({ ...span, atom: false })),
+  ];
   const spanEnding = (at: number) => spans.find((span) => span.end === at);
   const spanStarting = (at: number) => spans.find((span) => span.start === at);
   /** A position inside a span moves to the span's `edge`. */
@@ -203,7 +217,7 @@ export function PromptInput({
               key={row.start}
               value={value}
               row={row}
-              spans={spans}
+              marks={marks}
               caret={isActive && top.current + index === caretRow ? position : undefined}
               dim={!isActive}
             />
@@ -265,16 +279,16 @@ function offsetAt(value: string, row: Row, column: number) {
 interface RowTextProps {
   value: string;
   row: Row;
-  spans: Span[];
+  marks: Mark[];
   /** Where the cursor is, when it is on this row. */
   caret?: number;
   dim: boolean;
 }
 
-function RowText({ value, row, spans, caret, dim }: RowTextProps) {
+function RowText({ value, row, marks, caret, dim }: RowTextProps) {
   const theme = useTheme();
   const cuts = new Set([row.start, row.end]);
-  for (const span of spans) {
+  for (const span of marks) {
     if (span.start > row.start && span.start < row.end) cuts.add(span.start);
     if (span.end > row.start && span.end < row.end) cuts.add(span.end);
   }
@@ -290,9 +304,9 @@ function RowText({ value, row, spans, caret, dim }: RowTextProps) {
         const end = points[index + 1]!;
         const text = value.slice(start, end);
         if (start === caret) return <Caret key={start} char={text} />;
-        const atom = spans.some((span) => span.start <= start && end <= span.end);
-        return atom ? (
-          <Text key={start} color={theme.accent}>
+        const mark = marks.find((span) => span.start <= start && end <= span.end);
+        return mark ? (
+          <Text key={start} color={mark.atom ? theme.accent : theme.code}>
             {text}
           </Text>
         ) : (

@@ -111,9 +111,12 @@ Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai c
 | `ctrl+o` | Expand or collapse long output and pasted text |
 | paste | Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`; the agent gets all of it |
 | `/` | Command palette: built-in commands, skills and MCP prompts, filtered as you type |
+| `@` | Mentions a file or folder of the project, completed as you type; Claude Code reads it into the conversation, so the agent can work on it without opening it first |
 | `ctrl+c` | Interrupt, close a panel, clear the prompt, or quit |
 | mouse wheel, `pgup` / `pgdn` | Scroll the conversation; click `Jump to bottom` to follow again |
 | `shift` + drag | Select text (`option` in iTerm2), since the app receives mouse events |
+
+`@` completes the project's files and folders: what git tracks or could track, so ignored files stay out, with names that match ranking first. A folder goes in without a space, so typing on lists what's inside.
 
 The prompt grows to 20 lines, then scrolls inside, with the rules above and below saying how many lines are out of view. A paste placeholder acts as one character: the cursor steps over it and backspace removes it whole.
 
