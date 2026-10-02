@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tui';
-import type { AgentAccount, AgentAccounts, AgentMode } from './agent/types.js';
+import type { AgentAccount, AgentAccounts, AgentCommand, AgentMcp, AgentMode } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { MemoryStore } from './memory/store.js';
@@ -49,6 +49,8 @@ export interface AppActions {
   /** Shows `items` in the status line until saved or reverted with `undefined`. */
   previewStatusLine(items: StatusItem[] | undefined): void;
   saveStatusLine(items: StatusItem[]): void;
+  /** Asks the agent for its skills and MCP prompts again, e.g. after servers were turned on or off. */
+  reloadCommands(): void;
   toggleExpanded(): void;
   exit(): void;
 }
@@ -61,9 +63,13 @@ export interface Jinion {
   status: { items: StatusItem[]; data: StatusData };
   /** The agent's logins, if it has several, who it runs as, and the plan limits last seen for each. */
   accounts: { manager?: AgentAccounts; current?: string; identity?: AgentAccount; seen: SeenLimits };
+  /** The agent's MCP servers, if it has any. */
+  mcp?: AgentMcp;
   actions: AppActions;
   panels: Panels;
   commands: CommandRegistry;
+  /** The agent's skills and MCP prompts, mentioned as `$name`, and the pattern that highlights them. */
+  skills: { list: AgentCommand[]; mention?: RegExp };
   sessions: SessionStore;
   memory: MemoryStore;
   /** The conversation on screen. */

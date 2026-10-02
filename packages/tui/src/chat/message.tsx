@@ -1,15 +1,18 @@
 import { Box, Text } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { Prose } from '../primitives/prose.js';
-import { MENTION } from './mentions.js';
+import { anyOf, MENTION } from './mentions.js';
 import { PASTED_TEXT } from './pasted-texts.js';
 
-/** The user's prompt. Paste placeholders and @-mentions are highlighted as they were in the prompt. */
-export function UserMessage({ text }: { text: string }) {
+/**
+ * The user's prompt. Paste placeholders and @-mentions are highlighted as they were in the prompt, and so is what
+ * `mentions` matches, e.g. skills.
+ */
+export function UserMessage({ text, mentions = [] }: { text: string; mentions?: (RegExp | undefined)[] }) {
   const theme = useTheme();
   const marks = [
     ...[...text.matchAll(PASTED_TEXT)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
-    ...[...text.matchAll(MENTION)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
+    ...[...text.matchAll(anyOf([MENTION, ...mentions])!)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
   ].sort((a, b) => a.index - b.index);
   const parts: { text: string; color?: string }[] = [];
   let at = 0;

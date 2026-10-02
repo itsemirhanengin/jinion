@@ -1,25 +1,15 @@
 import { fuzzyFilter, type CompletionSource } from '@jinion/tui';
-import type { AgentCommand } from '../agent/types.js';
 import type { Jinion } from '../context.js';
 
-export type CommandSource = 'builtin' | 'skill' | 'mcp';
-
+/** One of Jinion's own commands. The agent's skills and MCP prompts are mentioned with `$` instead (`skills.ts`). */
 export interface Command {
   name: string;
   description: string;
-  source: CommandSource;
   aliases?: string[];
   /** `<required>` or `[optional]`; a required argument makes Enter in the palette insert instead of run. */
   argumentHint?: string;
   run(app: Jinion, args: string): void;
 }
-
-/** Display order and labels, shared by the palette tags and the help tabs. */
-export const COMMAND_SOURCES: Record<CommandSource, { label: string; tag?: string }> = {
-  builtin: { label: 'Commands' },
-  skill: { label: 'Skills', tag: 'skill' },
-  mcp: { label: 'MCP', tag: 'mcp' },
-};
 
 export class CommandRegistry {
   constructor(private readonly commands: Command[]) {
@@ -38,17 +28,6 @@ export class CommandRegistry {
     return this.commands.find((command) => command.name === name || command.aliases?.includes(name));
   }
 
-  /** Commands grouped by source, in `COMMAND_SOURCES` order, skipping empty groups. */
-  groups() {
-    return (Object.keys(COMMAND_SOURCES) as CommandSource[])
-      .map((source) => ({
-        source,
-        label: COMMAND_SOURCES[source].label,
-        commands: this.commands.filter((command) => command.source === source),
-      }))
-      .filter((group) => group.commands.length > 0);
-  }
-
   /** Completes `/name` at the start of the prompt, until the first space. */
   completion(): CompletionSource {
     return (value) => {
@@ -64,19 +43,10 @@ export class CommandRegistry {
           positions: positions.map((position) => position + 1),
           hint: item.argumentHint,
           description: item.description,
-          tag: COMMAND_SOURCES[item.source].tag,
           insert: `/${item.name} `,
           submit: item.argumentHint?.startsWith('<') ? false : undefined,
         })),
       };
     };
   }
-}
-
-/** Skills and MCP prompts run by sending `/name args` to the agent. */
-export function agentCommands(commands: AgentCommand[]): Command[] {
-  return commands.map((command) => ({
-    ...command,
-    run: (app, args) => app.actions.prompt(args ? `/${command.name} ${args}` : `/${command.name}`),
-  }));
 }

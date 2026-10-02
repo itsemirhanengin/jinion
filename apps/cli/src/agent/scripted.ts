@@ -19,8 +19,12 @@ export class ScriptedAgent implements Agent {
 
   constructor(
     private readonly scenarios: Scenario[],
-    readonly commands: AgentCommand[] = [],
+    private readonly agentCommands: AgentCommand[] = [],
   ) {}
+
+  async commands() {
+    return this.agentCommands;
+  }
 
   async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
     const scenario = this.scenarios.find((candidate) => candidate.match?.test(prompt)) ??

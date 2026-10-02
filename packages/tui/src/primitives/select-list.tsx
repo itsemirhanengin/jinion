@@ -39,7 +39,8 @@ export interface SelectListProps<T> {
   selected: number;
   /** Items shown at once; the window follows the selection. */
   limit?: number;
-  renderItem(item: T, state: { selected: boolean; index: number }): ReactNode;
+  /** `first` is the first item in view, e.g. to repeat the header of the group it belongs to. */
+  renderItem(item: T, state: { selected: boolean; index: number; first: boolean }): ReactNode;
   empty?: string;
 }
 
@@ -56,7 +57,7 @@ export function SelectList<T>({ items, selected, limit = 8, renderItem, empty = 
       {start > 0 && <Text color={theme.muted}>  … {start} more above</Text>}
       {items.slice(start, end).map((item, offset) => (
         <Box key={start + offset} flexDirection="column">
-          {renderItem(item, { selected: start + offset === selected, index: start + offset })}
+          {renderItem(item, { selected: start + offset === selected, index: start + offset, first: offset === 0 })}
         </Box>
       ))}
       {end < items.length && <Text color={theme.muted}>  … {items.length - end} more</Text>}

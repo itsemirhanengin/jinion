@@ -45,7 +45,7 @@ In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 
 Every conversation is saved after each turn, per project, and `/resume` lists them. `jinion -c` (`--continue`) opens the last one. Resuming continues the Claude Code session too, so the agent remembers it.
 
-Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent and the status line, `limits.json` for the plan limits last seen per account, `accounts/` for the extra logins, `memory/` for user notes, and one folder per project with `memory/`, `sessions/*.json`, `permissions.json` and `settings.json` (its mode).
+Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent, the status line and the MCP servers turned off, `limits.json` for the plan limits last seen per account, `mcp.json` for MCP servers of its own, `accounts/` for the extra logins, `memory/` for user notes, `plugins/` for the skills it hands to Claude Code, and one folder per project with `memory/`, `sessions/*.json`, `permissions.json` and `settings.json` (its mode and the `.mcp.json` servers turned on).
 
 ### Memory
 
@@ -58,6 +58,25 @@ It saves what a later conversation needs and the code can't tell it: your prefer
 - `/memory import` brings in what Claude Code collected: its memory notes for this project and your `~/.claude/rules` and `~/.claude/CLAUDE.md`. Importing again adds nothing twice.
 
 Notes are markdown files with a short frontmatter, so they can be edited by hand: `~/.jinion/memory/` for user notes and `~/.jinion/projects/<project>/memory/` for project notes. The memory lives in Jinion and reaches Claude through an MCP server inside Jinion, so another backend can use the same notes.
+
+### Skills and MCP servers
+
+Jinion brings in your skills and MCP servers, without Claude Code's settings, hooks or CLAUDE.md files:
+
+| Source | Comes in as |
+| --- | --- |
+| `~/.claude/skills`, `~/.agents/skills` | Your skills, e.g. `/design` |
+| `.claude/skills`, `.agents/skills` in the project | Project skills; they take the short name before a user skill of the same name |
+| Plugins turned on in Claude Code | Their skills, commands and agents (`/vercel:deploy`) and MCP servers. Their hooks stay off, since they would add context of their own to every conversation |
+| `~/.jinion/mcp.json`, `claude mcp add` (`~/.claude.json`) | MCP servers |
+| The project's `.mcp.json` | MCP servers that stay off until you turn them on in `/mcp`, since anyone with commit access can change the file |
+| Your Claude account | Its claude.ai connectors, such as Linear or Figma |
+
+You pick skills and MCP prompts with `$`, apart from Jinion's own `/` commands: `$` lists them grouped, the project's first, then yours, then each plugin's and each MCP server's, and filters as you type. A skill goes anywhere in the message, several at once (`fix the navbar on mobile $make-responsive $design`), highlighted like a file mention. A message that starts with its only skill runs it as Claude Code's own skill command, with the rest as its arguments; otherwise the agent is told to load the skills you picked with its Skill tool, which shows as `Skill · design`. An MCP prompt runs with the rest of the message as its arguments. Typing `/design` out of habit puts `$design` back in the prompt. The agent also loads a skill by itself when one matches the task, and `/help` lists them all. MCP tools are listed to the model by name only until it loads them with tool search, so many servers cost little context: with sixteen connectors, about a thousand tokens of server instructions instead of some ninety thousand for their tools. Each call asks for permission like any other tool, with "don't ask again" for that tool in the project.
+
+`/mcp` lists every server with its state (connected and how many tools, connecting, not signed in, failed, off) and where it comes from; the highlighted one shows its URL or command, its error and its tools. `space` turns servers on or off and `enter` saves; the change applies from the next turn, as a new Claude Code process that carries on the same conversation. Servers turned off stay off in every project. A connector that isn't signed in offers an `authenticate` tool the agent can use, or you can connect it in your claude.ai settings.
+
+Jinion's own folders and `mcp.json` use the same formats as Claude Code and the `.agents` convention, so another backend can use them too. Claude Code reads skills folders only through its settings, so Jinion hands them over as small plugins in `~/.jinion/plugins/user` and `~/.jinion/projects/<project>/plugins/project`, with a link to each skill (`apps/cli/src/agent/claude/plugins.ts`).
 
 ### Accounts
 
@@ -112,7 +131,7 @@ File edits inside the project, read-only tools, web fetch and search, and a few 
 
 `rm`, `rmdir`, `mv`, `cp` and `sed` ask every time in Accept edits, without the "don't ask again" choice.
 
-Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai connectors are not loaded. Jinion writes the system prompt and adds the project's `AGENTS.md` and `CLAUDE.md` to it.
+Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Jinion writes the system prompt and adds the project's `AGENTS.md` and `CLAUDE.md` to it, and passes skills and MCP servers in itself (see [Skills and MCP servers](#skills-and-mcp-servers)).
 
 | Key | Action |
 | --- | --- |
@@ -122,7 +141,8 @@ Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai c
 | `esc` | Interrupt the running turn |
 | `ctrl+o` | Expand or collapse long output and pasted text |
 | paste | Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`; the agent gets all of it |
-| `/` | Command palette: built-in commands, skills and MCP prompts, filtered as you type |
+| `/` | Command palette: Jinion's own commands, filtered as you type |
+| `$` | Picks a skill or an MCP prompt, anywhere in the message, grouped by where it comes from |
 | `@` | Mentions a file or folder of the project, completed as you type; Claude Code reads it into the conversation, so the agent can work on it without opening it first |
 | `ctrl+c` | Interrupt, close a panel, clear the prompt, or quit |
 | mouse wheel, `pgup` / `pgdn` | Scroll the conversation; click `Jump to bottom` to follow again |
@@ -144,19 +164,22 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/remember [user] <note>` | Saves a note the agent keeps, for this project or, with `user`, for every project |
 | `/memory [import]` | Lists the agent's notes to open or forget them; `import` brings in Claude Code's |
 | `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
+| `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
 | `/exit` (`/quit`) | Quits |
 
-The demo agent also offers skills (`/review`, `/commit`, `/explain <path>`) and MCP prompts (`/github:pr-summary <number>`, `/linear:create-issue`). In the palette, Tab completes and Enter runs; commands with a required `<argument>` are inserted instead so you can type it.
+The demo agent also offers skills (`$review`, `$commit`, `$explain <path>`) and MCP prompts (`$pr-summary <number>`, `$create-issue`). In the palette, Tab completes and Enter runs; commands with a required `<argument>` are inserted instead so you can type it.
 
 ## How the CLI is wired
 
-- `agent/types.ts` defines the `Agent` interface: the `AgentEvent` stream every agent emits, the commands (skills, MCP prompts) it offers, and its models. An agent names itself (`Claude`), lists the models with their effort levels (`models()`), and switches between them (`select()`). The model picker, `/model`, `/effort`, the status line and the saved choice all work from that, so another backend such as Codex only implements those methods. `ScriptedAgent` plays `agent/scenarios.ts` through it.
-- `agent/claude/` implements it on the Claude Agent SDK. `agent.ts` keeps one Claude Code process per conversation and sets the tools and permissions, `events.ts` maps SDK messages to `AgentEvent`s (Claude Code's task tools become the todo list), and `prompt.ts` builds the system prompt.
+- `agent/types.ts` defines the `Agent` interface: the `AgentEvent` stream every agent emits, the commands (skills, MCP prompts) it offers, its MCP servers (`mcp`), and its models. An agent names itself (`Claude`), lists the models with their effort levels (`models()`), and switches between them (`select()`). The model picker, `/model`, `/effort`, the status line and the saved choice all work from that, so another backend such as Codex only implements those methods. `ScriptedAgent` plays `agent/scenarios.ts` through it.
+- `agent/claude/` implements it on the Claude Agent SDK. `agent.ts` keeps one Claude Code process per conversation and sets the tools and permissions, `events.ts` maps SDK messages to `AgentEvent`s (Claude Code's task tools become the todo list), `prompt.ts` builds the system prompt, `plugins.ts` hands over skills and plugins, and `mcp.ts` maps servers and commands between Jinion and Claude Code.
+- `mcp/config.ts` reads the MCP servers configured in files, and which are on, for any backend.
 - `context.ts` is the app's single control surface. `useJinion()` gives commands, panels and key handlers the same `actions` (submit, prompt, fill, notice, newSession, resume, …), the panel stack, the command registry and the session store.
-- `commands/` holds the `CommandRegistry`. Built-in commands live in `builtin.tsx`; agent commands are mapped in by `agentCommands()`. The registry also provides the palette's completion source and the help tabs, so a new command shows up everywhere at once.
+- `commands/` holds the `CommandRegistry` of Jinion's own commands, which live in `builtin.tsx`. The registry also provides the palette's completion source and the help tab, so a new command shows up everywhere at once.
+- `skills.ts` completes and highlights the agent's skills and MCP prompts (`Agent.commands()`) as `$` mentions; the agent turns the mentions into what its backend runs.
 - `panels/` holds the panels commands open (`HelpPanel` at the bottom, `ResumePanel` full screen), built from `@jinion/tui`'s `Panel`.
 - `session.ts` reduces events into conversation entries; `session-store.ts` defines `SessionStore`. `FileSessionStore` keeps each conversation as a JSON file, together with the agent's own session id that `Agent.reset(resume)` takes to continue it. The demo uses an in-memory store with sample conversations.
 - `ui/entry.tsx` maps entries to `@jinion/tui` components. `shortcuts.ts` is the list `/help` shows.

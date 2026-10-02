@@ -5,7 +5,7 @@ import { Highlight } from '../primitives/highlight.js';
 import { KeyHints } from '../primitives/panel.js';
 import { Rule } from '../primitives/rule.js';
 import { ListRow, SelectList, stepIndex } from '../primitives/select-list.js';
-import { MENTION } from './mentions.js';
+import { anyOf, MENTION } from './mentions.js';
 import { PASTED_TEXT, type PastedTexts } from './pasted-texts.js';
 import { PromptInput, type HiddenRows, type PromptInputProps } from './prompt-input.js';
 
@@ -19,6 +19,8 @@ export interface CompletionItem {
   description?: string;
   /** Right-aligned, e.g. where a command comes from. */
   tag?: string;
+  /** Items next to each other with the same group show under one header, e.g. the plugin a skill comes from. */
+  group?: string;
   /** Text that replaces the completed range. */
   insert: string;
   /** Overrides `Completion.submit` for this item. */
@@ -46,6 +48,8 @@ export interface ComposerProps
   pastes?: PastedTexts;
   /** On the rule under the prompt, e.g. the agent's mode. */
   footer?: ReactNode;
+  /** Highlighted like @-mentions, e.g. skills from `namedMention('$', names)`. */
+  mentions?: (RegExp | undefined)[];
 }
 
 /**
@@ -53,9 +57,11 @@ export interface ComposerProps
  * source has suggestions. Up/down move, Tab inserts, Enter accepts, Esc dismisses.
  * When the prompt scrolls, the rules say how many lines are out of view.
  */
-export function Composer({ completions = [], limit = 8, pastes, footer, ...input }: ComposerProps) {
+export function Composer({ completions = [], limit = 8, pastes, footer, mentions = [], ...input }: ComposerProps) {
   const theme = useTheme();
   const { value, onChange, onSubmit } = input;
+  const patterns = mentions.map((pattern) => pattern?.source ?? '').join('\n');
+  const highlight = useMemo(() => anyOf([MENTION, ...mentions]), [patterns]);
   const [hidden, setHidden] = useState<HiddenRows>({ above: 0, below: 0 });
   const [cursor, setCursor] = useState(value.length);
   const [index, setIndex] = useState(0);
@@ -105,7 +111,7 @@ export function Composer({ completions = [], limit = 8, pastes, footer, ...input
         onScroll={setHidden}
         onPaste={pastes && ((text) => pastes.add(text))}
         atoms={pastes && PASTED_TEXT}
-        highlight={MENTION}
+        highlight={highlight}
       />
       <Rule
         title={
@@ -134,32 +140,44 @@ interface CompletionListProps {
   submits: boolean;
 }
 
+/** Grouped items sit this far in, under their group's header. */
+const GROUP_INDENT = 2;
+
 function CompletionList({ completion, selected, limit, submits }: CompletionListProps) {
   const theme = useTheme();
+  const { items } = completion;
+  const indent = items.some((item) => item.group !== undefined) ? GROUP_INDENT : 0;
   const labelWidth = Math.min(
     32,
-    Math.max(...completion.items.map((item) => item.label.length + (item.hint ? item.hint.length + 1 : 0))),
+    Math.max(...items.map((item) => indent + item.label.length + (item.hint ? item.hint.length + 1 : 0))),
   );
 
   return (
     <Box flexDirection="column" paddingX={1}>
       <SelectList
-        items={completion.items}
+        items={items}
         selected={selected}
         limit={limit}
         renderItem={(item, state) => (
-          <ListRow
-            selected={state.selected}
-            labelWidth={labelWidth}
-            label={
-              <Text>
-                <Highlight text={item.label} positions={item.positions} />
-                {item.hint && <Text color={theme.muted}> {item.hint}</Text>}
-              </Text>
-            }
-            description={item.description}
-            aside={item.tag}
-          />
+          <>
+            {/* The first item in view repeats its group's header, so a scrolled list still says where it is. */}
+            {item.group !== undefined && (state.first || items[state.index - 1]?.group !== item.group) && (
+              <Text color={theme.muted}>{`  ${item.group}`}</Text>
+            )}
+            <ListRow
+              selected={state.selected}
+              labelWidth={labelWidth}
+              label={
+                <Text>
+                  {' '.repeat(indent)}
+                  <Highlight text={item.label} positions={item.positions} />
+                  {item.hint && <Text color={theme.muted}> {item.hint}</Text>}
+                </Text>
+              }
+              description={item.description}
+              aside={item.tag}
+            />
+          </>
         )}
       />
       <Box paddingLeft={2}>

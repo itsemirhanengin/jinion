@@ -6,6 +6,7 @@ import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
 import type { Agent } from './agent/types.js';
 import { App } from './app.js';
+import { McpConfig } from './mcp/config.js';
 import { MemoryStore } from './memory/store.js';
 import { resumeOf } from './session.js';
 import { loadProjectSettings, loadSettings } from './settings.js';
@@ -62,7 +63,7 @@ const account = loadSettings().accounts?.Claude;
 const memory = new MemoryStore(cwd);
 const agent: Agent = values.demo
   ? new ScriptedAgent(scenarios, demoCommands)
-  : new ClaudeAgent({ cwd, mode, account, memory });
+  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd) });
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;

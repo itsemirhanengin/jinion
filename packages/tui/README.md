@@ -95,7 +95,7 @@ Options are keyed, so focus and checks stay with an option when the list reorder
 
 ## Completions
 
-`Composer` is the prompt between dashed rules. Its `completions` are functions from the prompt text and cursor to a `Completion`: the range to replace and the items to offer. The first source with items wins, and the list appears under the prompt (up/down move, Tab inserts, Enter accepts, Esc dismisses). Slash commands are one source; `@` file mentions will be another.
+`Composer` is the prompt between dashed rules. Its `completions` are functions from the prompt text and cursor to a `Completion`: the range to replace and the items to offer. The first source with items wins, and the list appears under the prompt (up/down move, Tab inserts, Enter accepts, Esc dismisses). Slash commands are one source, `@` file mentions and `$` skills others. Items with a `group` show under its header, indented, and the first item in view repeats its header when the list scrolls.
 
 ```ts
 const slash: CompletionSource = (value) =>
@@ -148,9 +148,10 @@ Chat
 | `PermissionPanel` | asks before the agent runs something: yes, yes and don't ask again, no with a note |
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
-| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, and `pastes` turns long pastes into placeholders |
+| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, `pastes` turns long pastes into placeholders, and `mentions` highlights more than `@path`, e.g. skills |
 | `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), treats `atoms` as single characters, and colors `highlight` spans |
 | `MENTION`, `mention` | the `@path` pattern prompts and user messages highlight, and how a path is written as one |
+| `namedMention`, `anyOf` | a pattern for known names after a sigil, such as `$design`, so `$HOME` stays plain; and one pattern out of several |
 | `PastedTexts` | keeps long pastes as `[Pasted text #1 +42 lines]` and expands them when the prompt is sent |
 | `Working`, `StatusBar`, `Tag` | activity indicator and the status line, with items on the left and the right |
 

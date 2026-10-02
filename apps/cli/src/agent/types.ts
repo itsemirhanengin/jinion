@@ -95,11 +95,14 @@ export interface RunContext {
 
 export type PlanDecision = { approve: true; mode: AgentMode } | { approve: false; note?: string };
 
-/** A slash command the agent handles itself, such as a skill or an MCP server prompt. */
+/** A skill or an MCP server's prompt, which the user mentions as `$name` anywhere in a prompt. */
 export interface AgentCommand {
+  /** Unique, e.g. `design`, or `vercel:nextjs` when another skill already has the short name. */
   name: string;
   description: string;
   source: 'skill' | 'mcp';
+  /** Where it comes from, which pickers group by: `project`, `user`, a plugin such as `vercel` or an MCP server. */
+  group: string;
   argumentHint?: string;
 }
 
@@ -119,8 +122,11 @@ export interface Agent {
   setMode(mode: AgentMode): Promise<void>;
   /** The logins the user keeps for this backend. Backends with a single login leave it out. */
   readonly accounts?: AgentAccounts;
-  readonly commands: AgentCommand[];
-  /** Agent commands arrive as `/name args` prompts. */
+  /** The MCP servers the agent connects to. Backends without MCP leave it out. */
+  readonly mcp?: AgentMcp;
+  /** Skills and MCP prompts, which can change as servers connect, so the app asks again after each turn. */
+  commands(): Promise<AgentCommand[]>;
+  /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
   /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
   reset?(resume?: AgentResume): void;
@@ -165,6 +171,29 @@ export interface SignInOptions {
    * asks again, e.g. a code that didn't work.
    */
   onPrompt(prompt: string, answer: (text: string) => void, problem?: string): void;
+}
+
+export interface AgentMcp {
+  /** Every server the agent knows of, with how it is doing. */
+  servers(): Promise<McpServerInfo[]>;
+  /** Turns servers on or off, by `McpServerInfo.name`, from the next turn on; the conversation carries on. */
+  setEnabled(changes: Record<string, boolean>): Promise<void>;
+}
+
+export interface McpServerInfo {
+  /** What the backend calls it, e.g. `claude.ai Linear`. */
+  name: string;
+  /** What the user reads, e.g. `Linear`. */
+  label: string;
+  /** Where it comes from, e.g. `claude.ai`, `project` or `plugin vercel`. */
+  source: string;
+  enabled: boolean;
+  /** `off` while disabled; `needs-auth` until the user signs in to the service. */
+  status: 'connected' | 'pending' | 'needs-auth' | 'failed' | 'off';
+  /** The command it runs or the URL it talks to. */
+  target?: string;
+  error?: string;
+  tools: string[];
 }
 
 export interface AgentResume {

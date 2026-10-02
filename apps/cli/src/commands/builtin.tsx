@@ -2,6 +2,7 @@ import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
 import { importClaudeMemory } from '../memory/import.js';
 import { AccountPicker } from '../panels/account.js';
+import { McpPanel } from '../panels/mcp.js';
 import { MemoryPanel } from '../panels/memory.js';
 import { ModePicker } from '../panels/mode.js';
 import { findModel, ModelPicker } from '../panels/model.js';
@@ -25,7 +26,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'model',
     description: 'Switch the model and its effort',
-    source: 'builtin',
     argumentHint: '[model]',
     run: (app, args) => {
       if (!args.trim()) return openModelPicker(app);
@@ -41,7 +41,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'effort',
     description: 'Change how hard the model thinks',
-    source: 'builtin',
     argumentHint: '[level]',
     run: (app, args) => {
       if (!args.trim()) return openModelPicker(app);
@@ -59,14 +58,12 @@ export const builtinCommands: Command[] = [
   {
     name: 'help',
     description: 'Shortcuts, commands, skills and MCP prompts',
-    source: 'builtin',
     argumentHint: '[tab]',
     run: (app, args) => app.panels.open({ id: 'help', placement: 'bottom', element: <HelpPanel topic={args} /> }),
   },
   {
     name: 'resume',
     description: 'Pick up a previous conversation',
-    source: 'builtin',
     argumentHint: '[search]',
     run: (app, args) =>
       app.panels.open({ id: 'resume', placement: 'fullscreen', element: <ResumePanel query={args} /> }),
@@ -74,7 +71,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'mode',
     description: 'How freely the agent acts: manual, accept edits, plan or auto (shift+tab)',
-    source: 'builtin',
     argumentHint: '[mode]',
     run: (app, args) => {
       const wanted = args.trim().toLowerCase();
@@ -92,7 +88,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'account',
     description: 'Switch between your logins, or add one (account add <name>)',
-    source: 'builtin',
     argumentHint: '[name | add <name>]',
     run: (app, args) => {
       if (!app.accounts.manager) return app.actions.notice(`${app.model.agent} has a single login.`, 'warning');
@@ -107,7 +102,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'remember',
     description: 'Save a note the agent keeps in later conversations (remember user … for every project)',
-    source: 'builtin',
     argumentHint: '<note>',
     run: (app, args) => {
       const [first = '', ...rest] = args.trim().split(/\s+/);
@@ -128,7 +122,6 @@ export const builtinCommands: Command[] = [
   {
     name: 'memory',
     description: 'The notes the agent keeps; memory import brings in Claude Code\'s',
-    source: 'builtin',
     argumentHint: '[import]',
     run: (app, args) => {
       if (args.trim() !== 'import') return app.panels.open({ id: 'memory', placement: 'bottom', element: <MemoryPanel /> });
@@ -143,29 +136,34 @@ export const builtinCommands: Command[] = [
     },
   },
   {
+    name: 'mcp',
+    description: 'The MCP servers the agent connects to; turn them on or off',
+    run: (app) => {
+      const { mcp } = app;
+      if (!mcp) return app.actions.notice(`${app.model.agent} has no MCP servers.`, 'warning');
+      app.panels.open({ id: 'mcp', placement: 'bottom', element: <McpPanel mcp={mcp} /> });
+    },
+  },
+  {
     name: 'statusline',
     description: 'Choose what the status line shows',
-    source: 'builtin',
     run: (app) => app.panels.open({ id: 'statusline', placement: 'bottom', element: <StatusLinePanel /> }),
   },
   {
     name: 'clear',
     aliases: ['new'],
     description: 'Save this conversation and start a new one',
-    source: 'builtin',
     run: (app) => app.actions.newSession(),
   },
   {
     name: 'expand',
     description: 'Expand or collapse long output (ctrl+o)',
-    source: 'builtin',
     run: (app) => app.actions.toggleExpanded(),
   },
   {
     name: 'exit',
     aliases: ['quit'],
     description: 'Quit jinion',
-    source: 'builtin',
     run: (app) => app.actions.exit(),
   },
 ];

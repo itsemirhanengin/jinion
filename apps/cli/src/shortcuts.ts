@@ -1,6 +1,7 @@
 /** The keys jinion understands, as listed in `/help`. Keep in sync with the handlers that implement them. */
 export const SHORTCUTS: [keys: string, action: string][] = [
-  ['/', 'commands, skills, MCP'],
+  ['/', 'commands'],
+  ['$', 'use a skill or MCP prompt'],
   ['@', 'mention a file or folder'],
   ['enter', 'send'],
   ['shift+enter', 'new line'],

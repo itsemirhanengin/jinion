@@ -25,9 +25,9 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent, AgentAccount, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
+import type { Agent, AgentAccount, AgentCommand, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
-import { agentCommands, CommandRegistry } from './commands/registry.js';
+import { CommandRegistry } from './commands/registry.js';
 import {
   JinionContext,
   modelLabel,
@@ -64,6 +64,7 @@ import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } fr
 import { findSegment, type StatusData } from './status/segments.js';
 import { EntryView } from './ui/entry.js';
 import { fileCompletion, useProjectFiles } from './files.js';
+import { skillCompletion, skillMention } from './skills.js';
 
 export interface AppProps {
   agent: Agent;
@@ -88,10 +89,17 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const controller = useRef<AbortController>(undefined);
   const busy = session.busySince !== undefined;
 
-  const commands = useMemo(() => new CommandRegistry([...builtinCommands, ...agentCommands(agent.commands)]), [agent]);
+  const commands = useMemo(() => new CommandRegistry(builtinCommands), []);
+  // Skills and MCP prompts are mentioned with `$`, apart from Jinion's own commands.
+  const [skills, setSkills] = useState<AgentCommand[]>([]);
+  const reloadCommands = () => void agent.commands().then(setSkills, () => {});
+  const mention = useMemo(() => skillMention(skills), [skills]);
   // Listed again after each turn, which may have added or removed files.
   const files = useProjectFiles(info.cwd, session.busySince === undefined);
-  const completions = useMemo(() => [commands.completion(), fileCompletion(files)], [commands, files]);
+  const completions = useMemo(
+    () => [commands.completion(), skillCompletion(skills), fileCompletion(files)],
+    [commands, skills, files],
+  );
 
   const notice = (text: string, tone?: NoticeTone) => dispatch({ type: 'notice', text, tone });
 
@@ -106,6 +114,10 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     agent.models().then(setModels, () => setModels([]));
     agent.accounts?.active().then(setIdentity, () => setIdentity(undefined));
   }, [agent, account]);
+  // MCP servers connect in the background and can bring prompts, so the commands are asked for after each turn too.
+  useEffect(() => {
+    if (!busy) reloadCommands();
+  }, [agent, account, busy]);
   const model: ModelState = {
     agent: agent.name,
     selection,
@@ -298,6 +310,11 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
       const [name = '', ...args] = text.slice(1).split(/\s+/);
       const command = commands.find(name);
+      if (!command && skills.some((skill) => skill.name === name)) {
+        // Typed out of habit: it goes back in the prompt the new way, to send as it is or to add to.
+        setDraft(`$${text.slice(1)}`);
+        return notice(`Skills go after $ now, anywhere in the message: $${name}. Press enter to send it.`, 'muted');
+      }
       if (!command) return notice(`Unknown command /${name}. Type / to see what is available.`, 'error');
       command.run(jinion, pastes.expand(args.join(' ')));
     },
@@ -315,6 +332,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       setStatusPreview(undefined);
       saveStatusLine(items);
     },
+    reloadCommands,
     toggleExpanded,
     exit: quit,
   };
@@ -325,9 +343,11 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     modes: { current: mode, available: agent.modes },
     status: { items: statusItems, data: statusData },
     accounts: { manager: agent.accounts, current: account, identity, seen: seenLimits },
+    mcp: agent.mcp,
     actions,
     panels,
     commands,
+    skills: { list: skills, mention },
     sessions,
     memory,
     sessionId: session.id,
@@ -383,7 +403,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
             onSubmit={actions.submit}
             history={submitted}
             completions={completions}
-            placeholder={busy ? 'jinion is working… esc to interrupt' : 'Ask jinion anything, or type / for commands'}
+            mentions={[mention]}
+            placeholder={busy ? 'jinion is working… esc to interrupt' : 'Ask jinion anything · / commands · $ skills · @ files'}
             footer={
               agent.modes.length > 1 && (
                 <Text>

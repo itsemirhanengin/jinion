@@ -13,6 +13,8 @@ export interface Settings {
   statusLine?: StatusItem[];
   /** The account last switched to for each agent, keyed by `Agent.name`. */
   accounts?: Record<string, string>;
+  /** MCP servers turned off in `/mcp`, by name, in every project. */
+  mcp?: { disabled?: string[] };
 }
 
 const file = () => join(jinionHome(), 'settings.json');
@@ -31,6 +33,8 @@ export function saveAccount(agent: string, account: string) {
   update({ accounts: { ...loadSettings().accounts, [agent]: account } });
 }
 
+export const saveMcpSettings = (mcp: Settings['mcp']) => update({ mcp });
+
 /** The plan limits last seen for each account, so accounts not in use still show how full they were. */
 export type SeenLimits = Record<string, { windows: LimitWindow[]; at: number }>;
 
@@ -46,6 +50,8 @@ export const saveLimits = (limits: SeenLimits) => writeJson(limitsFile(), limits
 export interface ProjectSettings {
   /** The mode last picked in this project. */
   mode?: AgentMode;
+  /** Servers from the project's `.mcp.json` the user turned on. */
+  mcp?: { approved?: string[] };
 }
 
 const projectFile = (cwd: string) => join(projectDir(cwd), 'settings.json');

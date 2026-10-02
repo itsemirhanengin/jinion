@@ -14,33 +14,66 @@ import {
   useTheme,
   type KeyHint,
 } from '@jinion/tui';
-import type { Command } from '../commands/registry.js';
-import { useJinion } from '../context.js';
+import type { AgentCommand } from '../agent/types.js';
+import { useJinion, type Jinion } from '../context.js';
 import { SHORTCUTS } from '../shortcuts.js';
+import { skillGroup, sortSkills } from '../skills.js';
 
 const SHORTCUT_COLUMNS = 3;
 
-/** `/help`: a General tab with shortcuts, then one tab per command source. */
+/** A row of a tab: one of Jinion's commands, or a skill or MCP prompt to mention. */
+interface HelpItem {
+  label: string;
+  hint?: string;
+  description: string;
+  aside?: string;
+  pick(app: Jinion): void;
+}
+
+/** `/help`: a General tab with shortcuts, then Jinion's commands, and the agent's skills and MCP prompts. */
 export function HelpPanel({ topic = '' }: { topic?: string }) {
   const app = useJinion();
   const { close } = usePanel();
-  const groups = app.commands.groups();
+  const skills = sortSkills(app.skills.list);
+  const mention = (skill: AgentCommand): HelpItem => ({
+    label: `$${skill.name}`,
+    hint: skill.argumentHint,
+    description: skill.description,
+    aside: skillGroup(skill),
+    pick: (app) => app.actions.fill(`$${skill.name} `),
+  });
+  const groups = [
+    {
+      label: 'Commands',
+      items: app.commands.list().map(
+        (command): HelpItem => ({
+          label: `/${command.name}`,
+          hint: command.argumentHint,
+          description: command.description,
+          aside: command.aliases?.map((alias) => `/${alias}`).join(' '),
+          pick: (app) =>
+            command.argumentHint?.startsWith('<') ? app.actions.fill(`/${command.name} `) : command.run(app, ''),
+        }),
+      ),
+    },
+    { label: 'Skills', items: skills.filter((skill) => skill.source === 'skill').map(mention) },
+    { label: 'MCP prompts', items: skills.filter((skill) => skill.source === 'mcp').map(mention) },
+  ].filter((group) => group.items.length > 0);
   const tabs = ['General', ...groups.map((group) => group.label)];
   const [tab] = useTabs(tabs.length, {
-    initial: Math.max(0, tabs.findIndex((label) => label.toLowerCase() === topic.trim().toLowerCase())),
+    initial: Math.max(0, tabs.findIndex((label) => label.toLowerCase().startsWith(topic.trim().toLowerCase() || '\0'))),
   });
-  const commands = tab === 0 ? [] : groups[tab - 1]!.commands;
-  const [selected, setSelected] = useListNavigation(commands.length, { isActive: tab > 0 });
+  const items = tab === 0 ? [] : groups[tab - 1]!.items;
+  const [selected, setSelected] = useListNavigation(items.length, { isActive: tab > 0 });
 
   useEffect(() => setSelected(0), [tab, setSelected]);
 
   useInput((_, key) => {
     if (key.escape) return close();
-    const command = commands[selected];
-    if (!key.return || !command) return;
+    const item = items[selected];
+    if (!key.return || !item) return;
     close();
-    if (command.argumentHint?.startsWith('<')) app.actions.fill(`/${command.name} `);
-    else command.run(app, '');
+    item.pick(app);
   });
 
   const hints: KeyHint[] =
@@ -50,7 +83,8 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
           ['Esc', 'close'],
         ]
       : [
-          ['Enter', 'run'],
+          // Skills and prompts go into the prompt, to send with a message.
+          ['Enter', groups[tab - 1]?.label === 'Commands' ? 'run' : 'insert'],
           ['Up/Down', 'move'],
           ['Left/Right', 'switch tab'],
           ['Esc', 'close'],
@@ -58,7 +92,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
 
   return (
     <Panel title="Help" header={<Tabs tabs={tabs} active={tab} />} hints={hints}>
-      {tab === 0 ? <General /> : <CommandList commands={commands} selected={selected} />}
+      {tab === 0 ? <General /> : <ItemList items={items} selected={selected} />}
     </Panel>
   );
 }
@@ -95,28 +129,28 @@ function General() {
   );
 }
 
-function CommandList({ commands, selected }: { commands: Command[]; selected: number }) {
+function ItemList({ items, selected }: { items: HelpItem[]; selected: number }) {
   const theme = useTheme();
-  const label = (command: Command) => `/${command.name}${command.argumentHint ? ` ${command.argumentHint}` : ''}`;
-  const labelWidth = Math.min(32, Math.max(...commands.map((command) => label(command).length)));
+  const width = (item: HelpItem) => item.label.length + (item.hint ? item.hint.length + 1 : 0);
+  const labelWidth = Math.min(32, Math.max(...items.map(width)));
 
   return (
     <SelectList
-      items={commands}
+      items={items}
       selected={selected}
       limit={10}
-      renderItem={(command, state) => (
+      renderItem={(item, state) => (
         <ListRow
           selected={state.selected}
           labelWidth={labelWidth}
           label={
             <Text>
-              /{command.name}
-              {command.argumentHint && <Text color={theme.muted}> {command.argumentHint}</Text>}
+              {item.label}
+              {item.hint && <Text color={theme.muted}> {item.hint}</Text>}
             </Text>
           }
-          description={command.description}
-          aside={command.aliases?.map((alias) => `/${alias}`).join(' ')}
+          description={item.description}
+          aside={item.aside}
         />
       )}
     />

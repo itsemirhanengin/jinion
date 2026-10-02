@@ -19,6 +19,7 @@ import {
   type TreeNode,
 } from '@jinion/tui';
 import type { FileRef } from '../agent/types.js';
+import { useJinion } from '../context.js';
 import type { Entry } from '../session.js';
 import { Banner } from './banner.js';
 
@@ -51,7 +52,7 @@ function EntryBody({ entry }: { entry: Entry }) {
     case 'banner':
       return <Banner />;
     case 'user':
-      return <UserMessage text={expanded && entry.prompt ? entry.prompt : entry.text} />;
+      return <UserEntry text={expanded && entry.prompt ? entry.prompt : entry.text} />;
     case 'thinking':
       return <Thinking text={entry.text} />;
     case 'text':
@@ -61,6 +62,12 @@ function EntryBody({ entry }: { entry: Entry }) {
     case 'tool':
       return <ToolView entry={entry} />;
   }
+}
+
+/** Skills show highlighted, as they were in the prompt. */
+function UserEntry({ text }: { text: string }) {
+  const { skills } = useJinion();
+  return <UserMessage text={text} mentions={[skills.mention]} />;
 }
 
 function ToolView({ entry }: { entry: ToolEntry }) {

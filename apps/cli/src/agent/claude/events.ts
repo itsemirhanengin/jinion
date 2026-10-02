@@ -9,6 +9,7 @@ import type {
 import type { Question, QuestionAnswer, TodoItem } from '@jinion/tui';
 import type { AgentEvent, AgentMode, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
 import { MEMORY_SERVER } from './memory.js';
+import { skillLabel } from './plugins.js';
 
 type Input = Record<string, unknown>;
 
@@ -169,6 +170,10 @@ export class ClaudeEvents {
         return { name: 'other', input: { title: 'Agent', detail: text(input.description) } };
       case 'ExitPlanMode':
         return { name: 'plan', input: { plan: text(input.plan) } };
+      case 'Skill':
+        return { name: 'other', input: { title: 'Skill', detail: skillLabel(text(input.skill)) } };
+      case 'ToolSearch':
+        return { name: 'other', input: { title: 'Load tools', detail: toolQuery(text(input.query)) } };
       case `mcp__${MEMORY_SERVER}__remember`:
         return { name: 'memory', input: { action: 'remember', detail: `${text(input.scope)} · ${text(input.title)}` } };
       case `mcp__${MEMORY_SERVER}__recall`: {
@@ -424,10 +429,21 @@ function resultText(content: unknown) {
     .join('\n');
 }
 
-/** `mcp__github__create_issue` reads as `github:create_issue`. */
+/**
+ * `mcp__github__create_issue` reads as `github:create_issue`, without the prefix of a claude.ai connector
+ * (`claude_ai_Linear`) or a plugin's server (`plugin_vercel_vercel`).
+ */
 export function toolTitle(name: string) {
   const mcp = /^mcp__(.+?)__(.+)$/.exec(name);
-  return mcp ? `${mcp[1]}:${mcp[2]}` : name;
+  if (!mcp) return name;
+  const server = mcp[1]!.replace(/^claude_ai_/, '').replace(/^plugin_[^_]+_/, '');
+  return `${server}:${mcp[2]}`;
+}
+
+/** `select:mcp__context7__query-docs,mcp__context7__resolve-library-id` reads as the tools' titles. */
+function toolQuery(query: string) {
+  if (!query.startsWith('select:')) return query;
+  return query.slice('select:'.length).split(',').map((name) => toolTitle(name.trim())).join(', ');
 }
 
 const SUMMARY_KEYS = ['url', 'query', 'file_path', 'path', 'command', 'description', 'prompt'];

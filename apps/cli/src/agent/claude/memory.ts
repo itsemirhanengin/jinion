@@ -17,6 +17,8 @@ export function memoryServer(store: MemoryStore) {
   return createSdkMcpServer({
     name: MEMORY_SERVER,
     version: '0.1.0',
+    // The prompt counts on these tools, so they are never deferred behind ToolSearch like other MCP tools.
+    alwaysLoad: true,
     tools: [
       tool(
         'remember',
