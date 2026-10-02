@@ -29,9 +29,17 @@ export interface Tools {
   edit: { input: { path: string; patch: string; created?: boolean }; result: { patch?: string } };
   todo: { input: { groups: TodoGroup[] }; result: Record<string, never> };
   ask: { input: { questions: Question[] }; result: { answers: QuestionAnswer[] } };
+  /** A plan the agent wants approved before it changes anything. */
+  plan: { input: { plan: string }; result: Record<string, never> };
   /** Any tool without a dedicated view, such as MCP tools or subagents. */
   other: { input: { title: string; detail?: string }; result: Record<string, never> };
 }
+
+/**
+ * How freely the agent acts: `manual` asks before changes, `edits` changes project files without asking, `plan` only
+ * reads until a plan is approved, and `auto` lets the backend's own safety review decide what needs asking.
+ */
+export type AgentMode = 'manual' | 'edits' | 'plan' | 'auto';
 
 export type ToolName = keyof Tools;
 
@@ -59,7 +67,9 @@ export type AgentEvent =
   /** The backend's own id for the conversation, which `Agent.reset` takes to continue it. */
   | { type: 'session'; id: string }
   /** How much of the user's plan is used up. Belongs to the account, not to the conversation. */
-  | { type: 'limits'; windows: LimitWindow[] };
+  | { type: 'limits'; windows: LimitWindow[] }
+  /** The mode the agent is really in, e.g. after a plan was approved or when a mode isn't available. */
+  | { type: 'mode'; mode: AgentMode };
 
 /** One usage window of the user's plan, such as the 5-hour limit. */
 export interface LimitWindow {
@@ -77,7 +87,11 @@ export interface RunContext {
   ask(questions: Question[]): Promise<QuestionAnswer[]>;
   /** Asks the user whether the agent may go ahead. Rejects when the turn is interrupted instead. */
   approve(request: PermissionRequest): Promise<PermissionDecision>;
+  /** Asks the user to approve the plan shown in the conversation, offering these modes to carry on in. */
+  approvePlan(modes: AgentMode[]): Promise<PlanDecision>;
 }
+
+export type PlanDecision = { approve: true; mode: AgentMode } | { approve: false; note?: string };
 
 /** A slash command the agent handles itself, such as a skill or an MCP server prompt. */
 export interface AgentCommand {
@@ -96,6 +110,11 @@ export interface Agent {
   models(): Promise<ModelOption[]>;
   /** Takes effect from the next request, also in a conversation that is already running. */
   select(selection: ModelSelection): Promise<void>;
+  readonly mode: AgentMode;
+  /** The modes it offers, in the order shift+tab goes through them. */
+  readonly modes: AgentMode[];
+  /** Takes effect right away, also in a running turn. */
+  setMode(mode: AgentMode): Promise<void>;
   readonly commands: AgentCommand[];
   /** Agent commands arrive as `/name args` prompts. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;

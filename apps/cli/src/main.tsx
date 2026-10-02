@@ -7,7 +7,7 @@ import { ScriptedAgent } from './agent/scripted.js';
 import type { Agent } from './agent/types.js';
 import { App } from './app.js';
 import { resumeOf } from './session.js';
-import { loadSettings } from './settings.js';
+import { loadProjectSettings, loadSettings } from './settings.js';
 import { demoSessions, FileSessionStore, MemorySessionStore, type SessionStore } from './session-store.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
@@ -55,7 +55,9 @@ if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
 // Package managers run scripts from the package directory; INIT_CWD is where the user invoked them.
 const cwd = process.env.INIT_CWD ?? process.cwd();
 
-const agent: Agent = values.demo ? new ScriptedAgent(scenarios, demoCommands) : new ClaudeAgent({ cwd });
+// Each project starts in the mode it was last left in.
+const { mode } = loadProjectSettings(cwd);
+const agent: Agent = values.demo ? new ScriptedAgent(scenarios, demoCommands) : new ClaudeAgent({ cwd, mode });
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;

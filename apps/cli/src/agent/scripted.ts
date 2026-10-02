@@ -1,5 +1,5 @@
 import type { ModelOption, ModelSelection, Question, QuestionAnswer } from '@jinion/tui';
-import type { Agent, AgentCommand, AgentEvent, RunContext, ToolCall, ToolName, Tools, Usage } from './types.js';
+import type { Agent, AgentCommand, AgentEvent, AgentMode, RunContext, ToolCall, ToolName, Tools, Usage } from './types.js';
 
 export interface Scenario {
   title: string | ((prompt: string) => string);
@@ -12,6 +12,9 @@ export interface Scenario {
 export class ScriptedAgent implements Agent {
   readonly name = 'Demo';
   selection: ModelSelection = { model: 'scripted-demo' };
+  /** The scenarios play the same in any mode, so there is only one. */
+  readonly mode: AgentMode = 'edits';
+  readonly modes: AgentMode[] = ['edits'];
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
 
   constructor(
@@ -39,6 +42,8 @@ export class ScriptedAgent implements Agent {
   async select(selection: ModelSelection) {
     this.selection = selection;
   }
+
+  async setMode() {}
 }
 
 let toolSequence = 0;

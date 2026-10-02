@@ -1,6 +1,9 @@
 import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
+import { ModePicker } from '../panels/mode.js';
 import { findModel, ModelPicker } from '../panels/model.js';
+import { MODES } from '../modes.js';
+import type { AgentMode } from '../agent/types.js';
 import { ResumePanel } from '../panels/resume.js';
 import { StatusLinePanel } from '../panels/statusline.js';
 import type { Command } from './registry.js';
@@ -64,6 +67,24 @@ export const builtinCommands: Command[] = [
     argumentHint: '[search]',
     run: (app, args) =>
       app.panels.open({ id: 'resume', placement: 'fullscreen', element: <ResumePanel query={args} /> }),
+  },
+  {
+    name: 'mode',
+    description: 'How freely the agent acts: manual, accept edits, plan or auto (shift+tab)',
+    source: 'builtin',
+    argumentHint: '[mode]',
+    run: (app, args) => {
+      const wanted = args.trim().toLowerCase();
+      if (!wanted) return app.panels.open({ id: 'mode', placement: 'bottom', element: <ModePicker /> });
+      const mode = app.modes.available.find(
+        (candidate) => candidate === wanted || MODES[candidate].name.toLowerCase() === wanted,
+      ) as AgentMode | undefined;
+      if (!mode) {
+        const names = app.modes.available.join(', ');
+        return app.actions.notice(`No mode "${args.trim()}". Pick one of ${names}, or type /mode.`, 'error');
+      }
+      app.actions.selectMode(mode);
+    },
   },
   {
     name: 'statusline',

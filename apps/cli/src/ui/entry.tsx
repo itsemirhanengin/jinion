@@ -3,6 +3,7 @@ import {
   AskResult,
   Box,
   EditBlock,
+  Frame,
   Markdown,
   Notice,
   ShellBlock,
@@ -10,6 +11,7 @@ import {
   Thinking,
   TodoBlock,
   ToolLine,
+  toneOf,
   UserMessage,
   useAnimation,
   useTheme,
@@ -32,7 +34,7 @@ export const EntryView = memo(function EntryView({ entry }: { entry: Entry }) {
   const fullWidth =
     entry.kind === 'banner' ||
     entry.kind === 'user' ||
-    (entry.kind === 'tool' && ['bash', 'edit', 'todo', 'ask'].includes(entry.run.name));
+    (entry.kind === 'tool' && ['bash', 'edit', 'todo', 'ask', 'plan'].includes(entry.run.name));
 
   return (
     <Box flexDirection="column" marginTop={1} paddingX={fullWidth ? 0 : 1}>
@@ -160,6 +162,12 @@ function ToolView({ entry }: { entry: ToolEntry }) {
     case 'ask':
       return (
         <AskResult questions={run.input.questions} answers={run.result?.answers ?? []} cancelled={status === 'cancelled'} />
+      );
+    case 'plan':
+      return (
+        <Frame title={<Text bold>Plan</Text>} tone={toneOf(status)} lead={1}>
+          <Markdown text={run.input.plan} />
+        </Frame>
       );
     case 'other':
       return (

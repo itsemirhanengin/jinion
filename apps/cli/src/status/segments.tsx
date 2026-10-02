@@ -1,8 +1,9 @@
 import { basename } from 'node:path';
 import type { ReactNode } from 'react';
 import { countChanges, Meter, parsePatch, Tag, Text, type Theme } from '@jinion/tui';
-import type { LimitWindow } from '../agent/types.js';
+import type { AgentMode, LimitWindow } from '../agent/types.js';
 import type { AppInfo, ModelState } from '../context.js';
+import { modeColor, MODES } from '../modes.js';
 import { tildify } from '../paths.js';
 import type { Entry, Session } from '../session.js';
 import type { GitStatus } from './git.js';
@@ -11,6 +12,7 @@ import type { GitStatus } from './git.js';
 export interface StatusData {
   info: AppInfo;
   model: ModelState;
+  mode: AgentMode;
   session: Session;
   git?: GitStatus;
   limits?: LimitWindow[];
@@ -57,6 +59,12 @@ export const SEGMENTS: Segment[] = [
       const effort = style === 'effort' && model.selection.effort;
       return <Tag name="M" value={effort ? `${model.name} · ${effort}` : model.name} color={theme.status.model} />;
     },
+  },
+  {
+    id: 'mode',
+    name: 'Mode',
+    description: 'How freely the agent acts; it also shows under the prompt',
+    render: ({ mode, theme }) => <Text color={modeColor(theme, mode)}>{MODES[mode].name}</Text>,
   },
   {
     id: 'directory',

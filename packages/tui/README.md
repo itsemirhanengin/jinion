@@ -144,10 +144,11 @@ Chat
 | `ShellBlock`, `EditBlock` | command and edit frames |
 | `TodoBlock`, `TodoPanel` | the todo list as a frame and as the pinned panel above the prompt |
 | `AskPanel` | questions that take the prompt's place, as a single choice or, with `multiple`, any number of answers; `n` adds a note, "Other" takes free text |
+| `PlanPanel` | approves a plan shown above it, offering ways to carry on, or sends it back with a note |
 | `PermissionPanel` | asks before the agent runs something: yes, yes and don't ask again, no with a note |
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
-| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, and `pastes` turns long pastes into placeholders |
+| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, and `pastes` turns long pastes into placeholders |
 | `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), and treats `atoms` as single characters |
 | `PastedTexts` | keeps long pastes as `[Pasted text #1 +42 lines]` and expands them when the prompt is sent |
 | `Working`, `StatusBar`, `Tag` | activity indicator and the status line, with items on the left and the right |

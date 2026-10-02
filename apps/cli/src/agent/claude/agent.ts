@@ -3,13 +3,16 @@ import {
   query,
   type CanUseTool,
   type EffortLevel,
+  type HookCallback,
+  type PermissionMode,
   type Query,
   type SDKMessage,
   type SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import type { ModelOption, ModelSelection } from '@jinion/tui';
-import type { Agent, AgentCommand, AgentEvent, AgentResume, RunContext } from '../types.js';
+import type { Agent, AgentCommand, AgentEvent, AgentMode, AgentResume, RunContext } from '../types.js';
 import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
+import { guardReason } from './guard.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
 import { systemPrompt } from './prompt.js';
 
@@ -28,7 +31,16 @@ const TOOLS = [
   'AskUserQuestion',
   'WebFetch',
   'WebSearch',
+  'ExitPlanMode',
 ];
+
+/** Claude Code's permission mode for each of Jinion's modes. */
+export const PERMISSION_MODES: Record<AgentMode, PermissionMode> = {
+  manual: 'default',
+  edits: 'acceptEdits',
+  plan: 'plan',
+  auto: 'auto',
+};
 
 /** Runs without asking. Edits inside the project are allowed by `acceptEdits`; anything else asks the user. */
 const ALLOWED = [
@@ -48,8 +60,13 @@ const ALLOWED = [
   'Bash(npm run *)',
 ];
 
-/** `acceptEdits` would also run these filesystem commands without asking; ask rules make them ask every time. */
+/**
+ * `acceptEdits` would also run these filesystem commands without asking; ask rules make them ask every time. Auto
+ * mode leaves them to its classifier instead, which knows when a removal throws work away.
+ */
 const ASK = ['Bash(rm *)', 'Bash(rmdir *)', 'Bash(mv *)', 'Bash(cp *)', 'Bash(sed *)'];
+
+const askRules = (mode: AgentMode) => (mode === 'edits' ? ASK : []);
 
 /** Read-only tools that are allowed in `canUseTool`, since bare allow rules would bypass it. */
 const READ_ONLY = new Set(['WebFetch', 'WebSearch']);
@@ -58,6 +75,8 @@ export interface ClaudeAgentOptions {
   cwd: string;
   /** A Claude Code model alias or id, such as `opus` or `sonnet`, and optionally an effort level. Opus by default. */
   selection?: ModelSelection;
+  /** `edits` by default. */
+  mode?: AgentMode;
 }
 
 interface Conversation {
@@ -71,7 +90,9 @@ interface Conversation {
 export class ClaudeAgent implements Agent {
   readonly name = 'Claude';
   readonly commands: AgentCommand[] = [];
+  readonly modes: AgentMode[] = ['manual', 'edits', 'plan', 'auto'];
   private current: ModelSelection;
+  private currentMode: AgentMode;
   private modelList?: Promise<ModelOption[]>;
   private conversation?: Conversation;
   /** The conversation the next process continues. */
@@ -84,11 +105,24 @@ export class ClaudeAgent implements Agent {
 
   constructor(private readonly options: ClaudeAgentOptions) {
     this.current = options.selection ?? { model: 'opus' };
+    this.currentMode = options.mode ?? 'edits';
     this.permissions = new ProjectPermissions(options.cwd);
   }
 
   get selection() {
     return this.current;
+  }
+
+  get mode() {
+    return this.currentMode;
+  }
+
+  async setMode(mode: AgentMode) {
+    this.currentMode = mode;
+    const running = this.conversation?.query;
+    if (!running) return;
+    await running.setPermissionMode(PERMISSION_MODES[mode]);
+    await running.applyFlagSettings({ permissions: { ask: askRules(mode) } });
   }
 
   /** Asks Claude Code, which knows what the account can use. The process it starts takes the next prompt. */
@@ -175,6 +209,7 @@ export class ClaudeAgent implements Agent {
   private start(): Conversation {
     const { cwd } = this.options;
     const { model, effort } = this.current;
+    const mode = this.currentMode;
     const resume = this.resume;
     this.resume = undefined;
     // Forced colors would put escape codes into command output the model reads.
@@ -194,11 +229,12 @@ export class ClaudeAgent implements Agent {
         // Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai connectors stay out.
         settingSources: [],
         strictMcpConfig: true,
-        settings: { disableClaudeAiConnectors: true, permissions: { ask: ASK } },
+        settings: { disableClaudeAiConnectors: true, permissions: { ask: askRules(mode) } },
         tools: TOOLS,
         allowedTools: [...ALLOWED, ...saved.filter((rule) => rule.includes('('))],
-        permissionMode: 'acceptEdits',
+        permissionMode: PERMISSION_MODES[mode],
         canUseTool: this.canUseTool,
+        hooks: { PreToolUse: [{ hooks: [this.guard] }] },
         includePartialMessages: true,
         // Background tasks finish after the turn and start turns of their own, which Jinion can't follow yet.
         env: { ...env, CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
@@ -217,6 +253,14 @@ export class ClaudeAgent implements Agent {
     };
   }
 
+  /** Runs before Claude Code's own checks, so what Jinion always asks about is asked in every mode. */
+  private readonly guard: HookCallback = async (input) => {
+    if (input.hook_event_name !== 'PreToolUse') return {};
+    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Record<string, unknown>, this.options.cwd);
+    if (!reason) return {};
+    return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };
+  };
+
   private readonly canUseTool: CanUseTool = async (name, input, options) => {
     if (READ_ONLY.has(name) || this.allowedTools.has(name)) return { behavior: 'allow', updatedInput: input };
     const turn = this.turn;
@@ -230,6 +274,26 @@ export class ClaudeAgent implements Agent {
       } catch {
         return { behavior: 'deny', message: 'The user dismissed the question.', interrupt: true };
       }
+    }
+
+    if (name === 'ExitPlanMode') {
+      // Approval moves the session to the mode the user picked; "keep planning" sends the note back to the model.
+      let decision;
+      try {
+        decision = await turn.approvePlan(['auto', 'edits', 'manual']);
+      } catch {
+        return { behavior: 'deny', message: 'The user stopped the turn.', interrupt: true };
+      }
+      if (!decision.approve) {
+        return { behavior: 'deny', message: `The user wants to keep planning${decision.note ? `: ${decision.note}` : '.'}` };
+      }
+      this.currentMode = decision.mode;
+      await this.conversation?.query.applyFlagSettings({ permissions: { ask: askRules(decision.mode) } });
+      return {
+        behavior: 'allow',
+        updatedInput: input,
+        updatedPermissions: [{ type: 'setMode', mode: PERMISSION_MODES[decision.mode], destination: 'session' }],
+      };
     }
 
     const rules = alwaysRules(options);

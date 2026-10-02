@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tui';
+import type { AgentMode } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { SessionStore } from './session-store.js';
@@ -39,6 +40,8 @@ export interface AppActions {
   resume(session: SavedSession): void;
   /** Switches the model or effort from the next request on, and remembers it for later runs. */
   selectModel(selection: ModelSelection): void;
+  /** Switches the agent's mode right away; the project starts in it next time. */
+  selectMode(mode: AgentMode): void;
   /** Shows `items` in the status line until saved or reverted with `undefined`. */
   previewStatusLine(items: StatusItem[] | undefined): void;
   saveStatusLine(items: StatusItem[]): void;
@@ -49,6 +52,7 @@ export interface AppActions {
 export interface Jinion {
   info: AppInfo;
   model: ModelState;
+  modes: { current: AgentMode; available: AgentMode[] };
   /** The saved status line and the data its segments show. */
   status: { items: StatusItem[]; data: StatusData };
   actions: AppActions;

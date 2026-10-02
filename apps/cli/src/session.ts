@@ -150,7 +150,8 @@ function apply(session: Session, event: AgentEvent): Session {
     case 'session':
       return { ...session, agentSession: event.id };
     case 'limits':
-      // Kept by the app: they belong to the account and outlive the conversation.
+    case 'mode':
+      // Kept by the app: they belong to the account or the agent and outlive the conversation.
       return session;
   }
 }

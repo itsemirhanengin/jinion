@@ -55,6 +55,7 @@ Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for th
 | --- | --- | --- |
 | Jinion | `jinion` | |
 | Model | `[M] Opus 5.5 · high` | with effort, name only |
+| Mode | `Auto`, also always under the prompt | |
 | Directory | `[D] experiments/coding-agent` | last two folders, full path, folder name |
 | Git | `[G] main *3 ↑1` | with uncommitted files and commits ahead/behind, branch only |
 | Context | `ctx [====------] 41%` | tokens, percent, meter |
@@ -66,9 +67,22 @@ Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for th
 
 Segments live in `apps/cli/src/status/segments.tsx`; a new one is one entry there.
 
+### Modes
+
+`shift+tab` (or `/mode`) switches how freely the agent acts. The mode shows on the rule under the prompt, and each project starts in the one it was last left in.
+
+| Mode | Runs without asking |
+| --- | --- |
+| Manual | Reads and a few safe commands |
+| Accept edits | Also file edits in the project; `rm`, `rmdir`, `mv`, `cp` and `sed` still ask. The first mode in a new project |
+| Plan | Reads only. When the plan is ready it shows in the conversation, and the plan panel asks whether to carry on in auto mode, accepting edits or approving each one, or to keep planning with a note |
+| Auto | What Claude Code's safety classifier lets through: routine work runs, and actions beyond the request, like force pushes, piping downloads into a shell or sending secrets out, are blocked. Needs a model that supports it, such as Opus or Sonnet; with others Claude Code runs in Manual, which the rule under the prompt shows from the first prompt on, while the project keeps Auto for next time |
+
+In every mode, Jinion itself asks before a commit and before a file outside the project changes, without a "don't ask again" choice. These checks run as a hook ahead of Claude Code's own (`apps/cli/src/agent/claude/guard.ts`).
+
 ### Permissions
 
-File edits inside the project, read-only tools, web fetch and search, and a few commands (`git status/diff/log/show/branch`, `ls`, `pnpm`/`npm` scripts) run without asking. Anything else opens the permission panel in place of the prompt:
+File edits inside the project, read-only tools, web fetch and search, and a few commands (`git status/diff/log/show/branch`, `ls`, `pnpm`/`npm` scripts) run without asking in Accept edits. Anything that needs asking opens the permission panel in place of the prompt:
 
 | Choice | Does |
 | --- | --- |
@@ -77,7 +91,7 @@ File edits inside the project, read-only tools, web fetch and search, and a few 
 | No | Tells the agent no; press `n` first to add what it should do instead |
 | `esc` | Stops the turn |
 
-`rm`, `rmdir`, `mv`, `cp` and `sed` ask every time, without the "don't ask again" choice.
+`rm`, `rmdir`, `mv`, `cp` and `sed` ask every time in Accept edits, without the "don't ask again" choice.
 
 Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai connectors are not loaded. Jinion writes the system prompt and adds the project's `AGENTS.md` and `CLAUDE.md` to it.
 
@@ -105,6 +119,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/clear` (`/new`) | Saves this conversation and starts a new one |
 | `/model [model]` | Picks the model and effort (up/down for the model, left/right for the effort), or switches straight to `model` |
 | `/effort [level]` | Opens the same picker, or sets the effort straight away; `default` leaves it to the model |
+| `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
 | `/exit` (`/quit`) | Quits |

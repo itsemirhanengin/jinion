@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, Text, type Key } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { Highlight } from '../primitives/highlight.js';
@@ -43,6 +43,8 @@ export interface ComposerProps
   limit?: number;
   /** Long pastes go in as placeholders; the same store expands them when the prompt is sent. */
   pastes?: PastedTexts;
+  /** On the rule under the prompt, e.g. the agent's mode. */
+  footer?: ReactNode;
 }
 
 /**
@@ -50,7 +52,7 @@ export interface ComposerProps
  * source has suggestions. Up/down move, Tab inserts, Enter accepts, Esc dismisses.
  * When the prompt scrolls, the rules say how many lines are out of view.
  */
-export function Composer({ completions = [], limit = 8, pastes, ...input }: ComposerProps) {
+export function Composer({ completions = [], limit = 8, pastes, footer, ...input }: ComposerProps) {
   const theme = useTheme();
   const { value, onChange, onSubmit } = input;
   const [hidden, setHidden] = useState<HiddenRows>({ above: 0, below: 0 });
@@ -103,7 +105,17 @@ export function Composer({ completions = [], limit = 8, pastes, ...input }: Comp
         onPaste={pastes && ((text) => pastes.add(text))}
         atoms={pastes && PASTED_TEXT}
       />
-      <Rule title={hidden.below > 0 ? <Text color={theme.muted}>↓ {lines(hidden.below)} below</Text> : undefined} />
+      <Rule
+        title={
+          hidden.below > 0 || footer !== undefined ? (
+            <Text>
+              {hidden.below > 0 && <Text color={theme.muted}>↓ {lines(hidden.below)} below</Text>}
+              {hidden.below > 0 && footer !== undefined && <Text color={theme.muted}> · </Text>}
+              {footer}
+            </Text>
+          ) : undefined
+        }
+      />
       {open && completion && (
         <CompletionList completion={completion} selected={selected} limit={limit} submits={submits(completion)} />
       )}

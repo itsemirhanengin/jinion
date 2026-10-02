@@ -80,6 +80,8 @@ export type { AskPanelProps, AskResultProps, Question, QuestionAnswer, QuestionO
 export { ModelPanel } from './chat/model.js';
 export type { ModelOption, ModelPanelProps, ModelSelection } from './chat/model.js';
 export { PermissionPanel } from './chat/permission.js';
+export { PlanPanel } from './chat/plan.js';
+export type { PlanOption, PlanPanelDecision, PlanPanelProps } from './chat/plan.js';
 export type { PermissionDecision, PermissionPanelProps, PermissionRequest } from './chat/permission.js';
 export { PromptInput } from './chat/prompt-input.js';
 export type { HiddenRows, PromptInputProps } from './chat/prompt-input.js';

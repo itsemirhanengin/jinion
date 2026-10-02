@@ -7,7 +7,7 @@ import type {
   SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import type { Question, QuestionAnswer, TodoItem } from '@jinion/tui';
-import type { AgentEvent, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
+import type { AgentEvent, AgentMode, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
 
 type Input = Record<string, unknown>;
 
@@ -31,6 +31,13 @@ export interface ClaudeQuestion {
 }
 
 const TASK_TOOLS = new Set(['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet']);
+
+const MODES_BY_PERMISSION: Record<string, AgentMode> = {
+  default: 'manual',
+  acceptEdits: 'edits',
+  plan: 'plan',
+  auto: 'auto',
+};
 
 /** Claude Code's result for a tool call that was rejected by stopping the turn. */
 const INTERRUPTED = /^The user doesn't want to proceed with this tool use/;
@@ -69,12 +76,16 @@ export class ClaudeEvents {
 
   private *events(message: SDKMessage): Generator<AgentEvent> {
     switch (message.type) {
-      case 'system':
+      case 'system': {
+        // Claude Code reports the mode it really runs in, e.g. Manual when the model has no auto mode.
+        const mode = 'permissionMode' in message ? MODES_BY_PERMISSION[message.permissionMode as string] : undefined;
+        if (mode) yield { type: 'mode', mode };
         if (message.subtype !== 'init') return;
         this.model = message.model;
         this.session = message.session_id;
         yield { type: 'session', id: message.session_id };
         return;
+      }
       case 'stream_event':
         if (message.parent_tool_use_id === null) yield* this.stream(message.event);
         return;
@@ -155,6 +166,8 @@ export class ClaudeEvents {
       case 'Agent':
       case 'Task':
         return { name: 'other', input: { title: 'Agent', detail: text(input.description) } };
+      case 'ExitPlanMode':
+        return { name: 'plan', input: { plan: text(input.plan) } };
       default:
         if (TASK_TOOLS.has(name)) return undefined;
         return { name: 'other', input: { title: toolTitle(name), detail: summary(input) } };

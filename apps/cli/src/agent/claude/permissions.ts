@@ -4,6 +4,7 @@ import type { PermissionRequest } from '@jinion/tui';
 import { readJson, writeJson } from '../../json-file.js';
 import { projectDir } from '../../paths.js';
 import { toolTitle } from './events.js';
+import { GUARD_REASONS } from './guard.js';
 
 type Input = Record<string, unknown>;
 type RequestOptions = Parameters<CanUseTool>[2];
@@ -13,7 +14,9 @@ type RequestOptions = Parameters<CanUseTool>[2];
  * where a rule would be unsafe or useless, e.g. for commands caught by an ask rule, and then the choice isn't offered.
  */
 export function alwaysRules(options: RequestOptions): PermissionRuleValue[] {
-  if (options.suppressAlwaysAllowRule || options.matchedAskRule) return [];
+  // Jinion's guard runs before any rule, so a saved rule would never stop it from asking.
+  const guarded = options.decisionReason !== undefined && GUARD_REASONS.has(options.decisionReason);
+  if (options.suppressAlwaysAllowRule || options.matchedAskRule || guarded) return [];
   return (options.suggestions ?? []).flatMap((update) =>
     update.type === 'addRules' && update.behavior === 'allow' ? update.rules : [],
   );
@@ -28,10 +31,11 @@ export function toPermissionRequest(
   const command = name === 'Bash' && typeof input.command === 'string' ? input.command : undefined;
   const target = [input.file_path, input.url, input.path].find((value) => typeof value === 'string') as string | undefined;
   const description = [
+    options.decisionReason && GUARD_REASONS.has(options.decisionReason) ? options.decisionReason : undefined,
     command ? (input.description as string | undefined) : options.description,
     options.blockedPath && `Outside the project: ${options.blockedPath}`,
     options.agentID && 'Asked by a subagent',
-  ].filter(Boolean);
+  ].filter((part) => part && part !== target);
 
   return {
     title: (options.title ?? defaultTitle(name)).replace(/^Claude\b/, 'jinion'),

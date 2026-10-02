@@ -4,6 +4,7 @@ import {
   Box,
   Composer,
   PermissionPanel,
+  PlanPanel,
   ScrollView,
   Shell,
   StatusBar,
@@ -24,7 +25,7 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent, LimitWindow } from './agent/types.js';
+import type { Agent, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { agentCommands, CommandRegistry } from './commands/registry.js';
 import {
@@ -46,7 +47,8 @@ import {
   type Session,
 } from './session.js';
 import type { SessionStore } from './session-store.js';
-import { loadSettings, saveModel, saveStatusLine } from './settings.js';
+import { modeColor, MODES, nextMode } from './modes.js';
+import { loadSettings, saveModel, saveProjectSettings, saveStatusLine } from './settings.js';
 import { useGitStatus } from './status/git.js';
 import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } from './status/line.js';
 import { findSegment, type StatusData } from './status/segments.js';
@@ -90,6 +92,27 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     name: models?.find((option) => option.id === selection.model)?.name ?? selection.model,
   };
 
+  const [mode, setModeState] = useState(agent.mode);
+  // The latest mode, for key presses that come faster than renders.
+  const currentMode = useRef(agent.mode);
+  const modeSwitches = useRef(Promise.resolve());
+  const showMode = (next: AgentMode) => {
+    currentMode.current = next;
+    setModeState(next);
+  };
+
+  /** A mode the user picked shows at once; the agent follows in order, and the project starts in it next time. */
+  const selectMode = (next: AgentMode) => {
+    if (!agent.modes.includes(next)) return notice(`${agent.name} has no ${MODES[next].name} mode.`, 'warning');
+    showMode(next);
+    saveProjectSettings(info.cwd, { mode: next });
+    modeSwitches.current = modeSwitches.current
+      .then(() => agent.setMode(next))
+      .catch((error: unknown) =>
+        notice(`Couldn't switch the mode: ${error instanceof Error ? error.message : error}`, 'error'),
+      );
+  };
+
   const selectModel = (next: ModelSelection) => {
     agent.select(next).then(
       () => {
@@ -110,7 +133,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const shownSegments = shownItems.map((item) => findSegment(item.id));
   const git = useGitStatus(info.cwd, shownSegments.some((segment) => segment?.git), busy);
   const now = useNow(shownSegments.some((segment) => segment?.ticks));
-  const statusData: StatusData = { info, model, session, git, limits, now, theme };
+  const statusData: StatusData = { info, model, mode, session, git, limits, now, theme };
   const statusLine = renderStatusLine(shownItems, statusData);
 
   const save = () => {
@@ -178,10 +201,26 @@ export function App({ agent, info, sessions, initial }: AppProps) {
       interact<PermissionDecision>('permission', (resolve) => (
         <PermissionPanel request={request} onDecide={resolve} onCancel={() => abort.abort()} />
       ));
+    const approvePlan = (modes: AgentMode[]) =>
+      interact<PlanDecision>('plan', (resolve) => (
+        <PlanPanel
+          options={modes.map((option) => ({ id: option, label: PLAN_CHOICES[option], description: MODES[option].description }))}
+          onDecide={(decision) => {
+            if (!decision.approve) return resolve(decision);
+            const next = decision.option as AgentMode;
+            // The agent switches itself; the project remembers the pick.
+            showMode(next);
+            saveProjectSettings(info.cwd, { mode: next });
+            resolve({ approve: true, mode: next });
+          }}
+          onCancel={() => abort.abort()}
+        />
+      ));
 
     try {
-      for await (const event of agent.run(full, { signal: abort.signal, ask, approve })) {
+      for await (const event of agent.run(full, { signal: abort.signal, ask, approve, approvePlan })) {
         if (event.type === 'limits') setLimits(event.windows);
+        if (event.type === 'mode') showMode(event.mode);
         dispatch({ type: 'event', event });
       }
       dispatch({ type: 'finish', outcome: 'done' });
@@ -215,6 +254,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     newSession: () => switchSession({ type: 'clear' }),
     resume: (saved) => switchSession({ type: 'load', session: saved }),
     selectModel,
+    selectMode,
     previewStatusLine: setStatusPreview,
     saveStatusLine: (items) => {
       setStatusItems(items);
@@ -228,6 +268,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const jinion: Jinion = {
     info,
     model,
+    modes: { current: mode, available: agent.modes },
     status: { items: statusItems, data: statusData },
     actions,
     panels,
@@ -238,6 +279,9 @@ export function App({ agent, info, sessions, initial }: AppProps) {
 
   useInput((input, key) => {
     if (key.ctrl && input === 'o') return toggleExpanded();
+    if (key.tab && key.shift && !panels.top && agent.modes.length > 1) {
+      return selectMode(nextMode(agent.modes, currentMode.current));
+    }
     // Open panels handle their own esc.
     if (key.escape && busy && !panels.top) return controller.current?.abort();
     if (key.ctrl && input === 'c') {
@@ -284,6 +328,14 @@ export function App({ agent, info, sessions, initial }: AppProps) {
             history={submitted}
             completions={completions}
             placeholder={busy ? 'jinion is working… esc to interrupt' : 'Ask jinion anything, or type / for commands'}
+            footer={
+              agent.modes.length > 1 && (
+                <Text>
+                  <Text color={modeColor(theme, mode)}>{MODES[mode].name}</Text>
+                  <Text color={theme.muted}> · shift+tab</Text>
+                </Text>
+              )
+            }
           />
         }
         status={
@@ -294,8 +346,16 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   );
 }
 
+/** What each mode reads as in the plan panel. */
+const PLAN_CHOICES: Record<AgentMode, string> = {
+  auto: 'Yes, and use auto mode',
+  edits: 'Yes, and accept edits',
+  manual: 'Yes, and approve each edit',
+  plan: 'Yes, and keep planning mode',
+};
+
 function activity(session: Session, panel: string | undefined) {
-  if (panel === 'permission') return 'Waiting for your approval';
+  if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
   const last = session.entries.at(-1);
   if (last?.kind === 'thinking') return 'Thinking';
   if (last?.kind === 'text') return 'Writing';
