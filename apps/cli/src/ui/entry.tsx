@@ -13,6 +13,7 @@ import {
   UserMessage,
   useAnimation,
   useTheme,
+  useView,
   type TreeNode,
 } from '@jinion/tui';
 import type { FileRef } from '../agent/types.js';
@@ -41,11 +42,12 @@ export const EntryView = memo(function EntryView({ entry }: { entry: Entry }) {
 });
 
 function EntryBody({ entry }: { entry: Entry }) {
+  const { expanded } = useView();
   switch (entry.kind) {
     case 'banner':
       return <Banner />;
     case 'user':
-      return <UserMessage text={entry.text} />;
+      return <UserMessage text={expanded && entry.prompt ? entry.prompt : entry.text} />;
     case 'thinking':
       return <Thinking text={entry.text} />;
     case 'text':

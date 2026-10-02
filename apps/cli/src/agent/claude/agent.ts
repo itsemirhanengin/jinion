@@ -65,7 +65,6 @@ interface Conversation {
   input: Inbox<SDKUserMessage>;
   output: AsyncIterator<SDKMessage>;
   events: ClaudeEvents;
-  turns: number;
 }
 
 /** Drives Claude Code headless, with Jinion's system prompt and project instructions instead of Claude Code's own. */
@@ -128,7 +127,6 @@ export class ClaudeAgent implements Agent {
     context.signal.addEventListener('abort', interrupt, { once: true });
 
     try {
-      if (conversation.turns++ === 0) yield { type: 'title', title: titleOf(prompt) };
       const uuid = randomUUID();
       conversation.input.push({
         type: 'user',
@@ -216,8 +214,6 @@ export class ClaudeAgent implements Agent {
       input,
       output: conversation[Symbol.asyncIterator](),
       events: new ClaudeEvents(cwd, resume?.cost),
-      // A resumed conversation already has its title.
-      turns: resume ? 1 : 0,
     };
   }
 
@@ -288,10 +284,6 @@ function errorOf(result: Extract<SDKMessage, { type: 'result' }>) {
   return result.errors.join('\n') || `Claude Code stopped: ${result.subtype}.`;
 }
 
-function titleOf(prompt: string) {
-  const line = prompt.trim().split('\n')[0] ?? '';
-  return line.length > 60 ? `${line.slice(0, 59)}…` : line;
-}
 
 /** A queue of prompts that Claude Code reads for as long as the conversation lasts. */
 class Inbox<T> implements AsyncIterable<T> {

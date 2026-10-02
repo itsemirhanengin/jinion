@@ -147,8 +147,9 @@ Chat
 | `PermissionPanel` | asks before the agent runs something: yes, yes and don't ask again, no with a note |
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
-| `Composer` | the prompt between dashed rules, with completions |
-| `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels |
+| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, and `pastes` turns long pastes into placeholders |
+| `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), and treats `atoms` as single characters |
+| `PastedTexts` | keeps long pastes as `[Pasted text #1 +42 lines]` and expands them when the prompt is sent |
 | `Working`, `StatusBar`, `Tag` | activity indicator and the status line, with items on the left and the right |
 
 Ink's `Box`, `Text`, `useInput`, `useApp` and friends are re-exported, so apps depend on this package alone.

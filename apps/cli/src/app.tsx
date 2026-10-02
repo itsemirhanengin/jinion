@@ -15,6 +15,7 @@ import {
   usePanels,
   useTheme,
   useView,
+  PastedTexts,
   type ModelOption,
   type ModelSelection,
   type NoticeTone,
@@ -66,6 +67,8 @@ export function App({ agent, info, sessions, initial }: AppProps) {
   const panels = usePanels();
   const [session, dispatch] = useReducer(reduce, initial, (saved) => (saved ? fromSaved(saved) : createSession(200_000)));
   const [draft, setDraft] = useState('');
+  // Long pastes sit in the prompt as placeholders; they expand when sent, also when recalled from history.
+  const pastes = useMemo(() => new PastedTexts(), []);
   const [submitted, setSubmitted] = useState<string[]>([]);
   const controller = useRef<AbortController>(undefined);
   const busy = session.busySince !== undefined;
@@ -136,7 +139,8 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     if (busy) return notice('jinion is still working. Press esc to interrupt it first.', 'warning');
     const abort = new AbortController();
     controller.current = abort;
-    dispatch({ type: 'submit', text });
+    const full = pastes.expand(text);
+    dispatch({ type: 'submit', text, prompt: full === text ? undefined : full });
 
     // Parallel tool calls can ask at the same time, so their panels open one after another.
     let queue = Promise.resolve();
@@ -176,7 +180,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
       ));
 
     try {
-      for await (const event of agent.run(text, { signal: abort.signal, ask, approve })) {
+      for await (const event of agent.run(full, { signal: abort.signal, ask, approve })) {
         if (event.type === 'limits') setLimits(event.windows);
         dispatch({ type: 'event', event });
       }
@@ -203,7 +207,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
       const [name = '', ...args] = text.slice(1).split(/\s+/);
       const command = commands.find(name);
       if (!command) return notice(`Unknown command /${name}. Type / to see what is available.`, 'error');
-      command.run(jinion, args.join(' '));
+      command.run(jinion, pastes.expand(args.join(' ')));
     },
     prompt: (text) => void prompt(text),
     fill: setDraft,
@@ -273,6 +277,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
         }
         prompt={
           <Composer
+            pastes={pastes}
             value={draft}
             onChange={setDraft}
             onSubmit={actions.submit}

@@ -87,11 +87,14 @@ Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai c
 | `shift+enter`, `alt+enter`, trailing `\` | New line |
 | `up` / `down` | Prompt history |
 | `esc` | Interrupt the running turn |
-| `ctrl+o` | Expand or collapse long output |
+| `ctrl+o` | Expand or collapse long output and pasted text |
+| paste | Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`; the agent gets all of it |
 | `/` | Command palette: built-in commands, skills and MCP prompts, filtered as you type |
 | `ctrl+c` | Interrupt, close a panel, clear the prompt, or quit |
 | mouse wheel, `pgup` / `pgdn` | Scroll the conversation; click `Jump to bottom` to follow again |
 | `shift` + drag | Select text (`option` in iTerm2), since the app receives mouse events |
+
+The prompt grows to 20 lines, then scrolls inside, with the rules above and below saying how many lines are out of view. A paste placeholder acts as one character: the cursor steps over it and backspace removes it whole.
 
 When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 

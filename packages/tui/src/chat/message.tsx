@@ -1,9 +1,12 @@
 import { Box, Text } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { Prose } from '../primitives/prose.js';
+import { PASTED_TEXT } from './pasted-texts.js';
 
+/** The user's prompt. Paste placeholders are highlighted as they were in the prompt. */
 export function UserMessage({ text }: { text: string }) {
   const theme = useTheme();
+  const parts = text.split(new RegExp(`(${PASTED_TEXT.source})`)).filter((part, index) => index % 3 !== 2);
   return (
     <Box backgroundColor={theme.surface.user} paddingX={1}>
       <Box flexShrink={0}>
@@ -12,7 +15,17 @@ export function UserMessage({ text }: { text: string }) {
         </Text>
       </Box>
       <Box flexShrink={1}>
-        <Prose>{text}</Prose>
+        <Prose>
+          {parts.map((part, index) =>
+            index % 2 === 1 ? (
+              <Text key={index} color={theme.accent}>
+                {part}
+              </Text>
+            ) : (
+              part
+            ),
+          )}
+        </Prose>
       </Box>
     </Box>
   );

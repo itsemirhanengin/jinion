@@ -3,7 +3,8 @@ import type { AgentEvent, AgentResume, ToolRun, Usage } from './agent/types.js';
 
 export type Entry =
   | { id: string; kind: 'banner' }
-  | { id: string; kind: 'user'; text: string }
+  /** `prompt` is what the agent got, when pasted text made it longer than what is shown. */
+  | { id: string; kind: 'user'; text: string; prompt?: string }
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
@@ -27,7 +28,7 @@ export interface Session {
 export type SavedSession = Omit<Session, 'busySince' | 'title'> & { title: string; updatedAt: number };
 
 export type Action =
-  | { type: 'submit'; text: string }
+  | { type: 'submit'; text: string; prompt?: string }
   | { type: 'event'; event: AgentEvent }
   | { type: 'finish'; outcome: 'done' | 'interrupted' | 'failed'; message?: string }
   | { type: 'notice'; text: string; tone?: NoticeTone }
@@ -47,6 +48,11 @@ export function createSession(contextWindow: number): Session {
     todos: [],
     usage: { contextTokens: 0, contextWindow, cost: 0 },
   };
+}
+
+function titleOf(text: string) {
+  const line = text.trim().split('\n')[0] ?? '';
+  return line.length > 60 ? `${line.slice(0, 59)}…` : line;
 }
 
 export const firstPrompt = (session: Pick<Session, 'entries'>) =>
@@ -76,7 +82,9 @@ export function reduce(session: Session, action: Action): Session {
     case 'submit':
       return {
         ...session,
-        entries: [...session.entries, { id: nextId(), kind: 'user', text: action.text }],
+        entries: [...session.entries, { id: nextId(), kind: 'user', text: action.text, prompt: action.prompt }],
+        // A first title from what the user typed, until the agent names the conversation.
+        title: session.title ?? titleOf(action.text),
         busySince: Date.now(),
       };
     case 'event':

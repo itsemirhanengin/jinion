@@ -5,7 +5,8 @@ import { Highlight } from '../primitives/highlight.js';
 import { KeyHints } from '../primitives/panel.js';
 import { Rule } from '../primitives/rule.js';
 import { ListRow, SelectList, stepIndex } from '../primitives/select-list.js';
-import { PromptInput, type PromptInputProps } from './prompt-input.js';
+import { PASTED_TEXT, type PastedTexts } from './pasted-texts.js';
+import { PromptInput, type HiddenRows, type PromptInputProps } from './prompt-input.js';
 
 export interface CompletionItem {
   key: string;
@@ -35,18 +36,24 @@ export interface Completion {
 /** Offers completions for the prompt as it is typed; the first source with items wins. */
 export type CompletionSource = (value: string, cursor: number) => Completion | undefined;
 
-export interface ComposerProps extends Omit<PromptInputProps, 'onKeyDown' | 'onCursorChange'> {
+export interface ComposerProps
+  extends Omit<PromptInputProps, 'onKeyDown' | 'onCursorChange' | 'onScroll' | 'onPaste' | 'atoms'> {
   completions?: CompletionSource[];
   /** Completion rows shown at once. */
   limit?: number;
+  /** Long pastes go in as placeholders; the same store expands them when the prompt is sent. */
+  pastes?: PastedTexts;
 }
 
 /**
  * The prompt between dashed rules, with a completion list under it while a
  * source has suggestions. Up/down move, Tab inserts, Enter accepts, Esc dismisses.
+ * When the prompt scrolls, the rules say how many lines are out of view.
  */
-export function Composer({ completions = [], limit = 8, ...input }: ComposerProps) {
+export function Composer({ completions = [], limit = 8, pastes, ...input }: ComposerProps) {
+  const theme = useTheme();
   const { value, onChange, onSubmit } = input;
+  const [hidden, setHidden] = useState<HiddenRows>({ above: 0, below: 0 });
   const [cursor, setCursor] = useState(value.length);
   const [index, setIndex] = useState(0);
   const [dismissedAt, setDismissedAt] = useState<string>();
@@ -87,15 +94,24 @@ export function Composer({ completions = [], limit = 8, ...input }: ComposerProp
 
   return (
     <Box flexDirection="column">
-      <Rule />
-      <PromptInput {...input} onKeyDown={onKeyDown} onCursorChange={setCursor} />
-      <Rule />
+      <Rule title={hidden.above > 0 ? <Text color={theme.muted}>↑ {lines(hidden.above)} above</Text> : undefined} />
+      <PromptInput
+        {...input}
+        onKeyDown={onKeyDown}
+        onCursorChange={setCursor}
+        onScroll={setHidden}
+        onPaste={pastes && ((text) => pastes.add(text))}
+        atoms={pastes && PASTED_TEXT}
+      />
+      <Rule title={hidden.below > 0 ? <Text color={theme.muted}>↓ {lines(hidden.below)} below</Text> : undefined} />
       {open && completion && (
         <CompletionList completion={completion} selected={selected} limit={limit} submits={submits(completion)} />
       )}
     </Box>
   );
 }
+
+const lines = (count: number) => (count === 1 ? '1 line' : `${count} lines`);
 
 interface CompletionListProps {
   completion: Completion;
