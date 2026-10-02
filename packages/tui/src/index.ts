@@ -45,6 +45,16 @@ export { KeyHints, Panel } from './primitives/panel.js';
 export type { KeyHint, PanelProps } from './primitives/panel.js';
 export { ListRow, SelectList, stepIndex, useListNavigation } from './primitives/select-list.js';
 export { NoteLine, OptionRow, optionIndent } from './primitives/option-row.js';
+export { ChoiceList, choiceIndent, useChoiceList } from './primitives/choice-list.js';
+export type {
+  Choice,
+  ChoiceListOptions,
+  ChoiceListProps,
+  ChoiceListState,
+  ChoiceMode,
+} from './primitives/choice-list.js';
+export { Meter } from './primitives/meter.js';
+export type { MeterProps } from './primitives/meter.js';
 export type { OptionRowProps } from './primitives/option-row.js';
 export type { ListNavigationOptions, ListRowProps, SelectListProps } from './primitives/select-list.js';
 export { Tabs, useTabs } from './primitives/tabs.js';

@@ -205,6 +205,17 @@ const FULL_SUITE = [
   '   Duration  1.21s',
 ];
 
+const TYPECHECK_RUN = ['> acme-api@1.4.0 typecheck', '> tsc --noEmit'];
+
+const LINT_RUN = ['> acme-api@1.4.0 lint', '> eslint .', '', 'No problems found.'];
+
+/** The checks the user can pick after the change, each with its command and output. */
+const CHECKS = [
+  { label: 'The full test suite', description: 'pnpm test, about 2s', command: 'pnpm test 2>&1 | tail -n 15' },
+  { label: 'Typecheck', description: 'pnpm typecheck', command: 'pnpm typecheck' },
+  { label: 'Lint', description: 'pnpm lint', command: 'pnpm lint' },
+];
+
 const STORAGE_NOTES = [
   'Counters live in an in-process `Map`. A restart resets them, which is fine while the API runs as a single instance.',
   'You picked Redis, but this repo has no Redis client yet, so the limiter ships with the in-memory store for now. Adding a Redis-backed store is the natural next step once `REDIS_URL` is provisioned.',
@@ -213,9 +224,9 @@ const STORAGE_NOTES = [
 
 function storageNote(answer: QuestionAnswer | undefined) {
   const choice =
-    answer?.option === undefined && answer?.text
+    answer?.text
       ? `You asked for "${answer.text}". This demo still ships the in-memory store; wiring that in is the next step.`
-      : STORAGE_NOTES[answer?.option ?? 0];
+      : STORAGE_NOTES[answer?.options[0] ?? 0];
   return answer?.note ? `${choice} Your note is tracked as a follow-up: "${answer.note}".` : choice;
 }
 
@@ -292,7 +303,7 @@ const rateLimiting: Scenario = {
       ].join('\n\n'),
     );
 
-    const [storage, scope] = yield* script.ask([
+    const [storage, scope, checks] = yield* script.ask([
       {
         id: 'storage',
         prompt: 'Where should the limiter keep its counters?',
@@ -310,13 +321,20 @@ const rateLimiting: Scenario = {
           { label: 'Everything under /api', description: 'one shared budget' },
         ],
       },
+      {
+        id: 'checks',
+        prompt: 'Which checks should run when the change is in?',
+        multiple: true,
+        options: CHECKS.map(({ label, description }) => ({ label, description })),
+      },
     ]);
-    const strictLogin = scope?.option !== 1;
+    const picked = (checks?.options ?? [0]).map((index) => CHECKS[index]!);
+    const strictLogin = scope?.options[0] !== 1;
 
     yield* script.think(
       'Plan: a small fixed-window limiter keyed by client IP, reusing TooManyRequests, mounted globally before the router' +
         (strictLogin ? ', plus a tighter budget on POST /auth/login.' : '.') +
-        ' Then a focused unit test, then the full suite.',
+        ` Then a focused unit test, then ${picked.map((check) => check.label.toLowerCase()).join(', ')}.`,
     );
     yield* script.tool('todo', { groups: plan(['active', 'pending'], ['pending', 'pending']) }, {}, 250);
 
@@ -342,7 +360,10 @@ const rateLimiting: Scenario = {
     yield* script.bash('pnpm vitest run src/middleware/rate-limit.test.ts', PASSING_RUN, { durationMs: 1_200 });
     yield* script.tool('todo', { groups: plan(['done', 'done'], ['done', 'active']) }, {}, 200);
 
-    yield* script.bash('pnpm test 2>&1 | tail -n 15', FULL_SUITE, { durationMs: 2_400 });
+    for (const check of picked) {
+      const output = check === CHECKS[0] ? FULL_SUITE : check === CHECKS[1] ? TYPECHECK_RUN : LINT_RUN;
+      yield* script.bash(check.command, output, { durationMs: check === CHECKS[0] ? 2_400 : 1_000 });
+    }
     yield* script.tool('todo', { groups: plan(['done', 'done'], ['done', 'done']) }, {}, 200);
     yield* script.usage(2_900, 0.013);
 
@@ -361,7 +382,13 @@ const rateLimiting: Scenario = {
         '## Verification',
         [
           '- `pnpm vitest run src/middleware/rate-limit.test.ts`: 3/3 passing. The first run caught an off-by-one at the window boundary (`>` instead of `>=`), now fixed.',
-          '- `pnpm test`: 48 passing, no regressions.',
+          ...picked.map((check) =>
+            check === CHECKS[0]
+              ? '- `pnpm test`: 48 passing, no regressions.'
+              : check === CHECKS[1]
+                ? '- `pnpm typecheck`: clean.'
+                : '- `pnpm lint`: no problems.',
+          ),
         ].join('\n'),
         'One thing left open: clients are keyed by IP, so users behind a shared NAT share a budget. Keying authenticated requests by user id would fix that.',
       ].join('\n\n'),

@@ -71,7 +71,27 @@ panels.open({ id: 'help', placement: 'bottom', element: <HelpPanel /> });
 
 Panels form a stack; opening an id that is open replaces it, and closing returns to whatever was below. Inside a panel, `usePanel().close()` closes it. Panels own their keys, including Esc, and use the `Panel` chrome so they all look alike: an accent `+- Title` frame, an optional header (tabs, a search field, a question), the body, and `KeyHints` at the bottom. `grow` makes the body fill the height, which full screen panels want.
 
-Lists inside panels use `SelectList` (windowed, with `… n more` markers), `ListRow` (`> label   description   aside`), `useListNavigation` and `useTabs`. `fuzzyFilter` and `Highlight` cover search. Choices, where one option gets picked, use `OptionRow` instead: numbered rows (`> 2. Opus 5.5   current`) with the description and an optional note underneath, so number keys can jump to an option.
+Lists inside panels use `SelectList` (windowed, with `… n more` markers), `ListRow` (`> label   description   aside`), `useListNavigation` and `useTabs`. `fuzzyFilter` and `Highlight` cover search.
+
+### Choices
+
+Every panel where the user picks something is built on `useChoiceList` and `ChoiceList`, so they look and behave the same:
+
+```
+single                                   multiple
+> 1. Opus 5.5             current        > 1. [x] Typecheck
+     For complex work                         pnpm typecheck
+  2. Sonnet 5.5                            2. [ ] Lint
+```
+
+| Key | `single` | `multiple` |
+| --- | --- | --- |
+| up/down, 1-9 | move the focus | move the focus |
+| space | | checks or unchecks the focused option, which stays where it is |
+| enter | picks the focused option | submits the checked options |
+| esc | cancels | cancels |
+
+Options are keyed, so focus and checks stay with an option when the list reorders or loads late. `onToggle` can take over space for an option, e.g. to ask for text first, and shift with up/down is left to the panel, e.g. for moving options. Panels add their own keys next to these: `n` for a note, left/right for an effort or a style.
 
 ## Completions
 
@@ -94,7 +114,9 @@ Primitives
 | `ScrollView` | the scrolling message area with `Jump to bottom` |
 | `Panel`, `KeyHints` | the shared panel chrome and its `Enter select · Esc close` footer |
 | `SelectList`, `ListRow` | windowed lists and the standard row |
-| `OptionRow`, `NoteLine` | a numbered choice with its description, `current` marker and note |
+| `OptionRow`, `NoteLine` | a numbered option with its description, a `[x]` box when several can be picked, a muted `aside` such as `current`, and a note |
+| `useChoiceList`, `ChoiceList` | the single and multiple choice lists every picking panel is built on |
+| `Meter` | `[======----]`, colored by how full it is |
 | `Tabs` | a tab bar with the active tab as a filled chip |
 | `Highlight` | text with matched characters emphasized |
 | `Frame`, `FrameDivider` | `+--- title ---+` boxes with sections, an optional tinted `tone`, `borderColor` and title `lead`; `fit` makes the box as wide as its content |
@@ -121,12 +143,12 @@ Chat
 | `ToolLine` | compact tool calls with an optional result tree |
 | `ShellBlock`, `EditBlock` | command and edit frames |
 | `TodoBlock`, `TodoPanel` | the todo list as a frame and as the pinned panel above the prompt |
-| `AskPanel` | questions that take the prompt's place: arrows move, `n` adds a note, "Other" takes free text |
+| `AskPanel` | questions that take the prompt's place, as a single choice or, with `multiple`, any number of answers; `n` adds a note, "Other" takes free text |
 | `PermissionPanel` | asks before the agent runs something: yes, yes and don't ask again, no with a note |
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
 | `Composer` | the prompt between dashed rules, with completions |
 | `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels |
-| `Working`, `StatusBar`, `Tag` | activity indicator and the status line |
+| `Working`, `StatusBar`, `Tag` | activity indicator and the status line, with items on the left and the right |
 
 Ink's `Box`, `Text`, `useInput`, `useApp` and friends are re-exported, so apps depend on this package alone.

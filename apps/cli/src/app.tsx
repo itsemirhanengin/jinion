@@ -7,7 +7,6 @@ import {
   ScrollView,
   Shell,
   StatusBar,
-  Tag,
   Text,
   TodoPanel,
   Working,
@@ -24,7 +23,7 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent } from './agent/types.js';
+import type { Agent, LimitWindow } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { agentCommands, CommandRegistry } from './commands/registry.js';
 import {
@@ -46,7 +45,10 @@ import {
   type Session,
 } from './session.js';
 import type { SessionStore } from './session-store.js';
-import { saveModel } from './settings.js';
+import { loadSettings, saveModel, saveStatusLine } from './settings.js';
+import { useGitStatus } from './status/git.js';
+import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } from './status/line.js';
+import { findSegment, type StatusData } from './status/segments.js';
 import { EntryView } from './ui/entry.js';
 
 export interface AppProps {
@@ -96,6 +98,17 @@ export function App({ agent, info, sessions, initial }: AppProps) {
       (error: unknown) => notice(`Couldn't switch the model: ${error instanceof Error ? error.message : error}`, 'error'),
     );
   };
+
+  const [statusItems, setStatusItems] = useState(() => knownItems(loadSettings().statusLine ?? DEFAULT_STATUS_LINE));
+  // `/statusline` shows its draft here while it is open.
+  const [statusPreview, setStatusPreview] = useState<StatusItem[]>();
+  const [limits, setLimits] = useState<LimitWindow[]>();
+  const shownItems = statusPreview ?? statusItems;
+  const shownSegments = shownItems.map((item) => findSegment(item.id));
+  const git = useGitStatus(info.cwd, shownSegments.some((segment) => segment?.git), busy);
+  const now = useNow(shownSegments.some((segment) => segment?.ticks));
+  const statusData: StatusData = { info, model, session, git, limits, now, theme };
+  const statusLine = renderStatusLine(shownItems, statusData);
 
   const save = () => {
     const saved = toSaved(session);
@@ -164,6 +177,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
 
     try {
       for await (const event of agent.run(text, { signal: abort.signal, ask, approve })) {
+        if (event.type === 'limits') setLimits(event.windows);
         dispatch({ type: 'event', event });
       }
       dispatch({ type: 'finish', outcome: 'done' });
@@ -197,11 +211,26 @@ export function App({ agent, info, sessions, initial }: AppProps) {
     newSession: () => switchSession({ type: 'clear' }),
     resume: (saved) => switchSession({ type: 'load', session: saved }),
     selectModel,
+    previewStatusLine: setStatusPreview,
+    saveStatusLine: (items) => {
+      setStatusItems(items);
+      setStatusPreview(undefined);
+      saveStatusLine(items);
+    },
     toggleExpanded,
     exit: quit,
   };
 
-  const jinion: Jinion = { info, model, actions, panels, commands, sessions, sessionId: session.id };
+  const jinion: Jinion = {
+    info,
+    model,
+    status: { items: statusItems, data: statusData },
+    actions,
+    panels,
+    commands,
+    sessions,
+    sessionId: session.id,
+  };
 
   useInput((input, key) => {
     if (key.ctrl && input === 'o') return toggleExpanded();
@@ -253,18 +282,7 @@ export function App({ agent, info, sessions, initial }: AppProps) {
           />
         }
         status={
-          <StatusBar
-            items={[
-              <Text color={theme.muted}>jinion</Text>,
-              <Tag name="M" value={modelLabel(model)} color={theme.status.model} />,
-              <Tag name="D" value={shortPath(info.cwd)} color={theme.status.directory} />,
-              <Text>
-                ctx: {formatTokens(session.usage.contextTokens)}/{formatTokens(session.usage.contextWindow)}
-              </Text>,
-              <Text color={theme.status.cost}>${session.usage.cost.toFixed(2)}</Text>,
-            ]}
-            right={session.title && <Text color={theme.muted}>{session.title}</Text>}
-          />
+          <StatusBar items={statusLine.left} right={statusLine.right} />
         }
       />
     </JinionContext.Provider>
@@ -283,10 +301,14 @@ function activity(session: Session, panel: string | undefined) {
   return 'Working';
 }
 
-function formatTokens(count: number) {
-  return count >= 1000 ? `${Math.round(count / 1000)}K` : String(count);
-}
-
-function shortPath(path: string) {
-  return path.split('/').filter(Boolean).slice(-2).join('/');
+/** Redraws every `interval` ms while `active`, for segments that change with the clock. */
+function useNow(active: boolean, interval = 15_000) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), interval);
+    return () => clearInterval(timer);
+  }, [active, interval]);
+  return now;
 }

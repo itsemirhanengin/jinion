@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
+import { ChoiceList, useChoiceList } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
-import { SelectList, stepIndex, useListNavigation } from '../primitives/select-list.js';
+import { stepIndex } from '../primitives/select-list.js';
 import { Tabs } from '../primitives/tabs.js';
-import { OptionRow } from '../primitives/option-row.js';
 
 export interface ModelOption {
   /** What the agent takes, e.g. `opus` or `gpt-5.5-codex`. */
@@ -47,28 +47,26 @@ const VISIBLE = 5;
  */
 export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: ModelPanelProps) {
   const theme = useTheme();
-  const list = models ?? [];
-  const [focus, setFocus] = useListNavigation(list.length, { wrap: false });
+  const options = models ?? [];
   const [effort, setEffort] = useState(current.effort ?? DEFAULT);
 
-  // Models can arrive after the panel opened; start on the one in use.
-  useEffect(() => {
-    if (models) setFocus(Math.max(0, models.findIndex((option) => option.id === current.model)));
-  }, [models]);
+  const list = useChoiceList({
+    keys: options.map((option) => option.id),
+    mode: 'single',
+    // Focus is kept by id, so it lands on the model in use even when the models arrive after the panel opened.
+    initialFocus: current.model,
+    onCancel,
+    onSubmit: ([id]) => id && onSelect({ model: id, effort: shown === DEFAULT ? undefined : shown }),
+  });
 
-  const model = list[focus];
+  const model = options.find((option) => option.id === list.focus);
   const levels = model && model.efforts.length > 0 ? [DEFAULT, ...model.efforts] : [];
   // A level the focused model doesn't have shows as its default, but stays picked for models that do.
   const shown = levels.includes(effort) ? effort : DEFAULT;
 
-  useInput((input, key) => {
-    if (key.escape) return onCancel();
-    if (!model) return;
-    if (/^[1-9]$/.test(input) && Number(input) <= list.length) setFocus(Number(input) - 1);
-    else if ((key.leftArrow || key.rightArrow) && levels.length > 0) {
+  useInput((_, key) => {
+    if ((key.leftArrow || key.rightArrow) && levels.length > 0) {
       setEffort(levels[stepIndex(levels.indexOf(shown), key.rightArrow ? 1 : -1, levels.length, false)]!);
-    } else if (key.return) {
-      onSelect({ model: model.id, effort: shown === DEFAULT ? undefined : shown });
     }
   });
 
@@ -96,21 +94,16 @@ export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: Mo
       {models === undefined ? (
         <Text color={theme.muted}>Loading models…</Text>
       ) : (
-        <SelectList
-          items={list}
-          selected={focus}
+        <ChoiceList
+          list={list}
           limit={VISIBLE}
           empty="No models available"
-          renderItem={(item, state) => (
-            <OptionRow
-              number={state.index + 1}
-              count={list.length}
-              label={item.name}
-              description={item.description}
-              focused={state.selected}
-              current={item.id === current.model}
-            />
-          )}
+          choices={options.map((option) => ({
+            key: option.id,
+            label: option.name,
+            description: option.description,
+            aside: option.id === current.model ? 'current' : undefined,
+          }))}
         />
       )}
     </Panel>

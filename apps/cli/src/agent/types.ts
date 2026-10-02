@@ -57,7 +57,19 @@ export type AgentEvent =
   | { type: 'usage'; usage: Usage }
   | { type: 'title'; title: string }
   /** The backend's own id for the conversation, which `Agent.reset` takes to continue it. */
-  | { type: 'session'; id: string };
+  | { type: 'session'; id: string }
+  /** How much of the user's plan is used up. Belongs to the account, not to the conversation. */
+  | { type: 'limits'; windows: LimitWindow[] };
+
+/** One usage window of the user's plan, such as the 5-hour limit. */
+export interface LimitWindow {
+  /** Short, e.g. `5h` or `7d`. */
+  label: string;
+  /** From 0 to 1. */
+  used: number;
+  /** In milliseconds since the epoch. */
+  resetsAt?: number;
+}
 
 export interface RunContext {
   signal: AbortSignal;

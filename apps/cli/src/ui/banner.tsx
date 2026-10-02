@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { Box, Frame, Text, useTheme } from '@jinion/tui';
 import { modelLabel, useJinion } from '../context.js';
+import { tildify } from '../paths.js';
 
 /**
  * As wide as its content:
@@ -32,7 +33,7 @@ export function Banner() {
         <Text color={theme.status.model}>{modelLabel(app.model)}</Text>
       </Row>
       <Row label="cwd">
-        <Text color={theme.status.directory}>{cwd}</Text>
+        <Text color={theme.status.directory}>{tildify(cwd)}</Text>
       </Row>
       {examples.length > 0 && (
         <Row label="try">

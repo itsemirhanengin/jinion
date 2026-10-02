@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
+import { ChoiceList, choiceIndent, useChoiceList, type Choice } from '../primitives/choice-list.js';
 import { Frame, FrameDivider } from '../primitives/frame.js';
-import { NoteLine, OptionRow, optionIndent } from '../primitives/option-row.js';
+import { NoteLine } from '../primitives/option-row.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
 import { PromptInput } from './prompt-input.js';
@@ -17,20 +18,24 @@ export interface Question {
   id: string;
   prompt: string;
   options: QuestionOption[];
+  /** Lets the user pick any number of the options instead of one. */
+  multiple?: boolean;
 }
 
 export interface QuestionAnswer {
-  /** Index of the chosen option; absent when the user typed their own answer. */
-  option?: number;
+  /** Indexes of the picked options: one for a single choice, any number for `multiple`. */
+  options: number[];
   /** The user's own answer, given through "Other". */
   text?: string;
   note?: string;
 }
 
-const OTHER: QuestionOption = { label: 'Other (type your own)' };
+const OTHER = 'other';
 
 interface Editing {
   kind: 'note' | 'other';
+  /** The option a note belongs to. */
+  key: string;
   value: string;
 }
 
@@ -52,78 +57,138 @@ export interface AskPanelProps {
  *     +---------------------------------+
  *     | Enter select · n note · ...     |
  *     +---------------------------------+
+ *
+ * A `multiple` question puts `[x]` boxes in front of the options; space checks them and enter submits.
  */
 export function AskPanel({ questions, onSubmit, onCancel }: AskPanelProps) {
-  const theme = useTheme();
   const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
-  const [focus, setFocus] = useState(0);
-  const [notes, setNotes] = useState<Record<number, string>>({});
-  const [editing, setEditing] = useState<Editing>();
-
   const question = questions[answers.length];
-  const options = question ? [...question.options, OTHER] : [];
-  const other = options.length - 1;
+  if (!question) return null;
 
   const answer = (value: QuestionAnswer) => {
     const next = [...answers, value];
-    if (next.length === questions.length) return onSubmit(next);
-    setAnswers(next);
-    setFocus(0);
-    setNotes({});
-    setEditing(undefined);
+    if (next.length === questions.length) onSubmit(next);
+    else setAnswers(next);
   };
 
-  const saveEdit = (value: string) => {
-    const text = value.trim();
-    if (editing?.kind === 'other') {
-      if (text) return answer({ text });
-      return setEditing(undefined);
-    }
-    setNotes((current) => {
-      const { [focus]: _, ...rest } = current;
-      return text ? { ...rest, [focus]: text } : rest;
-    });
-    setEditing(undefined);
+  return (
+    <QuestionStep
+      key={answers.length}
+      question={question}
+      step={questions.length > 1 ? `${answers.length + 1}/${questions.length} · ${question.id}` : undefined}
+      onAnswer={answer}
+      onCancel={onCancel}
+    />
+  );
+}
+
+interface QuestionStepProps {
+  question: Question;
+  step?: string;
+  onAnswer(answer: QuestionAnswer): void;
+  onCancel(): void;
+}
+
+function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps) {
+  const theme = useTheme();
+  const multiple = question.multiple === true;
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  const [other, setOther] = useState('');
+  const [editing, setEditing] = useState<Editing>();
+  const keys = [...question.options.map((_, index) => String(index)), OTHER];
+
+  const finish = (picked: string[], otherText = other) => {
+    const options = picked.filter((key) => key !== OTHER).map(Number);
+    // Notes of several picked options become one, each under its option's name.
+    const written = picked.filter((key) => notes[key]);
+    const note =
+      written.length === 1 && !multiple
+        ? notes[written[0]!]
+        : written.map((key) => `${question.options[Number(key)]?.label}: ${notes[key]}`).join('; ') || undefined;
+    onAnswer({ options, ...(picked.includes(OTHER) && otherText ? { text: otherText } : {}), ...(note ? { note } : {}) });
   };
 
-  useInput((input, key) => {
-    if (editing) {
-      if (key.escape) setEditing(undefined);
-      return;
-    }
-    if (key.escape) return onCancel();
-    if (key.upArrow) setFocus((value) => (value - 1 + options.length) % options.length);
-    else if (key.downArrow || key.tab) setFocus((value) => (value + 1) % options.length);
-    else if (/^[1-9]$/.test(input) && Number(input) <= options.length) setFocus(Number(input) - 1);
-    else if (input === 'n' && focus !== other) setEditing({ kind: 'note', value: notes[focus] ?? '' });
-    else if (key.return) {
-      if (focus === other) setEditing({ kind: 'other', value: '' });
-      else answer({ option: focus, note: notes[focus] });
-    }
+  const list = useChoiceList({
+    keys,
+    mode: multiple ? 'multiple' : 'single',
+    isActive: !editing,
+    onCancel,
+    onSubmit: (picked) => {
+      if (!multiple && picked[0] === OTHER) return setEditing({ kind: 'other', key: OTHER, value: other });
+      if (picked.length > 0) finish(picked);
+    },
+    // "Other" only counts once it says something.
+    onToggle: (key) => {
+      if (key !== OTHER || list.isChecked(OTHER)) return;
+      setEditing({ kind: 'other', key: OTHER, value: other });
+      return false;
+    },
   });
 
-  if (!question) return null;
+  useInput(
+    (input) => {
+      if (input === 'n' && list.focus !== OTHER) setEditing({ kind: 'note', key: list.focus, value: notes[list.focus] ?? '' });
+    },
+    { isActive: !editing },
+  );
+  useInput(
+    (_, key) => {
+      if (key.escape) setEditing(undefined);
+    },
+    { isActive: editing !== undefined },
+  );
+
+  const save = (value: string) => {
+    const text = value.trim();
+    if (!editing) return;
+    setEditing(undefined);
+    if (editing.kind === 'note') {
+      return setNotes(({ [editing.key]: _, ...rest }) => (text ? { ...rest, [editing.key]: text } : rest));
+    }
+    setOther(text);
+    if (!multiple) {
+      if (text) finish([OTHER], text);
+    } else list.setChecked(OTHER, text !== '');
+  };
 
   const editor = editing && (
-    <Box paddingLeft={optionIndent(options.length)}>
+    <Box paddingLeft={choiceIndent(list)}>
       {editing.kind === 'note' && <Text color={theme.muted}>note: </Text>}
       <PromptInput
         value={editing.value}
         onChange={(value) => setEditing({ ...editing, value })}
-        onSubmit={saveEdit}
+        onSubmit={save}
         placeholder={editing.kind === 'note' ? 'Add context for this option' : 'Type your answer'}
         paddingX={0}
       />
     </Box>
   );
 
+  const choices: Choice[] = [
+    ...question.options.map((option, index) => ({
+      key: String(index),
+      label: option.recommended ? `${option.label} (Recommended)` : option.label,
+      description: option.description,
+      note: notes[String(index)],
+      editor: editing?.key === String(index) ? editor || undefined : undefined,
+    })),
+    {
+      key: OTHER,
+      label: other ? `Other: ${other}` : 'Other (type your own)',
+      editor: editing?.key === OTHER ? editor || undefined : undefined,
+    },
+  ];
+
   return (
     <Panel
       title="Ask"
-      subtitle={questions.length > 1 ? `${answers.length + 1}/${questions.length} · ${question.id}` : undefined}
+      subtitle={step}
       header={
         <>
-          <Prose bold>{question.prompt}</Prose>
+          <Prose>
+            <Text bold>{question.prompt}</Text>
+            {multiple && <Text color={theme.muted}>  pick any</Text>}
+          </Prose>
           <Text> </Text>
         </>
       }
@@ -133,27 +198,23 @@ export function AskPanel({ questions, onSubmit, onCancel }: AskPanelProps) {
               ['Enter', 'save'],
               ['Esc', 'back'],
             ]
-          : [
-              ['Enter', 'select'],
-              ['n', 'note'],
-              ['Up/Down', 'move'],
-              ['Esc', 'cancel'],
-            ]
+          : multiple
+            ? [
+                ['Space', 'select'],
+                ['Enter', 'submit'],
+                ['n', 'note'],
+                ['Up/Down', 'move'],
+                ['Esc', 'cancel'],
+              ]
+            : [
+                ['Enter', 'select'],
+                ['n', 'note'],
+                ['Up/Down', 'move'],
+                ['Esc', 'cancel'],
+              ]
       }
     >
-      {options.map((option, index) => (
-        <OptionRow
-          key={index}
-          number={index + 1}
-          count={options.length}
-          label={option.recommended ? `${option.label} (Recommended)` : option.label}
-          description={option.description}
-          focused={index === focus}
-          note={notes[index]}
-        >
-          {index === focus ? editor || undefined : undefined}
-        </OptionRow>
-      ))}
+      <ChoiceList list={list} choices={choices} limit={choices.length} />
     </Panel>
   );
 }
@@ -181,34 +242,39 @@ export function AskResult({ questions, answers, cancelled = false }: AskResultPr
     >
       {questions.flatMap((question, index) => {
         const answer = answers[index];
-        const option = answer?.option === undefined ? undefined : question.options[answer.option];
-        // The chosen option keeps its number from the panel; "Other" is the one after the listed options.
-        const marker = `  ${(answer?.option ?? question.options.length) + 1}. `;
+        // Picked options keep their numbers from the panel; "Other" is the one after the listed options.
+        const picked = [
+          ...(answer?.options ?? []).map((option) => ({ number: option + 1, option: question.options[option] })),
+          ...(answer?.text ? [{ number: question.options.length + 1, option: undefined }] : []),
+        ];
+        const indent = `  ${question.options.length + 1}. `.length;
         return [
           index > 0 && <FrameDivider key={`divider-${question.id}`} />,
           <Box key={question.id} flexDirection="column">
             <Prose bold>{question.prompt}</Prose>
-            {answer ? (
-              <Box>
-                <Box flexShrink={0}>
-                  <Text color={theme.selection}>{marker}</Text>
+            {picked.length > 0 ? (
+              picked.map(({ number, option }) => (
+                <Box key={number}>
+                  <Box flexShrink={0} width={indent}>
+                    <Text color={theme.selection}>{`  ${number}.`}</Text>
+                  </Box>
+                  <Prose>
+                    {option ? (
+                      <Text color={theme.selection}>{option.label}</Text>
+                    ) : (
+                      <Text>
+                        <Text color={theme.muted}>Other: </Text>
+                        <Text color={theme.selection}>{answer?.text}</Text>
+                      </Text>
+                    )}
+                    {option?.description && <Text color={theme.muted}> — {option.description}</Text>}
+                  </Prose>
                 </Box>
-                <Prose>
-                  {option ? (
-                    <Text color={theme.selection}>{option.label}</Text>
-                  ) : (
-                    <Text>
-                      <Text color={theme.muted}>Other: </Text>
-                      <Text color={theme.selection}>{answer.text}</Text>
-                    </Text>
-                  )}
-                  {option?.description && <Text color={theme.muted}> — {option.description}</Text>}
-                </Prose>
-              </Box>
+              ))
             ) : (
               <Text color={theme.muted}>{cancelled ? '  cancelled' : '  no answer'}</Text>
             )}
-            {answer?.note && <NoteLine note={answer.note} indent={marker.length} />}
+            {answer?.note && <NoteLine note={answer.note} indent={indent} />}
           </Box>,
         ];
       })}

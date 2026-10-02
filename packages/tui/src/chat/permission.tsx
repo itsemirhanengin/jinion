@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
-import { OptionRow, optionIndent } from '../primitives/option-row.js';
+import { ChoiceList, choiceIndent, useChoiceList, type Choice } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
 import { ShellCommand } from '../content/shell.js';
-import type { QuestionOption } from './ask.js';
 import { PromptInput } from './prompt-input.js';
 
 export interface PermissionRequest {
@@ -45,41 +44,42 @@ export interface PermissionPanelProps {
  */
 export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanelProps) {
   const theme = useTheme();
-  const options: (QuestionOption & { decision: 'once' | 'always' | 'deny' })[] = [
-    { label: 'Yes', decision: 'once' },
-    ...(request.always
-      ? [{ label: `Yes, and don't ask again for ${request.always} in this project`, decision: 'always' as const }]
-      : []),
-    { label: 'No', description: 'Press n to tell jinion what to do instead', decision: 'deny' },
-  ];
-  const deny = options.length - 1;
-  const [focus, setFocus] = useState(request.defaultToNo ? deny : 0);
   const [note, setNote] = useState('');
   const [editing, setEditing] = useState<string>();
 
-  const decide = (index: number) => {
-    const option = options[index]!;
-    if (option.decision === 'deny') return onDecide({ allow: false, note: note || undefined });
-    onDecide({ allow: true, always: option.decision === 'always' });
-  };
+  const decisions = [
+    { key: 'once', label: 'Yes' },
+    ...(request.always ? [{ key: 'always', label: `Yes, and don't ask again for ${request.always} in this project` }] : []),
+    { key: 'deny', label: 'No', description: 'Press n to tell jinion what to do instead' },
+  ];
 
-  useInput((input, key) => {
-    if (editing !== undefined) {
-      if (key.escape) setEditing(undefined);
-      return;
-    }
-    if (key.escape) return onCancel();
-    if (key.upArrow) setFocus((value) => (value - 1 + options.length) % options.length);
-    else if (key.downArrow || key.tab) setFocus((value) => (value + 1) % options.length);
-    else if (/^[1-9]$/.test(input) && Number(input) <= options.length) setFocus(Number(input) - 1);
-    else if (input === 'n') {
-      setFocus(deny);
-      setEditing(note);
-    } else if (key.return) decide(focus);
+  const list = useChoiceList({
+    keys: decisions.map((decision) => decision.key),
+    mode: 'single',
+    initialFocus: request.defaultToNo ? 'deny' : 'once',
+    isActive: editing === undefined,
+    onCancel,
+    onSubmit: ([key]) =>
+      key === 'deny' ? onDecide({ allow: false, note: note || undefined }) : onDecide({ allow: true, always: key === 'always' }),
   });
 
+  useInput(
+    (input) => {
+      if (input !== 'n') return;
+      list.setFocus('deny');
+      setEditing(note);
+    },
+    { isActive: editing === undefined },
+  );
+  useInput(
+    (_, key) => {
+      if (key.escape) setEditing(undefined);
+    },
+    { isActive: editing !== undefined },
+  );
+
   const editor = editing !== undefined && (
-    <Box paddingLeft={optionIndent(options.length)}>
+    <Box paddingLeft={choiceIndent(list)}>
       <Text color={theme.muted}>note: </Text>
       <PromptInput
         value={editing}
@@ -92,6 +92,10 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
         paddingX={0}
       />
     </Box>
+  );
+
+  const choices: Choice[] = decisions.map((decision) =>
+    decision.key === 'deny' ? { ...decision, note: note || undefined, editor: editor || undefined } : decision,
   );
 
   return (
@@ -132,19 +136,7 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
             ]
       }
     >
-      {options.map((option, index) => (
-        <OptionRow
-          key={option.decision}
-          number={index + 1}
-          count={options.length}
-          label={option.label}
-          description={option.description}
-          focused={index === focus}
-          note={option.decision === 'deny' ? note || undefined : undefined}
-        >
-          {index === deny ? editor || undefined : undefined}
-        </OptionRow>
-      ))}
+      <ChoiceList list={list} choices={choices} limit={choices.length} />
     </Panel>
   );
 }

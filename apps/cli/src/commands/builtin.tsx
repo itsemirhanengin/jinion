@@ -2,6 +2,7 @@ import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
 import { findModel, ModelPicker } from '../panels/model.js';
 import { ResumePanel } from '../panels/resume.js';
+import { StatusLinePanel } from '../panels/statusline.js';
 import type { Command } from './registry.js';
 
 const openModelPicker = (app: Jinion) =>
@@ -63,6 +64,12 @@ export const builtinCommands: Command[] = [
     argumentHint: '[search]',
     run: (app, args) =>
       app.panels.open({ id: 'resume', placement: 'fullscreen', element: <ResumePanel query={args} /> }),
+  },
+  {
+    name: 'statusline',
+    description: 'Choose what the status line shows',
+    source: 'builtin',
+    run: (app) => app.panels.open({ id: 'statusline', placement: 'bottom', element: <StatusLinePanel /> }),
   },
   {
     name: 'clear',

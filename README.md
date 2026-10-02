@@ -45,7 +45,26 @@ In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 
 Every conversation is saved after each turn, per project, and `/resume` lists them. `jinion -c` (`--continue`) opens the last one. Resuming continues the Claude Code session too, so the agent remembers it.
 
-Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model picked per agent, and one folder per project with `sessions/*.json` and `permissions.json`.
+Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model picked per agent and the status line, and one folder per project with `sessions/*.json` and `permissions.json`.
+
+### Status line
+
+`/statusline` picks from these, in any order, on either side:
+
+| Segment | Shows | Styles |
+| --- | --- | --- |
+| Jinion | `jinion` | |
+| Model | `[M] Opus 5.5 · high` | with effort, name only |
+| Directory | `[D] experiments/coding-agent` | last two folders, full path, folder name |
+| Git | `[G] main *3 ↑1` | with uncommitted files and commits ahead/behind, branch only |
+| Context | `ctx [====------] 41%` | tokens, percent, meter |
+| Plan limits | `5h 8% · 7d 20%` | 5h and 7d, 5h with reset time, 7d, 5h meter |
+| Cost | `$0.12`, at API prices | |
+| Changes | `+42 -7` lines in this conversation | |
+| Tasks | `tasks 2/5` | |
+| Title, Duration, Turns, Clock, Agent, Version | the conversation's title, age and prompts, the time, the backend, jinion's version | |
+
+Segments live in `apps/cli/src/status/segments.tsx`; a new one is one entry there.
 
 ### Permissions
 
@@ -74,7 +93,7 @@ Claude Code's own settings, CLAUDE.md files, memory, MCP servers and claude.ai c
 | mouse wheel, `pgup` / `pgdn` | Scroll the conversation; click `Jump to bottom` to follow again |
 | `shift` + drag | Select text (`option` in iTerm2), since the app receives mouse events |
 
-When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn.
+When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 
 | Command | Does |
 | --- | --- |
@@ -83,6 +102,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/clear` (`/new`) | Saves this conversation and starts a new one |
 | `/model [model]` | Picks the model and effort (up/down for the model, left/right for the effort), or switches straight to `model` |
 | `/effort [level]` | Opens the same picker, or sets the effort straight away; `default` leaves it to the model |
+| `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
 | `/exit` (`/quit`) | Quits |
 

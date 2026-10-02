@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { homedir } from 'node:os';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
 import { ClaudeAgent } from './agent/claude/agent.js';
@@ -69,7 +68,7 @@ if (initial) agent.reset?.(resumeOf(initial));
 
 const info = {
   version,
-  cwd: cwd.replace(homedir(), '~'),
+  cwd,
   examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
 };
 

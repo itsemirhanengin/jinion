@@ -141,6 +141,9 @@ function apply(session: Session, event: AgentEvent): Session {
       return { ...session, title: event.title };
     case 'session':
       return { ...session, agentSession: event.id };
+    case 'limits':
+      // Kept by the app: they belong to the account and outlive the conversation.
+      return session;
   }
 }
 

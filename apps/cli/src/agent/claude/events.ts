@@ -7,7 +7,7 @@ import type {
   SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import type { Question, QuestionAnswer, TodoItem } from '@jinion/tui';
-import type { AgentEvent, GrepMatch, ToolCall, Usage } from '../types.js';
+import type { AgentEvent, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
 
 type Input = Record<string, unknown>;
 
@@ -27,6 +27,7 @@ interface Outcome {
 export interface ClaudeQuestion {
   question: string;
   options: { label: string; description?: string }[];
+  multiSelect?: boolean;
 }
 
 const TASK_TOOLS = new Set(['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet']);
@@ -86,6 +87,11 @@ export class ClaudeEvents {
       case 'result':
         yield* this.result(message);
         return;
+      case 'rate_limit_event': {
+        const windows = limitWindows(message.rate_limit_info);
+        if (windows.length > 0) yield { type: 'limits', windows };
+        return;
+      }
     }
   }
 
@@ -260,11 +266,46 @@ export class ClaudeEvents {
   }
 }
 
+const WINDOW_LABELS: Record<string, string> = {
+  five_hour: '5h',
+  seven_day: '7d',
+  seven_day_opus: '7d opus',
+  seven_day_sonnet: '7d sonnet',
+};
+
+type RateLimitInfo = Extract<SDKMessage, { type: 'rate_limit_event' }>['rate_limit_info'];
+
+/**
+ * Claude Code reports every window of the plan in `unifiedWindows`, which its types don't declare yet, and the one
+ * that applies to the request in `rateLimitType`.
+ */
+function limitWindows(info: RateLimitInfo): LimitWindow[] {
+  const unified = (info as { unifiedWindows?: Record<string, { utilization?: number; resetsAt?: number }> })
+    .unifiedWindows;
+  const entries = unified
+    ? Object.entries(unified)
+    : info.rateLimitType
+      ? [[info.rateLimitType, { utilization: info.utilization, resetsAt: info.resetsAt }] as const]
+      : [];
+  return entries.flatMap(([id, window]) =>
+    typeof window.utilization === 'number'
+      ? [
+          {
+            label: WINDOW_LABELS[id] ?? id,
+            used: window.utilization > 1 ? window.utilization / 100 : window.utilization,
+            resetsAt: window.resetsAt === undefined ? undefined : window.resetsAt * 1000,
+          },
+        ]
+      : [],
+  );
+}
+
 export function toQuestions(questions: ClaudeQuestion[]): Question[] {
   return questions.map((question) => ({
     id: question.question,
     prompt: question.question,
     options: question.options.map(({ label, description }) => ({ label, description })),
+    multiple: question.multiSelect === true,
   }));
 }
 
@@ -275,8 +316,9 @@ export function toClaudeAnswers(questions: ClaudeQuestion[], answers: QuestionAn
   questions.forEach((question, index) => {
     const answer = answers[index];
     if (!answer) return;
-    byQuestion[question.question] =
-      answer.option !== undefined ? (question.options[answer.option]?.label ?? '') : (answer.text ?? '');
+    // Several picks go back as one comma-separated answer, the way AskUserQuestion takes them.
+    const labels = answer.options.map((option) => question.options[option]?.label ?? '');
+    byQuestion[question.question] = [...labels, ...(answer.text ? [answer.text] : [])].join(', ');
     if (answer.note) annotations[question.question] = { notes: answer.note };
   });
   return { answers: byQuestion, annotations };
@@ -287,9 +329,14 @@ function fromClaudeAnswers(questions: ClaudeQuestion[], data: Input): QuestionAn
   const annotations = (isObject(data.annotations) ? data.annotations : {}) as Record<string, { notes?: string }>;
   return questions.map((question) => {
     const answer = answers[question.question] ?? '';
-    const option = question.options.findIndex((candidate) => candidate.label === answer);
+    const parts = question.multiSelect ? answer.split(', ') : [answer];
+    const options = parts.flatMap((part) => {
+      const option = question.options.findIndex((candidate) => candidate.label === part);
+      return option >= 0 ? [option] : [];
+    });
+    const text = parts.filter((part) => part && !question.options.some((candidate) => candidate.label === part)).join(', ');
     const note = annotations[question.question]?.notes;
-    return { ...(option >= 0 ? { option } : { text: answer }), ...(note ? { note } : {}) };
+    return { options, ...(text ? { text } : {}), ...(note ? { note } : {}) };
   });
 }
 

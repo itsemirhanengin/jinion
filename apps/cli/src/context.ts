@@ -3,9 +3,12 @@ import type { ModelOption, ModelSelection, NoticeTone, Panels } from '@jinion/tu
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { SessionStore } from './session-store.js';
+import type { StatusItem } from './status/line.js';
+import type { StatusData } from './status/segments.js';
 
 export interface AppInfo {
   version: string;
+  /** Absolute. */
   cwd: string;
   /** Prompts the banner suggests trying. */
   examples?: string[];
@@ -36,6 +39,9 @@ export interface AppActions {
   resume(session: SavedSession): void;
   /** Switches the model or effort from the next request on, and remembers it for later runs. */
   selectModel(selection: ModelSelection): void;
+  /** Shows `items` in the status line until saved or reverted with `undefined`. */
+  previewStatusLine(items: StatusItem[] | undefined): void;
+  saveStatusLine(items: StatusItem[]): void;
   toggleExpanded(): void;
   exit(): void;
 }
@@ -43,6 +49,8 @@ export interface AppActions {
 export interface Jinion {
   info: AppInfo;
   model: ModelState;
+  /** The saved status line and the data its segments show. */
+  status: { items: StatusItem[]; data: StatusData };
   actions: AppActions;
   panels: Panels;
   commands: CommandRegistry;
