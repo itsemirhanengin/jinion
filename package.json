@@ -1,0 +1,20 @@
+{
+  "name": "jinion",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.15.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @jinion/cli dev",
+    "start": "pnpm --filter @jinion/cli start",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "turbo": "^2.11.6",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@jinion/tui",
+  "version": "0.1.0",
+  "description": "Terminal UI framework for Jinion, built on Ink and React",
+  "license": "MIT",
+  "homepage": "https://jinion.co",
+  "type": "module",
+  "exports": {
+    ".": {
+      "development": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "ink": "^7.1.1",
+    "marked": "^18.0.0",
+    "string-width": "^8.2.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.0"
+  }
+}
