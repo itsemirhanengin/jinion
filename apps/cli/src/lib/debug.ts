@@ -21,6 +21,7 @@ export class DebugLog {
 
   write(kind: DebugKind, data: unknown) {
     const record: DebugRecord = { at: Date.now(), kind, data };
+
     appendFileSync(this.path, `${JSON.stringify(record)}\n`);
   }
 }

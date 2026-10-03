@@ -40,6 +40,7 @@ export interface ShellBlockProps {
 
 export function ShellBlock({ command, output, status, footer, tail, folded }: ShellBlockProps) {
   const theme = useTheme();
+
   const hasOutput = output.length > 0 || footer !== undefined;
 
   return (
@@ -66,6 +67,7 @@ export interface EditBlockProps {
 
 export function EditBlock({ path, patch, status, verb = 'Edit' }: EditBlockProps) {
   const theme = useTheme();
+
   const { added, removed } = useMemo(() => countChanges(parsePatch(patch)), [patch]);
   const language = extension(path) ?? 'txt';
 

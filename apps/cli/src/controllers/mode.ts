@@ -17,7 +17,9 @@ export class ModeController {
   select(next: AgentMode) {
     const { agent, notice } = this.context;
     if (!agent.modes.includes(next)) return notice(`${agent.name} has no ${MODES[next].name} mode.`, 'warning');
+
     this.keep(next);
+
     this.switches = this.switches
       .then(() => agent.setMode(next))
       .catch((error: unknown) => notice(`Couldn't switch the mode: ${errorMessage(error)}`, 'error'));

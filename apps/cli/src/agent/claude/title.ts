@@ -39,10 +39,12 @@ export async function claudeTitle({
       env: { ...process.env, ...accountEnv(account) },
     },
   });
+
   try {
     for await (const message of run) {
       if (message.type === 'result') return message.subtype === 'success' ? cleanTitle(message.result) : undefined;
     }
+
     return undefined;
   } finally {
     run.close();
@@ -55,5 +57,6 @@ const MAX_WORDS = 10;
 export function cleanTitle(reply: string) {
   const line = firstLine(reply.trim()).replace(/^title:\s*/i, '').replace(/^["'“”‘’`*]+|["'“”‘’`*.]+$/g, '').trim();
   if (!line || line.split(/\s+/).length > MAX_WORDS) return undefined;
+
   return truncate(line, 80);
 }

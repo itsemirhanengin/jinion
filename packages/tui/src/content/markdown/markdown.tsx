@@ -16,11 +16,13 @@ export interface MarkdownProps {
 
 export function Markdown({ text }: MarkdownProps) {
   const tokens = useMemo(() => lexer(printable(text), { gfm: true }), [text]);
+
   return <Blocks tokens={tokens} />;
 }
 
 function Blocks({ tokens, tight = false }: { tokens: Token[]; tight?: boolean }) {
   const blocks = tokens.filter((token) => token.type !== 'space' && token.type !== 'def' && token.type !== 'checkbox');
+
   return (
     <Box flexDirection="column">
       {blocks.map((token, index) => (
@@ -38,30 +40,37 @@ function Block({ token }: { token: Token }) {
   switch (token.type) {
     case 'heading': {
       const { depth, tokens } = token as Tokens.Heading;
+
       return (
         <Prose bold={depth <= 2} color={theme.heading}>
           <Inline tokens={tokens} />
         </Prose>
       );
     }
+
     case 'paragraph':
       return (
         <Prose>
           <Inline tokens={(token as Tokens.Paragraph).tokens} />
         </Prose>
       );
+
     case 'text': {
       const { tokens, text } = token as Tokens.Text;
+
       return <Prose>{tokens ? <Inline tokens={tokens} /> : decode(text)}</Prose>;
     }
+
     case 'code': {
       const { lang, text } = token as Tokens.Code;
+
       return (
         <Frame title={lang ? <Text color={theme.muted}>{lang}</Text> : undefined}>
           <Text>{text}</Text>
         </Frame>
       );
     }
+
     case 'blockquote':
       return (
         <Box
@@ -77,14 +86,19 @@ function Block({ token }: { token: Token }) {
           </Inset>
         </Box>
       );
+
     case 'list':
       return <List token={token as Tokens.List} />;
+
     case 'table':
       return <Table token={token as Tokens.Table} />;
+
     case 'hr':
       return <Rule />;
+
     case 'html':
       return <Text color={theme.muted}>{(token as Tokens.HTML).text.trimEnd()}</Text>;
+
     default:
       return <Text>{token.raw.trimEnd()}</Text>;
   }
@@ -92,11 +106,15 @@ function Block({ token }: { token: Token }) {
 
 function List({ token }: { token: Tokens.List }) {
   const theme = useTheme();
+
   const start = token.start === '' ? 1 : token.start;
+
   const markers = token.items.map((item, index) => {
     if (item.task) return item.checked ? '[x] ' : '[ ] ';
+
     return token.ordered ? `${start + index}. ` : '- ';
   });
+
   const markerWidth = Math.max(...markers.map((marker) => marker.length));
 
   return (

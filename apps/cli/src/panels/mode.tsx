@@ -11,6 +11,7 @@ export function ModePicker() {
   const theme = useTheme();
   const { close } = usePanel();
   const current = useAtomValue(modeAtom);
+
   const available = jinion.agent.modes;
 
   const list = useChoiceList({

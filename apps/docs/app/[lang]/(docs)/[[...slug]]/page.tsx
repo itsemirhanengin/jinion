@@ -17,10 +17,12 @@ import { i18n } from '@/lib/i18n';
 export default async function Page(props: PageProps<'/[lang]/[[...slug]]'>) {
   const params = await props.params;
   const page = source.getPage(params.slug, params.lang);
+
   if (!page) notFound();
 
   const MDX = page.data.body;
   const markdownUrl = getPageMarkdownUrl(page).url;
+
   // A page that isn't translated yet is the English one, and its language decides how text such as labels is cased.
   const english = source.getPage(params.slug, i18n.defaultLanguage);
   const contentLang = english?.data === page.data ? i18n.defaultLanguage : params.lang;
@@ -55,6 +57,7 @@ export async function generateStaticParams() {
 export async function generateMetadata(props: PageProps<'/[lang]/[[...slug]]'>): Promise<Metadata> {
   const params = await props.params;
   const page = source.getPage(params.slug, params.lang);
+
   if (!page) notFound();
 
   return {

@@ -18,6 +18,7 @@ export const loadSettings = () => readJson<Settings>(file(), {});
 
 const update = (patch: (current: Settings) => Settings) => {
   const current = loadSettings();
+
   writeJson(file(), { ...current, ...patch(current) });
 };
 

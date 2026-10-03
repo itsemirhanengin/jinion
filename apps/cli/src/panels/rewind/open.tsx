@@ -7,8 +7,10 @@ export function openRewind(jinion: Jinion) {
   const { agent, conversation } = jinion;
   if (!agent.rewind) return jinion.notice(`${agent.name} can't rewind.`, 'warning');
   if (jinion.store.get(workingAtom)) return jinion.notice(BUSY, 'warning');
+
   const points = conversation.rewindPoints();
   if (points.length === 0) return jinion.notice('There is nothing to rewind yet.', 'muted');
+
   jinion.screen.openPanel({
     id: 'rewind',
     placement: 'bottom',

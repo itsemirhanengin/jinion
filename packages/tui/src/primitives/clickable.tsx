@@ -20,9 +20,10 @@ export const useHovered = () => useContext(PointerOverContext);
 
 export function Clickable({ id, onClick, fit = false, children }: ClickableProps) {
   const theme = useTheme();
-  const ref = useRef<DOMElement>(null);
   const area = useScrollArea();
   const hovered = useIsHovered(area?.hover, id);
+
+  const ref = useRef<DOMElement>(null);
 
   useEffect(() => area?.hoverable(id, ref), [area, id]);
   useClick(ref, onClick, { clip: area?.viewport });

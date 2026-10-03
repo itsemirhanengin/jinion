@@ -14,12 +14,14 @@ export const TAB_WIDTH = 4;
  */
 export function printable(text: string, tabWidth = TAB_WIDTH) {
   if (!UNPRINTABLE.test(text)) return text;
+
   return text
     .replace(TEXT_ESCAPES, '')
     .replace(EMOJI_PRESENTATION, '')
     .split('\n')
     .map((line) => {
       const ended = line.replace(/\r+$/, '');
+
       return expandTabs(ended.slice(ended.lastIndexOf('\r') + 1), tabWidth).replace(CONTROLS, '');
     })
     .join('\n');
@@ -27,7 +29,10 @@ export function printable(text: string, tabWidth = TAB_WIDTH) {
 
 function expandTabs(line: string, width: number) {
   if (!line.includes('\t')) return line;
+
   let expanded = '';
+
   for (const char of line) expanded += char === '\t' ? ' '.repeat(width - (expanded.length % width)) : char;
+
   return expanded;
 }

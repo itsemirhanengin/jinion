@@ -16,6 +16,7 @@ export function hunksToPatch(hunks: Hunk[]) {
 export function replacePatch(before: string, after: string) {
   const removed = splitLines(before);
   const added = splitLines(after);
+
   return [
     `@@ -1,${removed.length} +1,${added.length} @@`,
     ...removed.map((line) => `-${line}`),
@@ -25,6 +26,7 @@ export function replacePatch(before: string, after: string) {
 
 export function addPatch(content: string) {
   const lines = splitLines(content);
+
   return [`@@ -0,0 +1,${lines.length} @@`, ...lines.map((line) => `+${line}`)].join('\n');
 }
 

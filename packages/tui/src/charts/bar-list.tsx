@@ -19,7 +19,9 @@ export interface BarListProps {
 
 export function BarList({ bars, width = 20 }: BarListProps) {
   const theme = useTheme();
+
   const labelWidth = Math.max(0, ...bars.map((bar) => bar.labelWidth ?? (typeof bar.label === 'string' ? bar.label.length : 0))) + 2;
+
   return (
     <Box flexDirection="column">
       {bars.map((bar, index) => (

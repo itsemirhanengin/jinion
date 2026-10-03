@@ -3,31 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { claudeSays, FakeClaude, settle } from '../../test/fake-claude.js';
 import { ClaudeProcess } from './process.js';
 
-function start(fake: FakeClaude) {
-  const idle: SDKMessage[] = [];
-  const onExit = vi.fn();
-  const onTurn = vi.fn();
-  const claude = new ClaudeProcess({
-    options: {},
-    cwd: '/project',
-    spawn: fake.spawn,
-    onIdle: (message) => idle.push(message),
-    onTurn,
-    onExit,
-  });
-  return { claude, idle, onExit, onTurn };
-}
-
-const collect = async (turn: AsyncGenerator<SDKMessage>) => {
-  const messages: SDKMessage[] = [];
-  for await (const message of turn) messages.push(message);
-  return messages;
-};
-
 describe('ClaudeProcess', () => {
   it('reads what comes while no turn runs as idle', async () => {
     const fake = new FakeClaude();
     const { idle } = start(fake);
+
     fake.reply(claudeSays.commands('user:design'));
     await settle();
     expect(idle.map((message) => message.type)).toEqual(['system']);
@@ -36,9 +16,11 @@ describe('ClaudeProcess', () => {
   it('gives a turn what comes until the result that answers its prompt, and the rest to idle', async () => {
     const fake = new FakeClaude();
     const { claude, idle } = start(fake);
+
     const prompt = fake.nextPrompt();
     const turn = collect(claude.send('hello'));
     const { uuid, message } = await prompt;
+
     expect(message.content).toBe('hello');
 
     fake.reply(claudeSays.init(), claudeSays.text('Hi'), claudeSays.result('another prompt'), claudeSays.result(uuid!), claudeSays.commands('x'));
@@ -50,12 +32,15 @@ describe('ClaudeProcess', () => {
   it('keeps a turn open until the messages steered into it are answered too', async () => {
     const fake = new FakeClaude();
     const { claude, idle } = start(fake);
+
     const first = fake.nextPrompt();
     const turn = collect(claude.send('fix the tests'));
     const { uuid } = await first;
+
     const second = fake.nextPrompt();
     const id = claude.steer('keep the old API');
     const steered = await second;
+
     expect(steered).toMatchObject({ uuid: id, priority: 'next' });
 
     // Claude Code answered the first prompt before it read the second, so the second gets a turn of its own.
@@ -68,9 +53,11 @@ describe('ClaudeProcess', () => {
   it('ends an interrupted turn at its next result, whatever was steered into it', async () => {
     const fake = new FakeClaude();
     const { claude } = start(fake);
+
     const first = fake.nextPrompt();
     const turn = collect(claude.send('fix the tests'));
     const { uuid } = await first;
+
     claude.steer('and the docs');
     claude.interrupt();
     fake.reply(claudeSays.result(uuid!, 'interrupted'));
@@ -81,6 +68,7 @@ describe('ClaudeProcess', () => {
     const fake = new FakeClaude();
     const { claude, idle, onTurn } = start(fake);
     const subagent = { ...claudeSays.text('still listing'), parent_tool_use_id: 'toolu_agent' } as SDKMessage;
+
     fake.reply(subagent, claudeSays.init(), claudeSays.text('The tests pass.'), claudeSays.ownResult(), claudeSays.commands('x'));
     await settle();
     // A background subagent's messages come on their own, without a turn.
@@ -93,9 +81,11 @@ describe('ClaudeProcess', () => {
   it('keeps a prompt’s turn open through a turn Claude Code started itself', async () => {
     const fake = new FakeClaude();
     const { claude } = start(fake);
+
     const prompt = fake.nextPrompt();
     const turn = collect(claude.send('run the tests'));
     const { uuid } = await prompt;
+
     fake.reply(claudeSays.text('The server is up.'), claudeSays.ownResult(), claudeSays.text('Running them'), claudeSays.result(uuid!));
     expect((await turn).map((item) => item.type)).toEqual(['assistant', 'result', 'assistant', 'result']);
   });
@@ -104,6 +94,7 @@ describe('ClaudeProcess', () => {
     const fake = new FakeClaude();
     const { claude } = start(fake);
     const first = claude.send('first').next();
+
     await settle();
     await expect(claude.send('second').next()).rejects.toThrow('still answering');
     claude.close();
@@ -114,6 +105,7 @@ describe('ClaudeProcess', () => {
     const fake = new FakeClaude();
     const { claude, onExit } = start(fake);
     const turn = collect(claude.send('hello'));
+
     await settle();
     fake.stderr('Error: not logged in\n');
     fake.exit();
@@ -122,3 +114,28 @@ describe('ClaudeProcess', () => {
     await expect(claude.send('again').next()).rejects.toThrow('Claude Code exited');
   });
 });
+
+function start(fake: FakeClaude) {
+  const idle: SDKMessage[] = [];
+  const onExit = vi.fn();
+  const onTurn = vi.fn();
+
+  const claude = new ClaudeProcess({
+    options: {},
+    cwd: '/project',
+    spawn: fake.spawn,
+    onIdle: (message) => idle.push(message),
+    onTurn,
+    onExit,
+  });
+
+  return { claude, idle, onExit, onTurn };
+}
+
+const collect = async (turn: AsyncGenerator<SDKMessage>) => {
+  const messages: SDKMessage[] = [];
+
+  for await (const message of turn) messages.push(message);
+
+  return messages;
+};

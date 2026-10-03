@@ -17,18 +17,23 @@ export function Terminal({ title, screen }: { title?: string; screen: string }) 
 function render(screen: string): ReactNode[] {
   const parts: ReactNode[] = [];
   let last = 0;
+
   for (const match of screen.matchAll(marks)) {
     const [whole, names = '', text = ''] = match;
     const style = styleOf(names);
     if (!style) continue;
+
     parts.push(
       screen.slice(last, match.index),
       <span key={match.index} style={style}>
         {markText(text)}
       </span>,
     );
+
     last = match.index + whole.length;
   }
+
   parts.push(screen.slice(last));
+
   return parts;
 }

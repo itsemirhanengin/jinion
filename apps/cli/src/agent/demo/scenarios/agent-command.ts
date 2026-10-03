@@ -13,11 +13,13 @@ export const agentCommand: Scenario = {
 
     for (const command of commands) {
       const mcp = command.source === 'mcp';
+
       yield* script.think(
         mcp
           ? `The user picked the ${command.name} prompt from the ${command.group} MCP server. I will fetch it and follow what it returns.`
           : `The user picked the ${command.name} skill. I will load its instructions before doing anything.`,
       );
+
       yield* script.tool(
         'read',
         { files: [{ path: mcp ? `mcp://${command.group}/prompts/${command.name}` : `.claude/skills/${command.name}/SKILL.md` }] },
@@ -25,8 +27,11 @@ export const agentCommand: Scenario = {
         500,
       );
     }
+
     yield* script.usage(1_100, 0.003);
+
     const names = commands.map((command) => `\`$${command.name}\``).join(' and ');
+
     yield* script.say(
       `This is the scripted demo agent, so ${names} ${commands.length > 1 ? 'stop' : 'stops'} here${rest ? ` (the rest of the message: \`${rest}\`)` : ''}. A real agent would now follow what it loaded.`,
     );

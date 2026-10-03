@@ -15,8 +15,11 @@ export class PastedTexts {
     const lines = text.split('\n').length;
     // A tab or a control character would throw the prompt's layout off; as a placeholder, the text goes out as it is.
     if (lines < this.minLines && text.length < this.minLength && printable(text) === text) return text;
+
     const id = ++this.count;
+
     this.texts.set(id, text);
+
     return lines > 1 ? `[Pasted text #${id} +${lines} lines]` : `[Pasted text #${id} ${text.length} chars]`;
   }
 

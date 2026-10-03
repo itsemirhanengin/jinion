@@ -12,7 +12,9 @@ export const remember: Command = {
     const scope = first === 'user' || first === 'project' ? first : 'project';
     const content = (first === scope ? rest.join(' ') : args).trim();
     if (!content) return jinion.notice('Say what to remember, e.g. /remember use pnpm, not npm.', 'warning');
+
     const line = content.split('\n')[0]!;
+
     const memory = jinion.memory.save({
       scope,
       type: scope === 'user' ? 'preference' : 'fact',
@@ -20,6 +22,7 @@ export const remember: Command = {
       description: truncate(line, 160),
       content,
     });
+
     jinion.notice(`Saved ${memory.scope}/${memory.id}. The agent sees it from the next conversation on.`, 'success');
   },
 };
@@ -30,8 +33,10 @@ export const memory: Command = {
   argumentHint: '[import]',
   run: (jinion, args) => {
     if (args.trim() !== 'import') return jinion.screen.openPanel({ id: 'memory', placement: 'bottom', element: <MemoryPanel /> });
+
     const { added, skipped } = importClaudeMemory(jinion.memory, jinion.info.cwd);
     const note = skipped > 0 ? ` (${skipped} already here)` : '';
+
     jinion.notice(
       added > 0
         ? `Imported ${added} notes from Claude Code${note}. The agent sees them from the next conversation on.`

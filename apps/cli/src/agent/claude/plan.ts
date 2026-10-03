@@ -10,9 +10,12 @@ export class PlanFile {
   writes(input: Input) {
     const path = text(input.file_path);
     if (!path || !isPlanFile(path)) return false;
+
     this.path = path;
+
     if (typeof input.content === 'string') this.text = input.content;
     else if (this.text !== undefined) this.text = this.text.replace(text(input.old_string), text(input.new_string));
+
     return true;
   }
 

@@ -25,6 +25,7 @@ export async function claudeUsage(running: Query, drivers: boolean): Promise<Age
 export function toAgentUsage(response: SDKControlGetUsageResponse): AgentUsage {
   const { session, rate_limits: limits, behaviors } = response;
   const extra = limits?.extra_usage;
+
   return {
     session: {
       cost: session.total_cost_usd,
@@ -58,6 +59,7 @@ export function toAgentUsage(response: SDKControlGetUsageResponse): AgentUsage {
 
 function window(label: string, value: Window): LimitWindow | undefined {
   if (!value || value.utilization === null) return undefined;
+
   return { label, used: value.utilization / 100, resetsAt: value.resets_at ? Date.parse(value.resets_at) : undefined };
 }
 
@@ -65,11 +67,13 @@ function window(label: string, value: Window): LimitWindow | undefined {
 export function limitWindows(info: RateLimitInfo): LimitWindow[] {
   const unified = (info as { unifiedWindows?: Record<string, { utilization?: number; resetsAt?: number }> })
     .unifiedWindows;
+
   const entries = unified
     ? Object.entries(unified)
     : info.rateLimitType
       ? [[info.rateLimitType, { utilization: info.utilization, resetsAt: info.resetsAt }] as const]
       : [];
+
   return entries.flatMap(([id, window]) =>
     typeof window.utilization === 'number'
       ? [
@@ -94,6 +98,7 @@ const TRAITS: Record<Behaviors['behaviors'][number]['key'], UsageDrivers['traits
 function toDrivers(window: Behaviors): UsageDrivers {
   const sources = (kind: UsageDrivers['sources'][number]['kind'], items: { name: string; pct: number }[]) =>
     items.map((item) => ({ kind, name: item.name, share: item.pct / 100 }));
+
   return {
     requests: window.request_count,
     sessions: window.session_count,
@@ -121,6 +126,8 @@ export function toContextUsage(response: ContextResponse): ContextUsage {
 export function modelName(id: string) {
   const match = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/.exec(id);
   if (!match) return id;
+
   const [, family, major, minor] = match;
+
   return `${family!.charAt(0).toUpperCase()}${family!.slice(1)} ${major}${minor ? `.${minor}` : ''}`;
 }

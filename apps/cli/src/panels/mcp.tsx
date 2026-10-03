@@ -16,6 +16,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
   const jinion = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
+
   const [servers, setServers] = useState<McpServerInfo[]>();
   const [failure, setFailure] = useState<string>();
   // Servers the user toggled keep their check when the list comes in again.
@@ -28,13 +29,17 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     onToggle: (name) => void touched.current.add(name),
     onSubmit: (checked) => {
       close();
+
       const changed = (servers ?? []).filter((server) => checked.includes(server.name) !== server.enabled);
       if (changed.length === 0) return;
+
       const labels = (on: boolean) => changed.filter((server) => !server.enabled === on).map((server) => server.label);
+
       mcp.setEnabled(Object.fromEntries(changed.map((server) => [server.name, !server.enabled]))).then(
         () => {
           const parts = [labels(true).length > 0 && `turned on ${labels(true).join(', ')}`, labels(false).length > 0 && `turned off ${labels(false).join(', ')}`];
           const done = parts.filter(Boolean).join('; ');
+
           jinion.notice(`${done.charAt(0).toUpperCase()}${done.slice(1)}. This applies from the next turn.`, 'success');
           jinion.reloadSkills();
         },
@@ -43,28 +48,9 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     },
   });
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout | undefined;
-    let open = true;
-    const load = () =>
-      mcp.servers().then(
-        (next) => {
-          if (!open) return;
-          setServers(next);
-          for (const server of next) if (!touched.current.has(server.name)) list.setChecked(server.name, server.enabled);
-          if (next.some((server) => server.status === 'pending')) timer = setTimeout(load, POLL_MS);
-        },
-        (error: unknown) => open && setFailure(errorMessage(error)),
-      );
-    void load();
-    return () => {
-      open = false;
-      clearTimeout(timer);
-    };
-  }, []);
-
   const choices: Choice[] = (servers ?? []).map((server) => {
     const checked = list.isChecked(server.name);
+
     return {
       key: server.name,
       label: (
@@ -79,6 +65,31 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
   });
 
   const on = servers?.filter((server) => list.isChecked(server.name)).length ?? 0;
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | undefined;
+    let open = true;
+
+    const load = () =>
+      mcp.servers().then(
+        (next) => {
+          if (!open) return;
+
+          setServers(next);
+          for (const server of next) if (!touched.current.has(server.name)) list.setChecked(server.name, server.enabled);
+          if (next.some((server) => server.status === 'pending')) timer = setTimeout(load, POLL_MS);
+        },
+        (error: unknown) => open && setFailure(errorMessage(error)),
+      );
+
+    void load();
+
+    return () => {
+      open = false;
+      clearTimeout(timer);
+    };
+  }, []);
+
   return (
     <Panel
       title="MCP servers"
@@ -120,12 +131,16 @@ function describe(server: McpServerInfo, theme: Theme) {
           <Text color={theme.muted}> · {plural(server.tools.length, 'tool')}</Text>
         </Text>
       );
+
     case 'pending':
       return <Text color={theme.muted}>connecting…</Text>;
+
     case 'needs-auth':
       return <Text color={theme.warning}>not signed in</Text>;
+
     case 'failed':
       return <Text color={theme.error}>failed to connect</Text>;
+
     case 'off':
       return <Text color={theme.muted}>{server.source === 'project' ? 'off until you turn it on (from .mcp.json)' : 'off'}</Text>;
   }
@@ -133,8 +148,10 @@ function describe(server: McpServerInfo, theme: Theme) {
 
 function Details({ server, indent }: { server: McpServerInfo; indent: number }) {
   const theme = useTheme();
+
   const tools = server.tools.slice(0, TOOLS_SHOWN).join(', ');
   const more = server.tools.length - TOOLS_SHOWN;
+
   return (
     <Box flexDirection="column" paddingLeft={indent} marginBottom={1}>
       {server.target && (

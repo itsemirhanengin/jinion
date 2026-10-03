@@ -9,7 +9,9 @@ export class ModelController {
 
   load() {
     const { agent, store } = this.context;
+
     store.set(modelsAtom, undefined);
+
     agent.models().then(
       (models) => store.set(modelsAtom, models),
       () => store.set(modelsAtom, []),
@@ -20,12 +22,15 @@ export class ModelController {
   options(): ModelOption[] | undefined {
     const { agent, store, notice } = this.context;
     const options = store.get(modelsAtom);
+
     if (!options) notice(`${agent.name} is still listing its models. Try again in a moment.`, 'warning');
+
     return options;
   }
 
   select(next: ModelSelection) {
     const { agent, store, notice } = this.context;
+
     agent.select(next).then(
       () => {
         store.set(selectionAtom, next);

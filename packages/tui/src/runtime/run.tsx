@@ -13,16 +13,11 @@ export interface RunOptions {
   ink?: RenderOptions;
 }
 
-async function themeFor(scheme: ColorScheme | undefined): Promise<Theme> {
-  const background = await detectBackground();
-  const chosen = scheme ?? background.scheme;
-  return { ...themes[chosen], background: background.scheme === chosen ? background.color : undefined };
-}
-
 export async function run(node: ReactNode, options: RunOptions = {}): Promise<Instance> {
   const theme = options.theme ?? (await themeFor(options.scheme));
   const { stdout } = process;
   const interactive = Boolean(stdout.isTTY && process.stdin.isTTY);
+
   const { instance, close } = mount(node, {
     theme,
     terminal: createTerminalControl((data) => interactive && stdout.write(data)),
@@ -39,8 +34,10 @@ export async function run(node: ReactNode, options: RunOptions = {}): Promise<In
 
   if (interactive) {
     const restore = () => stdout.write(DISABLE_MOUSE + DISABLE_FOCUS + pointerSequence('default'));
+
     stdout.write(ENABLE_MOUSE + ENABLE_FOCUS);
     process.once('exit', restore);
+
     instance
       .waitUntilExit()
       .catch(() => {})
@@ -52,4 +49,11 @@ export async function run(node: ReactNode, options: RunOptions = {}): Promise<In
   }
 
   return instance;
+}
+
+async function themeFor(scheme: ColorScheme | undefined): Promise<Theme> {
+  const background = await detectBackground();
+  const chosen = scheme ?? background.scheme;
+
+  return { ...themes[chosen], background: background.scheme === chosen ? background.color : undefined };
 }

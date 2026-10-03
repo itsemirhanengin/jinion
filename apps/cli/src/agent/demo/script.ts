@@ -23,9 +23,10 @@ export class Script {
   async *background(command: string, script: BackgroundScript): AsyncGenerator<AgentEvent> {
     const call = this.stage.nextCall();
     const id = `tool_${call}`;
+    const task = `task_${call}`;
+
     yield { type: 'tool-start', id, call: { name: 'bash', input: { command, timeoutMs: 120_000 } } };
     await this.wait(300);
-    const task = `task_${call}`;
     yield this.stage.tasks.start(task, command, script);
     yield { type: 'tool-end', id, ok: true, result: { exitCode: 0, wallMs: 300, background: task } };
   }
@@ -45,6 +46,7 @@ export class Script {
 
   async *usage(tokens: number, cost: number): AsyncGenerator<AgentEvent> {
     const { totals } = this.stage;
+
     totals.contextTokens += tokens;
     totals.cost += cost;
     yield { type: 'usage', usage: { ...totals } };
@@ -57,6 +59,7 @@ export class Script {
     durationMs = 600,
   ): AsyncGenerator<AgentEvent> {
     const id = this.callId();
+
     yield { type: 'tool-start', id, call: { name, input } as ToolCall };
     await this.wait(durationMs);
     yield { type: 'tool-end', id, ok: true, result };
@@ -64,13 +67,17 @@ export class Script {
 
   async *agent(description: string, calls: { call: ToolCall; result?: ToolResult }[], stepMs = 350): AsyncGenerator<AgentEvent> {
     const id = this.callId();
+
     yield { type: 'tool-start', id, call: { name: 'agent', input: { description, kind: 'Explore' } } };
+
     for (const { call, result } of calls) {
       const child = this.callId();
+
       yield { type: 'tool-start', id: child, call, parent: id };
       await this.wait(stepMs);
       yield { type: 'tool-end', id: child, ok: true, result, parent: id };
     }
+
     yield { type: 'tool-end', id, ok: true, result: {} };
   }
 
@@ -80,19 +87,25 @@ export class Script {
     { exitCode = 0, durationMs = 1200, timeoutMs = 120_000 } = {},
   ): AsyncGenerator<AgentEvent> {
     const id = this.callId();
+
     yield { type: 'tool-start', id, call: { name: 'bash', input: { command, timeoutMs } } };
+
     for (const line of output) {
       await this.wait(durationMs / Math.max(1, output.length));
       yield { type: 'tool-output', id, lines: [line] };
     }
+
     yield { type: 'tool-end', id, ok: exitCode === 0, result: { exitCode, wallMs: durationMs } };
   }
 
   async *ask(questions: Question[]): AsyncGenerator<AgentEvent, QuestionAnswer[]> {
     const id = this.callId();
+
     yield { type: 'tool-start', id, call: { name: 'ask', input: { questions } } };
     const answers = await this.context.ask(questions);
+
     yield { type: 'tool-end', id, ok: true, result: { answers } };
+
     return answers;
   }
 
@@ -109,16 +122,20 @@ export class Script {
 
   private wait(ms: number) {
     const { signal } = this.context;
+
     return new Promise<void>((resolve, reject) => {
       if (signal.aborted) return reject(signal.reason);
+
       const timer = setTimeout(() => {
         signal.removeEventListener('abort', onAbort);
         resolve();
       }, ms * this.stage.pace);
+
       const onAbort = () => {
         clearTimeout(timer);
         reject(signal.reason);
       };
+
       signal.addEventListener('abort', onAbort, { once: true });
     });
   }

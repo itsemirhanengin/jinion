@@ -6,37 +6,20 @@ import { compact, percent } from '../lib/format.js';
 import { modelNameAtom } from '../state/agent.js';
 import { useAsync } from '../ui/use-async.js';
 
-/** Claude Code's categories in the colors they keep here; any other takes the next of the rest. */
-function colors(theme: Theme) {
-  const known: Record<string, string> = {
-    'System prompt': theme.accent,
-    'System tools': theme.code,
-    'MCP server instructions': theme.syntax.variable,
-    'MCP tools': theme.syntax.variable,
-    'Custom agents': theme.status.cost,
-    'Memory files': theme.success,
-    Skills: theme.heading,
-    Messages: theme.syntax.string,
-    'Free space': theme.heat[0],
-    'Autocompact buffer': theme.border,
-  };
-  const rest = [theme.warning, theme.link, theme.diff.added, theme.error];
-  let next = 0;
-  return (name: string) => known[name] ?? rest[next++ % rest.length]!;
-}
-
 export function ContextPanel() {
   const { agent } = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
   const modelName = useAtomValue(modelNameAtom);
+
   const read = agent.context?.bind(agent);
   const usage = useAsync(() => read?.(), []);
+  const loaded = usage.state === 'done' ? usage.value : undefined;
+
   useInput((_, key) => {
     if (key.escape || key.return) close();
   });
 
-  const loaded = usage.state === 'done' ? usage.value : undefined;
   return (
     <Panel
       title="Context"
@@ -62,9 +45,11 @@ export function ContextPanel() {
 
 function ContextChart({ usage }: { usage: ContextUsage }) {
   const theme = useTheme();
+
   const colorOf = colors(theme);
   const shown = usage.categories.filter((category) => category.kind !== 'deferred' && category.tokens > 0);
   const deferred = usage.categories.filter((category) => category.kind === 'deferred' && category.tokens > 0);
+
   return (
     <Box flexDirection="column">
       <Waffle
@@ -95,4 +80,25 @@ function ContextChart({ usage }: { usage: ContextUsage }) {
       </Box>
     </Box>
   );
+}
+
+/** Claude Code's categories in the colors they keep here; any other takes the next of the rest. */
+function colors(theme: Theme) {
+  const known: Record<string, string> = {
+    'System prompt': theme.accent,
+    'System tools': theme.code,
+    'MCP server instructions': theme.syntax.variable,
+    'MCP tools': theme.syntax.variable,
+    'Custom agents': theme.status.cost,
+    'Memory files': theme.success,
+    Skills: theme.heading,
+    Messages: theme.syntax.string,
+    'Free space': theme.heat[0],
+    'Autocompact buffer': theme.border,
+  };
+
+  const rest = [theme.warning, theme.link, theme.diff.added, theme.error];
+  let next = 0;
+
+  return (name: string) => known[name] ?? rest[next++ % rest.length]!;
 }

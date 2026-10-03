@@ -99,6 +99,7 @@ describe('readsRepositories', () => {
     ]) {
       expect(reads(command), command).toBe(false);
     }
+
     expect(readsRepositories('Write', { command: 'git -C api status' })).toBe(false);
   });
 });

@@ -32,6 +32,7 @@ const ExpandedContext = createContext(false);
 export function ViewProvider({ children }: { children: ReactNode }) {
   const [state] = useState(() => new ViewState());
   const expanded = useSyncExternalStore(state.subscribe, () => state.expanded);
+
   return (
     <StateContext.Provider value={state}>
       <ExpandedContext.Provider value={expanded}>{children}</ExpandedContext.Provider>
@@ -42,6 +43,7 @@ export function ViewProvider({ children }: { children: ReactNode }) {
 export function useView(): View {
   const state = useContext(StateContext);
   const expanded = useContext(ExpandedContext);
+
   return useMemo(
     () => ({ expanded, toggleExpanded: state.toggleExpanded, items: state.items, setItem: state.setItem }),
     [state, expanded],
@@ -52,5 +54,6 @@ export function ViewItem({ id, children }: { id: string; children: ReactNode }) 
   const state = useContext(StateContext);
   const inherited = useContext(ExpandedContext);
   const own = useSyncExternalStore(state.subscribe, () => state.items.get(id));
+
   return <ExpandedContext.Provider value={own ?? inherited}>{children}</ExpandedContext.Provider>;
 }

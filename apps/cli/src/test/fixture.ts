@@ -15,23 +15,8 @@ type Message = Record<string, any>;
 
 const DELTA_TEXT: Record<string, string> = { text_delta: 'text', thinking_delta: 'thinking', input_json_delta: 'partial_json' };
 
-function mergeDeltas(messages: Message[]) {
-  const merged: Message[] = [];
-  for (const message of messages) {
-    const last = merged.at(-1);
-    const delta = message.type === 'stream_event' && message.event.type === 'content_block_delta' ? message.event.delta : undefined;
-    const field = delta && DELTA_TEXT[delta.type];
-    const previous = last?.type === 'stream_event' && last.event.type === 'content_block_delta' ? last.event : undefined;
-    if (field && previous && previous.index === message.event.index && previous.delta.type === delta.type && last!.parent_tool_use_id === message.parent_tool_use_id) {
-      previous.delta[field] += delta[field];
-      continue;
-    }
-    merged.push(message);
-  }
-  return merged;
-}
-
 const [log, name] = process.argv.slice(2);
+
 if (!log || !name) {
   console.error('Usage: fixture <debug log> <fixture name>');
   process.exit(1);
@@ -42,6 +27,7 @@ const records = readFileSync(resolve(process.env.INIT_CWD ?? process.cwd(), log)
   .split('\n')
   .filter(Boolean)
   .map((line) => JSON.parse(line) as DebugRecord);
+
 const cwd = (records.find((record) => record.kind === 'start')?.data as { cwd?: string } | undefined)?.cwd;
 
 const replacements: [string, string][] = [
@@ -49,8 +35,10 @@ const replacements: [string, string][] = [
   [homedir(), '/home/user'],
   [userInfo().username, 'user'],
 ];
+
 /** Claude Code's temporary folder for the project, where background tasks write their output. */
 const CLAUDE_TEMP = /(?:\/private)?\/tmp\/claude-\d+\/[^/"\\]+\//g;
+
 const clean = (text: string) =>
   replacements.reduce((current, [from, to]) => current.replaceAll(from, to), text).replace(CLAUDE_TEMP, '/tmp/claude/project/');
 
@@ -60,10 +48,33 @@ const messages = records
   .filter((message) => !(message.type === 'system' && DROPPED.has(message.subtype)))
   .map((message) => {
     if (message.type !== 'system' || message.subtype !== 'init') return message;
+
     return Object.fromEntries(INIT_FIELDS.filter((field) => field in message).map((field) => [field, message[field]]));
   });
+
 const lines = mergeDeltas(messages).map((message) => clean(JSON.stringify(message)));
 
 const path = join(import.meta.dirname, '..', 'agent', 'claude', 'fixtures', `${name}.jsonl`);
+
 writeFileSync(path, `${lines.join('\n')}\n`);
 console.log(`Wrote ${lines.length} messages to ${path}`);
+
+function mergeDeltas(messages: Message[]) {
+  const merged: Message[] = [];
+
+  for (const message of messages) {
+    const last = merged.at(-1);
+    const delta = message.type === 'stream_event' && message.event.type === 'content_block_delta' ? message.event.delta : undefined;
+    const field = delta && DELTA_TEXT[delta.type];
+    const previous = last?.type === 'stream_event' && last.event.type === 'content_block_delta' ? last.event : undefined;
+
+    if (field && previous && previous.index === message.event.index && previous.delta.type === delta.type && last!.parent_tool_use_id === message.parent_tool_use_id) {
+      previous.delta[field] += delta[field];
+      continue;
+    }
+
+    merged.push(message);
+  }
+
+  return merged;
+}

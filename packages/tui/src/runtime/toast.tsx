@@ -14,6 +14,7 @@ const ShowContext = createContext<(text: string) => void>(() => {});
 export const useToast = (): Toast => {
   const text = useContext(TextContext);
   const show = useContext(ShowContext);
+
   return useMemo(() => ({ text, show }), [text, show]);
 };
 
@@ -22,11 +23,13 @@ export const useShowToast = () => useContext(ShowContext);
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [text, setText] = useState<string>();
   const timer = useRef<NodeJS.Timeout>(undefined);
+
   const show = useCallback((next: string) => {
     clearTimeout(timer.current);
     setText(next);
     timer.current = setTimeout(() => setText(undefined), TOAST_MS);
   }, []);
+
   useEffect(() => () => clearTimeout(timer.current), []);
 
   return (

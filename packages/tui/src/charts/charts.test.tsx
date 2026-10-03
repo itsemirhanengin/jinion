@@ -18,6 +18,7 @@ const lines = async (screen: Promise<string>) => (await screen).split('\n').filt
 describe('Heatmap', () => {
   it('draws a square per day, a column per week, with the months over the weeks they start in', async () => {
     terminal = renderTerminal(<Heatmap values={{}} end={END} weeks={8} legend />, { columns: 60, rows: 12 });
+
     expect(await lines(terminal.screen())).toEqual([
       '          Sep     Oct',
       '    ■ ■ ■ ■ ■ ■ ■ ■',
@@ -35,13 +36,16 @@ describe('Heatmap', () => {
     // A Thursday: Friday and Saturday of its week are still to come.
     terminal = renderTerminal(<Heatmap values={{}} end={new Date(2026, 9, 1)} />, { columns: 25, rows: 10 });
     const rows = await lines(terminal.screen());
+
     expect(rows[1]).toBe('    ■ ■ ■ ■ ■ ■ ■ ■ ■ ■');
     expect(rows[6]).toBe('Fri ■ ■ ■ ■ ■ ■ ■ ■ ■');
   });
 
   it('shades each day by the quartile it falls in', async () => {
     const values = { [dayKey(END)]: 100, [addDays(dayKey(END), -1)]: 1 };
+
     terminal = renderTerminal(<Heatmap values={values} end={END} weeks={1} />, { columns: 20, rows: 10, theme: darkTheme });
+
     expect(await lines(terminal.screen())).toEqual(['    Oct', '    ■', 'Mon ■', '    ■', 'Wed ■', '    ■', 'Fri ■', '    ■']);
     expect(await terminal.colorOf('Fri ■', 4)).toBe(darkTheme.heat[1]);
     expect(await terminal.colorOf('Mon ■', 4)).toBe(darkTheme.heat[0]);
@@ -53,9 +57,11 @@ describe('Heatmap', () => {
       rows: 10,
       theme: darkTheme,
     });
+
     expect(await lines(terminal.screen())).toContain('Fri ■ ■');
     expect(await terminal.colorOf('Fri ■ ■', 6)).toBe(darkTheme.accent);
     expect(await terminal.colorOf('Fri ■ ■', 4)).toBe(darkTheme.heat[0]);
+
     expect(heatLevels([1, 2, 3, 4, 100])(100)).toBe(4);
     expect(heatLevels([1, 2, 3, 4, 100])(1)).toBe(1);
     expect(heatLevels([1, 2, 3, 4, 100])(0)).toBe(0);
@@ -83,6 +89,7 @@ describe('Waffle', () => {
       />,
       { columns: 40, rows: 3, theme: darkTheme },
     );
+
     expect(await lines(terminal.screen())).toEqual(['■ ■ ■ ■   ■ Messages    3 tokens', '■ ■ ■ ■   ■ Free space']);
     expect(await terminal.colorOf('■ ■ ■ ■   ■ Messages', 4)).toBe(darkTheme.accent);
     expect(await terminal.colorOf('■ ■ ■ ■   ■ Messages', 6)).toBe(darkTheme.heat[0]);
@@ -102,6 +109,7 @@ describe('StatGrid', () => {
       />,
       { columns: 60, rows: 4 },
     );
+
     expect(await lines(terminal.screen())).toEqual([
       'Sessions     435              Longest session  7d 2h',
       'Active days  61 of 76         Streak           21 days',
@@ -121,6 +129,7 @@ describe('BarList', () => {
       />,
       { columns: 40, rows: 4 },
     );
+
     expect(await lines(terminal.screen())).toEqual([
       'Opus 5.5   [=====-----] 50%',
       '           in 12k · out 1.4M',

@@ -33,6 +33,7 @@ export async function detectBackground(options: DetectOptions = {}): Promise<Ter
 
   const [r, g, b] = match.slice(1, 4).map(normalizeChannel) as [number, number, number];
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
   return { scheme: luminance > 0.5 ? 'light' : 'dark', color: hexColor([r, g, b].map((channel) => channel * 255)) };
 }
 
@@ -59,6 +60,7 @@ function queryTerminal(stdin: NodeJS.ReadStream, stdout: NodeJS.WriteStream, tim
     };
 
     const timer = setTimeout(() => finish(buffer || undefined), timeout);
+
     stdin.setRawMode(true);
     stdin.on('data', onData);
     stdin.resume();
@@ -73,5 +75,6 @@ function normalizeChannel(hex: string) {
 function schemeFromColorFgBg(value: string | undefined): ColorScheme | undefined {
   const background = Number(value?.split(';').at(-1));
   if (!Number.isInteger(background)) return undefined;
+
   return background === 7 || background === 15 ? 'light' : 'dark';
 }

@@ -9,6 +9,7 @@ export const accountsDir = () => join(jinionHome(), 'accounts', 'claude');
 /** `''` for `dir` itself, `undefined` outside it. */
 export function within(path: string, dir: string) {
   const from = relative(dir, resolve(dir, path));
+
   return from.startsWith('..') || isAbsolute(from) ? undefined : from;
 }
 
@@ -18,6 +19,8 @@ export const inside = (path: string, dir: string) => within(path, dir) !== undef
 export function isPlanFile(path: string) {
   const configs = [join(homedir(), '.claude'), claudeConfigDir()];
   if (configs.some((folder) => inside(path, join(folder, 'plans')))) return true;
+
   const [account, folder, ...rest] = relative(accountsDir(), resolve(path)).split(sep);
+
   return account !== '..' && !isAbsolute(account ?? '') && folder === 'plans' && rest.length > 0;
 }

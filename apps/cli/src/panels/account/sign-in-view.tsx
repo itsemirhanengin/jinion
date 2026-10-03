@@ -3,7 +3,9 @@ import type { Signing } from './use-sign-in.js';
 
 export function SignInView({ signing, onType, onSend }: { signing: Signing; onType(code: string): void; onSend(code: string): void }) {
   const theme = useTheme();
+
   const { prompt } = signing;
+
   return (
     <Panel title="Account" subtitle={signing.name} hints={prompt && !signing.sent ? [['Enter', 'send'], ['Esc', 'cancel']] : [['Esc', 'cancel']]}>
       <Text>

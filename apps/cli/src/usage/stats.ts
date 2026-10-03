@@ -29,9 +29,6 @@ export interface UsageStats {
   models: ModelShare[];
 }
 
-export const totalOf = (tokens: ModelTokens) =>
-  tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite + (tokens.summarized ?? 0);
-
 export function usageStats(history: UsageHistory, range: StatsRange, today = new Date()): UsageStats {
   const last = dayKey(today);
   const days = RANGES.find((candidate) => candidate.range === range)?.days;
@@ -41,17 +38,22 @@ export function usageStats(history: UsageHistory, range: StatsRange, today = new
 
   const tokens = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, summarized: 0 };
   const byModel = new Map<string, Required<ModelTokens>>();
+
   for (const day of shown) {
     for (const [name, used] of Object.entries(day.models)) {
       const model = byModel.get(name) ?? { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, summarized: 0 };
+
       for (const key of ['input', 'output', 'cacheRead', 'cacheWrite', 'summarized'] as const) {
         model[key] += used[key] ?? 0;
         tokens[key] += used[key] ?? 0;
       }
+
       byModel.set(name, model);
     }
   }
+
   const total = totalOf(tokens);
+
   const models = [...byModel]
     .map(([name, used]) => ({ name, tokens: used, total: totalOf(used), share: total > 0 ? totalOf(used) / total : 0 }))
     .filter((model) => model.total > 0)
@@ -61,10 +63,12 @@ export function usageStats(history: UsageHistory, range: StatsRange, today = new
     .filter((session) => !from || dayKey(new Date(session.end)) >= from)
     .reduce<{ ms: number; date: string } | undefined>((best, session) => {
       const ms = session.end - session.start;
+
       return !best || ms > best.ms ? { ms, date: dayKey(new Date(session.start)) } : best;
     }, undefined);
 
   const first = active[0]?.date;
+
   return {
     sessions: shown.reduce((sum, day) => sum + day.sessions, 0),
     messages: shown.reduce((sum, day) => sum + day.messages, 0),
@@ -78,21 +82,30 @@ export function usageStats(history: UsageHistory, range: StatsRange, today = new
   };
 }
 
+export const totalOf = (tokens: ModelTokens) =>
+  tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite + (tokens.summarized ?? 0);
+
 /** The current streak runs up to yesterday while today has no activity yet. */
 function streaks(active: Set<string>, today: string) {
   let longestStreak = 0;
+
   for (const day of active) {
     if (active.has(addDays(day, -1))) continue;
+
     let length = 1;
+
     while (active.has(addDays(day, length))) length++;
     longestStreak = Math.max(longestStreak, length);
   }
+
   let day = active.has(today) ? today : addDays(today, -1);
   let currentStreak = 0;
+
   while (active.has(day)) {
     currentStreak++;
     day = addDays(day, -1);
   }
+
   return { currentStreak, longestStreak };
 }
 

@@ -21,11 +21,13 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
   if (!notPages.test(path)) {
     // The root page has no name of its own, so its Markdown is at `/index.md`.
     const suffixed = path === '/index.md' ? `${docsContentRoute}/content.md` : rewriteSuffix(path);
+
     if (suffixed) {
       return NextResponse.rewrite(new URL(`/${lang}${suffixed}`, request.nextUrl));
     }
 
     const negotiated = isMarkdownPreferred(request) && rewriteDocs(path);
+
     if (negotiated) {
       return NextResponse.rewrite(new URL(`/${lang}${negotiated}`, request.nextUrl), {
         // this URL has two representations, selected by `Accept`
@@ -39,9 +41,11 @@ export default function proxy(request: NextRequest, event: NextFetchEvent) {
 
 function splitLanguage(pathname: string): { lang: string; path: string } {
   const [, first = '', ...rest] = pathname.split('/');
+
   if ((i18n.languages as readonly string[]).includes(first)) {
     return { lang: first, path: `/${rest.join('/')}` };
   }
+
   return { lang: i18n.defaultLanguage, path: pathname };
 }
 

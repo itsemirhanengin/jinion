@@ -26,6 +26,7 @@ const HINTS: Record<UsageTab, KeyHint[]> = {
 export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
   const { agent } = useJinion();
   const { close } = usePanel();
+
   const [active] = useTabs(TABS.length, { initial: tab === 'stats' ? 1 : 0, arrows: false });
   const loaded = useUsage();
 
@@ -47,6 +48,7 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
 /** Both tabs load at once, so switching shows what is already there. */
 function useUsage() {
   const { agent } = useJinion();
+
   const [usage, setUsage] = useState<AgentUsage>();
   const [usageError, setUsageError] = useState<string>();
   const [history, setHistory] = useState<UsageHistory>();
@@ -57,17 +59,22 @@ function useUsage() {
     let open = true;
     const failed = (set: (message: string) => void) => (error: unknown) => open && set(errorMessage(error));
     const current = agent.usage?.bind(agent);
+
     // The limits come quickly; what adds to them takes a look through the week's conversations.
     current?.({ drivers: false })
       .then((quick) => {
         if (!open) return;
+
         setUsage(quick);
+
         return current({ drivers: true }).then((full) => open && setUsage(full));
       })
       .catch(failed(setUsageError));
+
     agent.history
       ?.((done, total) => open && setProgress([done, total]))
       .then((days) => open && setHistory(days), failed(setHistoryError));
+
     return () => {
       open = false;
     };

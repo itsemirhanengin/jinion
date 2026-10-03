@@ -5,9 +5,11 @@ const INDEX_LIMIT = 150;
 
 export function memorySection(store: MemoryStore) {
   const notes = store.list();
+
   const index = notes
     .slice(0, INDEX_LIMIT)
     .map((memory) => `- ${memory.scope}/${memory.id} (${memory.type}): ${memory.description}`);
+
   if (notes.length > INDEX_LIMIT) index.push(`- …and ${notes.length - INDEX_LIMIT} more; \`recall\` without ids lists them all.`);
 
   return `# Memory

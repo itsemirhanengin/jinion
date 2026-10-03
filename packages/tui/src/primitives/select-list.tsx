@@ -12,6 +12,7 @@ export interface SelectListProps<T> {
 
 export function SelectList<T>({ items, selected, limit = 8, renderItem, empty = 'No matches' }: SelectListProps<T>) {
   const theme = useTheme();
+
   if (items.length === 0) return <Text color={theme.muted}>{empty}</Text>;
 
   const start = Math.min(Math.max(0, selected - Math.floor(limit / 2)), Math.max(0, items.length - limit));
@@ -41,6 +42,7 @@ export interface ListRowProps {
 
 export function ListRow({ selected = false, label, labelWidth, description, aside, detail }: ListRowProps) {
   const theme = useTheme();
+
   const color = selected ? theme.selection : undefined;
 
   return (

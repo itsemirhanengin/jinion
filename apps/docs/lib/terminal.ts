@@ -38,6 +38,7 @@ const colors = new Set([
   'heat-3',
   'heat-4',
 ]);
+
 const backgrounds = new Set([
   'surface',
   'surface-pending',
@@ -49,6 +50,7 @@ const backgrounds = new Set([
   'added-hl',
   'removed-hl',
 ]);
+
 const styles: Record<string, CSSProperties> = {
   bold: { fontWeight: 700 },
   italic: { fontStyle: 'italic' },
@@ -59,6 +61,7 @@ const styles: Record<string, CSSProperties> = {
 /** The style of a mark's names, or `undefined` when one isn't known, so the mark stays as written and shows. */
 export function styleOf(names: string): CSSProperties | undefined {
   let style: CSSProperties = {};
+
   for (const name of names.split(',')) {
     if (colors.has(name)) style.color = `var(--t-${name})`;
     else if (name.startsWith('on-') && backgrounds.has(name.slice(3))) {
@@ -69,6 +72,7 @@ export function styleOf(names: string): CSSProperties | undefined {
     else if (styles[name]) style = { ...style, ...styles[name] };
     else return undefined;
   }
+
   return style;
 }
 

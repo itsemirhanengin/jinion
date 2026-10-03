@@ -44,6 +44,7 @@ describe('namedMention', () => {
 describe('anyOf', () => {
   it('matches what any pattern matches', () => {
     const pattern = anyOf([MENTION, namedMention('$', ['design']), undefined]);
+
     expect(matches('@a.ts with $design', pattern)).toEqual(['@a.ts', '$design']);
   });
 

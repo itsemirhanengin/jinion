@@ -17,11 +17,14 @@ export interface StatGridProps {
 export function StatGrid({ stats, columns = 2 }: StatGridProps) {
   const theme = useTheme();
   const width = useContentWidth();
+
   const columnWidth = Math.floor(width / columns);
   const rows = Array.from({ length: Math.ceil(stats.length / columns) }, (_, row) => stats.slice(row * columns, row * columns + columns));
+
   const labelWidths = Array.from({ length: columns }, (_, column) =>
     Math.max(0, ...rows.map((row) => row[column]?.label.length ?? 0)),
   );
+
   return (
     <Box flexDirection="column">
       {rows.map((row, index) => (

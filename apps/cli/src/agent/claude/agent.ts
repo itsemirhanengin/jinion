@@ -51,6 +51,7 @@ export class ClaudeAgent implements Agent {
   constructor(private readonly options: ClaudeAgentOptions) {
     this.current = options.selection ?? { model: 'opus' };
     this.currentMode = options.mode ?? 'edits';
+
     this.accounts = new ClaudeAccounts({
       account: options.account,
       running: () => this.running().query,
@@ -59,6 +60,7 @@ export class ClaudeAgent implements Agent {
         this.restart();
       },
     });
+
     this.approvals = new ClaudeApprovals({
       cwd: options.cwd,
       turn: () => this.turn,
@@ -67,6 +69,7 @@ export class ClaudeAgent implements Agent {
         await this.claude?.query.applyFlagSettings({ permissions: { ask: askRules(mode) } });
       },
     });
+
     if (options.mcp) {
       this.mcp = claudeMcp(options.mcp, () => this.running().query, () => {
         this.stale = true;
@@ -84,6 +87,7 @@ export class ClaudeAgent implements Agent {
 
   subscribe(listener: (event: AgentEvent) => void) {
     this.listeners.add(listener);
+
     return () => void this.listeners.delete(listener);
   }
 
@@ -94,29 +98,38 @@ export class ClaudeAgent implements Agent {
   async rewindPreview(id: string): Promise<FileChanges | undefined> {
     const preview = await this.running().query.rewindFiles(id, { dryRun: true });
     if (!preview.canRewind || !preview.filesChanged?.length) return undefined;
+
     return { files: preview.filesChanged, insertions: preview.insertions ?? 0, deletions: preview.deletions ?? 0 };
   }
 
   async rewind(id: string, { code, conversation }: RewindScope) {
     const claude = this.running();
+
     if (code) {
       const result = await claude.query.rewindFiles(id);
       if (!result.canRewind) throw new Error(result.error ?? "Claude Code couldn't restore the files.");
     }
+
     if (!conversation) return;
+
     const resume = this.resumeOf(claude);
     if (!resume) return this.reset();
+
     const read = this.options.sessionMessages ?? getSessionMessages;
     const transcript = await read(resume.sessionId, { dir: this.options.cwd });
     const index = transcript.findIndex((message) => message.uuid === id);
     if (index === -1) throw new Error("That message isn't in Claude Code's transcript of this conversation.");
+
     const before = transcript[index - 1]?.uuid;
+
     this.reset(before ? { ...resume, at: before } : undefined);
   }
 
   async commands(): Promise<AgentCommand[]> {
     const { commands, invocations } = toAgentCommands(await this.running().query.supportedCommands());
+
     this.invocations = invocations;
+
     return commands;
   }
 
@@ -124,6 +137,7 @@ export class ClaudeAgent implements Agent {
     this.currentMode = mode;
     const running = this.claude?.query;
     if (!running) return;
+
     await running.setPermissionMode(PERMISSION_MODES[mode]);
     await running.applyFlagSettings({ permissions: { ask: askRules(mode) } });
   }
@@ -131,6 +145,7 @@ export class ClaudeAgent implements Agent {
   models() {
     this.modelList ??= (async () => {
       const models = await this.running().query.supportedModels();
+
       return models.map((model) => ({
         id: model.value,
         name: model.displayName,
@@ -139,17 +154,22 @@ export class ClaudeAgent implements Agent {
       }));
     })().catch((error: unknown) => {
       this.modelList = undefined;
+
       throw error;
     });
+
     return this.modelList;
   }
 
   async select(selection: ModelSelection) {
     const previous = this.current;
+
     this.current = selection;
     const running = this.claude?.query;
     if (!running) return;
+
     if (selection.model !== previous.model) await running.setModel(selection.model);
+
     if (selection.effort !== previous.effort) {
       await running.applyFlagSettings({ effortLevel: (selection.effort as EffortLevel | undefined) ?? null });
     }
@@ -157,8 +177,10 @@ export class ClaudeAgent implements Agent {
 
   async *run(prompt: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
     const claude = this.running();
+
     this.turn = context;
     const id = randomUUID();
+
     yield { type: 'sent', id };
     yield* this.follow(claude, context, claude.send(toClaudeContent(prompt, this.invocations), id));
   }
@@ -167,7 +189,9 @@ export class ClaudeAgent implements Agent {
   join(context: RunContext): AsyncIterable<AgentEvent> {
     const claude = this.claude;
     if (!claude) return (async function* () {})();
+
     this.turn = context;
+
     return this.follow(claude, context, claude.follow());
   }
 
@@ -181,7 +205,9 @@ export class ClaudeAgent implements Agent {
 
   compact(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent> {
     const claude = this.running();
+
     this.turn = context;
+
     return this.follow(claude, context, claude.send(focus ? `/compact ${focus}` : '/compact'));
   }
 
@@ -201,19 +227,41 @@ export class ClaudeAgent implements Agent {
     return readHistory(progress);
   }
 
+  reset(resume?: ClaudeResume) {
+    this.resume = resume;
+    const claude = this.claude;
+
+    this.claude = undefined;
+    if (!claude) return;
+
+    claude.close();
+    const stopped = claude.events.tasks.stopAll();
+
+    if (stopped) this.emit(stopped);
+  }
+
+  close() {
+    this.reset();
+  }
+
   private async *follow(claude: ClaudeProcess, context: RunContext, messages: AsyncIterable<SDKMessage>): AsyncGenerator<AgentEvent> {
     const interrupt = () => claude.interrupt();
+
     context.signal.addEventListener('abort', interrupt, { once: true });
+
     try {
       let last: SDKMessage | undefined;
+
       for await (const message of messages) {
         last = message;
         yield* this.eventsOf(claude, message);
       }
+
       context.signal.throwIfAborted();
       if (last?.type === 'result' && last.is_error) throw new Error(errorOf(last));
     } catch (error) {
       this.options.debug?.write('error', { message: errorMessage(error), aborted: context.signal.aborted });
+
       throw error;
     } finally {
       context.signal.removeEventListener('abort', interrupt);
@@ -227,29 +275,17 @@ export class ClaudeAgent implements Agent {
     try {
       const { compactAt } = toContextUsage(await claude.query.getContextUsage({ detail: 'summary' }));
       if (claude !== this.claude) return;
+
       const usage = claude.events.compactAt(compactAt);
+
       if (usage) this.emit(usage);
     } catch {
       // A process that just ended, or a Claude Code without it: the warning only comes later.
     }
   }
 
-  reset(resume?: ClaudeResume) {
-    this.resume = resume;
-    const claude = this.claude;
-    this.claude = undefined;
-    if (!claude) return;
-    claude.close();
-    const stopped = claude.events.tasks.stopAll();
-    if (stopped) this.emit(stopped);
-  }
-
   private emit(event: AgentEvent) {
     for (const listener of this.listeners) listener(event);
-  }
-
-  close() {
-    this.reset();
   }
 
   /** Changed MCP servers restart it only while no background task runs, since those end with the process. */
@@ -258,7 +294,9 @@ export class ClaudeAgent implements Agent {
       this.stale = false;
       this.restart();
     }
+
     this.claude ??= this.start();
+
     return this.claude;
   }
 
@@ -269,13 +307,16 @@ export class ClaudeAgent implements Agent {
   /** Falls back to what the process itself continued, which a process that never took a turn would otherwise lose. */
   private resumeOf(claude: ClaudeProcess): ClaudeResume | undefined {
     const { sessionId, cost } = claude.events;
+
     return sessionId ? { sessionId, cost } : claude.resumed;
   }
 
   private start() {
     const { cwd, memory, mcp, debug, spawn } = this.options;
     const resume = this.resume;
+
     this.resume = undefined;
+
     const options = claudeOptions({
       cwd,
       selection: this.current,
@@ -286,6 +327,7 @@ export class ClaudeAgent implements Agent {
       mcp,
       approvals: this.approvals,
     });
+
     debug?.write('start', {
       cwd,
       model: options.model,
@@ -298,6 +340,7 @@ export class ClaudeAgent implements Agent {
       disabled: mcp?.disabled() ?? [],
       plugins: options.plugins?.map((plugin) => plugin.path),
     });
+
     const claude: ClaudeProcess = new ClaudeProcess({
       options,
       cwd,
@@ -306,6 +349,7 @@ export class ClaudeAgent implements Agent {
       spawn,
       onIdle: (message) => {
         if (claude !== this.claude) return;
+
         for (const event of this.eventsOf(claude, message)) this.emit(event);
       },
       onTurn: () => {
@@ -316,18 +360,23 @@ export class ClaudeAgent implements Agent {
         if (claude === this.claude) this.reset(this.resumeOf(claude));
       },
     });
+
     // Claude Code omits thinking text by default; Jinion shows a summary of it.
     claude.query.setMaxThinkingTokens(null, 'summarized').catch(() => {});
+
     return claude;
   }
 
   private *eventsOf(claude: ClaudeProcess, message: SDKMessage): Generator<AgentEvent> {
     if (message.type === 'system' && message.subtype === 'commands_changed') {
       const { commands, invocations } = toAgentCommands(message.commands);
+
       this.invocations = invocations;
       yield { type: 'commands', commands };
+
       return;
     }
+
     yield* claude.events.map(message);
   }
 }

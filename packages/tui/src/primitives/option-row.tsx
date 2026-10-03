@@ -3,8 +3,6 @@ import { Box, Text } from 'ink';
 import { useTheme } from '../runtime/theme.js';
 import { Prose } from './prose.js';
 
-export const optionIndent = (count: number, multiple = false) => String(count).length + 4 + (multiple ? 4 : 0);
-
 export interface OptionRowProps {
   number: number;
   count: number;
@@ -19,6 +17,7 @@ export interface OptionRowProps {
 
 export function OptionRow({ number, count, label, description, focused, checked, aside, note, children }: OptionRowProps) {
   const theme = useTheme();
+
   const multiple = checked !== undefined;
   const color = focused ? theme.selection : checked === false ? theme.muted : undefined;
   const indent = optionIndent(count, multiple);
@@ -54,8 +53,11 @@ export function OptionRow({ number, count, label, description, focused, checked,
   );
 }
 
+export const optionIndent = (count: number, multiple = false) => String(count).length + 4 + (multiple ? 4 : 0);
+
 export function NoteLine({ note, indent }: { note: string; indent: number }) {
   const theme = useTheme();
+
   return (
     <Box paddingLeft={indent}>
       <Prose>

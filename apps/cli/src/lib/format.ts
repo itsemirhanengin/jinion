@@ -1,6 +1,8 @@
 export function compact(count: number) {
   if (count < 1000) return String(Math.round(count));
+
   const [divisor, unit] = count < 1e6 ? [1e3, 'k'] : count < 1e9 ? [1e6, 'M'] : [1e9, 'B'];
+
   return `${(count / divisor).toFixed(1)}${unit}`;
 }
 
@@ -13,6 +15,7 @@ export const plural = (count: number, singular: string, pluralForm = `${singular
 
 export function percent(part: number, whole = 1) {
   const share = whole > 0 ? (part / whole) * 100 : 0;
+
   return share > 0 && share < 1 ? `${share.toFixed(1)}%` : `${Math.round(share)}%`;
 }
 
@@ -32,14 +35,17 @@ const DAY = 24 * HOUR;
 export function elapsed(ms: number) {
   const seconds = Math.max(0, Math.round(ms / SECOND));
   if (seconds < 60) return `${seconds}s`;
+
   const minutes = Math.floor(seconds / 60);
   if (minutes < 60) return `${minutes}m ${seconds % 60}s`;
+
   return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
 }
 
 /** As Claude Code shows a command's time. */
 export function preciseSeconds(ms: number) {
   const seconds = ms / SECOND;
+
   return seconds >= 10 ? `${Math.round(seconds)}s` : `${seconds.toFixed(2)}s`;
 }
 
@@ -49,14 +55,17 @@ export function span(ms: number) {
   if (days > 0) return `${days}d ${hours}h ${minutes}m`;
   if (hours > 0) return `${hours}h ${minutes}m`;
   if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+
   return `${seconds}s`;
 }
 
 export function minutes(ms: number) {
   const total = Math.max(0, Math.floor(ms / MINUTE));
   if (total < 60) return `${total}m`;
+
   const hours = Math.floor(total / 60);
   if (hours < 24) return `${hours}h ${total % 60}m`;
+
   return `${Math.floor(hours / 24)}d ${hours % 24}h`;
 }
 
@@ -64,11 +73,14 @@ export function ago(at: number, now = Date.now()) {
   const minutesAgo = Math.round((now - at) / MINUTE);
   if (minutesAgo < 1) return 'just now';
   if (minutesAgo < 60) return `${minutesAgo}m ago`;
+
   const hours = Math.round(minutesAgo / 60);
   if (hours < 24) return `${hours}h ago`;
+
   const days = Math.round(hours / 24);
   if (days === 1) return 'yesterday';
   if (days < 7) return `${days}d ago`;
+
   return `${Math.round(days / 7)}w ago`;
 }
 
@@ -79,6 +91,7 @@ export function resetTime(at: number, now = Date.now()) {
   const time = clockTime(date);
   if (new Date(now).toDateString() === date.toDateString()) return time;
   if (at - now < 6 * DAY) return `${date.toLocaleDateString('en-US', { weekday: 'short' })} ${time}`;
+
   return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${time}`;
 }
 

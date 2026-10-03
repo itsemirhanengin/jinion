@@ -144,10 +144,12 @@ const HOVER_TINTED = 0.04;
 
 export function shade(theme: Pick<Theme, 'scheme'>, color: string, amount: number) {
   const target = theme.scheme === 'light' ? 0 : 255;
+
   return hexColor(channelsOf(color).map((channel) => channel + (target - channel) * amount));
 }
 
 export function hoverColor(theme: Theme, background?: string) {
   if (background) return shade(theme, background, HOVER_TINTED);
+
   return shade(theme, theme.background ?? DEFAULT_BACKGROUND[theme.scheme], HOVER_PLAIN);
 }

@@ -13,6 +13,7 @@ export function titleDue(session: Pick<Session, 'entries' | 'titled'>, now = Dat
   const { titled } = session;
   if (turns === 0 || titled?.by === 'user') return false;
   if (!titled) return true;
+
   return turns >= titled.turns * 2 || (turns > titled.turns && now - titled.at >= RETITLE_AFTER_MS);
 }
 
@@ -21,6 +22,7 @@ export function conversationDigest(entries: Entry[]) {
   const reply = entries.findLast((entry) => entry.kind === 'text');
   const plan = lastToolRun(entries, 'plan');
   const changed = [...new Set(editTurns(entries).flatMap((turn) => turn.edits.map((change) => change.path)))];
+
   return [
     prompts[0] && `First message: ${clip(prompts[0], 400)}`,
     ...prompts.slice(Math.max(1, prompts.length - 5)).map((prompt) => `Later message: ${clip(prompt, 300)}`),

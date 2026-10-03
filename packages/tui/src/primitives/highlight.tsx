@@ -9,12 +9,15 @@ export interface HighlightProps {
 
 export function Highlight({ text, positions = [], color }: HighlightProps) {
   const theme = useTheme();
+
   if (positions.length === 0) return <Text color={color}>{text}</Text>;
 
   const marked = new Set(positions);
   const runs: { text: string; marked: boolean }[] = [];
+
   for (let index = 0; index < text.length; index++) {
     const last = runs.at(-1);
+
     if (last && last.marked === marked.has(index)) last.text += text[index];
     else runs.push({ text: text[index]!, marked: marked.has(index) });
   }

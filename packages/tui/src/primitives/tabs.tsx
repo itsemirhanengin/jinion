@@ -11,6 +11,7 @@ export interface TabsOptions {
 
 export function useTabs(count: number, { isActive = true, initial = 0, arrows = true }: TabsOptions = {}) {
   const [index, setIndex] = useState(initial);
+
   const current = Math.min(index, Math.max(0, count - 1));
 
   useInput(
@@ -26,6 +27,7 @@ export function useTabs(count: number, { isActive = true, initial = 0, arrows = 
 
 export function Tabs({ tabs, active }: { tabs: string[]; active: number }) {
   const theme = useTheme();
+
   return (
     <Text>
       {tabs.map((tab, index) => (

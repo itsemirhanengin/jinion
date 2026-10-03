@@ -5,27 +5,6 @@ const HOUR = 3_600_000;
 
 type Turn = [prompt: string, thinking: string, reply: string];
 
-function demoSession(title: string, hoursAgo: number, turns: Turn[]): SavedSession {
-  const updatedAt = Date.now() - hoursAgo * HOUR;
-  const entries: Entry[] = [{ id: nextId(), kind: 'banner' }];
-  for (const [prompt, thinking, reply] of turns) {
-    entries.push(
-      { id: nextId(), kind: 'user', text: prompt },
-      { id: nextId(), kind: 'thinking', text: thinking },
-      { id: nextId(), kind: 'text', text: reply },
-    );
-  }
-  return {
-    id: `demo_${nextId()}`,
-    title,
-    createdAt: updatedAt - HOUR,
-    updatedAt,
-    entries,
-    todos: [],
-    usage: { contextTokens: 6_000 * turns.length, contextWindow: 200_000, cost: 0.02 * turns.length },
-  };
-}
-
 export function demoSessions(): SavedSession[] {
   return [
     demoSession('Fix the flaky checkout e2e test', 2, [
@@ -62,4 +41,27 @@ export function demoSessions(): SavedSession[] {
       ],
     ]),
   ];
+}
+
+function demoSession(title: string, hoursAgo: number, turns: Turn[]): SavedSession {
+  const updatedAt = Date.now() - hoursAgo * HOUR;
+  const entries: Entry[] = [{ id: nextId(), kind: 'banner' }];
+
+  for (const [prompt, thinking, reply] of turns) {
+    entries.push(
+      { id: nextId(), kind: 'user', text: prompt },
+      { id: nextId(), kind: 'thinking', text: thinking },
+      { id: nextId(), kind: 'text', text: reply },
+    );
+  }
+
+  return {
+    id: `demo_${nextId()}`,
+    title,
+    createdAt: updatedAt - HOUR,
+    updatedAt,
+    entries,
+    todos: [],
+    usage: { contextTokens: 6_000 * turns.length, contextWindow: 200_000, cost: 0.02 * turns.length },
+  };
 }

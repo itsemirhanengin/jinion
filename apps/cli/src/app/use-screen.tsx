@@ -7,6 +7,7 @@ import { DialogView } from './dialogs.js';
 export function useScreen(): Screen {
   const tui = { panels: usePanels(), terminal: useTerminal(), view: useView(), app: useApp() };
   const latest = useRef(tui);
+
   latest.current = tui;
 
   const [screen] = useState<Screen>(() => ({
@@ -23,5 +24,6 @@ export function useScreen(): Screen {
     toggleExpanded: () => latest.current.view.toggleExpanded(),
     exit: () => latest.current.app.exit(),
   }));
+
   return screen;
 }

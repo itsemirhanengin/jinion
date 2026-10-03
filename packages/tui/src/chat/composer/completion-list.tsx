@@ -16,8 +16,10 @@ const GROUP_INDENT = 2;
 
 export function CompletionList({ completion, selected, limit, submits }: CompletionListProps) {
   const theme = useTheme();
+
   const { items } = completion;
   const indent = items.some((item) => item.group !== undefined) ? GROUP_INDENT : 0;
+
   const labelWidth = Math.min(
     32,
     Math.max(...items.map((item) => indent + item.label.length + (item.hint ? item.hint.length + 1 : 0))),

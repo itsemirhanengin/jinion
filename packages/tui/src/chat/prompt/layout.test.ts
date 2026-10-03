@@ -15,6 +15,7 @@ describe('layout', () => {
 describe('rowOf', () => {
   it('puts the cursor at a wrap on the next row, and at a newline on the row it ends', () => {
     const wrapped = layout('abcdef', 4);
+
     expect(rowOf(wrapped, 3)).toBe(0);
     expect(rowOf(wrapped, 4)).toBe(1);
     expect(rowOf(wrapped, 6)).toBe(1);
@@ -26,6 +27,7 @@ describe('offsetAt', () => {
   it('finds the offset at a column, or the end of a shorter row', () => {
     const value = 'a日b\nxy';
     const [first, second] = layout(value, 10);
+
     expect(offsetAt(value, first!, 0)).toBe(0);
     expect(offsetAt(value, first!, 2)).toBe(1);
     expect(offsetAt(value, first!, 3)).toBe(2);

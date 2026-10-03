@@ -32,6 +32,7 @@ const history: UsageHistory = {
 describe('usageStats', () => {
   it('sums up all time: active days of the span, the busiest day, streaks and the longest session', () => {
     const stats = usageStats(history, 'all', TODAY);
+
     expect(stats).toMatchObject({ sessions: 7, messages: 70, activeDays: 7, spanDays: 86, mostActive: { date: '2026-09-20' } });
     // Today has nothing yet, so the streak still runs through yesterday.
     expect(stats).toMatchObject({ currentStreak: 3, longestStreak: 3, longestSession: { ms: 30 * hour, date: '2026-07-10' } });
@@ -44,10 +45,12 @@ describe('usageStats', () => {
 
   it('shares the tokens out by model, most first', () => {
     const { models, tokens } = usageStats(history, 'month', TODAY);
+
     expect(models.map((model) => [model.name, model.total, Math.round(model.share * 100)])).toEqual([
       ['Opus 5.5', 450, 82],
       ['Haiku 4.5', 100, 18],
     ]);
+
     expect(tokens.total).toBe(550);
   });
 });

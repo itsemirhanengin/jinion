@@ -5,11 +5,13 @@ const SYSTEM = [
   { name: 'System tools', tokens: 8_300 },
   { name: 'Skills', tokens: 2_000 },
 ];
+
 const SYSTEM_TOKENS = SYSTEM.reduce((sum, { tokens }) => sum + tokens, 0);
 
 export function demoContext({ contextTokens: used, contextWindow: window, compactAt }: Usage): ContextUsage {
   const messages = Math.max(0, used - SYSTEM_TOKENS);
   const limit = compactAt ?? window;
+
   return {
     used: Math.max(used, SYSTEM_TOKENS),
     window,

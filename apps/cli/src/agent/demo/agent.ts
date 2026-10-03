@@ -29,6 +29,16 @@ export class ScriptedAgent implements Agent {
     this.tasks = new DemoTasks((followup, task, context) => followup(this.script(context), task), pace);
   }
 
+  async models(): Promise<ModelOption[]> {
+    return [{ id: 'scripted-demo', name: 'Scripted demo', description: 'Plays prewritten scenarios', efforts: [] }];
+  }
+
+  async select(selection: ModelSelection) {
+    this.selection = selection;
+  }
+
+  async setMode() {}
+
   async commands() {
     return this.agentCommands;
   }
@@ -62,9 +72,12 @@ export class ScriptedAgent implements Agent {
   async *compact(focus: string | undefined, context: RunContext): AsyncGenerator<AgentEvent> {
     yield { type: 'compaction', state: 'running' };
     yield* this.script(context).pause(800);
+
     const before = this.totals.contextTokens;
+
     this.totals.contextTokens = Math.round(before / 3);
     const after = this.totals.contextTokens;
+
     yield { type: 'compaction', state: 'done', trigger: 'manual', before, after, summary: demoSummary(focus) };
     yield { type: 'usage', usage: { ...this.totals } };
   }
@@ -90,16 +103,6 @@ export class ScriptedAgent implements Agent {
   reset() {
     Object.assign(this.totals, { contextTokens: 0, cost: 0 });
   }
-
-  async models(): Promise<ModelOption[]> {
-    return [{ id: 'scripted-demo', name: 'Scripted demo', description: 'Plays prewritten scenarios', efforts: [] }];
-  }
-
-  async select(selection: ModelSelection) {
-    this.selection = selection;
-  }
-
-  async setMode() {}
 
   private script(context: RunContext) {
     return new Script(context, { totals: this.totals, pace: this.pace, tasks: this.tasks, nextCall: () => ++this.calls });

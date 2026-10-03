@@ -9,5 +9,6 @@ export const projectDir = (cwd: string) => join(jinionHome(), 'projects', projec
 
 export function tildify(path: string) {
   const home = homedir();
+
   return path === home || path.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path;
 }

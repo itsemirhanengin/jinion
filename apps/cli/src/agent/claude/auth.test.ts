@@ -19,6 +19,7 @@ let path: string | undefined;
 
 beforeEach(() => {
   const bin = join(box.home, 'bin');
+
   chmodSync(box.write(join(bin, 'claude'), FAKE_CLAUDE), 0o755);
   path = process.env.PATH;
   process.env.PATH = `${bin}:${path}`;
@@ -31,18 +32,10 @@ afterEach(() => {
   delete process.env.KEEP_LOGIN;
 });
 
-function signedIn(name: string) {
-  const dir = join(accountsDir(), name);
-  const shared = join(box.home, '.claude', 'projects');
-  box.write(join(shared, 'project', 'session.jsonl'), '{}\n');
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(join(dir, '.credentials.json'), '{}');
-  return { dir, shared };
-}
-
 describe('removeAccount', () => {
   it('signs the account out through Claude Code, then deletes its folder, keeping the shared conversations', async () => {
     const { dir, shared } = signedIn('work');
+
     symlinkSync(shared, join(dir, 'projects'), 'dir');
 
     await removeAccount('work');
@@ -54,6 +47,7 @@ describe('removeAccount', () => {
 
   it('keeps an account Claude Code couldn’t sign out, so its login isn’t left behind', async () => {
     const { dir } = signedIn('work');
+
     process.env.KEEP_LOGIN = '1';
     await expect(removeAccount('work')).rejects.toThrow("Claude Code couldn't sign it out");
     expect(existsSync(dir)).toBe(true);
@@ -64,3 +58,14 @@ describe('removeAccount', () => {
     await expect(removeAccount('nobody')).rejects.toThrow('there is no account called nobody');
   });
 });
+
+function signedIn(name: string) {
+  const dir = join(accountsDir(), name);
+  const shared = join(box.home, '.claude', 'projects');
+
+  box.write(join(shared, 'project', 'session.jsonl'), '{}\n');
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, '.credentials.json'), '{}');
+
+  return { dir, shared };
+}

@@ -26,23 +26,28 @@ export class McpConfig {
   /** When two sources name the same server, the first in this order wins. */
   servers(): McpServerConfig[] {
     const claude = readJson<McpFile & { projects?: Record<string, McpFile> }>(claudeConfigFile(), {});
+
     const sources: [McpSource, McpFile | undefined][] = [
       ['jinion', readJson<McpFile>(join(jinionHome(), 'mcp.json'), {})],
       ['claude', claude.projects?.[this.cwd]],
       ['project', readJson<McpFile>(join(this.cwd, '.mcp.json'), {})],
       ['claude', claude],
     ];
+
     const servers = new Map<string, McpServerConfig>();
+
     for (const [source, file] of sources) {
       for (const [name, transport] of Object.entries(file?.mcpServers ?? {})) {
         if (!servers.has(name) && isTransport(transport)) servers.set(name, { name, source, transport: expand(transport) });
       }
     }
+
     return [...servers.values()];
   }
 
   isEnabled({ name, source }: Pick<McpServerConfig, 'name' | 'source'>) {
     if (this.disabled().includes(name)) return false;
+
     return source !== 'project' || (loadProjectSettings(this.cwd).mcp?.approved ?? []).includes(name);
   }
 
@@ -53,13 +58,18 @@ export class McpConfig {
 
   setEnabled(server: Pick<McpServerConfig, 'name'> & { source?: string }, enabled: boolean) {
     const disabled = new Set(this.disabled());
+
     if (enabled) disabled.delete(server.name);
     else disabled.add(server.name);
+
     saveMcpSettings({ disabled: [...disabled].sort() });
     if (server.source !== 'project') return;
+
     const approved = new Set(loadProjectSettings(this.cwd).mcp?.approved ?? []);
+
     if (enabled) approved.add(server.name);
     else approved.delete(server.name);
+
     saveProjectSettings(this.cwd, { mcp: { approved: [...approved].sort() } });
   }
 }
@@ -69,17 +79,22 @@ const claudeConfigFile = () =>
 
 function isTransport(value: unknown): value is McpTransport {
   if (typeof value !== 'object' || value === null) return false;
+
   const transport = value as Record<string, unknown>;
+
   return typeof transport.command === 'string' || typeof transport.url === 'string';
 }
 
 function expand(transport: McpTransport): McpTransport {
   const replace = (value: string) =>
     value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}/g, (_, name: string, fallback?: string) => process.env[name] ?? fallback ?? '');
+
   const record = (values?: Record<string, string>) =>
     values && Object.fromEntries(Object.entries(values).map(([key, value]) => [key, replace(value)]));
+
   if ('command' in transport) {
     return { ...transport, command: replace(transport.command), args: transport.args?.map(replace), env: record(transport.env) };
   }
+
   return { ...transport, url: replace(transport.url), headers: record(transport.headers) };
 }

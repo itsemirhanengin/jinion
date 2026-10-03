@@ -24,7 +24,9 @@ export function UsageView({ usage, error, available }: { usage?: AgentUsage; err
   const { agent } = useJinion();
   const theme = useTheme();
   const plan = useAtomValue(identityAtom)?.plan;
+
   const [window, setWindow] = useState<'day' | 'week'>('day');
+
   useInput((input) => {
     if (input === 'd') setWindow('day');
     if (input === 'w') setWindow('week');
@@ -36,6 +38,7 @@ export function UsageView({ usage, error, available }: { usage?: AgentUsage; err
 
   const { session, limits, extra, drivers } = usage;
   const labelWidth = Math.max(0, ...limits.map((limit) => limit.label.length)) + 2;
+
   return (
     <Box flexDirection="column">
       <Section title="Plan limits" aside={plan}>
@@ -86,8 +89,10 @@ export function UsageView({ usage, error, available }: { usage?: AgentUsage; err
 
 function Drivers({ drivers, loading }: { drivers?: UsageDrivers; loading: boolean }) {
   const theme = useTheme();
+
   if (loading) return <Text color={theme.muted}>Looking through this week's conversations on this machine…</Text>;
   if (!drivers || drivers.requests === 0) return <Text color={theme.muted}>Nothing in this time on this machine.</Text>;
+
   return (
     <>
       <Text color={theme.muted}>

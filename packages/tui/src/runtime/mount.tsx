@@ -19,6 +19,7 @@ export interface MountOptions {
 export function mount(node: ReactNode, { theme, terminal, keyboard, display, ink }: MountOptions) {
   const mouse = new Set<MouseListener>();
   const screen = display && tapStream(display);
+
   const input =
     keyboard &&
     createInput(

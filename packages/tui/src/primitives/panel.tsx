@@ -5,21 +5,6 @@ import { Frame, FrameDivider } from './frame.js';
 
 export type KeyHint = [key: string, action: string];
 
-export function KeyHints({ hints }: { hints: KeyHint[] }) {
-  const theme = useTheme();
-  return (
-    <Text>
-      {hints.map(([key, action], index) => (
-        <Fragment key={key}>
-          {index > 0 && <Text color={theme.muted}> · </Text>}
-          {key}
-          <Text color={theme.muted}> {action}</Text>
-        </Fragment>
-      ))}
-    </Text>
-  );
-}
-
 export interface PanelProps {
   title: string;
   subtitle?: string;
@@ -31,6 +16,7 @@ export interface PanelProps {
 
 export function Panel({ title, subtitle, header, hints, grow = false, children }: PanelProps) {
   const theme = useTheme();
+
   const hasHeader = header !== undefined;
 
   return (
@@ -51,5 +37,21 @@ export function Panel({ title, subtitle, header, hints, grow = false, children }
       {hints && <FrameDivider />}
       {hints && <KeyHints hints={hints} />}
     </Frame>
+  );
+}
+
+export function KeyHints({ hints }: { hints: KeyHint[] }) {
+  const theme = useTheme();
+
+  return (
+    <Text>
+      {hints.map(([key, action], index) => (
+        <Fragment key={key}>
+          {index > 0 && <Text color={theme.muted}> · </Text>}
+          {key}
+          <Text color={theme.muted}> {action}</Text>
+        </Fragment>
+      ))}
+    </Text>
   );
 }

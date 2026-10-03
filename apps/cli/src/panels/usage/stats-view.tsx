@@ -20,19 +20,24 @@ export function StatsView({ history, progress, error, available }: StatsViewProp
   const { agent } = useJinion();
   const theme = useTheme();
   const { rows } = useWindowSize();
-  const today = new Date();
+
   const [range, setRange] = useState<StatsRange>('all');
+
+  const today = new Date();
   const [day] = useDayCursor(today, { earliest: history?.days[0]?.date });
-  useInput((input) => {
-    if (input === 'r') setRange((current) => RANGES[(RANGES.findIndex((candidate) => candidate.range === current) + 1) % RANGES.length]!.range);
-  });
   const stats = useMemo(() => history && usageStats(history, range), [history, range]);
   const values = useMemo(() => Object.fromEntries((history?.days ?? []).map((item) => [item.date, item.messages])), [history]);
 
+  useInput((input) => {
+    if (input === 'r') setRange((current) => RANGES[(RANGES.findIndex((candidate) => candidate.range === current) + 1) % RANGES.length]!.range);
+  });
+
   if (!available) return <Text color={theme.muted}>{agent.name} keeps no history of its use.</Text>;
   if (error) return <Text color={theme.error}>Couldn't read the history: {error}</Text>;
+
   if (!history || !stats) {
     const [done = 0, total = 0] = progress ?? [];
+
     return (
       <Text color={theme.muted}>
         Reading {agent.name}'s conversations on this machine…{total > 0 && ` ${grouped(done)} of ${grouped(total)}`}
@@ -42,6 +47,7 @@ export function StatsView({ history, progress, error, available }: StatsViewProp
 
   const picked = history.days.find((item) => item.date === day);
   const models = stats.models.slice(0, Math.max(1, Math.floor((rows - STATS_ROWS) / 2)));
+
   return (
     <Box flexDirection="column">
       <Text>

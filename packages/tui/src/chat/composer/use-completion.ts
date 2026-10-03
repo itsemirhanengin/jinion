@@ -40,31 +40,36 @@ export function useCompletion({ sources, value, cursor, onChange, onSubmit }: Co
       const result = source(value, cursor);
       if (result && result.items.length > 0) return result;
     }
+
     return undefined;
   }, [sources, value, cursor]);
-
-  useEffect(() => setIndex(0), [value]);
 
   const open = completion !== undefined && dismissedAt !== value;
   const selected = completion ? Math.min(index, completion.items.length - 1) : 0;
   const submits = completion ? (completion.items[selected]?.submit ?? Boolean(completion.submit)) : false;
 
+  useEffect(() => setIndex(0), [value]);
+
   const accept = (completion: Completion, submit: boolean) => {
     const item = completion.items[selected]!;
     const next = value.slice(0, completion.from) + item.insert + value.slice(completion.to);
+
     if (submit) onSubmit(next.trim());
     else onChange(next);
   };
 
   const onKey = (key: Key) => {
     if (!open || !completion) return false;
+
     const count = completion.items.length;
+
     if (key.upArrow) setIndex(stepIndex(selected, -1, count));
     else if (key.downArrow) setIndex(stepIndex(selected, 1, count));
     else if (key.tab) accept(completion, false);
     else if (key.return && !key.shift && !key.meta) accept(completion, submits);
     else if (key.escape) setDismissedAt(value);
     else return false;
+
     return true;
   };
 

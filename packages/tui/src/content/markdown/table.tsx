@@ -19,10 +19,13 @@ export const LEFT_PIPE = {
 export function Table({ token }: { token: Tokens.Table }) {
   const theme = useTheme();
   const width = useContentWidth();
+
   const rows = [token.header, ...token.rows];
+
   const natural = token.header.map((_, column) =>
     Math.max(3, ...rows.map((row) => stringWidth(plainText(row[column]?.tokens ?? [])))),
   );
+
   const widths = fitColumns(natural, width - (3 * natural.length + 1));
   const separator = `+${widths.map((columnWidth) => '-'.repeat(columnWidth + 2)).join('+')}+`;
 
@@ -41,6 +44,7 @@ export function Table({ token }: { token: Tokens.Table }) {
 
 function TableRow({ cells, widths, header = false }: { cells: Tokens.TableCell[]; widths: number[]; header?: boolean }) {
   const theme = useTheme();
+
   const pipe = {
     borderStyle: LEFT_PIPE,
     borderTop: false,
@@ -48,12 +52,14 @@ function TableRow({ cells, widths, header = false }: { cells: Tokens.TableCell[]
     borderRight: false,
     borderColor: theme.border,
   } as const;
+
   const justify = { left: 'flex-start', center: 'center', right: 'flex-end' } as const;
 
   return (
     <Box>
       {widths.map((columnWidth, index) => {
         const cell = cells[index];
+
         return (
           <Box key={index} {...pipe} width={columnWidth + 3} paddingX={1} justifyContent={justify[cell?.align ?? 'left']}>
             <Text bold={header}>{cell && <Inline tokens={cell.tokens} />}</Text>
@@ -68,11 +74,14 @@ function TableRow({ cells, widths, header = false }: { cells: Tokens.TableCell[]
 function fitColumns(natural: number[], available: number) {
   const widths = [...natural];
   let total = widths.reduce((sum, value) => sum + value, 0);
+
   while (total > available) {
     const widest = Math.max(...widths);
     if (widest <= 3) break;
+
     widths[widths.indexOf(widest)] = widest - 1;
     total -= 1;
   }
+
   return widths;
 }

@@ -13,10 +13,14 @@ const FRONTMATTER = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/;
 export function frontmatter(source: string): { fields: Record<string, string>; body: string } | undefined {
   const match = FRONTMATTER.exec(source);
   if (!match) return undefined;
+
   const fields: Record<string, string> = {};
+
   for (const line of match[1]!.split('\n')) {
     const colon = line.indexOf(':');
+
     if (colon > 0) fields[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
   }
+
   return { fields, body: match[2]! };
 }

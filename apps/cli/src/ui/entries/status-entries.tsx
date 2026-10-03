@@ -9,6 +9,7 @@ import { TASK_MARKS } from '../task-marks.js';
 
 export function UserEntry({ text, steered }: { text: string; steered?: boolean }) {
   const mention = useAtomValue(mentionAtom);
+
   return <UserMessage text={text} mentions={[mention]} aside={steered ? 'while working' : undefined} />;
 }
 
@@ -16,7 +17,9 @@ export function Compaction({ entry }: { entry: EntryOf<'compaction'> }) {
   const theme = useTheme();
   const { expanded } = useView();
   const hovered = useHovered();
+
   const tokens = `${compact(entry.before)}${entry.after !== undefined ? ` → ${compact(entry.after)}` : ''} tokens`;
+
   return (
     <Box flexDirection="column">
       <ToolLine
@@ -41,16 +44,19 @@ export function Compaction({ entry }: { entry: EntryOf<'compaction'> }) {
 
 export function TaskEnd({ entry }: { entry: EntryOf<'task'> }) {
   const theme = useTheme();
+
   const { task, summary } = entry;
   const took = preciseSeconds((task.endedAt ?? Date.now()) - task.startedAt);
   // Claude Code's summary of a command repeats it; the exit code is what it adds.
   const exitCode = /exit code (\d+)/.exec(summary ?? '')?.[1];
+
   const how =
     task.status === 'failed'
       ? `failed after ${took}${exitCode ? ` · exit ${exitCode}` : ''}`
       : task.status === 'stopped'
         ? `stopped after ${took}`
         : `done in ${took}`;
+
   return (
     <ToolLine
       status={TASK_MARKS[task.status]}

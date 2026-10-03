@@ -10,6 +10,7 @@ export const SKILL_PLUGINS = ['user', 'project'] as const;
 
 export function skillLabel(name: string) {
   const scope = SKILL_PLUGINS.find((plugin) => name.startsWith(`${plugin}:`));
+
   return scope ? name.slice(scope.length + 1) : name;
 }
 
@@ -22,16 +23,22 @@ export function skillPlugins(cwd: string): SdkPluginConfig[] {
     ['user', join(jinionHome(), 'plugins', 'user'), [join(claudeConfigDir(), 'skills'), join(homedir(), '.agents', 'skills')]],
     ['project', join(projectDir(cwd), 'plugins', 'project'), [join(cwd, '.claude', 'skills'), join(cwd, '.agents', 'skills')]],
   ];
+
   return scopes.flatMap(([name, root, folders]) => {
     const skills = new Map<string, string>();
+
     for (const folder of folders) {
       for (const entry of existsSync(folder) ? readdirSync(folder) : []) {
         const path = join(folder, entry);
+
         if (!skills.has(entry) && existsSync(join(path, 'SKILL.md'))) skills.set(entry, path);
       }
     }
+
     if (skills.size === 0) return [];
+
     linkSkills(root, name, skills);
+
     return [{ type: 'local' as const, path: root }];
   });
 }
@@ -39,13 +46,17 @@ export function skillPlugins(cwd: string): SdkPluginConfig[] {
 /** Touches only links, so two Jinions can do it at once. */
 function linkSkills(root: string, name: string, skills: Map<string, string>) {
   const folder = join(root, 'skills');
+
   mkdirSync(join(root, '.claude-plugin'), { recursive: true });
   mkdirSync(folder, { recursive: true });
   writeFileSync(join(root, '.claude-plugin', 'plugin.json'), `${JSON.stringify({ name, description: `Your ${name} skills` })}\n`);
+
   for (const entry of readdirSync(folder)) {
     const path = join(folder, entry);
+
     if (lstatSync(path).isSymbolicLink() && readlinkSync(path) !== skills.get(entry)) unlinkSync(path);
   }
+
   for (const [entry, target] of skills) {
     try {
       symlinkSync(target, join(folder, entry));
@@ -61,15 +72,19 @@ type PluginSettings = { enabledPlugins?: Record<string, boolean> };
 export function claudePlugins(cwd: string): SdkPluginConfig[] {
   const config = claudeConfigDir();
   const enabled: Record<string, boolean> = {};
+
   for (const file of [join(config, 'settings.json'), join(cwd, '.claude', 'settings.json'), join(cwd, '.claude', 'settings.local.json')]) {
     Object.assign(enabled, readJson<PluginSettings>(file, {}).enabledPlugins);
   }
+
   const installed = readJson<{ plugins?: Record<string, { installPath?: string }[]> }>(
     join(config, 'plugins', 'installed_plugins.json'),
     {},
   ).plugins;
+
   return Object.entries(enabled).flatMap(([id, on]) => {
     const path = on ? installed?.[id]?.[0]?.installPath : undefined;
+
     return path && existsSync(path) ? [{ type: 'local' as const, path }] : [];
   });
 }

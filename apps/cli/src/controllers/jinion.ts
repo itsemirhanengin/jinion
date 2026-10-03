@@ -51,6 +51,7 @@ export class Jinion {
     readonly screen: Screen,
   ) {
     ({ agent: this.agent, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands } = options);
+
     const context: Context = {
       store: this.store,
       agent: this.agent,
@@ -59,12 +60,14 @@ export class Jinion {
       notice: (text, tone) => this.notice(text, tone),
       notify: (body) => this.notify(body),
     };
+
     this.attachments = new Attachments(context);
     this.conversation = new ConversationController(context, this.sessions);
     this.models = new ModelController(context);
     this.modes = new ModeController(context);
     this.accounts = new AccountController(context, () => this.refresh());
     this.tasks = new TaskController(context);
+
     this.turns = new TurnController(context, this.attachments, {
       apply: (event) => this.apply(event),
       planAccepted: (mode) => {
@@ -76,6 +79,7 @@ export class Jinion {
         this.accounts.turnEnded();
       },
     });
+
     this.input = new InputController(context, this, this.commands, this.attachments, this.turns);
 
     this.store.set(sessionAtom, options.initial ? fromSaved(options.initial) : createSession(DEFAULT_CONTEXT_WINDOW));
@@ -86,6 +90,7 @@ export class Jinion {
 
   start() {
     this.refresh();
+
     return this.agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
   }
 
@@ -123,21 +128,27 @@ export class Jinion {
       case 'limits':
         this.accounts.recordLimits(event.windows);
         break;
+
       case 'mode':
         this.modes.show(event.mode);
         break;
+
       case 'commands':
         this.store.set(skillsAtom, event.commands);
         break;
+
       case 'tasks':
         this.store.set(tasksAtom, event.tasks);
         break;
+
       case 'task-end':
         this.tasks.ended(event.task);
         break;
+
       case 'turn-start':
         return this.turns.followAgent();
     }
+
     this.store.set(dispatchAtom, { type: 'event', event });
   }
 }

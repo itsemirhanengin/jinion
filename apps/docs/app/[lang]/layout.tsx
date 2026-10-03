@@ -19,10 +19,6 @@ export const metadata: Metadata = {
   openGraph: { siteName: appName },
 };
 
-export function generateStaticParams() {
-  return i18n.languages.map((lang) => ({ lang }));
-}
-
 export default async function Layout({ children, params }: LayoutProps<'/[lang]'>) {
   const { lang } = await params;
 
@@ -33,4 +29,8 @@ export default async function Layout({ children, params }: LayoutProps<'/[lang]'
       </body>
     </html>
   );
+}
+
+export function generateStaticParams() {
+  return i18n.languages.map((lang) => ({ lang }));
 }

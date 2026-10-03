@@ -5,6 +5,7 @@ export const revalidate = false;
 
 export async function GET(_req: Request, { params }: RouteContext<'/[lang]/llms.txt'>) {
   const { lang } = await params;
+
   return new Response(await docsLlms.index(lang));
 }
 

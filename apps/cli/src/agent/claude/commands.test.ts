@@ -14,6 +14,7 @@ describe('toAgentCommands', () => {
     command('claude.ai Figma:create_rules (MCP)', 'Rules for Figma'),
     command('plugin:vercel:vercel:deploy (MCP)'),
   ]);
+
   const byName = Object.fromEntries(commands.map((entry) => [entry.name, entry]));
 
   it('leaves out Claude Code’s own commands', () => {
@@ -56,6 +57,7 @@ describe('toClaudePrompt', () => {
 
   it('asks the agent to load skills mentioned elsewhere or together', () => {
     const prompt = toClaudePrompt('fix the navbar $design, then $nextjs', invocations);
+
     expect(prompt).toMatch(/^fix the navbar \$design, then \$nextjs\n\n<system-reminder>/);
     expect(prompt).toContain('$design is user:design, $nextjs is vercel:nextjs');
   });

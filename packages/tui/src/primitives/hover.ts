@@ -9,6 +9,7 @@ export class Hover extends Subscribable {
 
   set(id: string | undefined) {
     if (id === this.id) return;
+
     this.id = id;
     this.changed();
   }

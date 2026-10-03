@@ -10,6 +10,7 @@ describe('fuzzyMatch', () => {
   it('scores runs and word starts higher', () => {
     const run = fuzzyMatch('resume', 'res')!.score;
     const spread = fuzzyMatch('remember-us', 'res')!.score;
+
     expect(run).toBeGreaterThan(spread);
     expect(fuzzyMatch('make-responsive', 'resp')!.score).toBeGreaterThan(fuzzyMatch('react-best-practices', 'resp')!.score);
   });

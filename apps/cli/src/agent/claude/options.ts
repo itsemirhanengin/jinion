@@ -28,6 +28,7 @@ export function claudeOptions({ cwd, selection, mode, account, resume, memory, m
   const disabled = mcp?.disabled() ?? [];
   // Forced colors would put escape codes into command output the model reads.
   const { FORCE_COLOR: _, ...env } = process.env;
+
   return {
     cwd,
     model: selection.model,

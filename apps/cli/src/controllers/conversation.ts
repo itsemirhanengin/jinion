@@ -37,6 +37,7 @@ export class ConversationController {
 
   save() {
     const saved = toSaved(this.session);
+
     if (saved) this.sessions.save(saved);
   }
 
@@ -48,19 +49,6 @@ export class ConversationController {
     this.switchTo({ type: 'load', session: saved });
   }
 
-  private switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
-    const { store, agent, notice } = this.context;
-    if (store.get(workingAtom)) return notice(BUSY, 'warning');
-    this.save();
-    const running = store.get(backgroundTasksAtom).filter((task) => task.status === 'running');
-    agent.reset?.(action.type === 'load' ? resumeOf(action.session) : undefined);
-    store.set(tasksAtom, []);
-    this.dispatch(action);
-    if (running.length > 0) {
-      notice(`Stopped what ran in the background of the last conversation: ${running.map((task) => firstLine(task.title)).join(', ')}.`);
-    }
-  }
-
   markPlanAccepted() {
     this.planAccepted = true;
   }
@@ -68,20 +56,27 @@ export class ConversationController {
   /** Saved after every turn, so a crash loses at most the turn in progress; renamed as Claude Code does, keeping a name the user gave. */
   turnEnded() {
     this.save();
+
     const accepted = this.planAccepted;
+
     this.planAccepted = false;
     if (this.session.titled?.by === 'user') return;
+
     if (accepted || titleDue(this.session)) this.name(accepted).catch(() => {});
   }
 
   rename(name?: string) {
     const { agent, notice } = this.context;
+
     if (name) {
       this.retitle(name, 'user');
+
       return notice(`Renamed the conversation to “${name}”.`, 'success');
     }
+
     if (!agent.titleFor) return notice(`${agent.name} can't name conversations. Type /rename and a name.`, 'warning');
     if (promptCount(this.session.entries) === 0) return notice('There is nothing to name yet.', 'muted');
+
     this.name(true).then(
       (named) =>
         named
@@ -89,26 +84,6 @@ export class ConversationController {
           : notice('Couldn’t name the conversation. Type /rename and a name.', 'warning'),
       (error: unknown) => notice(`Couldn't name the conversation: ${errorMessage(error)}`, 'error'),
     );
-  }
-
-  private async name(fresh: boolean) {
-    const { agent } = this.context;
-    if (!agent.titleFor || this.naming) return undefined;
-    const { entries, title, titled } = this.session;
-    this.naming = true;
-    try {
-      const named = await agent.titleFor(conversationDigest(entries), fresh || !titled ? undefined : title);
-      if (named) this.retitle(named, 'agent');
-      return named;
-    } finally {
-      this.naming = false;
-    }
-  }
-
-  private retitle(title: string, by: 'agent' | 'user') {
-    const { id, entries } = this.session;
-    this.dispatch({ type: 'retitle', session: id, title, by, turns: promptCount(entries) });
-    if (!this.context.store.get(workingAtom)) this.save();
   }
 
   /** A message that joined a running turn is no place to go back to, as in Claude Code. */
@@ -123,15 +98,18 @@ export class ConversationController {
   async rewindTo(point: RewindPoint, scope: RewindScope) {
     const { agent, notice, store } = this.context;
     const quoted = quote(point.text);
+
     try {
       await agent.rewind!(point.promptId, scope);
     } catch (error) {
       return notice(`Couldn't rewind: ${errorMessage(error)}`, 'error');
     }
+
     if (scope.conversation) {
       this.dispatch({ type: 'rewind', entry: point.entry });
       store.set(draftAtom, point.text);
     }
+
     notice(
       scope.code && scope.conversation
         ? `Went back to before ${quoted}, files and conversation.`
@@ -140,5 +118,48 @@ export class ConversationController {
           : `The files went back to how they were before ${quoted}; the conversation goes on.`,
       'success',
     );
+  }
+
+  private switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
+    const { store, agent, notice } = this.context;
+    if (store.get(workingAtom)) return notice(BUSY, 'warning');
+
+    this.save();
+
+    const running = store.get(backgroundTasksAtom).filter((task) => task.status === 'running');
+
+    agent.reset?.(action.type === 'load' ? resumeOf(action.session) : undefined);
+    store.set(tasksAtom, []);
+    this.dispatch(action);
+
+    if (running.length > 0) {
+      notice(`Stopped what ran in the background of the last conversation: ${running.map((task) => firstLine(task.title)).join(', ')}.`);
+    }
+  }
+
+  private async name(fresh: boolean) {
+    const { agent } = this.context;
+    if (!agent.titleFor || this.naming) return undefined;
+
+    const { entries, title, titled } = this.session;
+
+    this.naming = true;
+
+    try {
+      const named = await agent.titleFor(conversationDigest(entries), fresh || !titled ? undefined : title);
+
+      if (named) this.retitle(named, 'agent');
+
+      return named;
+    } finally {
+      this.naming = false;
+    }
+  }
+
+  private retitle(title: string, by: 'agent' | 'user') {
+    const { id, entries } = this.session;
+
+    this.dispatch({ type: 'retitle', session: id, title, by, turns: promptCount(entries) });
+    if (!this.context.store.get(workingAtom)) this.save();
   }
 }

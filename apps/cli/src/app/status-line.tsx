@@ -13,11 +13,15 @@ export function StatusLine() {
   const { info } = useJinion();
   const items = useAtomValue(shownStatusItemsAtom);
   const busy = useAtomValue(busyAtom);
+  const setGit = useSetAtom(gitStatusAtom);
+
   const segments = items.map((item) => findSegment(item.id));
   const git = useGitStatus(info.cwd, segments.some((segment) => segment?.git), busy);
-  const setGit = useSetAtom(gitStatusAtom);
+
   useEffect(() => setGit(git), [git]);
+
   const data = useStatusData(useNow(segments.some((segment) => segment?.ticks)));
   const line = renderStatusLine(items, data);
+
   return <StatusBar items={line.left} right={line.right} />;
 }

@@ -9,6 +9,7 @@ export interface StatusBarProps {
 
 export function StatusBar({ items, right }: StatusBarProps) {
   const rightItems = right === undefined ? [] : Array.isArray(right) ? right : [right];
+
   return (
     <Box paddingX={1} justifyContent="space-between">
       <Box flexShrink={0} maxWidth="100%">
@@ -29,6 +30,7 @@ export function StatusBar({ items, right }: StatusBarProps) {
 
 function Joined({ items }: { items: ReactNode[] }) {
   const theme = useTheme();
+
   return items.map((item, index) => (
     <Fragment key={index}>
       {index > 0 && <Text color={theme.muted}> · </Text>}
@@ -39,6 +41,7 @@ function Joined({ items }: { items: ReactNode[] }) {
 
 export function Tag({ name, value, color }: { name: string; value: ReactNode; color?: string }) {
   const theme = useTheme();
+
   return (
     <Text>
       <Text color={theme.muted}>[{name}]</Text> <Text color={color}>{value}</Text>

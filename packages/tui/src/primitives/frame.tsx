@@ -30,32 +30,26 @@ export interface FrameProps {
   children?: ReactNode;
 }
 
-export interface FrameDividerProps {
-  title?: ReactNode;
-  grow?: boolean;
-}
-
-/** Must be a direct child of `Frame`. */
-export function FrameDivider(_props: FrameDividerProps) {
-  return null;
-}
-
 export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = false, fit = false, children }: FrameProps) {
   const theme = useTheme();
   const hovered = useHovered();
+
   const tint = tone === 'plain' ? undefined : theme.surface[tone];
   const background = hovered ? hoverColor(theme, tint) : tint;
   const color = borderColor ?? theme.border;
 
   const sections: { title?: ReactNode; body: ReactNode[]; grow: boolean }[] = [{ title, body: [], grow }];
+
   for (const child of Children.toArray(children)) {
     if (isValidElement(child) && child.type === FrameDivider) {
       const { title: sectionTitle, grow: sectionGrow = false } = (child as ReactElement<FrameDividerProps>).props;
+
       sections.push({ title: sectionTitle, body: [], grow: sectionGrow });
     } else {
       sections.at(-1)!.body.push(child);
     }
   }
+
   const fill = sections.some((section) => section.grow);
 
   return (
@@ -89,6 +83,16 @@ export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = fal
       <Edge color={color} lead={lead} background={background} />
     </Box>
   );
+}
+
+export interface FrameDividerProps {
+  title?: ReactNode;
+  grow?: boolean;
+}
+
+/** Must be a direct child of `Frame`. */
+export function FrameDivider(_props: FrameDividerProps) {
+  return null;
 }
 
 interface EdgeProps {

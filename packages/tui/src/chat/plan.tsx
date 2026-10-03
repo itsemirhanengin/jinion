@@ -22,8 +22,10 @@ const KEEP = 'keep';
 
 export function PlanPanel({ options, onDecide, onCancel }: PlanPanelProps) {
   const [note, setNote] = useState('');
+
   const [editing, setEditing] = useOptionEditor(() => {
     list.setFocus(KEEP);
+
     return note;
   });
 

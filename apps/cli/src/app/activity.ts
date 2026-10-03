@@ -10,22 +10,29 @@ export const hasWorkLeft = (todos: TodoGroup[]) => todos.some((group) => group.i
 /** As in Claude Code, the share of context left until auto-compaction, once it draws near. */
 export function contextWarning({ contextTokens, compactAt }: Usage) {
   if (!compactAt) return undefined;
+
   const left = 1 - contextTokens / compactAt;
+
   return left <= CONTEXT_WARNING ? left : undefined;
 }
 
 export function activity(session: Session, panel: string | undefined, tasks: BackgroundTask[]) {
   if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
   if (session.compacting) return 'Compacting the conversation';
+
   const last = session.entries.at(-1);
   if (last?.kind === 'thinking') return 'Thinking';
   if (last?.kind === 'text') return 'Writing';
   if (last?.kind === 'task') return 'Looking at the background task that ended';
+
   if (last?.kind === 'tool' && last.status === 'running') {
     if (last.run.name === 'ask') return 'Waiting for your answer';
+
     const hint = tasks.some((task) => task.foreground && task.status === 'running') ? ' · ctrl+b to run it in the background' : '';
     if (last.run.name === 'agent') return `A subagent is on it: ${last.run.input.description}${hint}`;
+
     return `Running ${last.run.name === 'other' ? last.run.input.title : last.run.name}${hint}`;
   }
+
   return 'Working';
 }

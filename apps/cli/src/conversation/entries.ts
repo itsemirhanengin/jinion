@@ -63,5 +63,6 @@ export const promptCount = (entries: Entry[]) => entries.filter(isPrompt).length
 
 export function lastToolRun<N extends ToolRun['name']>(entries: Entry[], tool: N) {
   const entry = entries.findLast((candidate) => candidate.kind === 'tool' && candidate.run.name === tool);
+
   return entry?.kind === 'tool' ? (entry.run as Extract<ToolRun, { name: N }>) : undefined;
 }

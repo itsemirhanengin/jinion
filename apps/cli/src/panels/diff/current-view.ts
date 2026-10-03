@@ -16,29 +16,26 @@ interface RepoView {
   since?: { base: string; against: string };
 }
 
-async function readRepo(repo: Repo): Promise<RepoView> {
-  const [state, changes] = await Promise.all([repoState(repo), repoChanges(repo).catch(() => [])]);
-  if (changes.length > 0) return { repo, branch: state?.branch, changes };
-  const since = await branchBase(repo).catch(() => undefined);
-  if (!since) return { repo, branch: state?.branch, changes };
-  return { repo, branch: state?.branch, changes: await repoChanges(repo, since.base).catch(() => []), since };
-}
-
 export function useCurrentView(): View {
   const { info } = useJinion();
   const turns = useAtomValue(editTurnsAtom);
+
   const edited = useMemo(
     () => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(info.cwd, change.path)))),
     [turns, info.cwd],
   );
+
   const read = useAsync(() => Promise.all(findRepos(info.cwd).map(readRepo)), []);
 
   if (read.state !== 'done') return { label: 'Current', empty: 'Looking for changes…' };
+
   const repos = read.value;
   if (repos.length === 0) return { label: 'Current', rows: [], empty: 'There is no git repository here or in the folders below.' };
+
   const [only] = repos;
   const grouped = repos.length > 1 || only!.repo.path !== '';
   const what = (repo: RepoView) => (repo.since ? `${repo.branch} · what it adds to ${repo.since.against}` : repo.branch);
+
   const rows = repos.flatMap((repo) =>
     repo.changes.map(
       (change): ChangeRow => ({
@@ -55,9 +52,11 @@ export function useCurrentView(): View {
       }),
     ),
   );
+
   // Repositories without changes have no rows, so they are named under the list.
   const clean = rows.length > 0 && grouped ? repos.filter((repo) => repo.changes.length === 0) : [];
   const repositories = plural(repos.length, 'repository', 'repositories');
+
   return {
     label: 'Current',
     rows,
@@ -65,4 +64,14 @@ export function useCurrentView(): View {
     empty: `No changes since the last commit in ${grouped ? repositories : 'this repository'}.`,
     note: clean.length > 0 ? `No changes in ${clean.map((repo) => repo.repo.label).join(', ')}.` : undefined,
   };
+}
+
+async function readRepo(repo: Repo): Promise<RepoView> {
+  const [state, changes] = await Promise.all([repoState(repo), repoChanges(repo).catch(() => [])]);
+  if (changes.length > 0) return { repo, branch: state?.branch, changes };
+
+  const since = await branchBase(repo).catch(() => undefined);
+  if (!since) return { repo, branch: state?.branch, changes };
+
+  return { repo, branch: state?.branch, changes: await repoChanges(repo, since.base).catch(() => []), since };
 }

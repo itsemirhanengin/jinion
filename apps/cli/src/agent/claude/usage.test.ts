@@ -42,22 +42,28 @@ const response = {
 describe('toAgentUsage', () => {
   it('maps Claude Code’s /usage: the session by model, the plan’s windows and what adds to them', () => {
     const usage = toAgentUsage(response);
+
     expect(usage.session?.models.map((model) => `${model.name} ${model.cost}`)).toEqual(['Opus 5.5 1.38', 'Haiku 4.5 0.04']);
+
     expect(usage.limits).toEqual([
       { label: '5-hour window', used: 0.43, resetsAt: Date.parse('2026-10-03T13:09:00Z') },
       { label: 'Week, all models', used: 0.36, resetsAt: undefined },
       { label: 'Week, Fable', used: 0, resetsAt: Date.parse('2026-10-05T10:00:00Z') },
     ]);
+
     expect(usage.extra).toEqual({ used: 12.4, limit: 50, currency: 'USD' });
+
     expect(usage.drivers?.day.traits).toEqual([
       { trait: 'subagents', share: 0.98 },
       { trait: 'long-context', share: 0.49 },
     ]);
+
     expect(usage.drivers?.day.sources.map((source) => `${source.kind} ${source.name}`)).toEqual(['agent Explore', 'mcp context7', 'skill review']);
   });
 
   it('has no limits for a login without a plan, and no drivers until asked for', () => {
     const usage = toAgentUsage({ ...response, rate_limits: null, behaviors: null });
+
     expect(usage).toMatchObject({ limits: [], extra: undefined, drivers: undefined });
   });
 });
@@ -65,6 +71,7 @@ describe('toAgentUsage', () => {
 describe('limitWindows', () => {
   it('maps every window of a rate limit event, used as a fraction or in percent', () => {
     const info = { unifiedWindows: { five_hour: { utilization: 0.25, resetsAt: 100 }, seven_day_opus: { utilization: 40 }, other: { utilization: 0.5 }, none: {} } };
+
     expect(limitWindows(info as never)).toEqual([
       { label: '5h', used: 0.25, resetsAt: 100_000 },
       { label: '7d opus', used: 0.4, resetsAt: undefined },

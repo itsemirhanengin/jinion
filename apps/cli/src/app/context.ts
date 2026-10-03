@@ -7,5 +7,6 @@ export const JinionContext = createContext<Jinion | undefined>(undefined);
 export function useJinion() {
   const jinion = useContext(JinionContext);
   if (!jinion) throw new Error('useJinion() must be called inside <App>.');
+
   return jinion;
 }

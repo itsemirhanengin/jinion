@@ -11,6 +11,7 @@ export const configDirOf = (name: string) => (name === DEFAULT_ACCOUNT ? undefin
 
 export function accountEnv(name: string) {
   const dir = configDirOf(name);
+
   return dir ? { CLAUDE_CONFIG_DIR: dir } : {};
 }
 
@@ -21,11 +22,13 @@ export function accountNames() {
         .map((entry) => entry.name)
         .sort()
     : [];
+
   return [DEFAULT_ACCOUNT, ...named];
 }
 
 export function configDirs() {
   const accounts = accountNames().flatMap((name) => configDirOf(name) ?? []);
+
   return [...new Set([claudeConfigDir(), ...accounts])];
 }
 
@@ -33,8 +36,10 @@ export function configDirs() {
 export function makeConfigDir(name: string) {
   const dir = configDirOf(name);
   if (!dir) return;
+
   mkdirSync(dir, { recursive: true });
   const projects = join(claudeConfigDir(), 'projects');
+
   mkdirSync(projects, { recursive: true });
   if (!existsSync(join(dir, 'projects'))) symlinkSync(projects, join(dir, 'projects'), 'dir');
 }
@@ -46,5 +51,6 @@ export function checkName(name: string) {
 /** Claude Code says `team` in one place and `Claude Team` in another; both read as `Team`. */
 export function planName(type: string | undefined) {
   const plan = type?.replace(/^claude\s+/i, '').trim();
+
   return plan ? plan[0]!.toUpperCase() + plan.slice(1).toLowerCase() : undefined;
 }

@@ -1,12 +1,6 @@
 import { useState } from 'react';
 import { useInput } from 'ink';
 
-export function stepIndex(index: number, delta: number, count: number, wrap = true) {
-  if (count === 0) return 0;
-  if (wrap) return (((index + delta) % count) + count) % count;
-  return Math.min(count - 1, Math.max(0, index + delta));
-}
-
 export interface ListNavigationOptions {
   isActive?: boolean;
   wrap?: boolean;
@@ -15,6 +9,7 @@ export interface ListNavigationOptions {
 
 export function useListNavigation(count: number, { isActive = true, wrap = true, pageSize }: ListNavigationOptions = {}) {
   const [index, setIndex] = useState(0);
+
   const current = count === 0 ? 0 : Math.min(index, count - 1);
 
   useInput(
@@ -28,4 +23,11 @@ export function useListNavigation(count: number, { isActive = true, wrap = true,
   );
 
   return [current, setIndex] as const;
+}
+
+export function stepIndex(index: number, delta: number, count: number, wrap = true) {
+  if (count === 0) return 0;
+  if (wrap) return (((index + delta) % count) + count) % count;
+
+  return Math.min(count - 1, Math.max(0, index + delta));
 }

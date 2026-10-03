@@ -23,6 +23,7 @@ export function Tree({ nodes }: TreeProps) {
 
 export function TreeRow({ prefix, label }: { prefix: string; label: ReactNode }) {
   const theme = useTheme();
+
   return (
     <Box>
       <Box flexShrink={0}>
@@ -40,6 +41,7 @@ function flatten(nodes: TreeNode[], indent: string): { prefix: string; label: Re
     const last = index === nodes.length - 1;
     const row = { prefix: `${indent}${last ? "'-- " : '|-- '}`, label: node.label };
     const children = node.children ? flatten(node.children, `${indent}${last ? '    ' : '|   '}`) : [];
+
     return [row, ...children];
   });
 }

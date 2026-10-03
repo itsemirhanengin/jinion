@@ -10,10 +10,14 @@ const RECENT_MS = 60_000;
 export function TaskLine() {
   const theme = useTheme();
   const tasks = useAtomValue(backgroundTasksAtom);
+
   const running = tasks.some((task) => task.status === 'running');
-  useAnimation({ interval: 1000, isActive: running });
-  if (!running) return null;
   const shown = tasks.filter((task) => task.status === 'running' || Date.now() - (task.endedAt ?? 0) < RECENT_MS);
+
+  useAnimation({ interval: 1000, isActive: running });
+
+  if (!running) return null;
+
   return (
     <Box marginTop={1} paddingX={1}>
       <Text wrap="truncate-end">

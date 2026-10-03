@@ -14,6 +14,7 @@ export interface AskResultProps {
 
 export function AskResult({ questions, answers, cancelled = false }: AskResultProps) {
   const theme = useTheme();
+
   const count = plural(questions.length, 'question');
 
   return (
@@ -28,11 +29,14 @@ export function AskResult({ questions, answers, cancelled = false }: AskResultPr
     >
       {questions.flatMap((question, index) => {
         const answer = answers[index];
+
         const picked = [
           ...(answer?.options ?? []).map((option) => ({ number: option + 1, option: question.options[option] })),
           ...(answer?.text ? [{ number: question.options.length + 1, option: undefined }] : []),
         ];
+
         const indent = `  ${question.options.length + 1}. `.length;
+
         return [
           index > 0 && <FrameDivider key={`divider-${question.id}`} />,
           <Box key={question.id} flexDirection="column">

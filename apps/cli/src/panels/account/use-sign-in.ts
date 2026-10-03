@@ -16,6 +16,7 @@ export interface Signing {
 export function useSignIn(accounts: AgentAccounts, ended: (name: string, signedIn: boolean) => void) {
   const jinion = useJinion();
   const current = useAtomValue(accountAtom);
+
   const [signing, setSigning] = useState<Signing>();
   const login = useRef<AbortController>(undefined);
 
@@ -25,9 +26,11 @@ export function useSignIn(accounts: AgentAccounts, ended: (name: string, signedI
 
   const start = (name: string) => {
     const abort = new AbortController();
+    let signedIn = false;
+
     login.current = abort;
     setSigning({ name, code: '', sent: false });
-    let signedIn = false;
+
     accounts
       .signIn(name, {
         signal: abort.signal,
@@ -37,7 +40,9 @@ export function useSignIn(accounts: AgentAccounts, ended: (name: string, signedI
       .then(
         (account) => {
           signedIn = account.signedIn;
+
           const as = account.email ? ` as ${account.email}` : '';
+
           jinion.notice(
             !account.signedIn
               ? `${name} isn't signed in yet. Try again from /account.`
@@ -46,6 +51,7 @@ export function useSignIn(accounts: AgentAccounts, ended: (name: string, signedI
                 : `Signed in to ${name}${as}. Pick it here to switch.`,
             account.signedIn ? 'success' : 'warning',
           );
+
           if (account.signedIn) jinion.accounts.signedIn(name);
         },
         (error: unknown) => {
@@ -66,6 +72,7 @@ export function useSignIn(accounts: AgentAccounts, ended: (name: string, signedI
     type: (code: string) => update({ code }),
     send: (code: string) => {
       if (!code.trim() || !signing?.prompt) return;
+
       signing.prompt.answer(code);
       update({ sent: true });
     },

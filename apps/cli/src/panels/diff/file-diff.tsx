@@ -7,6 +7,7 @@ export const CHROME_ROWS = 8;
 
 export function FileDiff({ row, onBack }: { row: ChangeRow; onBack(): void }) {
   const theme = useTheme();
+
   const read = useAsync(() => row.patch().catch(() => ''), [row]);
   const patch = read.state === 'done' ? read.value : undefined;
   const lines = patch ? parsePatch(patch).length : 0;
@@ -14,6 +15,7 @@ export function FileDiff({ row, onBack }: { row: ChangeRow; onBack(): void }) {
 
   useInput((_, key) => {
     if (key.escape) return onBack();
+
     pager.scroll(key);
   });
 

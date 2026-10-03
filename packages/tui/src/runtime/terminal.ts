@@ -19,10 +19,12 @@ export const pointerSequence = (shape: PointerShape) => `\x1b]22;${shape}\x07`;
 export function notificationMethod(env: NodeJS.ProcessEnv = process.env): NotificationMethod {
   // A multiplexer keeps escape sequences from the terminal around it, but passes the bell on.
   if (env.TMUX || env.STY) return 'bell';
+
   const program = env.TERM_PROGRAM ?? '';
   if (program === 'iTerm.app') return 'osc9';
   if (env.KITTY_WINDOW_ID || env.TERM === 'xterm-kitty') return 'osc99';
   if (['ghostty', 'WezTerm', 'WarpTerminal'].includes(program) || /^(foot|rxvt)/.test(env.TERM ?? '')) return 'osc777';
+
   return 'bell';
 }
 
@@ -50,17 +52,20 @@ export function createTerminalControl(
 ) {
   let focused = true;
   let shape: PointerShape = 'default';
+
   const control: TerminalControl = {
     focused: () => focused,
     method,
     notify: (title, body) => write(notificationSequence(method, title, body)),
     pointer: (next) => {
       if (next === shape) return;
+
       shape = next;
       write(pointerSequence(next));
     },
     copy: (text) => copyToClipboard(text, write, { method: clipboard }),
   };
+
   return {
     control,
     setFocused: (value: boolean) => {

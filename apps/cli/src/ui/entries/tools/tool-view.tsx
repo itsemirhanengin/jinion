@@ -9,15 +9,19 @@ import { ShellFooter } from './shell-footer.js';
 export function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
   const theme = useTheme();
   const { expanded } = useView();
+
   const { run, status } = entry;
 
   switch (run.name) {
     case 'read':
       return <ReadView run={run} status={status} />;
+
     case 'grep':
       return <GrepView run={run} status={status} />;
+
     case 'glob':
       return <GlobView run={run} status={status} />;
+
     case 'bash':
       return (
         <ShellBlock
@@ -29,20 +33,26 @@ export function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
           folded={!live && !expanded && status !== 'running'}
         />
       );
+
     case 'edit':
       return <EditBlock path={run.input.path} patch={run.result?.patch ?? run.input.patch} status={status} verb={run.input.created ? 'Write' : 'Edit'} />;
+
     case 'todo':
       return <TodoBlock groups={run.input.groups} status={status} />;
+
     case 'ask':
       return <AskResult questions={run.input.questions} answers={run.result?.answers ?? []} cancelled={status === 'cancelled'} />;
+
     case 'memory':
       return <ToolLine status={status} name={MEMORY_VERBS[run.input.action]} detail={<Text color={theme.muted}>{printable(run.input.detail)}</Text>} />;
+
     case 'plan':
       return (
         <Frame title={<Text bold>Plan</Text>} tone={toneOf(status)} lead={1}>
           <Markdown text={run.input.plan} />
         </Frame>
       );
+
     case 'other':
       return (
         <ToolLine
@@ -51,6 +61,7 @@ export function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
           detail={run.input.detail && <Text color={theme.muted}>{printable(run.input.detail)}</Text>}
         />
       );
+
     case 'agent':
       return <AgentView entry={entry} />;
   }

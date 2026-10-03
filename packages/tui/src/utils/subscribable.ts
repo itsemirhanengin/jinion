@@ -4,6 +4,7 @@ export class Subscribable {
 
   readonly subscribe = (listener: () => void) => {
     this.listeners.add(listener);
+
     return () => void this.listeners.delete(listener);
   };
 

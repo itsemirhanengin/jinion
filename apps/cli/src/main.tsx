@@ -49,12 +49,14 @@ if (values.help) {
   console.log(USAGE);
   process.exit(0);
 }
+
 if (values.version) {
   console.log(version);
   process.exit(0);
 }
 
 const theme = values.theme ?? process.env.JINION_THEME;
+
 if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
   console.error(`Unknown theme "${theme}". Use light or dark.`);
   process.exit(1);
@@ -67,15 +69,19 @@ const { mode } = loadProjectSettings(cwd);
 const account = loadSettings().accounts?.Claude;
 const memory = new MemoryStore(cwd);
 const debug = values.debug || process.env.JINION_DEBUG === '1' ? new DebugLog() : undefined;
+
 const agent: Agent = values.demo
   ? new ScriptedAgent(scenarios, demoCommands)
   : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd), debug });
+
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;
 const effort = values.effort ?? process.env.JINION_EFFORT;
+
 if (model) await agent.select({ model, effort });
 else if (saved || effort) await agent.select({ ...(saved ?? agent.selection), ...(effort && { effort }) });
+
 const sessions: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
 const initial = values.continue ? sessions.list()[0] : undefined;
 if (initial) agent.reset?.(resumeOf(initial));
@@ -89,6 +95,7 @@ const info = {
 const instance = await run(<App agent={agent} info={info} sessions={sessions} memory={memory} initial={initial} />, {
   scheme: theme as ColorScheme | undefined,
 });
+
 await instance.waitUntilExit();
 agent.close?.();
 if (debug) console.log(`Debug log: ${debug.path}`);

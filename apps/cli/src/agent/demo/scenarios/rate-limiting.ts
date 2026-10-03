@@ -33,59 +33,15 @@ const CHECKS = [
   { label: 'Lint', description: 'pnpm lint', command: 'pnpm lint', output: LINT_RUN, durationMs: 1_000, verified: '- `pnpm lint`: no problems.' },
 ];
 
-const STORAGE_NOTES = [
-  'Counters live in an in-process `Map`. A restart resets them, which is fine while the API runs as a single instance.',
-  'You picked Redis, but this repo has no Redis client yet, so the limiter ships with the in-memory store for now. Adding a Redis-backed store is the natural next step once `REDIS_URL` is provisioned.',
-  'Counters sit behind the in-memory `Map` today, and the `key` option plus a small store seam leave room for a Redis store later without touching the middleware.',
-];
-
-function storageNote(answer: QuestionAnswer | undefined) {
-  const choice =
-    answer?.text
-      ? `You asked for "${answer.text}". This demo still ships the in-memory store; wiring that in is the next step.`
-      : STORAGE_NOTES[answer?.options[0] ?? 0];
-  return answer?.note ? `${choice} Your note is tracked as a follow-up: "${answer.note}".` : choice;
-}
-
-type Plan = [title: string, items: [text: string, status: TodoStatus][]][];
-
-function todos(plan: Plan): TodoGroup[] {
-  return plan.map(([title, items]) => ({ title, items: items.map(([text, status]) => ({ text, status })) }));
-}
-
-function plan(build: [TodoStatus, TodoStatus], verify: [TodoStatus, TodoStatus]): TodoGroup[] {
-  return todos([
-    [
-      'Design',
-      [
-        ['Map the middleware chain', 'done'],
-        ['Agree on storage and scope', 'done'],
-      ],
-    ],
-    [
-      'Build',
-      [
-        ['Write the limiter middleware', build[0]],
-        ['Wire it into the server and routes', build[1]],
-      ],
-    ],
-    [
-      'Verification',
-      [
-        ['Unit test the limiter', verify[0]],
-        ['Run the full test suite', verify[1]],
-      ],
-    ],
-  ]);
-}
-
 export const rateLimiting: Scenario = {
   title: 'Add rate limiting to the public API',
   async *play(script) {
     yield* script.think(
       'The user wants rate limiting on the public API. Before adding anything I need to know how requests flow: where the server is created, whether there is a middleware chain, and whether something like a limiter already exists so I do not build a second one.',
     );
+
     yield* script.usage(3_200, 0.011);
+
     yield* script.agent('Map how a request reaches a route', [
       { call: { name: 'glob', input: { pattern: 'src/**/*.ts' } }, result: { files: Array.from({ length: 41 }, (_, index) => `src/file-${index}.ts`) } },
       {
@@ -94,7 +50,9 @@ export const rateLimiting: Scenario = {
       },
       { call: { name: 'read', input: { files: [{ path: 'src/server.ts' }] } }, result: {} },
     ]);
+
     yield* script.tool('read', { files: [{ path: 'src/server.ts' }, { path: 'src/middleware/index.ts' }] }, {}, 700);
+
     yield* script.tool(
       'grep',
       { pattern: 'rateLimit|throttle|429', path: 'src' },
@@ -106,6 +64,7 @@ export const rateLimiting: Scenario = {
       },
       500,
     );
+
     yield* script.tool(
       'glob',
       { pattern: 'src/middleware/*.ts' },
@@ -119,6 +78,7 @@ export const rateLimiting: Scenario = {
       },
       400,
     );
+
     yield* script.usage(5_800, 0.019);
 
     yield* script.think(
@@ -153,6 +113,7 @@ export const rateLimiting: Scenario = {
         options: CHECKS.map(({ label, description }) => ({ label, description })),
       },
     ]);
+
     const picked = (checks?.options ?? [0]).map((index) => CHECKS[index]!);
     const strictLogin = scope?.options[0] !== 1;
 
@@ -161,6 +122,7 @@ export const rateLimiting: Scenario = {
         (strictLogin ? ', plus a tighter budget on POST /auth/login.' : '.') +
         ` Then a focused unit test, then ${picked.map((check) => check.label.toLowerCase()).join(', ')}.`,
     );
+
     yield* script.tool('todo', { groups: plan(['active', 'pending'], ['pending', 'pending']) }, {}, 250);
 
     yield* script.tool('edit', { path: 'src/middleware/rate-limit.ts', patch: RATE_LIMIT_FILE, created: true }, {}, 900);
@@ -172,15 +134,18 @@ export const rateLimiting: Scenario = {
     yield* script.tool('todo', { groups: plan(['done', 'done'], ['active', 'pending']) }, {}, 200);
 
     yield* script.tool('edit', { path: 'src/middleware/rate-limit.test.ts', patch: TEST_FILE, created: true }, {}, 800);
+
     yield* script.bash('pnpm vitest run src/middleware/rate-limit.test.ts', FAILING_RUN, {
       exitCode: 1,
       durationMs: 1_600,
     });
+
     yield* script.usage(6_300, 0.024);
 
     yield* script.think(
       'The reset test fails at the boundary. The window check uses `>` against the start timestamp, and fake timers advance exactly windowMs, so a request landing on the boundary still counts toward the old window. It should be `>=`.',
     );
+
     yield* script.tool('edit', { path: 'src/middleware/rate-limit.ts', patch: BOUNDARY_FIX }, {}, 600);
     yield* script.bash('pnpm vitest run src/middleware/rate-limit.test.ts', PASSING_RUN, { durationMs: 1_200 });
     yield* script.tool('todo', { groups: plan(['done', 'done'], ['done', 'active']) }, {}, 200);
@@ -211,3 +176,50 @@ export const rateLimiting: Scenario = {
     );
   },
 };
+
+function plan(build: [TodoStatus, TodoStatus], verify: [TodoStatus, TodoStatus]): TodoGroup[] {
+  return todos([
+    [
+      'Design',
+      [
+        ['Map the middleware chain', 'done'],
+        ['Agree on storage and scope', 'done'],
+      ],
+    ],
+    [
+      'Build',
+      [
+        ['Write the limiter middleware', build[0]],
+        ['Wire it into the server and routes', build[1]],
+      ],
+    ],
+    [
+      'Verification',
+      [
+        ['Unit test the limiter', verify[0]],
+        ['Run the full test suite', verify[1]],
+      ],
+    ],
+  ]);
+}
+
+type Plan = [title: string, items: [text: string, status: TodoStatus][]][];
+
+function todos(plan: Plan): TodoGroup[] {
+  return plan.map(([title, items]) => ({ title, items: items.map(([text, status]) => ({ text, status })) }));
+}
+
+const STORAGE_NOTES = [
+  'Counters live in an in-process `Map`. A restart resets them, which is fine while the API runs as a single instance.',
+  'You picked Redis, but this repo has no Redis client yet, so the limiter ships with the in-memory store for now. Adding a Redis-backed store is the natural next step once `REDIS_URL` is provisioned.',
+  'Counters sit behind the in-memory `Map` today, and the `key` option plus a small store seam leave room for a Redis store later without touching the middleware.',
+];
+
+function storageNote(answer: QuestionAnswer | undefined) {
+  const choice =
+    answer?.text
+      ? `You asked for "${answer.text}". This demo still ships the in-memory store; wiring that in is the next step.`
+      : STORAGE_NOTES[answer?.options[0] ?? 0];
+
+  return answer?.note ? `${choice} Your note is tracked as a follow-up: "${answer.note}".` : choice;
+}

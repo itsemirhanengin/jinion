@@ -10,6 +10,7 @@ const FILES_SHOWN = 3;
 export function Changes({ changes, indent }: { changes: Promise<FileChanges | undefined>; indent: number }) {
   const { info } = useJinion();
   const theme = useTheme();
+
   const known = useAsync(() => changes, [changes]);
 
   if (known.state !== 'done' || !known.value) {
@@ -19,9 +20,11 @@ export function Changes({ changes, indent }: { changes: Promise<FileChanges | un
       </Box>
     );
   }
+
   const { files, insertions, deletions } = known.value;
   const names = files.slice(0, FILES_SHOWN).map((file) => relative(info.cwd, file) || file);
   const more = files.length - names.length;
+
   return (
     <Box paddingLeft={indent} flexDirection="column">
       <Text>

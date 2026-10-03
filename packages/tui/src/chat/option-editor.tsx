@@ -11,20 +11,25 @@ export const EDITOR_HINTS: KeyHint[] = [
 
 export function useOptionEditor<T>(start: () => T | undefined) {
   const [editing, setEditing] = useState<T>();
+
   useInput(
     (input) => {
       if (input !== 'n') return;
+
       const value = start();
+
       if (value !== undefined) setEditing(value);
     },
     { isActive: editing === undefined },
   );
+
   useInput(
     (_, key) => {
       if (key.escape) setEditing(undefined);
     },
     { isActive: editing !== undefined },
   );
+
   return [editing, setEditing] as const;
 }
 
@@ -39,6 +44,7 @@ export interface OptionEditorProps {
 
 export function OptionEditor({ indent, note = false, value, onChange, onSubmit, placeholder }: OptionEditorProps) {
   const theme = useTheme();
+
   return (
     <Box paddingLeft={indent}>
       {note && <Text color={theme.muted}>note: </Text>}

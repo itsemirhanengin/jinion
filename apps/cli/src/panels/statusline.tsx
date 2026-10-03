@@ -11,25 +11,13 @@ const NAME_WIDTH = 13;
 
 type Look = Omit<StatusItem, 'id'>;
 
-const orderOf = (items: StatusItem[]) => [
-  ...items.map((item) => item.id),
-  ...SEGMENTS.filter((segment) => !items.some((item) => item.id === segment.id)).map((segment) => segment.id),
-];
-
-const looksOf = (items: StatusItem[]): Record<string, Look> =>
-  Object.fromEntries(
-    SEGMENTS.map((segment) => {
-      const item = items.find((candidate) => candidate.id === segment.id);
-      return [segment.id, item ? { side: item.side, style: item.style } : { side: 'left' as StatusSide }];
-    }),
-  );
-
 export function StatusLinePanel() {
   const theme = useTheme();
   const { close } = usePanel();
   const data = useStatusData();
   const [saved, save] = useAtom(statusItemsAtom);
   const preview = useSetAtom(statusPreviewAtom);
+
   const [order, setOrder] = useState(() => orderOf(saved));
   const [looks, setLooks] = useState(() => looksOf(saved));
 
@@ -48,6 +36,27 @@ export function StatusLinePanel() {
 
   const draft = itemsOf(list.checked);
   const draftKey = JSON.stringify(draft);
+
+  const choices: Choice[] = order.map((id) => {
+    const segment = findSegment(id)!;
+    const look = looks[id]!;
+    const shown = list.isChecked(id);
+    const style = styleOf({ id, ...look });
+    const sample = segment.render(data, style);
+
+    return {
+      key: id,
+      label: (
+        <Text>
+          {segment.name.padEnd(NAME_WIDTH)}
+          <Text dimColor={!shown}>{sample ?? <Text color={theme.muted}>nothing to show yet</Text>}</Text>
+        </Text>
+      ),
+      description: [segment.description, segment.styles?.find((candidate) => candidate.id === style)?.name].filter(Boolean).join(' · '),
+      aside: shown ? look.side : undefined,
+    };
+  });
+
   useEffect(() => preview(draft), [draftKey]);
   // However the panel closes, the line goes back to what is saved.
   useEffect(() => () => preview(undefined), []);
@@ -62,40 +71,28 @@ export function StatusLinePanel() {
       const index = order.indexOf(id);
       const target = index + (key.upArrow ? -1 : 1);
       if (target < 0 || target >= order.length) return;
+
       const moved = [...order];
+
       moved[index] = moved[target]!;
       moved[target] = id;
+
       return setOrder(moved);
     }
+
     if (key.tab) return restyle({ side: look.side === 'left' ? 'right' : 'left' });
+
     if ((key.leftArrow || key.rightArrow) && styles.length > 1) {
       const index = styles.findIndex((style) => style.id === styleOf({ id, ...look }));
+
       return restyle({ style: styles[(index + (key.rightArrow ? 1 : -1) + styles.length) % styles.length]!.id });
     }
+
     if (input === 'r') {
       setOrder(orderOf(DEFAULT_STATUS_LINE));
       setLooks(looksOf(DEFAULT_STATUS_LINE));
       for (const segment of SEGMENTS) list.setChecked(segment.id, DEFAULT_STATUS_LINE.some((item) => item.id === segment.id));
     }
-  });
-
-  const choices: Choice[] = order.map((id) => {
-    const segment = findSegment(id)!;
-    const look = looks[id]!;
-    const shown = list.isChecked(id);
-    const style = styleOf({ id, ...look });
-    const sample = segment.render(data, style);
-    return {
-      key: id,
-      label: (
-        <Text>
-          {segment.name.padEnd(NAME_WIDTH)}
-          <Text dimColor={!shown}>{sample ?? <Text color={theme.muted}>nothing to show yet</Text>}</Text>
-        </Text>
-      ),
-      description: [segment.description, segment.styles?.find((candidate) => candidate.id === style)?.name].filter(Boolean).join(' · '),
-      aside: shown ? look.side : undefined,
-    };
   });
 
   return (
@@ -117,3 +114,17 @@ export function StatusLinePanel() {
     </Panel>
   );
 }
+
+const orderOf = (items: StatusItem[]) => [
+  ...items.map((item) => item.id),
+  ...SEGMENTS.filter((segment) => !items.some((item) => item.id === segment.id)).map((segment) => segment.id),
+];
+
+const looksOf = (items: StatusItem[]): Record<string, Look> =>
+  Object.fromEntries(
+    SEGMENTS.map((segment) => {
+      const item = items.find((candidate) => candidate.id === segment.id);
+
+      return [segment.id, item ? { side: item.side, style: item.style } : { side: 'left' as StatusSide }];
+    }),
+  );

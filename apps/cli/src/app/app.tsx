@@ -20,6 +20,7 @@ export type AppProps = Omit<JinionOptions, 'commands'>;
 export function App(props: AppProps) {
   const screen = useScreen();
   const [jinion] = useState(() => new Jinion({ ...props, commands: new CommandRegistry(builtinCommands) }, screen));
+
   useEffect(() => jinion.start(), [jinion]);
 
   return (
@@ -33,11 +34,13 @@ export function App(props: AppProps) {
 
 function Layout() {
   useKeys();
+
   return <Shell content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
 }
 
 function Conversation() {
   const session = useAtomValue(sessionAtom);
+
   return (
     <ScrollView key={session.id}>
       {session.entries.map((entry, index) => (

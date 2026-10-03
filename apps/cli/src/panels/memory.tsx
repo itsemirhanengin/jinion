@@ -9,9 +9,11 @@ export function MemoryPanel() {
   const jinion = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
+
   const [notes, setNotes] = useState(() => jinion.memory.list());
   const [open, setOpen] = useState<string>();
   const [forgetting, setForgetting] = useState<string>();
+
   const keys = notes.map((memory) => `${memory.scope}/${memory.id}`);
 
   const list = useChoiceList({
@@ -21,18 +23,10 @@ export function MemoryPanel() {
     onSubmit: ([key]) => setOpen(open === key ? undefined : key),
   });
 
-  useInput((input) => {
-    if (input !== 'd' || !list.focus) return setForgetting(undefined);
-    if (forgetting !== list.focus) return setForgetting(list.focus);
-    const memory = jinion.memory.remove(list.focus);
-    setForgetting(undefined);
-    setNotes(jinion.memory.list());
-    if (memory) jinion.notice(`Forgot ${memory.scope}/${memory.id}: ${memory.title}`);
-  });
-
   const choices: Choice[] = notes.map((memory) => {
     const key = `${memory.scope}/${memory.id}`;
     const lines = memory.content.split('\n');
+
     return {
       key,
       label: memory.title,
@@ -47,6 +41,17 @@ export function MemoryPanel() {
           </Box>
         ) : undefined,
     };
+  });
+
+  useInput((input) => {
+    if (input !== 'd' || !list.focus) return setForgetting(undefined);
+    if (forgetting !== list.focus) return setForgetting(list.focus);
+
+    const memory = jinion.memory.remove(list.focus);
+
+    setForgetting(undefined);
+    setNotes(jinion.memory.list());
+    if (memory) jinion.notice(`Forgot ${memory.scope}/${memory.id}: ${memory.title}`);
   });
 
   return (

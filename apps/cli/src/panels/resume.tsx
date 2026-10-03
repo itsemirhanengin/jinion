@@ -15,6 +15,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   const { close } = usePanel();
   const { rows } = useWindowSize();
   const { id: current } = useAtomValue(sessionAtom);
+
   const [query, setQuery] = useState(initialQuery.trim());
 
   const sessions = useMemo(() => jinion.sessions.list().filter((session) => session.id !== current), [current]);
@@ -23,6 +24,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   const [selected, setSelected] = useListNavigation(matches.length, { wrap: false, pageSize: limit });
 
   useEffect(() => setSelected(0), [query, setSelected]);
+
   useInput((_, key) => {
     if (key.escape) close();
   });
@@ -30,6 +32,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   const choose = () => {
     const match = matches[selected];
     if (!match) return;
+
     close();
     jinion.conversation.resume(match.item);
   };
@@ -72,5 +75,6 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
 
 function describe(session: SavedSession) {
   const messages = session.entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
+
   return `${messages} messages · "${firstPrompt(session) ?? ''}"`;
 }

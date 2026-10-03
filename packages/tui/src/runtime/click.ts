@@ -9,19 +9,6 @@ export interface Rect {
   height: number;
 }
 
-export function screenRect(element: DOMElement): Rect {
-  let x = 0;
-  let y = 0;
-  for (let node: DOMElement | undefined = element; node; node = node.parentNode) {
-    x += node.yogaNode?.getComputedLeft() ?? 0;
-    y += node.yogaNode?.getComputedTop() ?? 0;
-  }
-  return { x, y, width: element.yogaNode?.getComputedWidth() ?? 0, height: element.yogaNode?.getComputedHeight() ?? 0 };
-}
-
-export const contains = (rect: Rect, x: number, y: number) =>
-  x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
-
 export interface ClickOptions {
   /** A click outside this box is on whatever is drawn there instead. */
   clip?: RefObject<DOMElement | null>;
@@ -31,21 +18,42 @@ export interface ClickOptions {
 /** A press that moves before it is let go is a drag, which selects text instead. */
 export function useClick(ref: RefObject<DOMElement | null>, onClick: () => void, { clip, isActive = true }: ClickOptions = {}) {
   const pressed = useRef<{ x: number; y: number }>(undefined);
+
   useMouse(
     (event) => {
       if ((event.type !== 'press' && event.type !== 'release') || event.button !== 0) return;
+
       if (event.type === 'press') {
         const inside =
           ref.current !== null &&
           contains(screenRect(ref.current), event.x, event.y) &&
           (!clip?.current || contains(screenRect(clip.current), event.x, event.y));
+
         pressed.current = inside ? { x: event.x, y: event.y } : undefined;
+
         return;
       }
+
       const at = pressed.current;
+
       pressed.current = undefined;
       if (at && at.x === event.x && at.y === event.y) onClick();
     },
     { isActive },
   );
 }
+
+export function screenRect(element: DOMElement): Rect {
+  let x = 0;
+  let y = 0;
+
+  for (let node: DOMElement | undefined = element; node; node = node.parentNode) {
+    x += node.yogaNode?.getComputedLeft() ?? 0;
+    y += node.yogaNode?.getComputedTop() ?? 0;
+  }
+
+  return { x, y, width: element.yogaNode?.getComputedWidth() ?? 0, height: element.yogaNode?.getComputedHeight() ?? 0 };
+}
+
+export const contains = (rect: Rect, x: number, y: number) =>
+  x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;

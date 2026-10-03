@@ -49,13 +49,16 @@ function gitLine(cwd: string) {
   const [only] = repos;
   if (!only) return 'not a git repository';
   if (only.path === '') return gitBranch(only.root);
+
   const list = repos.map((repo) => `${repo.path}/ (${gitBranch(repo.root)})`).join(', ');
+
   return `this folder isn't a repository, but these folders in it are: ${list}. Run git in the repository a change belongs to, e.g. \`git -C ${only.path} status\`.`;
 }
 
 function gitBranch(cwd: string) {
   try {
     const branch = execFileSync('git', ['branch', '--show-current'], { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+
     return branch.trim() ? `on branch ${branch.trim()}` : 'detached HEAD';
   } catch {
     return 'not a git repository';
@@ -66,9 +69,12 @@ function projectInstructions(cwd: string) {
   const sections = INSTRUCTION_FILES.flatMap((name) => {
     const path = join(cwd, name);
     if (!existsSync(path)) return [];
+
     const content = readFileSync(path, 'utf8').trim();
+
     return content ? [`## ${name}\n\n${content}`] : [];
   });
   if (sections.length === 0) return undefined;
+
   return ['# Project instructions', "These come from the project's own files. Follow them.", ...sections].join('\n\n');
 }

@@ -38,12 +38,15 @@ export const firstPrompt = (session: Pick<Session, 'entries'>) =>
 export function toSaved(session: Session): SavedSession | undefined {
   const prompt = firstPrompt(session);
   if (prompt === undefined) return undefined;
+
   const { busySince: _, turnFrom: __, compacting: ___, title, ...rest } = session;
+
   return { ...rest, title: title ?? prompt, updatedAt: Date.now() };
 }
 
 export function fromSaved(saved: SavedSession): Session {
   const { updatedAt: _, ...session } = saved;
+
   return session;
 }
 

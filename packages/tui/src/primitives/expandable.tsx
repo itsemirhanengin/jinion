@@ -13,6 +13,7 @@ export interface ExpandableProps {
 export function Expandable({ id, fit = false, children }: ExpandableProps) {
   const area = useScrollArea();
   const { expanded, items, setItem } = useView();
+
   // Whether it is open is read on the click: opening it draws again only what is inside, not this.
   const toggle = () => {
     area?.hold();

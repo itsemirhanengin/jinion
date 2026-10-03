@@ -11,6 +11,7 @@ afterEach(() => terminal?.unmount());
 
 function Item({ name }: { name: string }) {
   const { expanded } = useView();
+
   return (
     <Box flexDirection="column">
       <Text>
@@ -23,9 +24,11 @@ function Item({ name }: { name: string }) {
 
 function Items() {
   const { toggleExpanded } = useView();
+
   useInput((input, key) => {
     if (key.ctrl && input === 'o') toggleExpanded();
   });
+
   return (
     <Box flexDirection="column" height={12}>
       <ScrollView>
@@ -45,6 +48,7 @@ it('opens and closes one item with a click, and ctrl+o opens all of them, forget
 
   await terminal.click('second closed');
   let screen = await terminal.waitFor('second open');
+
   expect(screen).toContain('second details');
   expect(screen).toContain('first closed');
   expect(screen).toContain('third closed');
@@ -55,10 +59,12 @@ it('opens and closes one item with a click, and ctrl+o opens all of them, forget
 
   await terminal.click('first closed');
   await terminal.waitFor('first open');
+
   await terminal.press('\x0f');
   screen = await terminal.waitFor('third open');
   expect(screen).toContain('first open');
   expect(screen).toContain('second open');
+
   await terminal.press('\x0f');
   screen = await terminal.waitFor('first closed');
   expect(screen).toContain('second closed');
@@ -68,8 +74,10 @@ it('takes a press and release on different cells for a drag, not a click', async
   terminal = renderTerminal(<Items />, { columns: 40, rows: 12 });
   const screen = await terminal.waitFor('first closed');
   const y = screen.split('\n').findIndex((line) => line.includes('first closed')) + 1;
+
   await terminal.press(`\x1b[<0;1;${y}M`, `\x1b[<32;4;${y}M`, `\x1b[<0;4;${y}m`);
   await new Promise((resolve) => setTimeout(resolve, 60));
+
   expect(await terminal.screen()).toContain('first closed');
 });
 
@@ -96,12 +104,14 @@ it('keeps a clicked item under the pointer while following the bottom, and follo
 
   await terminal.click('item 25 closed');
   const opened = await terminal.waitFor('item 25 details');
+
   expect(rowOf(opened, 'item 25 open')).toBe(row);
   expect(opened).toContain('Jump to bottom');
 
   await terminal.click('item 25 details');
   // Following the bottom again takes the items being measured again, a frame or two later.
   const closed = await terminal.waitFor(/item 25 closed[\s\S]*item 29 closed/);
+
   expect(closed).not.toContain('Jump to bottom');
 });
 
@@ -126,12 +136,14 @@ it('lights up the item under the pointer, with the hand pointer, and nothing ove
 it('moves the light to what scrolls under a still pointer', async () => {
   terminal = renderTerminal(<Many />, { columns: 40, rows: 12 });
   await terminal.waitFor('item 29 closed');
+
   await terminal.hover('item 25 closed');
   await new Promise((resolve) => setTimeout(resolve, 60));
   expect(await terminal.backgroundOf('item 25 closed')).toBe(hoverColor(darkTheme));
 
   const screen = await terminal.screen();
   const y = rowOf(screen, 'item 25 closed') + 1;
+
   await terminal.press(`\x1b[<64;1;${y}M`);
   await terminal.waitFor('Jump to bottom');
   await new Promise((resolve) => setTimeout(resolve, 60));
@@ -150,6 +162,7 @@ it('lights up a line that fits its text only as far as the text goes', async () 
     </Box>,
     { columns: 40, rows: 6 },
   );
+
   await terminal.waitFor('Thought for 3s');
   await terminal.hover('Thought for 3s');
   await new Promise((resolve) => setTimeout(resolve, 60));

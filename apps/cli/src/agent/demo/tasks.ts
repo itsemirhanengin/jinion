@@ -20,16 +20,21 @@ export class DemoTasks {
   ) {}
 
   start(id: string, command: string, { output, durationMs = 3000, exitCode, followup }: BackgroundScript) {
-    mkdirSync(this.folder, { recursive: true });
     const file = join(this.folder, `${id}.output`);
+
+    mkdirSync(this.folder, { recursive: true });
     writeFileSync(file, '');
+
     const task: BackgroundTask = { id, kind: 'shell', title: command, status: 'running', startedAt: Date.now(), output: file };
     const step = (durationMs / Math.max(1, output.length)) * this.pace;
     const timers = output.map((line, index) => setTimeout(() => appendFileSync(file, `${line}\n`), step * index));
+
     if (exitCode !== undefined) {
       timers.push(setTimeout(() => this.end(id, exitCode === 0 ? 'completed' : 'failed', `exit code ${exitCode}`), durationMs * this.pace));
     }
+
     this.tasks.set(id, { task, timers, followup });
+
     return this.list();
   }
 
@@ -39,24 +44,31 @@ export class DemoTasks {
 
   subscribe(listener: (event: AgentEvent) => void) {
     this.listeners.add(listener);
+
     return () => void this.listeners.delete(listener);
   }
 
   join(context: RunContext): AsyncIterable<AgentEvent> {
     const play = this.pending;
+
     this.pending = undefined;
+
     return play ? play(context) : (async function* () {})();
   }
 
   private end(id: string, status: BackgroundTask['status'], summary?: string) {
     const entry = this.tasks.get(id)!;
+
     for (const timer of entry.timers) clearTimeout(timer);
     Object.assign(entry.task, { status, endedAt: Date.now() });
     this.emit(this.list());
     this.emit({ type: 'task-end', task: { ...entry.task }, summary });
+
     const { followup } = entry;
     if (!followup) return;
+
     const task = { ...entry.task };
+
     this.pending = (context) => this.play(followup, task, context);
     this.emit({ type: 'turn-start' });
   }

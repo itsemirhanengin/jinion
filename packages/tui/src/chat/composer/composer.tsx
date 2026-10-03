@@ -33,10 +33,12 @@ export function Composer({
 }: ComposerProps) {
   const theme = useTheme();
   const toast = useToast();
+
   const { value, onChange, onSubmit } = input;
-  const highlight = useMentions(mentions);
   const [hidden, setHidden] = useState<HiddenRows>({ above: 0, below: 0 });
   const [cursor, setCursor] = useState(value.length);
+
+  const highlight = useMentions(mentions);
   const { completion, selected, submits, onKey } = useCompletion({ sources: completions, value, cursor, onChange, onSubmit });
 
   const onKeyDown = (input: string, key: Key) => {
@@ -44,8 +46,10 @@ export function Composer({
       void onPasteKey().then((text) => {
         if (text) onChange(value.slice(0, cursor) + text + value.slice(cursor));
       });
+
       return true;
     }
+
     return onKey(key);
   };
 

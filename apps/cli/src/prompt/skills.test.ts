@@ -40,6 +40,7 @@ describe('skillCompletion', () => {
 
   it('replaces the typed mention and keeps Enter for inserting', () => {
     const completion = complete('fix it $des')!;
+
     expect(completion).toMatchObject({ from: 7, to: 11, submit: false });
     expect(completion.items[0]!.insert).toBe('$design ');
   });

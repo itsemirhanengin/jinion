@@ -15,6 +15,7 @@ export class ClaudeAccounts implements AgentAccounts {
 
   constructor(private readonly options: AccountsOptions) {
     const { account } = options;
+
     this.name = account && accountNames().includes(account) ? account : DEFAULT_ACCOUNT;
   }
 
@@ -24,8 +25,10 @@ export class ClaudeAccounts implements AgentAccounts {
 
   active() {
     const name = this.name;
+
     this.info ??= (async () => {
       const info = await this.options.running().accountInfo();
+
       return {
         name,
         signedIn: info.email !== undefined,
@@ -35,8 +38,10 @@ export class ClaudeAccounts implements AgentAccounts {
       };
     })().catch((error: unknown) => {
       this.info = undefined;
+
       throw error;
     });
+
     return this.info;
   }
 
@@ -46,6 +51,7 @@ export class ClaudeAccounts implements AgentAccounts {
 
   async use(name: string) {
     if (!accountNames().includes(name)) throw new Error(`There is no account called ${name}.`);
+
     // The transcript is shared between accounts, so the conversation goes on under the new login, in a new process.
     this.name = name;
     this.info = undefined;
@@ -54,11 +60,13 @@ export class ClaudeAccounts implements AgentAccounts {
 
   signIn(name: string, options: SignInOptions) {
     const problem = checkName(name);
+
     return problem ? Promise.reject(new Error(problem)) : signIn(name, options);
   }
 
   async remove(name: string) {
     if (name === this.name) throw new Error('it is in use. Switch to another account first');
+
     await removeAccount(name);
   }
 }

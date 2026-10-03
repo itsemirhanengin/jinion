@@ -24,6 +24,7 @@ export const model: Segment = {
   ],
   render: ({ model, theme }, style) => {
     const effort = style === 'effort' && model.selection.effort;
+
     return <Tag name="M" value={effort ? `${model.name} · ${effort}` : model.name} color={theme.status.model} />;
   },
 };
@@ -59,6 +60,7 @@ export const directory: Segment = {
   render: ({ cwd, theme }, style) => {
     const path = tildify(cwd);
     const value = style === 'full' ? path : style === 'folder' ? basename(cwd) : path.split('/').filter(Boolean).slice(-2).join('/');
+
     return <Tag name="D" value={value} color={theme.status.directory} />;
   },
 };

@@ -14,7 +14,9 @@ const count = (name: string) => renders.set(name, (renders.get(name) ?? 0) + 1);
 
 function Item({ name }: { name: string }) {
   const { expanded } = useView();
+
   count(name);
+
   return (
     <Text>
       {name} {expanded ? 'open' : 'closed'}
@@ -25,6 +27,7 @@ function Item({ name }: { name: string }) {
 function App() {
   useView();
   count('app');
+
   return (
     <Box flexDirection="column" height={12}>
       <ScrollView>
@@ -46,6 +49,7 @@ it('draws again only the item opened on its own, not the others or the app aroun
 
   await terminal.click('second closed');
   await terminal.waitFor('second open');
+
   expect(renders.get('second')).toBeGreaterThan(before.get('second')!);
   expect(renders.get('first')).toBe(before.get('first'));
   expect(renders.get('third')).toBe(before.get('third'));

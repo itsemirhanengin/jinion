@@ -16,8 +16,10 @@ export const context: Segment = {
     const { contextTokens, contextWindow } = session.usage;
     const used = contextWindow > 0 ? contextTokens / contextWindow : 0;
     if (style === 'tokens') return <Text>ctx: {thousands(contextTokens)}/{thousands(contextWindow)}</Text>;
+
     const share = <Text color={levelColor(theme, used)}>{Math.round(used * 100)}%</Text>;
     if (style === 'percent') return <Text>ctx {share}</Text>;
+
     return (
       <Text>
         ctx <Meter value={used} /> {share}
@@ -38,15 +40,17 @@ export const limits: Segment = {
   ],
   ticks: true,
   render: ({ limits, now, theme }, style) => {
-    const five = limits?.find((window) => window.label === '5h');
-    const week = limits?.find((window) => window.label === '7d');
     const usage = (window: LimitWindow) => (
       <Text>
         {window.label} <Text color={levelColor(theme, window.used)}>{Math.round(window.used * 100)}%</Text>
       </Text>
     );
+
+    const five = limits?.find((window) => window.label === '5h');
+    const week = limits?.find((window) => window.label === '7d');
     if (style === 'week') return week && usage(week);
     if (!five) return undefined;
+
     if (style === 'bar') {
       return (
         <Text>
@@ -54,6 +58,7 @@ export const limits: Segment = {
         </Text>
       );
     }
+
     if (style === 'session') {
       return (
         <Text>
@@ -62,6 +67,7 @@ export const limits: Segment = {
         </Text>
       );
     }
+
     return (
       <Text>
         {usage(five)}

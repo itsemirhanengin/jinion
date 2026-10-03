@@ -15,6 +15,7 @@ export function useStatusData(now = Date.now()): StatusData {
   const { agent, info } = useJinion();
   const account = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
+
   return {
     version: info.version,
     cwd: info.cwd,
@@ -32,11 +33,16 @@ export function useStatusData(now = Date.now()): StatusData {
 
 export function useNow(active: boolean, interval = 15_000) {
   const [now, setNow] = useState(Date.now);
+
   useEffect(() => {
     if (!active) return;
+
     setNow(Date.now());
+
     const timer = setInterval(() => setNow(Date.now()), interval);
+
     return () => clearInterval(timer);
   }, [active, interval]);
+
   return now;
 }

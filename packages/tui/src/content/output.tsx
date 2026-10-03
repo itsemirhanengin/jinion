@@ -5,12 +5,6 @@ import { useView } from '../runtime/view.js';
 import { plural } from '../utils/plural.js';
 import { printable } from '../utils/printable.js';
 
-export function ExpandHint({ children }: { children: string }) {
-  const theme = useTheme();
-  const hovered = useHovered();
-  return <Text color={hovered ? undefined : theme.muted}>… {children}</Text>;
-}
-
 export interface OutputLinesProps {
   lines: string[];
   tail?: number;
@@ -19,6 +13,7 @@ export interface OutputLinesProps {
 
 export function OutputLines({ lines, tail = 10, color }: OutputLinesProps) {
   const { expanded } = useView();
+
   const hidden = expanded ? 0 : Math.max(0, lines.length - tail);
 
   return (
@@ -31,4 +26,11 @@ export function OutputLines({ lines, tail = 10, color }: OutputLinesProps) {
       ))}
     </Box>
   );
+}
+
+export function ExpandHint({ children }: { children: string }) {
+  const theme = useTheme();
+  const hovered = useHovered();
+
+  return <Text color={hovered ? undefined : theme.muted}>… {children}</Text>;
 }

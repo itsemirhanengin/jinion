@@ -14,6 +14,7 @@ export function alwaysRules(options: RequestOptions): PermissionRuleValue[] {
   // Jinion's guard runs before any rule, so a saved rule would never stop it from asking.
   const guarded = options.decisionReason !== undefined && GUARD_REASONS.has(options.decisionReason);
   if (options.suppressAlwaysAllowRule || options.matchedAskRule || guarded) return [];
+
   return (options.suggestions ?? []).flatMap((update) =>
     update.type === 'addRules' && update.behavior === 'allow' ? update.rules : [],
   );
@@ -27,6 +28,7 @@ export function toPermissionRequest(
 ): PermissionRequest {
   const command = name === 'Bash' && typeof input.command === 'string' ? input.command : undefined;
   const target = [input.file_path, input.url, input.path].find((value) => typeof value === 'string') as string | undefined;
+
   const description = [
     options.decisionReason && GUARD_REASONS.has(options.decisionReason) ? options.decisionReason : undefined,
     command ? (input.description as string | undefined) : options.description,
@@ -49,12 +51,14 @@ export const formatRule = (rule: PermissionRuleValue) =>
 
 function ruleLabel(rule: PermissionRuleValue) {
   if (rule.toolName === 'Bash' && rule.ruleContent) return `\`${rule.ruleContent}\``;
+
   return rule.ruleContent === undefined ? toolTitle(rule.toolName) : formatRule(rule);
 }
 
 function defaultTitle(name: string) {
   if (name === 'Bash') return 'jinion wants to run a command';
   if (name === 'Edit' || name === 'Write') return 'jinion wants to change a file';
+
   return `jinion wants to use ${toolTitle(name)}`;
 }
 

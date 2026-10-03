@@ -19,11 +19,13 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
   const { close } = usePanel();
   const current = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
+
   const [list, setList] = useState<AgentAccount[]>();
   const [naming, setNaming] = useState<string>();
   const [removing, setRemoving] = useState<Removing>();
 
   const refresh = () => accounts.list().then(setList, () => setList([]));
+
   const login = useSignIn(accounts, (name, signedIn) => {
     if (signedIn) choices.setFocus(name);
     void refresh();
@@ -42,9 +44,11 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
     onCancel: close,
     onSubmit: ([name]) => {
       if (name === ADD) return setNaming('');
+
       const account = list?.find((candidate) => candidate.name === name);
       if (!account) return;
       if (!account.signedIn) return login.start(account.name);
+
       close();
       if (account.name !== current) jinion.accounts.select(account.name);
     },
@@ -54,16 +58,20 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
     (input) => {
       const account = list?.find((candidate) => candidate.name === choices.focus);
       if (!account || removing?.running) return;
+
       const { name } = account;
       if (input === 'l') return login.start(name);
       if (input !== 'd') return setRemoving(undefined);
+
       const refused = account.own
         ? `${jinion.agent.name}'s own login stays; l signs in again`
         : name === current
           ? 'in use; switch to another account first'
           : undefined;
       if (refused || removing?.name !== name) return setRemoving({ name, refused });
+
       setRemoving({ name, running: true });
+
       void jinion.accounts.remove(name).then(async () => {
         await refresh();
         setRemoving(undefined);
@@ -75,6 +83,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
   useInput(
     (_, key) => {
       if (!key.escape) return;
+
       if (login.signing) login.cancel();
       else setNaming(undefined);
     },
@@ -110,6 +119,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
               onChange={setNaming}
               onSubmit={(value) => {
                 const name = value.trim();
+
                 setNaming(undefined);
                 if (name) login.start(name);
               }}

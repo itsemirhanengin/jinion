@@ -42,6 +42,7 @@ function toElement(code: Node): Node {
   const screen = code.value ?? '';
   const title = /title="([^"]*)"/.exec(code.meta ?? '')?.[1];
   const attributes = [{ type: 'mdxJsxAttribute', name: 'screen', value: screen }];
+
   if (title) attributes.unshift({ type: 'mdxJsxAttribute', name: 'title', value: title });
 
   return {
@@ -60,5 +61,6 @@ function toElement(code: Node): Node {
 function codeBlock(text: string, meta?: string | null): string {
   const longest = Math.max(0, ...(text.match(/`+/g) ?? []).map((run) => run.length));
   const fence = '`'.repeat(Math.max(3, longest + 1));
+
   return `${fence}text${meta ? ` ${meta}` : ''}\n${text}\n${fence}`;
 }

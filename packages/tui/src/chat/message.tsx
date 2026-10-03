@@ -15,20 +15,27 @@ export interface UserMessageProps {
 export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
   const hovered = useHovered();
+
   const highlight = useMentions(mentions);
   const text = printable(raw);
+
   const marks = [
     ...[...text.matchAll(PLACEHOLDERS)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
     ...[...text.matchAll(highlight)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
   ].sort((a, b) => a.index - b.index);
+
   const parts: { text: string; color?: string }[] = [];
   let at = 0;
+
   for (const mark of marks) {
     if (mark.index < at) continue;
+
     parts.push({ text: text.slice(at, mark.index) }, { text: mark.text, color: mark.color });
     at = mark.index + mark.text.length;
   }
+
   parts.push({ text: text.slice(at) });
+
   return (
     <Box backgroundColor={hovered ? hoverColor(theme, theme.surface.user) : theme.surface.user} paddingX={1}>
       <Box flexShrink={0}>
@@ -67,6 +74,7 @@ export interface ThinkingProps {
 export function Thinking({ text, folded, took }: ThinkingProps) {
   const theme = useTheme();
   const hovered = useHovered();
+
   if (folded) {
     return (
       <Text italic color={hovered ? undefined : theme.thinking}>
@@ -74,6 +82,7 @@ export function Thinking({ text, folded, took }: ThinkingProps) {
       </Text>
     );
   }
+
   return (
     <Prose italic color={theme.thinking}>
       {printable(text).trim()}
@@ -85,5 +94,6 @@ export type NoticeTone = 'muted' | 'success' | 'warning' | 'error';
 
 export function Notice({ text, tone = 'muted' }: { text: string; tone?: NoticeTone }) {
   const theme = useTheme();
+
   return <Prose color={theme[tone]}>{printable(text)}</Prose>;
 }

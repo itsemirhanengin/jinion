@@ -6,11 +6,6 @@ export const MEMORY_SERVER = 'jinion';
 
 export const isMemoryTool = (name: string) => name.startsWith(`mcp__${MEMORY_SERVER}__`);
 
-const text = (value: string) => ({ content: [{ type: 'text' as const, text: value }] });
-
-const show = (memory: Memory) =>
-  [`# ${memory.scope}/${memory.id}: ${memory.title}`, `${memory.type}, updated ${memory.updated}`, '', memory.content].join('\n');
-
 export function memoryServer(store: MemoryStore) {
   return createSdkMcpServer({
     name: MEMORY_SERVER,
@@ -31,6 +26,7 @@ export function memoryServer(store: MemoryStore) {
         },
         async (note) => {
           const memory = store.save(note);
+
           return text(`Saved ${memory.scope}/${memory.id}.`);
         },
       ),
@@ -41,10 +37,13 @@ export function memoryServer(store: MemoryStore) {
         async ({ ids }) => {
           if (!ids || ids.length === 0) {
             const all = store.list();
+
             return text(all.length ? all.map((memory) => `${memory.scope}/${memory.id}: ${memory.description}`).join('\n') : 'No notes yet.');
           }
+
           return text(ids.map((id) => {
             const memory = store.find(id);
+
             return memory ? show(memory) : `# ${id}\nNo such note.`;
           }).join('\n\n'));
         },
@@ -55,3 +54,8 @@ export function memoryServer(store: MemoryStore) {
     ],
   });
 }
+
+const text = (value: string) => ({ content: [{ type: 'text' as const, text: value }] });
+
+const show = (memory: Memory) =>
+  [`# ${memory.scope}/${memory.id}: ${memory.title}`, `${memory.type}, updated ${memory.updated}`, '', memory.content].join('\n');

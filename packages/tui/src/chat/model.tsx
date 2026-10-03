@@ -31,8 +31,10 @@ const VISIBLE = 5;
 
 export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: ModelPanelProps) {
   const theme = useTheme();
-  const options = models ?? [];
+
   const [effort, setEffort] = useState(current.effort ?? DEFAULT);
+
+  const options = models ?? [];
 
   const list = useChoiceList({
     keys: options.map((option) => option.id),

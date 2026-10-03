@@ -19,10 +19,12 @@ export class FileSessionStore implements SessionStore {
 
   list() {
     if (!existsSync(this.dir)) return [];
+
     return readdirSync(this.dir)
       .filter((name) => name.endsWith('.json'))
       .flatMap((name) => {
         const session = readJson<SavedSession | undefined>(join(this.dir, name), undefined);
+
         return session ? [session] : [];
       })
       .sort((a, b) => b.updatedAt - a.updatedAt);

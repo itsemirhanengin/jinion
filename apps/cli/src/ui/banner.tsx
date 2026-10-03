@@ -11,6 +11,7 @@ export function Banner() {
   const { agent, info } = useJinion();
   const model = useAtomValue(modelLabelAtom);
   const identity = useAtomValue(identityAtom);
+
   const { version, cwd, examples = [] } = info;
 
   return (
@@ -49,6 +50,7 @@ export function Banner() {
 
 function Row({ label, hint, children }: { label: string; hint?: string | false; children: ReactNode }) {
   const theme = useTheme();
+
   return (
     <Box>
       <Box flexShrink={0} width={9}>

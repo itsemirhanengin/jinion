@@ -10,9 +10,11 @@ export interface WorkingProps {
 
 export function Working({ label, since, hint = 'esc to interrupt' }: WorkingProps) {
   const theme = useTheme();
-  useAnimation({ interval: 250 });
+
   const seconds = Math.floor((Date.now() - since) / 1000);
   const elapsed = seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+
+  useAnimation({ interval: 250 });
 
   return (
     <Box paddingX={1}>

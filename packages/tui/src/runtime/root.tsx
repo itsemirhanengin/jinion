@@ -19,6 +19,7 @@ export interface RootProps {
 
 export function Root({ theme, mouse, terminal, children }: RootProps) {
   const { columns, rows } = useWindowSize();
+
   // Without `mouse`, components still listen, but no events come.
   const [silent] = useState(() => new Set<MouseListener>());
 

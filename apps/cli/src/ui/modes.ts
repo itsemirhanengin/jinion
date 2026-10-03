@@ -6,5 +6,6 @@ export function modeColor(theme: Theme, mode: AgentMode) {
   if (mode === 'auto') return theme.warning;
   if (mode === 'plan') return theme.code;
   if (mode === 'edits') return theme.accent;
+
   return theme.muted;
 }

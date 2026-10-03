@@ -18,6 +18,7 @@ export function sandbox(): Sandbox {
   const saved = Object.fromEntries(VARIABLES.map((name) => [name, process.env[name]]));
   const home = join(root, 'home');
   const project = join(root, 'project');
+
   mkdirSync(home, { recursive: true });
   mkdirSync(project, { recursive: true });
   process.env.HOME = home;
@@ -30,6 +31,7 @@ export function sandbox(): Sandbox {
     write(path, content) {
       mkdirSync(dirname(path), { recursive: true });
       writeFileSync(path, typeof content === 'string' || Buffer.isBuffer(content) ? content : JSON.stringify(content));
+
       return path;
     },
     restore() {
@@ -37,6 +39,7 @@ export function sandbox(): Sandbox {
         if (saved[name] === undefined) delete process.env[name];
         else process.env[name] = saved[name];
       }
+
       rmSync(root, { recursive: true, force: true });
     },
   };
@@ -44,7 +47,9 @@ export function sandbox(): Sandbox {
 
 export function sandboxEach(): Sandbox {
   const box = {} as Sandbox;
+
   beforeEach(() => void Object.assign(box, sandbox()));
   afterEach(() => box.restore());
+
   return box;
 }

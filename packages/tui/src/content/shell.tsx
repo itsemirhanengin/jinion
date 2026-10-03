@@ -7,7 +7,23 @@ type ShellTokenKind = 'space' | 'command' | 'argument' | 'flag' | 'string' | 'op
 
 const SHELL_TOKEN =
   /(\s+)|('(?:[^'\\]|\\.)*'?|"(?:[^"\\]|\\.)*"?)|(&&|\|\||[|;&]|\d*>>?&?\d*|<)|(\$\{?\w+\}?)|([^\s'"|;&<>]+)/g;
+
 const COMMAND_SEPARATORS = new Set(['&&', '||', '|', ';', '&']);
+
+export function ShellCommand({ command }: { command: string }) {
+  const theme = useTheme();
+
+  return (
+    <Text>
+      <Text color={theme.muted}>$ </Text>
+      {tokenizeShell(printable(command)).map((token, index) => (
+        <Text key={index} color={colorOf(token.kind, theme)}>
+          {token.text}
+        </Text>
+      ))}
+    </Text>
+  );
+}
 
 export function tokenizeShell(command: string) {
   const tokens: { kind: ShellTokenKind; text: string }[] = [];
@@ -15,6 +31,7 @@ export function tokenizeShell(command: string) {
 
   for (const [text, space, string, operator, variable] of command.matchAll(SHELL_TOKEN)) {
     let kind: ShellTokenKind;
+
     if (space) kind = 'space';
     else if (string) kind = 'string';
     else if (operator) kind = 'operator';
@@ -27,6 +44,7 @@ export function tokenizeShell(command: string) {
 
     tokens.push({ kind, text });
   }
+
   return tokens;
 }
 
@@ -45,18 +63,4 @@ function colorOf(kind: ShellTokenKind, theme: Theme) {
     default:
       return undefined;
   }
-}
-
-export function ShellCommand({ command }: { command: string }) {
-  const theme = useTheme();
-  return (
-    <Text>
-      <Text color={theme.muted}>$ </Text>
-      {tokenizeShell(printable(command)).map((token, index) => (
-        <Text key={index} color={colorOf(token.kind, theme)}>
-          {token.text}
-        </Text>
-      ))}
-    </Text>
-  );
 }

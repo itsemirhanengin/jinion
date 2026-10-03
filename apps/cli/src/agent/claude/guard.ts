@@ -5,6 +5,8 @@ import { inside, isPlanFile } from './paths.js';
 import { commands, writtenPaths } from './shell.js';
 
 const FILE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit']);
+const SCRATCH = [tmpdir(), '/tmp', '/private/tmp', '/var/tmp', '/var/folders', '/private/var/folders'];
+const STREAMS = /^\/dev\/(?:null|stdout|stderr|tty|fd\/\d+)$/;
 
 /** Asked in every mode, auto included, whatever rules allow: a PreToolUse hook runs these before Claude Code's own checks. */
 const RULES: { reason: string; matches(tool: string, input: Input, cwd: string): boolean }[] = [
@@ -17,18 +19,13 @@ const RULES: { reason: string; matches(tool: string, input: Input, cwd: string):
     matches: (tool, input, cwd) => {
       if (tool === 'Bash') return typeof input.command === 'string' && writtenPaths(input.command, cwd).some((path) => outside(path, cwd));
       if (!FILE_TOOLS.has(tool)) return false;
+
       const path = typeof input.file_path === 'string' ? input.file_path : typeof input.notebook_path === 'string' ? input.notebook_path : '';
+
       return path !== '' && outside(resolve(cwd, path), cwd);
     },
   },
 ];
-
-const SCRATCH = [tmpdir(), '/tmp', '/private/tmp', '/var/tmp', '/var/folders', '/private/var/folders'];
-const STREAMS = /^\/dev\/(?:null|stdout|stderr|tty|fd\/\d+)$/;
-
-function outside(path: string, cwd: string) {
-  return !inside(path, cwd) && !isPlanFile(path) && !STREAMS.test(path) && !SCRATCH.some((folder) => inside(path, folder));
-}
 
 export const GUARD_REASONS = new Set(RULES.map((rule) => rule.reason));
 
@@ -42,6 +39,12 @@ const READ_ONLY_GIT =
 
 export function readsRepositories(tool: string, input: Input) {
   if (tool !== 'Bash' || typeof input.command !== 'string' || /[<>]/.test(input.command)) return false;
+
   const parts = commands(input.command);
+
   return parts.length > 0 && parts.every((command) => READ_ONLY_GIT.test(command));
+}
+
+function outside(path: string, cwd: string) {
+  return !inside(path, cwd) && !isPlanFile(path) && !STREAMS.test(path) && !SCRATCH.some((folder) => inside(path, folder));
 }

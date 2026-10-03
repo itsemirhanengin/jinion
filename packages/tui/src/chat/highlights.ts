@@ -7,5 +7,6 @@ export const PLACEHOLDERS = anyOf([PASTED_TEXT, PASTED_IMAGE])!;
 
 export function useMentions(mentions: (RegExp | undefined)[]) {
   const patterns = mentions.map((pattern) => pattern?.source ?? '').join('\n');
+
   return useMemo(() => anyOf([MENTION, ...mentions])!, [patterns]);
 }

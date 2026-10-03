@@ -16,14 +16,16 @@ describe('skillPlugins', () => {
 
   it('links each skill into a plugin per scope, Claude Code’s folder first', () => {
     const design = skill(join(box.home, '.claude', 'skills'), 'design');
-    skill(join(box.home, '.agents', 'skills'), 'design');
     const ideas = skill(join(box.home, '.agents', 'skills'), 'ideas');
-    box.write(join(box.home, '.claude', 'skills', 'notes', 'README.md'), 'not a skill');
     const hello = skill(join(box.project, '.claude', 'skills'), 'hello');
 
+    skill(join(box.home, '.agents', 'skills'), 'design');
+    box.write(join(box.home, '.claude', 'skills', 'notes', 'README.md'), 'not a skill');
+
     const plugins = skillPlugins(box.project);
-    expect(plugins).toHaveLength(2);
     const [user, project] = plugins.map((plugin) => plugin.path);
+
+    expect(plugins).toHaveLength(2);
     expect(JSON.parse(readFileSync(join(user!, '.claude-plugin', 'plugin.json'), 'utf8')).name).toBe('user');
     expect(readdirSync(join(user!, 'skills')).sort()).toEqual(['design', 'ideas']);
     expect(readlinkSync(join(user!, 'skills', 'design'))).toBe(design);
@@ -33,11 +35,14 @@ describe('skillPlugins', () => {
 
   it('drops the links of skills that are gone', () => {
     const skills = join(box.home, '.claude', 'skills');
+
     skill(skills, 'design');
     skill(skills, 'ideas');
     const [user] = skillPlugins(box.project).map((plugin) => plugin.path);
+
     rmSync(join(skills, 'ideas'), { recursive: true });
     skillPlugins(box.project);
+
     expect(readdirSync(join(user!, 'skills'))).toEqual(['design']);
   });
 });
@@ -45,10 +50,13 @@ describe('skillPlugins', () => {
 describe('claudePlugins', () => {
   it('loads the plugins turned on in Claude Code that are installed', () => {
     const vercel = join(box.home, 'cache', 'vercel');
+
     box.write(join(vercel, '.claude-plugin', 'plugin.json'), { name: 'vercel' });
+
     box.write(join(box.home, '.claude', 'settings.json'), {
       enabledPlugins: { 'vercel@official': true, 'figma@official': true, 'warp@other': false },
     });
+
     box.write(join(box.home, '.claude', 'plugins', 'installed_plugins.json'), {
       plugins: {
         'vercel@official': [{ installPath: vercel }],
@@ -56,17 +64,21 @@ describe('claudePlugins', () => {
         'warp@other': [{ installPath: vercel }],
       },
     });
+
     expect(claudePlugins(box.project)).toEqual([{ type: 'local', path: vercel }]);
   });
 
   it('lets the project turn a plugin off', () => {
     const vercel = join(box.home, 'cache', 'vercel');
+
     box.write(join(vercel, 'README.md'), 'plugin');
     box.write(join(box.home, '.claude', 'settings.json'), { enabledPlugins: { 'vercel@official': true } });
     box.write(join(box.project, '.claude', 'settings.local.json'), { enabledPlugins: { 'vercel@official': false } });
+
     box.write(join(box.home, '.claude', 'plugins', 'installed_plugins.json'), {
       plugins: { 'vercel@official': [{ installPath: vercel }] },
     });
+
     expect(existsSync(vercel)).toBe(true);
     expect(claudePlugins(box.project)).toEqual([]);
   });

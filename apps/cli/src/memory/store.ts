@@ -37,10 +37,12 @@ export class MemoryStore {
     return MEMORY_SCOPES.flatMap((scope) => {
       const dir = this.dir(scope);
       if (!existsSync(dir)) return [];
+
       return readdirSync(dir)
         .filter((name) => name.endsWith('.md'))
         .flatMap((name) => {
           const memory = parse(scope, name.slice(0, -3), readFileSync(join(dir, name), 'utf8'));
+
           return memory ? [memory] : [];
         })
         .sort((a, b) => a.title.localeCompare(b.title));
@@ -49,6 +51,7 @@ export class MemoryStore {
 
   find(name: string) {
     const [scope, id] = name.split('/') as [MemoryScope, string | undefined];
+
     return this.list().find((memory) => memory.scope === scope && memory.id === id);
   }
 
@@ -56,14 +59,18 @@ export class MemoryStore {
     const taken = new Set(this.list().filter((memory) => memory.scope === note.scope).map((memory) => memory.id));
     const id = note.id && taken.has(note.id) ? note.id : unique(slug(note.id ?? note.title), taken);
     const memory: Memory = { ...note, id, updated: new Date().toISOString().slice(0, 10) };
+
     mkdirSync(this.dir(memory.scope), { recursive: true });
     writeFileSync(this.path(memory), format(memory));
+
     return memory;
   }
 
   remove(name: string) {
     const memory = this.find(name);
+
     if (memory) rmSync(this.path(memory));
+
     return memory;
   }
 }
@@ -87,8 +94,10 @@ function format(memory: Memory) {
 function parse(scope: MemoryScope, id: string, text: string): Memory | undefined {
   const parsed = frontmatter(text);
   if (!parsed) return undefined;
+
   const { fields, body } = parsed;
   const type = (MEMORY_TYPES as readonly string[]).includes(fields.type ?? '') ? (fields.type as MemoryType) : 'fact';
+
   return {
     scope,
     id,
@@ -113,7 +122,10 @@ function slug(text: string) {
 
 function unique(id: string, taken: Set<string>) {
   if (!taken.has(id)) return id;
+
   let number = 2;
+
   while (taken.has(`${id}-${number}`)) number++;
+
   return `${id}-${number}`;
 }

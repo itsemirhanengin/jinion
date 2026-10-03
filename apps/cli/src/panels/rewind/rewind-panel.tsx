@@ -15,40 +15,19 @@ export interface RewindPanelProps {
 
 const VISIBLE = 8;
 
-/** Claude Code's choices, in its words, so they read the same as there. */
-const SCOPES: { key: string; label: string; description: string; scope: RewindScope }[] = [
-  {
-    key: 'both',
-    label: 'Restore code and conversation',
-    description: 'Files go back, and the conversation goes on from before this message, which goes back into the prompt',
-    scope: { code: true, conversation: true },
-  },
-  {
-    key: 'conversation',
-    label: 'Restore conversation',
-    description: 'The conversation goes on from before this message; the files stay as they are',
-    scope: { code: false, conversation: true },
-  },
-  {
-    key: 'code',
-    label: 'Restore code',
-    description: 'Files go back; the conversation goes on as it is',
-    scope: { code: true, conversation: false },
-  },
-];
-
-const NEVER_MIND = { key: 'never-mind', label: 'Never mind', description: 'Back to the messages' };
-
 export function RewindPanel({ points, preview, onRewind }: RewindPanelProps) {
   const [picked, setPicked] = useState<RewindPoint>();
   // Each preview asks the agent once, however often the focus comes back to it.
   const previews = useRef(new Map<string, Promise<FileChanges | undefined>>());
+
   const previewOf = (point: RewindPoint) => {
     let changes = previews.current.get(point.promptId);
+
     if (!changes) {
       changes = preview(point).catch(() => undefined);
       previews.current.set(point.promptId, changes);
     }
+
     return changes;
   };
 
@@ -67,12 +46,14 @@ interface PointStepProps {
 
 function PointStep({ points, previewOf, onPick }: PointStepProps) {
   const { close } = usePanel();
+
   const list = useChoiceList({
     keys: points.map((point) => point.entry),
     mode: 'single',
     onCancel: close,
     onSubmit: ([entry]) => {
       const point = points.find((candidate) => candidate.entry === entry);
+
       if (point) onPick(point);
     },
   });
@@ -99,6 +80,30 @@ function PointStep({ points, previewOf, onPick }: PointStepProps) {
   );
 }
 
+/** Claude Code's choices, in its words, so they read the same as there. */
+const SCOPES: { key: string; label: string; description: string; scope: RewindScope }[] = [
+  {
+    key: 'both',
+    label: 'Restore code and conversation',
+    description: 'Files go back, and the conversation goes on from before this message, which goes back into the prompt',
+    scope: { code: true, conversation: true },
+  },
+  {
+    key: 'conversation',
+    label: 'Restore conversation',
+    description: 'The conversation goes on from before this message; the files stay as they are',
+    scope: { code: false, conversation: true },
+  },
+  {
+    key: 'code',
+    label: 'Restore code',
+    description: 'Files go back; the conversation goes on as it is',
+    scope: { code: true, conversation: false },
+  },
+];
+
+const NEVER_MIND = { key: 'never-mind', label: 'Never mind', description: 'Back to the messages' };
+
 interface ScopeStepProps {
   point: RewindPoint;
   changes: Promise<FileChanges | undefined>;
@@ -109,10 +114,13 @@ interface ScopeStepProps {
 function ScopeStep({ point, changes, onBack, onPick }: ScopeStepProps) {
   const theme = useTheme();
   const { close } = usePanel();
+
   const known = useAsync(() => changes, [changes]);
+
   // Restoring code is offered only where there are file changes to take back.
   const options =
     known.state === 'pending' ? [] : [...SCOPES.filter((scope) => (known.state === 'done' && known.value) || !scope.scope.code), NEVER_MIND];
+
   const list = useChoiceList({
     keys: options.map((option) => option.key),
     mode: 'single',
@@ -120,6 +128,7 @@ function ScopeStep({ point, changes, onBack, onPick }: ScopeStepProps) {
     onSubmit: ([key]) => {
       const scope = SCOPES.find((candidate) => candidate.key === key);
       if (!scope) return onBack();
+
       close();
       onPick(scope.scope);
     },

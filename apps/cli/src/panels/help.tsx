@@ -23,6 +23,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
   const jinion = useJinion();
   const { close } = usePanel();
   const skills = sortSkills(useAtomValue(skillsAtom));
+
   const mention = (skill: AgentCommand): HelpItem => ({
     label: `$${skill.name}`,
     hint: skill.argumentHint,
@@ -30,6 +31,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
     aside: skillGroup(skill),
     pick: (app) => app.input.fill(`$${skill.name} `),
   });
+
   const groups = [
     {
       label: 'Commands',
@@ -46,22 +48,15 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
     { label: 'Skills', items: skills.filter((skill) => skill.source === 'skill').map(mention) },
     { label: 'MCP prompts', items: skills.filter((skill) => skill.source === 'mcp').map(mention) },
   ].filter((group) => group.items.length > 0);
+
   const tabs = ['General', ...groups.map((group) => group.label)];
+
   const [tab] = useTabs(tabs.length, {
     initial: Math.max(0, tabs.findIndex((label) => label.toLowerCase().startsWith(topic.trim().toLowerCase() || '\0'))),
   });
+
   const items = tab === 0 ? [] : groups[tab - 1]!.items;
   const [selected, setSelected] = useListNavigation(items.length, { isActive: tab > 0 });
-
-  useEffect(() => setSelected(0), [tab, setSelected]);
-
-  useInput((_, key) => {
-    if (key.escape) return close();
-    const item = items[selected];
-    if (!key.return || !item) return;
-    close();
-    item.pick(jinion);
-  });
 
   const hints: KeyHint[] =
     tab === 0
@@ -76,6 +71,18 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
           ['Esc', 'close'],
         ];
 
+  useEffect(() => setSelected(0), [tab, setSelected]);
+
+  useInput((_, key) => {
+    if (key.escape) return close();
+
+    const item = items[selected];
+    if (!key.return || !item) return;
+
+    close();
+    item.pick(jinion);
+  });
+
   return (
     <Panel title="Help" header={<Tabs tabs={tabs} active={tab} />} hints={hints}>
       {tab === 0 ? <General /> : <ItemList items={items} selected={selected} />}
@@ -85,7 +92,9 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
 
 function General() {
   const theme = useTheme();
+
   const perColumn = Math.ceil(SHORTCUTS.length / SHORTCUT_COLUMNS);
+
   const columns = Array.from({ length: SHORTCUT_COLUMNS }, (_, index) =>
     SHORTCUTS.slice(index * perColumn, (index + 1) * perColumn),
   );
@@ -117,6 +126,7 @@ function General() {
 
 function ItemList({ items, selected }: { items: HelpItem[]; selected: number }) {
   const theme = useTheme();
+
   const width = (item: HelpItem) => item.label.length + (item.hint ? item.hint.length + 1 : 0);
   const labelWidth = Math.min(32, Math.max(...items.map(width)));
 

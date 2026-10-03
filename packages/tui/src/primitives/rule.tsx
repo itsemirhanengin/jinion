@@ -12,6 +12,7 @@ export interface RuleProps {
 
 export function Rule({ title, aside, char = '-', color }: RuleProps) {
   const theme = useTheme();
+
   const lineColor = color ?? theme.border;
 
   return (

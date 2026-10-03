@@ -13,11 +13,13 @@ export const modelsAtom = atom<ModelOption[] | undefined>(undefined);
 
 export const modelNameAtom = atom((get) => {
   const { model } = get(selectionAtom);
+
   return get(modelsAtom)?.find((option) => option.id === model)?.name ?? model;
 });
 
 export const modelLabelAtom = atom((get) => {
   const { effort } = get(selectionAtom);
+
   return effort ? `${get(modelNameAtom)} · ${effort}` : get(modelNameAtom);
 });
 

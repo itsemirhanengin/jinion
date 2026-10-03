@@ -8,10 +8,13 @@ afterEach(() => terminal?.unmount());
 
 function Ticking() {
   const [tick, setTick] = useState(0);
+
   useEffect(() => {
     const timer = setInterval(() => setTick((current) => current + 1), 30);
+
     return () => clearInterval(timer);
   }, []);
+
   return (
     <Box flexDirection="column">
       <Text>the conversation</Text>
@@ -27,6 +30,7 @@ it('clears what landed where Ink didn’t draw it within a frame, on rows that d
   await terminal.scribble('\x1b[3;1HWriting… 2m 8s');
   await new Promise((resolve) => setTimeout(resolve, 150));
   const screen = await terminal.screen();
+
   expect(screen).toContain('the conversation');
   expect(screen).not.toContain('Writing');
 });

@@ -6,6 +6,7 @@ export const greeting: Scenario = {
   async *play(script) {
     yield* script.think('Just a greeting. No tools needed, so I will introduce myself and point at what this demo can show.');
     yield* script.usage(1_400, 0.004);
+
     yield* script.say(
       [
         "Hey! I'm **Jinion**, a coding agent that lives in your terminal.",

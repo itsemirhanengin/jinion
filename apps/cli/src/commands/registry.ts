@@ -14,8 +14,10 @@ export interface Command {
 export class CommandRegistry {
   constructor(private readonly commands: Command[]) {
     const names = new Set<string>();
+
     for (const name of commands.flatMap((command) => [command.name, ...(command.aliases ?? [])])) {
       if (names.has(name)) throw new Error(`Two commands are registered as /${name}.`);
+
       names.add(name);
     }
   }
@@ -31,7 +33,9 @@ export class CommandRegistry {
   completion(): CompletionSource {
     return (value) => {
       if (!value.startsWith('/') || /\s/.test(value)) return undefined;
+
       const matches = fuzzyFilter(this.commands, value.slice(1), (command) => command.name);
+
       return {
         from: 0,
         to: value.length,

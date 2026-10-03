@@ -15,13 +15,16 @@ export interface DiffPanelProps {
 export function DiffPanel({ turn, file }: DiffPanelProps) {
   const current = useCurrentView();
   const turns = useAtomValue(editTurnsAtom);
-  const views = [current, ...turns.map(turnView)];
+
   // Kept by the turn's id, so a turn that ends while the panel is open doesn't move what is shown.
   const [activeTurn, setActiveTurn] = useState(() => (turns.some((candidate) => candidate.id === turn) ? turn : undefined));
+
+  const views = [current, ...turns.map(turnView)];
   const active = Math.max(0, views.findIndex((view) => view.turn === activeTurn));
   const [open, setOpen] = useState<ChangeRow | undefined>(() => views[active]?.rows?.find((row) => row.file === file));
 
   if (open) return <FileDiff row={open} onBack={() => setOpen(undefined)} />;
+
   return (
     <ChangeList
       key={active}

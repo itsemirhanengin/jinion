@@ -9,6 +9,7 @@ import { TaskLine } from './task-line.js';
 
 export function Aside() {
   const todos = useAtomValue(todosAtom);
+
   return (
     <>
       <Activity />
@@ -27,7 +28,9 @@ function Activity() {
   const session = useAtomValue(sessionAtom);
   const tasks = useAtomValue(tasksAtom);
   const { top } = usePanels();
+
   if (session.busySince === undefined) return null;
+
   return (
     <Box marginTop={1}>
       <Working label={activity(session, top?.id, tasks)} since={session.busySince} />
@@ -39,6 +42,7 @@ function Queue() {
   const theme = useTheme();
   const queued = useAtomValue(queueAtom);
   if (queued.length === 0) return null;
+
   return (
     <Box marginTop={1} flexDirection="column" paddingX={1}>
       {queued.map((text, index) => (

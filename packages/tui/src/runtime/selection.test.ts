@@ -4,8 +4,10 @@ import { wordAt } from './selection.js';
 
 describe('wordAt', () => {
   const row = frameCells('see src/server.ts, or https://jinion.co/docs. ok')[0]!;
+
   const word = (x: number) => {
     const span = wordAt(row, x);
+
     return span && row.filter((cell) => cell.x >= span.from && cell.x <= span.to).map((cell) => cell.text).join('');
   };
 

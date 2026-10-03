@@ -16,22 +16,22 @@ export function TasksPanel() {
   const jinion = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
-  useAnimation({ interval: 1000 });
   const tasks = useAtomValue(backgroundTasksAtom);
+
+  useAnimation({ interval: 1000 });
+
   const list = useChoiceList({
     keys: tasks.map((task) => task.id),
     mode: 'single',
     onCancel: close,
     onSubmit: ([id]) => {
       const task = tasks.find((candidate) => candidate.id === id);
+
       if (task?.output) jinion.screen.openPanel({ id: 'task-output', placement: 'fullscreen', element: <TaskOutput id={task.id} /> });
     },
   });
-  const focused = tasks.find((task) => task.id === list.focus);
 
-  useInput((input) => {
-    if (input === 'x' && focused?.status === 'running') jinion.tasks.stop(focused.id);
-  });
+  const focused = tasks.find((task) => task.id === list.focus);
 
   const choices: Choice[] = tasks.map((task) => ({
     key: task.id,
@@ -51,7 +51,13 @@ export function TasksPanel() {
     ['Up/Down', 'move'],
     ['Esc', 'close'],
   ];
+
   const running = tasks.filter((task) => task.status === 'running').length;
+
+  useInput((input) => {
+    if (input === 'x' && focused?.status === 'running') jinion.tasks.stop(focused.id);
+  });
+
   return (
     <Panel title="Background tasks" subtitle={tasks.length > 0 ? `${running} running` : undefined} hints={hints}>
       <ChoiceList
@@ -66,7 +72,9 @@ export function TasksPanel() {
 
 function TaskTime({ task }: { task: BackgroundTask }) {
   const theme = useTheme();
+
   const took = elapsed((task.endedAt ?? Date.now()) - task.startedAt);
+
   switch (task.status) {
     case 'running':
       return <Text color={theme.muted}>{took}</Text>;
@@ -81,7 +89,9 @@ function TaskTime({ task }: { task: BackgroundTask }) {
 
 function TaskDetails({ task, indent }: { task: BackgroundTask; indent: number }) {
   const theme = useTheme();
+
   const lines = useOutput(task.output, task.status === 'running');
+
   if (task.kind === 'agent') {
     return (
       <Box paddingLeft={indent} marginBottom={1}>
@@ -92,8 +102,11 @@ function TaskDetails({ task, indent }: { task: BackgroundTask; indent: number })
       </Box>
     );
   }
+
   if (!task.output) return null;
+
   const tail = lines?.slice(-TAIL_LINES) ?? [];
+
   return (
     <Box flexDirection="column" paddingLeft={indent} marginBottom={1}>
       {tail.length === 0 ? (

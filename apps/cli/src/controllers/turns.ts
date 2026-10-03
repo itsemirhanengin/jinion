@@ -36,7 +36,9 @@ export class TurnController {
 
   async prompt(text: string) {
     if (this.working) return this.context.notice('jinion is still working. Press esc to interrupt it first.', 'warning');
+
     const sent = this.attachments.resolve(text);
+
     this.dispatch({ type: 'submit', text, prompt: sent.text === text ? undefined : sent.text });
     await this.run(quote(text), (turn) => this.context.agent.run(sent, turn));
   }
@@ -45,6 +47,7 @@ export class TurnController {
     const sent = this.attachments.resolve(text);
     const id = this.context.agent.steer?.(sent);
     if (id === undefined) return this.enqueue(text);
+
     this.dispatch({ type: 'steer', text, prompt: sent.text === text ? undefined : sent.text, id });
   }
 
@@ -59,10 +62,13 @@ export class TurnController {
   followAgent() {
     const join = this.context.agent.join?.bind(this.context.agent);
     if (!join) return;
+
     if (this.context.store.get(turnAbortAtom)) {
       this.agentTurnWaiting = true;
+
       return;
     }
+
     this.dispatch({ type: 'agent-turn' });
     void this.run('the background task', join);
   }
@@ -73,6 +79,7 @@ export class TurnController {
     if (!compact) return notice(`${agent.name} can't compact the conversation.`, 'warning');
     if (this.working) return notice(BUSY, 'warning');
     if (!store.get(entriesAtom).some((entry) => entry.kind === 'user')) return notice('There is nothing to compact yet.', 'muted');
+
     this.dispatch({ type: 'agent-turn' });
     void this.run('the compaction', (turn) => compact(focus, turn));
   }
@@ -84,21 +91,27 @@ export class TurnController {
   private async run(label: string, events: (turn: RunContext) => AsyncIterable<AgentEvent>) {
     const { store, notify } = this.context;
     const abort = new AbortController();
+
     store.set(turnAbortAtom, abort);
+
     const started = Date.now();
     // A long turn may have sent the user elsewhere; a short one they likely watched.
     const notifyIfLong = (body: string) => Date.now() - started >= LONG_TURN_MS && notify(body);
+
     try {
       for await (const event of events(this.runContext(abort))) this.hooks.apply(event);
+
       this.dispatch({ type: 'finish', outcome: 'done' });
       notifyIfLong(`Done with ${label} after ${elapsed(Date.now() - started)}.`);
     } catch (error) {
       if (abort.signal.aborted) this.dispatch({ type: 'finish', outcome: 'interrupted' });
       else {
         const message = errorMessage(error);
+
         this.dispatch({ type: 'finish', outcome: 'failed', message });
         notifyIfLong(`Stopped with an error, working on ${label}: ${message}`);
       }
+
       this.returnQueueToPrompt();
     } finally {
       store.set(turnAbortAtom, undefined);
@@ -111,6 +124,7 @@ export class TurnController {
 
   private runContext(abort: AbortController): RunContext {
     const dialogs = new DialogLine(this.context, abort);
+
     return {
       signal: abort.signal,
       ask: (questions: Question[]) =>
@@ -122,8 +136,10 @@ export class TurnController {
         })),
       approve: async (request: PermissionRequest, call?: string) => {
         if (call) this.dispatch({ type: 'approval', id: call, waiting: true });
+
         try {
           const message = [request.title, request.command ?? request.subject].filter(Boolean).join(': ');
+
           return await dialogs.open<PermissionDecision>(message, (done, cancel) => ({
             id: 'permission',
             request,
@@ -140,7 +156,9 @@ export class TurnController {
           modes,
           onDecide: (decision) => {
             if (!decision.approve) return done(decision);
+
             const mode = decision.option as AgentMode;
+
             this.hooks.planAccepted(mode);
             done({ approve: true, mode });
           },
@@ -153,6 +171,7 @@ export class TurnController {
     const { store } = this.context;
     const waiting = store.get(queueAtom);
     if (waiting.length === 0) return;
+
     store.set(queueAtom, []);
     store.set(draftAtom, (draft) => [...waiting, draft].filter(Boolean).join('\n'));
   }
@@ -160,10 +179,13 @@ export class TurnController {
   private next() {
     if (this.agentTurnWaiting) {
       this.agentTurnWaiting = false;
+
       return this.followAgent();
     }
+
     const [text, ...rest] = this.context.store.get(queueAtom);
     if (text === undefined) return;
+
     this.context.store.set(queueAtom, rest);
     void this.prompt(text);
   }
@@ -181,9 +203,11 @@ class DialogLine {
   open<T>(message: string, dialog: (done: (value: T) => void, cancel: () => void) => Dialog): Promise<T> {
     const { screen, notify } = this.context;
     const { signal } = this.abort;
+
     const show = () =>
       new Promise<T>((resolve, reject) => {
         if (signal.aborted) return reject(signal.reason);
+
         const shown = dialog(
           (value) => {
             screen.closePanel(shown.id);
@@ -191,8 +215,10 @@ class DialogLine {
           },
           () => this.abort.abort(),
         );
+
         screen.showDialog(shown);
         notify(message);
+
         signal.addEventListener(
           'abort',
           () => {
@@ -202,11 +228,14 @@ class DialogLine {
           { once: true },
         );
       });
+
     const result = this.line.then(show);
+
     this.line = result.then(
       () => {},
       () => {},
     );
+
     return result;
   }
 }

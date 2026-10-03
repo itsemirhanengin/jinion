@@ -17,14 +17,18 @@ export class FakeClaude {
 
   readonly spawn = (({ prompt, options = {} }) => {
     const spawned: Spawned = { options, output: new Inbox() };
+
     this.processes.push(spawned);
+
     void (async () => {
       for await (const message of prompt as AsyncIterable<SDKUserMessage>) {
         const waiter = this.waiting.shift();
+
         if (waiter) waiter(message);
         else this.prompts.push(message);
       }
     })();
+
     const fake = {
       [Symbol.asyncIterator]: () => spawned.output[Symbol.asyncIterator](),
       interrupt: async () => {},
@@ -37,21 +41,25 @@ export class FakeClaude {
       stopTask: async (id: string) => void this.stopped.push(id),
       rewindFiles: async (id: string, { dryRun = false } = {}) => {
         if (!dryRun) this.rewound.push(id);
+
         return { canRewind: true, filesChanged: ['/project/a.ts'], insertions: 2, deletions: 1 };
       },
     };
+
     return fake as unknown as Query;
   }) as typeof query;
 
   get current() {
     const spawned = this.processes.at(-1);
     if (!spawned) throw new Error('Claude Code was never started.');
+
     return spawned;
   }
 
   /** Also one sent before it was asked for. */
   nextPrompt() {
     const sent = this.prompts.shift();
+
     return sent ? Promise.resolve(sent) : new Promise<SDKUserMessage>((resolve) => this.waiting.push(resolve));
   }
 

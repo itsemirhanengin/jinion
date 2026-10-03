@@ -16,9 +16,11 @@ export class TaskController {
   sendToBackground() {
     const { agent, store, notice } = this.context;
     if (!agent.background) return;
+
     if (!store.get(waitsOnForegroundTaskAtom)) {
       return notice('Nothing to send to the background yet: a command or subagent can go there once it has run a few seconds.', 'muted');
     }
+
     agent.background().catch((error: unknown) => notice(`Couldn't send it to the background: ${errorMessage(error)}`, 'error'));
   }
 

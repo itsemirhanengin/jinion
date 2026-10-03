@@ -8,6 +8,7 @@ describe('createInput', () => {
     const focus: boolean[] = [];
     const { stdin, close } = createInput(source, () => {}, (focused) => focus.push(focused));
     const keys: string[] = [];
+
     stdin.on('data', (chunk: Buffer) => keys.push(chunk.toString()));
     source.write('a\x1b[Ob\x1b[I');
     await new Promise((resolve) => setImmediate(resolve));

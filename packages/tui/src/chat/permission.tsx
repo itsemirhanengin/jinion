@@ -27,9 +27,12 @@ export interface PermissionPanelProps {
 
 export function PermissionPanel({ request, agent, onDecide, onCancel }: PermissionPanelProps) {
   const theme = useTheme();
+
   const [note, setNote] = useState('');
+
   const [editing, setEditing] = useOptionEditor(() => {
     list.setFocus('deny');
+
     return note;
   });
 

@@ -21,9 +21,11 @@ export function PromptArea() {
   const busy = useAtomValue(busyAtom);
   const skills = useAtomValue(skillsAtom);
   const mention = useAtomValue(mentionAtom);
-  const files = useProjectFiles(jinion.info.cwd, !busy);
   const contextLeft = useAtomValue(contextLeftAtom);
+  const files = useProjectFiles(jinion.info.cwd, !busy);
+
   const footer = jinion.agent.modes.length > 1 || contextLeft !== undefined;
+
   const completions = useMemo(
     () => [jinion.commands.completion(), skillCompletion(skills), fileCompletion(files)],
     [skills, files],
@@ -57,7 +59,9 @@ function PromptFooter() {
   const theme = useTheme();
   const mode = useAtomValue(modeAtom);
   const left = useAtomValue(contextLeftAtom);
+
   const modes = agent.modes.length > 1;
+
   return (
     <Text>
       {modes && (

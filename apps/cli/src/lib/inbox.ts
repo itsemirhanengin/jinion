@@ -16,11 +16,14 @@ export class Inbox<T> implements AsyncIterable<T> {
   async *[Symbol.asyncIterator]() {
     while (true) {
       const item = this.items.shift();
+
       if (item !== undefined) {
         yield item;
         continue;
       }
+
       if (this.closed) return;
+
       await new Promise<void>((resolve) => (this.wake = resolve));
       this.wake = undefined;
     }

@@ -40,7 +40,9 @@ export function turnView(turn: EditTurn): View {
       patch: async () => file.patch,
     }),
   );
+
   const prompt = firstFilledLine(turn.prompt);
+
   return {
     label: truncate(prompt, TURN_LABEL),
     turn: turn.id,
@@ -53,5 +55,6 @@ export function turnView(turn: EditTurn): View {
 export function totals(rows: ChangeRow[]) {
   const insertions = rows.reduce((total, row) => total + row.insertions, 0);
   const deletions = rows.reduce((total, row) => total + row.deletions, 0);
+
   return [plural(rows.length, 'file'), `+${insertions} -${deletions}`];
 }

@@ -26,26 +26,42 @@ export interface VirtualOptions extends VirtualizerOptions {
 export function useVirtual(children: ReactNode, { viewport, top, onShift, ...options }: VirtualOptions) {
   const { rows } = useWindowSize();
   const view = useBoxMetrics(viewport);
+
   const contentRef = useRef<DOMElement>(null);
-  // An item that drew again on its own, e.g. a section expanded, shows up as a new content height.
-  useBoxMetrics(contentRef);
   const [virtualizer] = useState(() => new Virtualizer(options));
   const nodes = useRef(new Map<ItemKey, DOMElement>());
   const [, remeasured] = useReducer((count: number) => count + 1, 0);
+
+  // An item that drew again on its own, e.g. a section expanded, shows up as a new content height.
+  useBoxMetrics(contentRef);
 
   const items = Children.toArray(children).filter(isValidElement) as ReactElement[];
   const byKey = new Map(items.map((item) => [item.key!, item]));
   const height = view.height || rows;
   const window = virtualizer.window([...byKey.keys()], { height, top });
+  const pending = window.slots.filter((slot) => !slot.ready);
   const drawn = useRef(window);
+
   drawn.current = window;
+
+  // Ink has laid everything out by now, so what was mounted has its height.
+  useLayoutEffect(() => {
+    const width = viewport.current ? measureElement(viewport.current).width : 0;
+    const measured = new Map([...nodes.current].map(([key, node]) => [key, measureElement(node).height]));
+    const { changed, shift } = virtualizer.measure(drawn.current, measured, width);
+
+    if (shift !== 0) onShift(shift);
+    else if (changed) remeasured();
+  });
 
   const mount = (key: ItemKey) => (
     <Box
       key={key}
       ref={(node: DOMElement | null) => {
         if (!node) return;
+
         nodes.current.set(key, node);
+
         return () => void nodes.current.delete(key);
       }}
       flexDirection="column"
@@ -54,16 +70,6 @@ export function useVirtual(children: ReactNode, { viewport, top, onShift, ...opt
       {byKey.get(key as string)}
     </Box>
   );
-  const pending = window.slots.filter((slot) => !slot.ready);
-
-  // Ink has laid everything out by now, so what was mounted has its height.
-  useLayoutEffect(() => {
-    const width = viewport.current ? measureElement(viewport.current).width : 0;
-    const measured = new Map([...nodes.current].map(([key, node]) => [key, measureElement(node).height]));
-    const { changed, shift } = virtualizer.measure(drawn.current, measured, width);
-    if (shift !== 0) onShift(shift);
-    else if (changed) remeasured();
-  });
 
   return {
     contentRef,

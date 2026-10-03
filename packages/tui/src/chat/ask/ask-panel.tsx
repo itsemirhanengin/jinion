@@ -23,14 +23,17 @@ export interface AskPanelProps {
 
 export function AskPanel({ questions, onSubmit, onCancel }: AskPanelProps) {
   const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
+
   const question = questions[answers.length];
-  if (!question) return null;
 
   const answer = (value: QuestionAnswer) => {
     const next = [...answers, value];
+
     if (next.length === questions.length) onSubmit(next);
     else setAnswers(next);
   };
+
+  if (!question) return null;
 
   return (
     <QuestionStep
@@ -52,21 +55,26 @@ interface QuestionStepProps {
 
 function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps) {
   const theme = useTheme();
-  const multiple = question.multiple === true;
+
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [other, setOther] = useState('');
+
   const [editing, setEditing] = useOptionEditor<Editing>(() =>
     list.focus === OTHER ? undefined : { kind: 'note', key: list.focus, value: notes[list.focus] ?? '' },
   );
+
+  const multiple = question.multiple === true;
   const keys = [...question.options.map((_, index) => String(index)), OTHER];
 
   const finish = (picked: string[], otherText = other) => {
     const options = picked.filter((key) => key !== OTHER).map(Number);
     const written = picked.filter((key) => notes[key]);
+
     const note =
       written.length === 1 && !multiple
         ? notes[written[0]!]
         : written.map((key) => `${question.options[Number(key)]?.label}: ${notes[key]}`).join('; ') || undefined;
+
     onAnswer({ options, ...(picked.includes(OTHER) && otherText ? { text: otherText } : {}), ...(note ? { note } : {}) });
   };
 
@@ -77,12 +85,15 @@ function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps)
     onCancel,
     onSubmit: (picked) => {
       if (!multiple && picked[0] === OTHER) return setEditing({ kind: 'other', key: OTHER, value: other });
+
       if (picked.length > 0) finish(picked);
     },
     // "Other" only counts once it says something.
     onToggle: (key) => {
       if (key !== OTHER || list.isChecked(OTHER)) return;
+
       setEditing({ kind: 'other', key: OTHER, value: other });
+
       return false;
     },
   });
@@ -90,11 +101,15 @@ function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps)
   const save = (value: string) => {
     const text = value.trim();
     if (!editing) return;
+
     setEditing(undefined);
+
     if (editing.kind === 'note') {
       return setNotes(({ [editing.key]: _, ...rest }) => (text ? { ...rest, [editing.key]: text } : rest));
     }
+
     setOther(text);
+
     if (!multiple) {
       if (text) finish([OTHER], text);
     } else list.setChecked(OTHER, text !== '');

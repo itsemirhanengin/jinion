@@ -11,6 +11,7 @@ export interface AgentAccount {
 export function accountLabel(account: AgentAccount) {
   const shared = account.plan === 'Team' || account.plan === 'Enterprise';
   const who = shared ? (account.organization ?? account.email) : (account.email ?? account.organization);
+
   return [who, account.plan].filter(Boolean).join(' · ');
 }
 

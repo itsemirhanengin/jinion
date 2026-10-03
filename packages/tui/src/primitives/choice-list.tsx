@@ -41,14 +41,17 @@ export function useChoiceList({
 }: ChoiceListOptions): ChoiceListState {
   const [focusKey, setFocus] = useState(initialFocus ?? keys[0] ?? '');
   const [checkedKeys, setCheckedKeys] = useState(() => new Set(initialChecked));
+
   const focusIndex = Math.max(0, keys.indexOf(focusKey));
   const focus = keys[focusIndex] ?? '';
 
   const setChecked = (key: string, value: boolean) =>
     setCheckedKeys((current) => {
       const next = new Set(current);
+
       if (value) next.add(key);
       else next.delete(key);
+
       return next;
     });
 
@@ -56,6 +59,7 @@ export function useChoiceList({
     (input, key) => {
       if (key.escape) return onCancel();
       if (keys.length === 0 || ((key.upArrow || key.downArrow) && key.shift)) return;
+
       if (key.upArrow) setFocus(keys[stepIndex(focusIndex, -1, keys.length, false)]!);
       else if (key.downArrow) setFocus(keys[stepIndex(focusIndex, 1, keys.length, false)]!);
       else if (/^[1-9]$/.test(input) && Number(input) <= keys.length) setFocus(keys[Number(input) - 1]!);

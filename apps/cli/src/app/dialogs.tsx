@@ -14,8 +14,10 @@ export function DialogView({ dialog }: { dialog: Dialog }) {
   switch (dialog.id) {
     case 'ask':
       return <AskPanel questions={dialog.questions} onSubmit={dialog.onSubmit} onCancel={dialog.onCancel} />;
+
     case 'permission':
       return <PermissionPanel request={dialog.request} agent="jinion" onDecide={dialog.onDecide} onCancel={dialog.onCancel} />;
+
     case 'plan':
       return (
         <PlanPanel

@@ -16,55 +16,9 @@ export interface TodoGroup {
   items: TodoItem[];
 }
 
-const NUMERALS: [number, string][] = [
-  [10, 'X'],
-  [9, 'IX'],
-  [5, 'V'],
-  [4, 'IV'],
-  [1, 'I'],
-];
-
-function roman(value: number) {
-  let rest = value;
-  let result = '';
-  for (const [amount, numeral] of NUMERALS) {
-    while (rest >= amount) {
-      result += numeral;
-      rest -= amount;
-    }
-  }
-  return result;
-}
-
-const progress = (group: TodoGroup) => ({
-  done: group.items.filter((item) => item.status === 'done').length,
-  total: group.items.length,
-});
-
-const isComplete = (group: TodoGroup) => group.items.every((item) => item.status === 'done');
-
-function TodoText({ item }: { item: TodoItem }) {
-  const theme = useTheme();
-  switch (item.status) {
-    case 'done':
-      return (
-        <Text color={theme.muted}>
-          [x] <Text strikethrough>{item.text}</Text>
-        </Text>
-      );
-    case 'active':
-      return (
-        <Text color={theme.accent}>
-          [/] <Text bold>{item.text}</Text>
-        </Text>
-      );
-    case 'pending':
-      return <Text>[ ] {item.text}</Text>;
-  }
-}
-
 export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; status?: Status }) {
   const theme = useTheme();
+
   const total = groups.reduce((sum, group) => sum + group.items.length, 0);
 
   return (
@@ -78,6 +32,7 @@ export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; st
     >
       {groups.map((group, index) => {
         const { done, total: count } = progress(group);
+
         return (
           <Box key={index} flexDirection="column">
             <Text>
@@ -100,10 +55,12 @@ export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; st
 
 export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
   const theme = useTheme();
+
   const current = groups.findIndex((group) => !isComplete(group));
   const index = current === -1 ? groups.length - 1 : current;
   const group = groups[index];
   if (!group) return null;
+
   const { done, total } = progress(group);
 
   return (
@@ -129,4 +86,56 @@ export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
       <Text color={theme.border}> `-----</Text>
     </Box>
   );
+}
+
+function TodoText({ item }: { item: TodoItem }) {
+  const theme = useTheme();
+
+  switch (item.status) {
+    case 'done':
+      return (
+        <Text color={theme.muted}>
+          [x] <Text strikethrough>{item.text}</Text>
+        </Text>
+      );
+
+    case 'active':
+      return (
+        <Text color={theme.accent}>
+          [/] <Text bold>{item.text}</Text>
+        </Text>
+      );
+
+    case 'pending':
+      return <Text>[ ] {item.text}</Text>;
+  }
+}
+
+const progress = (group: TodoGroup) => ({
+  done: group.items.filter((item) => item.status === 'done').length,
+  total: group.items.length,
+});
+
+const isComplete = (group: TodoGroup) => group.items.every((item) => item.status === 'done');
+
+const NUMERALS: [number, string][] = [
+  [10, 'X'],
+  [9, 'IX'],
+  [5, 'V'],
+  [4, 'IV'],
+  [1, 'I'],
+];
+
+function roman(value: number) {
+  let rest = value;
+  let result = '';
+
+  for (const [amount, numeral] of NUMERALS) {
+    while (rest >= amount) {
+      result += numeral;
+      rest -= amount;
+    }
+  }
+
+  return result;
 }

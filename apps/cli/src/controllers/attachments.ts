@@ -18,9 +18,11 @@ export class Attachments {
   pastePath(text: string) {
     try {
       const image = imageFromPaste(text);
+
       return image && this.images.add(image);
     } catch (error) {
       this.context.notice(errorMessage(error), 'warning');
+
       return undefined;
     }
   }
@@ -29,10 +31,12 @@ export class Attachments {
     try {
       const image = await clipboardImage();
       if (image) return this.images.add(image);
+
       this.context.notice('There is no image on the clipboard. Text pastes with your terminal’s paste, e.g. cmd+v.', 'muted');
     } catch (error) {
       this.context.notice(errorMessage(error), 'warning');
     }
+
     return undefined;
   }
 }

@@ -6,6 +6,7 @@ const FRAMES = ['|', '/', '-', '\\'];
 
 export function Spinner({ color }: { color?: string }) {
   const { frame } = useAnimation({ interval: 120 });
+
   return <Text color={color}>{FRAMES[frame % FRAMES.length]}</Text>;
 }
 
@@ -34,12 +35,16 @@ export function StatusMark({ status }: { status: Status }) {
           [<Spinner />]
         </Text>
       );
+
     case 'done':
       return <Text color={theme.success}>[x]</Text>;
+
     case 'error':
       return <Text color={theme.error}>[!]</Text>;
+
     case 'cancelled':
       return <Text color={theme.muted}>[-]</Text>;
+
     case 'pending':
       return <Text color={theme.muted}>[ ]</Text>;
   }

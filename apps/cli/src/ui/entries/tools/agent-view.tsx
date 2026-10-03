@@ -13,21 +13,27 @@ export function AgentView({ entry }: { entry: ToolEntry }) {
   const { expanded } = useView();
   const hovered = useHovered();
   const tasks = useAtomValue(tasksAtom);
+
   if (entry.run.name !== 'agent') return null;
+
   // Sent to the background, it works on after its call ended, as its task says.
   const background = entry.run.result?.background;
   const task = background ? tasks.find((candidate) => candidate.id === background) : undefined;
   const status = task?.status === 'running' ? 'running' : entry.status;
   const calls = entry.children ?? [];
   let tree: TreeNode[];
+
   if (status === 'running' || expanded) {
     const shown = expanded ? calls : calls.slice(-LIVE_CALLS);
+
     tree = shown.map((call) => ({ label: <CallLine call={call} /> }));
     if (shown.length < calls.length) tree.unshift({ label: <Text color={theme.muted}>… {calls.length - shown.length} earlier</Text> });
   } else {
     const took = preciseSeconds((task?.endedAt ?? entry.endedAt ?? Date.now()) - entry.startedAt);
+
     tree = [{ label: <Text color={hovered ? undefined : theme.muted}>{`${plural(calls.length, 'tool call')} · ${took}`}</Text> }];
   }
+
   return (
     <ToolLine
       status={status}
@@ -46,7 +52,9 @@ export function AgentView({ entry }: { entry: ToolEntry }) {
 
 function CallLine({ call }: { call: ToolCallEntry }) {
   const theme = useTheme();
+
   const [name, detail] = callSummary(call.run);
+
   return (
     <Text wrap="truncate-end">
       <StatusMark status={call.status} /> <Text bold>{name}</Text>

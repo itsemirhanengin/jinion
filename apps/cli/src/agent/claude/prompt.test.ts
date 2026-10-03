@@ -18,6 +18,7 @@ describe('systemPrompt', () => {
     repo(join(box.project, 'api'), (path) => box.write(join(path, 'a.ts'), ''));
     repo(join(box.project, 'web'), (path) => box.write(join(path, 'a.ts'), ''));
     git(join(box.project, 'web'), 'checkout', '-qb', 'redesign');
+
     expect(gitLine()).toBe(
       "- Git: this folder isn't a repository, but these folders in it are: api/ (on branch main), web/ (on branch redesign). Run git in the repository a change belongs to, e.g. `git -C api status`.",
     );

@@ -26,16 +26,6 @@ const MOTION = 32;
 // A move reports this as its button when none is held.
 const NO_BUTTON = 3;
 
-function parseMouse(code: number, column: number, row: number, final: string): MouseEvent | undefined {
-  const position = { x: column - 1, y: row - 1 };
-  if (code & MOTION) {
-    if (code & WHEEL) return undefined;
-    return { type: 'move', button: (code & 3) === NO_BUTTON ? undefined : code & 3, ...position };
-  }
-  if (code & WHEEL) return { type: 'wheel', direction: (code & 1) === 0 ? 'up' : 'down', ...position };
-  return { type: final === 'M' ? 'press' : 'release', button: code & 3, ...position };
-}
-
 /** Keeps mouse and focus reports out of Ink's key parser. */
 export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, onFocus?: FocusListener) {
   const stream = new PassThrough();
@@ -44,18 +34,24 @@ export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, o
 
   const onData = (chunk: Buffer | string) => {
     let text = pending + (typeof chunk === 'string' ? chunk : decoder.write(chunk));
+
     pending = PARTIAL_MOUSE_SEQUENCE.exec(text)?.[0] ?? '';
     if (pending) text = text.slice(0, -pending.length);
 
     text = text.replace(MOUSE_SEQUENCE, (_, code: string, column: string, row: string, final: string) => {
       const event = parseMouse(Number(code), Number(column), Number(row), final);
+
       if (event) onMouse(event);
+
       return '';
     });
+
     text = text.replace(FOCUS_SEQUENCE, (_, which: string) => {
       onFocus?.(which === 'I');
+
       return '';
     });
+
     if (text) stream.write(text);
   };
 
@@ -67,14 +63,17 @@ export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, o
     isTTY: source.isTTY,
     setRawMode(mode: boolean) {
       source.setRawMode?.(mode);
+
       return stdin;
     },
     ref() {
       source.ref();
+
       return stdin;
     },
     unref() {
       source.unref();
+
       return stdin;
     },
   }) as unknown as NodeJS.ReadStream;
@@ -85,4 +84,18 @@ export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, o
   };
 
   return { stdin, close };
+}
+
+function parseMouse(code: number, column: number, row: number, final: string): MouseEvent | undefined {
+  const position = { x: column - 1, y: row - 1 };
+
+  if (code & MOTION) {
+    if (code & WHEEL) return undefined;
+
+    return { type: 'move', button: (code & 3) === NO_BUTTON ? undefined : code & 3, ...position };
+  }
+
+  if (code & WHEEL) return { type: 'wheel', direction: (code & 1) === 0 ? 'up' : 'down', ...position };
+
+  return { type: final === 'M' ? 'press' : 'release', button: code & 3, ...position };
 }
