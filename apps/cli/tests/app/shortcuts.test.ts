@@ -10,7 +10,8 @@ describe('SHORTCUTS', () => {
     const page = readFileSync(PAGE, 'utf8').replaceAll('`', '').replaceAll(' + ', '+');
     const keys = SHORTCUTS.flatMap(([keys]) => expand(keys));
 
-    const listed = (key: string) => new RegExp(`(?<![\\w+])${key.replace(/[$+]/g, '\\$&')}(?![\\w+])`).test(page);
+    // The page writes mouse actions as words, such as `Drag`.
+    const listed = (key: string) => new RegExp(`(?<![\\w+])${key.replace(/[$+]/g, '\\$&')}(?![\\w+])`, 'i').test(page);
 
     expect(keys.filter((key) => !listed(key))).toEqual([]);
   });
