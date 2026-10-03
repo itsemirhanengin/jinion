@@ -1,22 +1,24 @@
 ---
 title: Resume a conversation
-description: Pick up an earlier conversation where it left off, or start a new one.
+description: Pick up an earlier conversation where it left off, give it a title, or start a new one.
 ---
 
 Every conversation is saved after each turn, per project. Nothing is lost when you quit.
 
-`/resume` lists the project's conversations, newest first. Type to filter, then press `enter`. The agent picks up
-where it left off and remembers what was said.
+## Pick one up
+
+`/resume` lists the project's other conversations by title, newest first. Type to filter by title, then press `enter`.
+The agent picks up where it left off and remembers what was said.
 
 ```terminal
 {accent|+- Resume} {muted|4 conversations} {accent|-----------------------------------------------------------------+}
 {accent||} {muted|search} {accent|T}{muted|ype to filter}                                                                    {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
-{accent||} {code|>} {code,bold|Fix the flaky checkout e2e test}                                                 {muted|2h ago} {accent||}
+{accent||} {code|>} {code,bold|Flaky checkout e2e test}                                                         {muted|2h ago} {accent||}
 {accent||}     {muted|2 messages · "the checkout e2e test fails every few runs, can you find out why?"}     {accent||}
 {accent||}   Migrate auth to OIDC                                                         {muted|yesterday} {accent||}
 {accent||}     {muted|4 messages · "plan the migration from our session cookies to OIDC"}                   {accent||}
-{accent||}   Explain the billing reconciliation job                                          {muted|3d ago} {accent||}
+{accent||}   Billing reconciliation job                                                      {muted|3d ago} {accent||}
 {accent||}     {muted|2 messages · "how does the nightly billing reconciliation work?"}                     {accent||}
 {accent||}   Speed up the CI cache                                                           {muted|1w ago} {accent||}
 {accent||}     {muted|2 messages · "CI takes 14 minutes, most of it installing dependencies"}               {accent||}
@@ -26,10 +28,41 @@ where it left off and remembers what was said.
 {accent|+------------------------------------------------------------------------------------------+}
 ```
 
-To open the last conversation straight away, start Jinion with `-c`:
+Under each title are the number of messages and your first message. `/resume oidc` opens the list already filtered.
+
+A conversation that worked in a [worktree](/worktrees) shows `worktree swift-running-fox` and goes back into it.
+
+To open the last conversation straight away, start Jinion with `-c` or `--continue`:
 
 ```sh
 jinion -c
 ```
 
-`/clear` saves the current conversation and starts a new one.
+## Titles
+
+Jinion gives each conversation a title of a few words, such as `Flaky checkout e2e test`, once the first turn ends.
+Until then, the title is the first line of your first message.
+
+As the conversation moves on, Jinion names it again, so the title keeps up with the work: when the messages you have
+sent double, after 20 minutes with new ones, and when you accept a [plan](/permission-modes#plan-first).
+
+The title shows in `/resume` and on the right of the status line.
+
+## Rename a conversation
+
+To give the conversation a title of your own, type `/rename` and the title:
+
+```text
+/rename checkout flake
+```
+
+Jinion says `Renamed the conversation to “checkout flake”.` A title you give stays: Jinion doesn't rename the
+conversation again.
+
+`/rename` alone has Jinion name the conversation now from what it is about, and it goes on naming it as the
+conversation moves on.
+
+## Start a new one
+
+`/clear`, or `/new`, saves the current conversation and starts a new one. What runs in the
+[background](/background-tasks) stops.

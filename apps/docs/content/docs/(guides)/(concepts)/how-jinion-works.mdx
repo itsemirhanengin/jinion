@@ -12,14 +12,15 @@ needs you.
 | Part                 | Where it comes from                                                                                   |
 | -------------------- | ----------------------------------------------------------------------------------------------------- |
 | System prompt        | Written by Jinion: how to work, what to ask you before, which tools to use, git, how to talk to you   |
-| Environment          | Your folder, its git branch, the date, and the repositories in it                                     |
+| Environment          | The folder it works in, its git branch or the repositories in it, your platform, and the date. In a [worktree](/worktrees), that folder is the worktree |
 | Project instructions | `AGENTS.md` and `CLAUDE.md` in the folder you started Jinion in. See [Write project instructions](/project-instructions) |
-| Memory               | A one-line index of the notes the agent keeps. See [Use memory](/memory)                              |
+| Memory               | An index of the notes the agent keeps, one line each. See [Use memory](/memory)                       |
 | Skills and MCP tools | Listed by name, loaded only when used. See [Use skills and MCP servers](/skills-and-mcp)              |
 | The conversation     | Your messages, the agent's replies, and what the tools returned                                       |
 
-Jinion keeps its own settings. It doesn't read Claude Code's settings files, hooks, memory or `~/.claude/CLAUDE.md`,
-so what you set up for Jinion stays in Jinion. You can bring Claude Code's memory over once with `/memory import`.
+Nothing else goes in: Jinion keeps its own settings, and doesn't load other tools' settings files, hooks or global
+instructions such as `~/.claude/CLAUDE.md`. To bring over the memory, skills and MCP servers you set up elsewhere, see
+[Bring your Claude Code setup over](/how-to/bring-your-claude-code-setup).
 
 ## Tools
 
@@ -34,7 +35,7 @@ The agent works through tools, and each call shows as a line in the conversation
 | Agent                | Hand part of the work to a subagent, shown as a live tree            |
 | Ask                  | Ask you a question with options                                      |
 | Todo                 | Keep a task list you can follow                                      |
-| Remember, Recall     | Save and read [memory](/memory) notes                                |
+| Remember, Recall, Forget | Save, read and drop [memory](/memory) notes                      |
 
 ## Who decides what runs
 
@@ -43,4 +44,4 @@ of every mode, Jinion itself asks before a commit and before anything changes ou
 
 ## Where your data lives
 
-Conversations, memory, settings and logs live in `~/.jinion` on your machine. See [The ~/.jinion folder](/reference/jinion-folder).
+Conversations, memory, settings, worktrees and logs live in `~/.jinion` on your machine. See [The ~/.jinion folder](/reference/jinion-folder).

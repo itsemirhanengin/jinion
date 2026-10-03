@@ -20,6 +20,7 @@ Jinion keeps everything on your machine, in `~/.jinion`. Set `JINION_HOME` to us
         |-- settings.json      the mode, and the .mcp.json servers turned on
         |-- permissions.json   the "don't ask again" rules
         |-- memory/            project notes
+        |-- plugins/           the project's skills handed to the agent
         |-- sessions/          one JSON file per conversation
         '-- worktrees/         the conversations' git worktrees
 ```
@@ -41,6 +42,7 @@ A project's folder is named after its path, with every character other than lett
 | `projects/<project>/settings.json` | The project's [mode](/permission-modes), and its `.mcp.json` servers you turned on     |
 | `projects/<project>/permissions.json` | Rules you saved with "don't ask again"                                              |
 | `projects/<project>/memory/`       | [Project notes](/memory)                                                               |
+| `projects/<project>/plugins/`      | The project's skills, linked so the agent can load them                                |
 | `projects/<project>/sessions/`     | The project's [conversations](/conversations/resume)                                          |
 | `projects/<project>/worktrees/`    | The [worktrees](/worktrees) its conversations work in                                  |
 

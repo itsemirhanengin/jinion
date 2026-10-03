@@ -27,7 +27,8 @@ out on its own once the turn ends. If the turn is interrupted, queued messages c
 ## Mention files with @
 
 Type `@` and part of a name. Jinion completes the project's files and folders, the ones git tracks or could track, so
-ignored files stay out. The agent gets the file's content with your message, so it can work on it right away.
+ignored files stay out. Outside a git repository, it lists every file but folders such as `node_modules` and `dist`.
+The agent gets the file's content with your message, so it can work on it right away.
 
 ```text
 @src/middleware/rate-limit.ts add a test for the window reset
@@ -67,7 +68,8 @@ See [Use skills and MCP servers](/skills-and-mcp).
 
 ## Paste text
 
-Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`. The agent gets all of it.
+Text of two lines or more goes in as `[Pasted text #1 +42 lines]`, and a single line of 800 characters or more as
+`[Pasted text #2 1200 chars]`. The agent gets all of it.
 In the prompt, `backspace` removes the placeholder whole. Once sent, click the message to see the text in full.
 
 ## Attach images

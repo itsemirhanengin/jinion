@@ -3,6 +3,12 @@ title: Your first task
 description: Watch Jinion take a request from a question to tested code.
 ---
 
+<Callout>
+  To keep the agent's changes away from your own checkout, press `ctrl+g` before you send the first message. The
+  conversation then works in a git worktree, on a branch of its own. See [Work in parallel with
+  worktrees](/worktrees).
+</Callout>
+
 Type what you want done and press `enter`:
 
 ```text
@@ -18,13 +24,7 @@ Jinion looks through the code first. When a choice is yours to make, it asks ins
  {border||--} {muted|ts} src/middleware/request-id.ts
  {border|'--} {muted|ts} src/middleware/error-handler.ts
 
- {thinking,italic|No limiter exists yet. There is a TODO in the login route and a `TooManyRequests` error}
- {thinking,italic|already defined in src/http/errors.ts, which I can reuse instead of hand-rolling a 429.}
-
- {thinking,italic|Middleware are plain (req, res, next) functions composed in src/server.ts, so a limiter}
- {thinking,italic|fits in as one more entry. The real decision is storage: a Map is enough for one process,}
- {thinking,italic|but behind a load balancer every instance would count separately. I will ask instead of}
- {thinking,italic|guessing.}
+ {thinking,italic|Thought for 6s}
 
  {accent|[-] Waiting for your answer…} {muted|0s · esc to interrupt}
 
@@ -44,5 +44,12 @@ Jinion looks through the code first. When a choice is yours to make, it asks ins
 {accent|+------------------------------------------------------------------------------------------+}
 ```
 
+Its thinking shows as it comes, then folds into one line, such as `Thought for 6s`, once it moves on. `ctrl+o` expands
+it again, with the rest of the output.
+
 Then it edits the files, runs the tests, and fixes what fails. Every edit shows as a diff in the conversation. At the
 end you get a short summary of what changed and how it was checked.
+
+When the first turn ends, Jinion gives the conversation a title of a few words. It shows on the right of the status
+line and in `/resume`. To give it a title of your own, type `/rename` and the title. See
+[Resume a conversation](/conversations/resume#titles).

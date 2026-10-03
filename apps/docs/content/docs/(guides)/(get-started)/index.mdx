@@ -37,14 +37,6 @@ npm i -g @jinion/cli
 </Step>
 <Step>
 
-### Sign in to Claude
-
-Jinion works with your Claude account and uses the Claude Code login on your machine. If you haven't signed in yet,
-run `claude`, then `/login`, and follow the browser. You only do this once.
-
-</Step>
-<Step>
-
 ### Start a session in your project
 
 ```sh
@@ -52,7 +44,18 @@ cd ~/code/api
 jinion
 ```
 
-You see the banner with your model, account and folder, and the prompt at the bottom. Jinion is ready.
+You see the banner with your model, account and folder, and the prompt at the bottom.
+
+</Step>
+<Step>
+
+### Sign in to Claude
+
+Jinion works with your Claude account, on a subscription such as Pro or Max. If you have signed in to Claude on this
+machine before, the banner shows your account and Jinion is ready.
+
+If not, type `/account`, go to the account that says "Not signed in" and press `enter`. Jinion opens the sign-in in
+your browser; paste the code the browser shows. You only do this once.
 
 </Step>
 </Steps>
@@ -65,5 +68,6 @@ You see the banner with your model, account and folder, and the prompt at the bo
   <Card title="Choose a permission mode" href="/permission-modes" description="Decide what runs without asking." />
   <Card title="Review changes" href="/review-changes" description="See every change, turn by turn, with /diff." />
   <Card title="Rewind" href="/conversations/rewind" description="Take back code, conversation or both." />
+  <Card title="Work in parallel with worktrees" href="/worktrees" description="Give each conversation its own branch and checkout." />
   <Card title="Use memory" href="/memory" description="Notes the agent keeps between conversations." />
 </Cards>

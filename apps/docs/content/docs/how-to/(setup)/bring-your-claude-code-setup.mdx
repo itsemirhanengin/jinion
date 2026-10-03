@@ -2,3 +2,54 @@
 title: Bring your Claude Code setup over
 description: Use the skills, MCP servers and memory you already have in Claude Code.
 ---
+
+Most of a Claude Code setup works in Jinion as it is. Memory is the one thing to bring in by hand.
+
+## Your login
+
+Jinion uses the Claude login already on your machine, as its `default` account. If you're signed in to Claude Code,
+there is nothing to do. To add a second login, see [Use a work and a personal account](/how-to/use-two-accounts).
+
+## Skills and plugins
+
+These come in on their own:
+
+- your skills in `~/.claude/skills`, and the project's in `.claude/skills`;
+- the plugins you turned on in Claude Code, with their skills, commands, agents and MCP servers. Their hooks stay off.
+
+Type `$` to see them. A skill you used to run as `/review` is now `$review`; typing `/review` out of habit puts
+`$review` in the prompt. See [Use skills and MCP servers](/skills-and-mcp).
+
+## MCP servers
+
+Servers in `~/.claude.json` and your claude.ai connectors connect as they do in Claude Code. Servers in a project's
+`.mcp.json` stay off until you turn them on:
+
+```text
+/mcp
+```
+
+Move to the server, press `space` to turn it on and `enter` to save.
+
+## Project instructions
+
+A `CLAUDE.md` at the root of the project is read as it is, next to an `AGENTS.md` if there is one. See
+[Write project instructions](/project-instructions).
+
+## Memory
+
+Bring in what Claude Code collected:
+
+```text
+/memory import
+```
+
+Jinion says `Imported 12 notes from Claude Code. The agent sees them from the next conversation on.` This brings in
+Claude Code's memory notes for this project, your `~/.claude/rules` and your `~/.claude/CLAUDE.md`. Run it in each
+project whose notes you want. Running it again adds nothing twice. See [Use memory](/memory).
+
+## What stays behind
+
+- Claude Code's settings, with its permission rules and hooks. Jinion asks again, and "don't ask again" saves the rule
+  in Jinion. See [Choose a permission mode](/permission-modes).
+- Claude Code's conversations. `/resume` lists the conversations you had in Jinion.

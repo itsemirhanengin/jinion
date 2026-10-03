@@ -6,42 +6,47 @@ description: "Choose what the line under the prompt shows: model, mode, git, con
 The status line sits under the prompt. `/statusline` chooses what it shows, in which order, and on which side.
 
 ```terminal
-{accent|+- Status line} {muted|6 of 17 shown} {accent|--------------------------------------------------------------+}
+{accent|+- Status line} {muted|7 of 18 shown} {accent|--------------------------------------------------------------+}
 {accent||} {muted|Checked items show in the status line below, in this order. Changes show as you make}     {accent||}
 {accent||} {muted|them.}                                                                                    {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} {code|>  1. [x]} {code,bold|Jinion}       {muted,bold|jinion}                                                       {muted|left} {accent||}
 {accent||}           {muted|The app name}                                                                   {accent||}
-{accent||}    2. {code|[x]} Model        {muted|[M]} {accent|Opus 5.5 · high}                                          {muted|left} {accent||}
+{accent||}    2. {code|[x]} Model        {muted|[M]} {model|Opus 5.5 · high}                                          {muted|left} {accent||}
 {accent||}           {muted|The model in use · with effort}                                                 {accent||}
-{accent||}    3. {code|[x]} Directory    {muted|[D]} {code|code/api}                                                 {muted|left} {accent||}
+{accent||}    3. {code|[x]} Directory    {muted|[D]} {directory|code/api}                                                 {muted|left} {accent||}
 {accent||}           {muted|Where jinion is working · last two folders}                                     {accent||}
-{accent||}    4. {code|[x]} Context      ctx: 22K/200K                                                {muted|left} {accent||}
+{accent||}    4. {code|[x]} Worktree     {muted|nothing to show yet}                                          {muted|left} {accent||}
+{accent||}           {muted|The git worktree the conversation works in, when it has one (ctrl+g)}           {accent||}
+{accent||}    5. {code|[x]} Context      ctx: 22K/200K                                                {muted|left} {accent||}
 {accent||}           {muted|How full the context window is · tokens}                                        {accent||}
-{accent||}    5. {code|[x]} Cost         {cost|$0.08}                                                        {muted|left} {accent||}
+{accent||}    6. {code|[x]} Cost         {cost|$0.08}                                                        {muted|left} {accent||}
 {accent||}           {muted|What the conversation would cost at API prices; a subscription doesn't bill it} {accent||}
-{accent||}    6. {code|[x]} Title        {muted|Add rate limiting to the public API                         right} {accent||}
-{accent||}           {muted|What the conversation is about}                                                 {accent||}
-{accent||}   {muted|… 11 more}                                                                              {accent||}
+{accent||}   {muted|… 12 more}                                                                              {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} Space {muted|select ·} Shift+Up/Down {muted|move ·} Tab {muted|side ·} Left/Right {muted|style ·} r {muted|reset ·} Enter {muted|save ·} {accent||}
 {accent||}  Esc {muted|cancel}                                                                              {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
- {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 22K/200K {muted|·} {cost|$0.08}  {muted|Add rate limiting to…}
+ {muted|jinion · [M]} {model|Opus 5.5 · high} {muted|· [D]} {directory|code/api} {muted|·} ctx: 22K/200K {muted|·} {cost|$0.08}  {muted|Add rate limiting to…}
 ```
 
 | Key                 | Does                                  |
 | ------------------- | ------------------------------------- |
 | `space`             | Shows or hides the segment            |
-| `left` / `right`    | Picks the segment's style             |
+| `left` / `right`    | Picks the segment's style, if it has several |
 | `tab`               | Moves it to the other side            |
 | `shift+up` / `down` | Moves it up or down the order         |
 | `r`                 | Resets to the default                 |
 | `enter`             | Saves                                 |
+| `esc`               | Closes without saving                 |
 
-The line under the panel previews your changes as you make them.
+The line under the panel previews your changes as you make them. A segment with nothing to show, such as Worktree in a
+conversation without one, shows `nothing to show yet` in the panel and takes no room in the line. The status line is
+the same in every project.
 
 ## Segments
 
-There are seventeen segments, from the model and the git branch to the plan limits and the clock. See
-[Status line segments](/reference/status-line-segments) for what each shows and its styles.
+There are eighteen segments, from the model and the git branch to the plan limits and the clock. By default the line
+shows the app name, the model, the directory, the [worktree](/worktrees), the context, the cost and, on the right, the
+conversation's [title](/conversations/resume#titles). See [Status line segments](/reference/status-line-segments) for
+what each shows and its styles.

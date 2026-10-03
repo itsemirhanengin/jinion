@@ -2,3 +2,43 @@
 title: Fix a failing test
 description: Hand Jinion a red test and let it find the cause, fix it and prove the fix.
 ---
+
+## 1. Point Jinion at the test
+
+Start Jinion in the project and say which test fails. Mention the test file with `@`, so the agent reads it right away:
+
+```text
+@src/middleware/rate-limit.test.ts "resets the window after a minute" fails, find out why and fix it
+```
+
+If you have the failure output, paste it into the same message. Long output goes in as `[Pasted text #1 +42 lines]`,
+and the agent gets all of it. See [Prompt the agent](/prompting#paste-text).
+
+## 2. Let it find the cause
+
+The agent runs the test, reads the code it touches, and edits what is wrong. Each edit shows as a diff in the
+conversation, and the turn ends with a card of the files it changed.
+
+If it heads the wrong way, type while it works and press `enter`. Your message joins the turn:
+
+```text
+the test is right, fix the code, not the test
+```
+
+A slow test suite can go to the [background](/background-tasks) with `ctrl+b` while the turn goes on.
+
+## 3. Check the fix
+
+The agent runs the test again after its change and says how it checked. To see every change together, type `/diff`.
+See [Review changes](/review-changes).
+
+Run the test yourself if you want to be sure:
+
+```sh
+pnpm test src/middleware/rate-limit.test.ts
+```
+
+## If the fix is wrong
+
+[Rewind](/conversations/rewind) to before your message: press `esc` twice and pick **Restore code and conversation**.
+The files go back, and your message returns to the prompt so you can say more and send it again.

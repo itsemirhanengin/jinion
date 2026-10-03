@@ -2,3 +2,64 @@
 title: Use Jinion inside tmux
 description: Get notifications, colors and keys working inside tmux.
 ---
+
+Jinion runs inside tmux as it is. A few tmux settings let the mouse, notifications, the clipboard and colors through.
+
+## 1. Add the settings
+
+Add these lines to `~/.tmux.conf`:
+
+```text title="~/.tmux.conf"
+set -g mouse on
+set -g focus-events on
+set -g set-clipboard on
+set -as terminal-features ',*:RGB'
+```
+
+Then load them in a running tmux:
+
+```sh
+tmux source-file ~/.tmux.conf
+```
+
+| Setting           | What it lets through                                                                        |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `mouse`           | The wheel to scroll, clicks on a file in a change card, dragging to select text              |
+| `focus-events`    | Whether you're looking at the pane, so Jinion knows when to notify you                      |
+| `set-clipboard`   | Copied text to your computer's clipboard over SSH                                           |
+| `RGB`             | Jinion's full colors, instead of the nearest of 256                                         |
+
+## 2. Check notifications
+
+Inside tmux, Jinion rings the bell instead of sending a desktop notification, since tmux keeps notification sequences
+to itself. Without `focus-events`, Jinion can't tell that you switched away, and stays quiet.
+
+To check, ask for something that takes a while, then switch to another tmux window. When the turn ends, tmux marks the
+window, and your terminal shows the bell its own way, such as a sound or a badge. See [Get notified](/notifications).
+
+## 3. Check colors
+
+If colors look flat, check that tmux has 24-bit color inside it:
+
+```sh
+echo $COLORTERM
+```
+
+It should print `truecolor`. If it prints nothing, add `export COLORTERM=truecolor` to your shell profile.
+
+If Jinion picks dark colors on a light background, set it yourself:
+
+```sh
+jinion --theme light
+```
+
+See [Set up your terminal](/terminal-setup#light-and-dark).
+
+## New lines
+
+`shift+enter` often reaches programs inside tmux as a plain `enter`, which sends the message. Use `alt+enter` instead,
+or end the line with `\` and press `enter`.
+
+## Copy text
+
+Text you select in Jinion goes to your clipboard and to tmux's paste buffer, so `prefix` `]` pastes it in another pane.

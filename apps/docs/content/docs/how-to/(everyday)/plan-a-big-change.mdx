@@ -2,3 +2,54 @@
 title: Plan a big change first
 description: Use Plan mode to agree on the approach before any file changes.
 ---
+
+## 1. Switch to Plan mode
+
+Press `shift+tab` until the line under the prompt shows `Plan`, or type:
+
+```text
+/mode plan
+```
+
+In Plan mode the agent reads and thinks, and changes nothing until you approve its plan. See
+[Choose a permission mode](/permission-modes).
+
+## 2. Describe the change
+
+Say what you want and what matters to you:
+
+```text
+move login from session cookies to OIDC with our Keycloak; keep the current sessions working until everyone has logged in again
+```
+
+The agent reads the code. When a choice is yours, such as which library to use, it asks, and you pick an answer in the
+question panel.
+
+## 3. Review the plan
+
+When the plan is ready, it shows in the conversation and the plan panel asks `Ready to start? The plan is above.`
+
+To change it, pick **No, keep planning**, press `n` and say what should change. The agent writes the plan again.
+
+## 4. Start the work
+
+Pick how freely the agent goes on:
+
+| Choice                     | Then                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Yes, and use auto mode     | A safety classifier lets routine actions run and stops risky ones; commits and writes outside the project still ask |
+| Yes, and accept edits      | Edits files in the project without asking; asks before risky commands                                   |
+| Yes, and approve each edit | Asks before every edit and every command outside a safe list                                             |
+
+The mode you pick stays on after the plan, in this project. The agent works through the plan step by step, with its task list above the
+prompt.
+
+## 5. Review the result
+
+Type `/diff` and use `left` and `right` to go through the change one turn at a time. See
+[Review changes](/review-changes).
+
+<Callout>
+  For a change that takes a while, turn on [worktrees](/worktrees) first. The work happens on a branch of its own, and
+  your checkout stays free for other work.
+</Callout>

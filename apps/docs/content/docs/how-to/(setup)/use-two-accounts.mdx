@@ -2,3 +2,54 @@
 title: Use a work and a personal account
 description: Sign in twice and switch between accounts, even in the middle of a conversation.
 ---
+
+Your first account is `default`: the Claude login already on your machine. Add the second one under a name of your
+own. Every detail of `/account` is in [Switch models and accounts](/models-and-accounts#switch-accounts).
+
+## 1. Add the second account
+
+```text
+/account add work
+```
+
+Jinion opens the sign-in in your browser. Sign in with the other login, paste the code the browser shows and press
+`enter`. Jinion says `Signed in to work as me@acme.dev. Pick it here to switch.`
+
+## 2. Switch
+
+Type `/account`, move to the account and press `enter`, or switch straight away:
+
+```text
+/account work
+```
+
+In the middle of a conversation, Jinion says `Switched to the work account; the conversation carries on there.` The
+conversation goes on under the new login, and later sessions start with it.
+
+The switch happens between turns, so let the current one finish or press `esc` first. What runs in the
+[background](/background-tasks) stops.
+
+## 3. Check which one is in use
+
+The banner at the top shows who you're signed in as, such as `ACME · Team` or `me@example.com · Max`. To keep it in
+view, turn on the Account segment in [`/statusline`](/status-line).
+
+`/account` also shows each account's plan limits when you last used it, so you can see which one has room left.
+
+## When a login expires
+
+The account shows `Not signed in; press enter to sign in` in `/account`. Press `enter` on it and sign in again in the
+browser. To sign an account in again with another login, move to it and press `l`.
+
+Signing in again to the account in use keeps the conversation going with the new login.
+
+## Remove an account
+
+In `/account`, move to the account and press `d` twice. Or type:
+
+```text
+/account remove work
+```
+
+Jinion signs it out and says `Removed the work account and signed it out. Its conversations stay.` You can't remove
+the account in use, or `default`.

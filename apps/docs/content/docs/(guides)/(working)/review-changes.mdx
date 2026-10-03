@@ -11,8 +11,8 @@ When a turn has changed files, it ends with a card of them: each file with the l
 in its title.
 
 ```terminal
-{border|+---} {bold|4 files changed} {added|+63} {removed|-4} {border|---------------------------------------------------------------+}
-{border||} {code|src/middleware/rate-limit.ts}       {muted|new} {added|+30} {removed|-1}                                            {border||}
+{border|+---} {bold|4 files changed} {added|+63} {removed|-3} {border|---------------------------------------------------------------+}
+{border||} {code|src/middleware/rate-limit.ts}       {muted|new} {added|+30}                                               {border||}
 {border||} {code|src/server.ts}                          {added|+2} {removed|-1}                                             {border||}
 {border||} {code|src/routes/auth.ts}                     {added|+2} {removed|-2}                                             {border||}
 {border||} {code|src/middleware/rate-limit.test.ts}  {muted|new} {added|+29}                                               {border||}
@@ -88,7 +88,8 @@ You can start Jinion in a folder that holds several repositories, for context ac
 repositories up to three folders down, and:
 
 - `/diff` groups the changes under each repository, with its branch;
-- the status line's git segment sums them up, such as `4 repos *7`;
+- the status line's Git segment, once you turn it on in [`/statusline`](/status-line), sums them up, such as
+  `4 repos *7`;
 - the agent runs git in the repository a change belongs to.
 
 ## Take a change back

@@ -26,9 +26,10 @@ review the open PR $review
 ```
 
 A message that starts with a skill runs it, with the rest as its input. The agent also loads a skill on its own when
-one fits the task, and the conversation shows `Skill · design`.
+one fits the task, and the conversation shows `Skill design`.
 
-Typing `/design` out of habit puts `$design` back in the prompt.
+Typing `/design` out of habit puts `$design` back in the prompt, and Jinion says
+`Skills go after $ now, anywhere in the message: $design. Press enter to send it.`
 
 ## Use an MCP prompt
 
@@ -41,17 +42,25 @@ $pr-summary 128
 
 ## Turn servers on or off
 
-`/mcp` lists every server with its state (connected, connecting, not signed in, failed, off) and where it comes from.
-The one you're on shows its URL or command, its error and its tools.
+`/mcp` lists every server with its state and where it comes from. The state is `connected` with its number of tools,
+`connecting…`, `not signed in`, `failed to connect`, or `off`. The one you're on shows its URL or command, its error and
+its tools.
 
 | Key     | Does                              |
 | ------- | --------------------------------- |
 | `space` | Turns the server on or off        |
 | `enter` | Saves; applies from the next turn |
+| `esc`   | Closes without saving             |
+
+After `enter`, Jinion says what changed, such as `Turned on linear. This applies from the next turn.` The conversation
+carries on.
+
+A server that shows `not signed in` needs a login: ask the agent to authenticate it, or, for a claude.ai connector,
+connect it in your claude.ai settings.
 
 <Callout type="warn">
   Servers in a project's `.mcp.json` stay off until you turn them on, since anyone with commit access can change that
-  file.
+  file. They show `off until you turn it on (from .mcp.json)`.
 </Callout>
 
 ## Tool calls and context

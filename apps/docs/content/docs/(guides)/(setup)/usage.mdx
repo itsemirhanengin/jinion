@@ -7,18 +7,21 @@ description: See where your plan's limits stand, what this session cost, and a c
 
 `/usage` opens full screen with three parts:
 
-- **Plan limits**: the 5-hour window and the week, per model where your plan has one, with when each resets.
+- **Plan limits**: the 5-hour window and the week, and the week per model where your plan has one, with when each
+  resets.
 - **This session**: its cost at API prices, time spent, lines changed, and tokens by model.
 - **What adds to your limits**: over the last day or week (`d` and `w`), the kinds of sessions and the skills,
-  subagents and MCP servers that used the most.
+  subagents, plugins and MCP servers that used the most.
+
+If your plan has extra usage, the plan limits show how much of it you used this month.
 
 ```terminal
 {accent|+- Usage} {muted|Claude} {accent|---------------------------------------------------------------------------+}
 {accent||}  {accent,bold|Usage}   {muted|Stats}                                                                           {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} {bold|Plan limits} {muted|Max}                                                                          {accent||}
-{accent||} 5h  {muted|[}{success|==}{muted|--------------------------]}   8% {muted|resets 08:11 PM}                                  {accent||}
-{accent||} 7d  {muted|[}{success|======}{muted|----------------------]}  20% {muted|resets Wed 04:59 PM}                              {accent||}
+{accent||} 5-hour window     {muted|[}{success|==}{muted|--------------------------]}   8% {muted|resets 08:11 PM}                    {accent||}
+{accent||} Week, all models  {muted|[}{success|======}{muted|----------------------]}  20% {muted|resets Wed 04:59 PM}                {accent||}
 {accent||                                                                                          |}
 {accent||} {bold|This session} {muted|$0.42 · 1m 35s waiting on the model · 21m 0s in all · +86 -7 lines}          {accent||}
 {accent||} Opus 5.5  {muted|12.4k in · 8.9k out · 310.0k cache read · 41.0k cache write}  $0.42             {accent||}
@@ -28,8 +31,7 @@ description: See where your plan's limits stand, what this session cost, and a c
 {accent||} {muted|add up.}                                                                                  {accent||}
 {accent||                                                                                          |}
 {accent||} Subagent-heavy  {muted|[}{accent|=====}{muted|-----------]}  34% {muted|each subagent makes requests of its own}          {accent||}
-{accent||} Long context    {muted|[}{accent|===}{muted|----------}  18% {muted|requests past 150k tokens; /clear between tasks}      {accent||}
-{accent||}                 {muted|--]           keeps them small}                                           {accent||}
+{accent||} Parallel        {muted|[}{accent|=}{muted|---------------]}   9% {muted|while four or more sessions ran at once}          {accent||}
 {accent||                                                                                          |}
 {accent||} {muted|Most used:} design {muted|skill 12% ·} Explore {muted|subagent 21% ·} linear {muted|MCP 6%}                       {accent||}
 {accent||                                                                                          |}
@@ -47,14 +49,16 @@ description: See where your plan's limits stand, what this session cost, and a c
 Press `tab` in `/usage`, or type `/stats`, for a calendar of every day you used it, a square per day, shaded by how
 much you did, like GitHub's contribution graph.
 
-| Key            | Does                                                   |
-| -------------- | ------------------------------------------------------ |
-| Arrow keys     | Pick a day to see its numbers                          |
-| `r`            | Switch between all time, the last 30 days and the last 7 |
+| Key            | Does                                                          |
+| -------------- | ------------------------------------------------------------- |
+| Arrow keys     | Pick a day to see its messages, sessions and tokens           |
+| `r`            | Switch between All time, Last 30 days and Last 7 days         |
 
-Below the calendar: sessions, active days, streaks, your busiest day, your longest session, and each model's share.
+Below the calendar: your favorite model, tokens, sessions, longest session, active days, longest and current streak,
+most active day, and each model's share of the tokens.
 
-The stats come from the Claude Code transcripts on this machine, so they cover Claude Code used outside Jinion too.
+The stats cover every Claude conversation on this machine, under all your [accounts](/models-and-accounts), including
+ones you had outside Jinion.
 
 ## Keep an eye on it while you work
 

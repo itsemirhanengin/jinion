@@ -38,8 +38,9 @@ A line above the prompt says what runs and for how long:
  {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 23K/200K {muted|·} {cost|$0.09}   {muted|Start the dev server}
 ```
 
-A command the turn is already waiting on can go to the background too: press `ctrl+b` once the line under the prompt
-offers it, after a few seconds. The turn goes on without it.
+A command or subagent the turn is already waiting on can go to the background too. After it has run a few seconds,
+the working line above the prompt reads `Running bash · ctrl+b to run it in the background`. Press `ctrl+b`, and
+the turn goes on without waiting for it.
 
 ## Follow and stop tasks
 
@@ -66,14 +67,17 @@ and the latest output of the one you're on.
 | `x`     | Stops the task                              |
 | `esc`   | Closes the panel; tasks keep running        |
 
+In the output, `up`, `down`, `pgup` and `pgdn` scroll, `x` stops the task, and `esc` goes back to the list. A subagent
+shows as `Agent · ` and what it does, with its tool calls so far instead of output.
+
 ## When a task ends
 
 The conversation says so, such as `[!] Background pnpm test · failed after 41s · exit 1`, and the agent looks at the
 result in a turn of its own. If the window isn't focused, you get a [notification](/notifications).
 
 <Callout>
-  Tasks belong to the session. They stop with `/clear`, `/resume`, an account switch, or when you quit. `esc` stops
-  the turn but leaves background tasks running.
+  Tasks belong to the session. They stop with `/clear`, `/resume`, a [rewind](/conversations/rewind) of the
+  conversation, an account switch, or when you quit. `esc` stops the turn but leaves background tasks running.
 </Callout>
 
 ## Subagents

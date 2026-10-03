@@ -21,13 +21,9 @@ export PATH="$(npm prefix -g)/bin:$PATH"
 
 ## You aren't signed in to Claude
 
-Jinion uses the Claude login on your machine. Sign in once:
-
-```sh
-claude
-```
-
-Then type `/login`, follow the browser, and start Jinion again.
+Open `/account`, go to the account that says "Not signed in" and press `enter`. Jinion opens the sign-in in your
+browser; paste the code the browser shows. To sign an account in again, such as after its login expired, press `l` on
+it.
 
 ## The rule under the prompt shows Manual instead of Auto
 
@@ -48,7 +44,8 @@ To keep it, add `export JINION_THEME=dark` to your shell profile.
 
 - Check that your terminal supports them; see [Get notified](/notifications#terminal-support).
 - Notifications only come while the window isn't focused.
-- Inside tmux or screen, they become the bell.
+- Inside tmux or screen, they become the bell. tmux also needs `focus-events on`; see
+  [Use Jinion inside tmux](/how-to/use-tmux).
 - Check that they're on: `/notifications on`.
 
 ## Pasting an image does nothing

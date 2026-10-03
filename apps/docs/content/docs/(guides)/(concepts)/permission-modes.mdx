@@ -54,7 +54,7 @@ When the agent wants to do something the mode doesn't allow, the permission pane
 {accent||                                                                              |}
 {accent|+------------------------------------------------------------------------------+}
 {accent||} {code|> 1.} {code,bold|Yes}                                                                     {accent||}
-{accent||}   2. Yes, and don't ask again for pnpm add:* in this project                 {accent||}
+{accent||}   2. Yes, and don't ask again for `pnpm add:*` in this project               {accent||}
 {accent||}   3. No                                                                      {accent||}
 {accent||}      {muted|Press n to tell jinion what to do instead}                               {accent||}
 {accent|+------------------------------------------------------------------------------+}
@@ -68,6 +68,8 @@ When the agent wants to do something the mode doesn't allow, the permission pane
 | Yes, and don't ask again for …  | Saves the rule, such as `pnpm add:*`, for this project                   |
 | No                              | Tells the agent no. Press `n` first to say what it should do instead     |
 | `esc`                           | Stops the turn                                                           |
+
+A long command scrolls in its own area above the choices: use `shift+up` and `shift+down`, or the wheel.
 
 Rules you save live in the project's `permissions.json`. See [The ~/.jinion folder](/reference/jinion-folder).
 
@@ -105,4 +107,5 @@ In every mode, Jinion asks before:
 - a change to a file outside the project, through the file tools or through commands that write (`>`, `tee`), change
   (`rm`, `mv`, `chmod`, `sed -i`) or copy (`cp`, `ln`) there.
 
-These requests have no "don't ask again" choice. Temporary folders such as `/tmp` don't count as outside.
+These requests have no "don't ask again" choice. Temporary folders such as `/tmp` don't count as outside. In a
+[worktree](/worktrees), the project is the worktree, so a change to your own checkout asks too.

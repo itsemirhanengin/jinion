@@ -2,3 +2,46 @@
 title: Keep a dev server running
 description: Run a dev server in the background while you and the agent keep working.
 ---
+
+## 1. Start it
+
+Ask the agent:
+
+```text
+start the dev server
+```
+
+A dev server doesn't end, so the agent starts it in the background and the turn goes on. A line above the prompt shows
+it while it runs:
+
+```terminal
+ {muted|bg} {accent|[|]} pnpm dev {muted|12s · ctrl+t}
+```
+
+If the agent started it in the foreground and the turn is waiting on it, press `ctrl+b` once the working line offers it.
+See [Run work in the background](/background-tasks).
+
+## 2. Keep working against it
+
+The agent can use the running server, for example to check a change:
+
+```text
+add a /health route and check it with curl against the dev server
+```
+
+## 3. Look at its output
+
+Press `ctrl+t`, or type `/tasks`. The panel shows the latest output of the task you're on; press `enter` to see all of
+it, following its end. `esc` goes back.
+
+When the server fails, the conversation says so, such as `[!] Background pnpm dev · failed after 41s · exit 1`, and
+the agent looks at what went wrong.
+
+## 4. Stop it
+
+Press `ctrl+t`, move to the task and press `x`.
+
+<Callout>
+  The server stops on its own when you quit, start a new conversation with `/clear`, or switch to another with
+  `/resume`. `esc` stops the agent's turn but leaves the server running.
+</Callout>

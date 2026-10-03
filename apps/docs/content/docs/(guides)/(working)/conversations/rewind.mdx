@@ -3,26 +3,54 @@ title: Rewind to an earlier message
 description: Go back to before a message you sent, taking back the code, the conversation or both.
 ---
 
-Press `esc` twice, or type `/rewind`, to go back to before a message you sent. The panel lists your messages, newest
-first, with what going back would change in files.
+Press `esc` twice with the prompt empty, or type `/rewind`, to go back to before a message you sent. With text in the
+prompt, `esc` twice clears it instead. Rewind waits for the turn to end; `esc` once interrupts it.
+
+The panel lists your messages, newest first. Under the one you're on, it shows what going back would change in files.
 
 ```terminal
-{accent|+- Rewind} {muted|1 message} {accent|-----------------------------------------------------------------------+}
-{accent||} {code|> 1.} {code,bold|add rate limiting to the api}                                                        {accent||}
-{accent||}      {muted|No file changes since then}                                                          {accent||}
+{accent|+- Rewind} {muted|3 messages} {accent|----------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|add a test for the window reset}                                                     {accent||}
+{accent||}      2 files change {added|+29} {removed|-1}                                                               {accent||}
+{accent||}      {muted|src/middleware/rate-limit.test.ts, src/middleware/rate-limit.ts}                     {accent||}
+{accent||}   2. use the existing TooManyRequests error                                              {accent||}
+{accent||}   3. add rate limiting to the api                                                        {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} Enter {muted|pick ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                   {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 ```
 
-Then pick what to take back:
+A message you sent while the agent was working joined that turn, so it isn't listed.
 
-| Choice                        | What happens                                                                           |
-| ----------------------------- | -------------------------------------------------------------------------------------- |
+Press `enter` on a message, then pick what to take back:
+
+```terminal
+{accent|+- Rewind to before} {muted|add a test for the window reset} {accent|---------------------------------------+}
+{accent||} 2 files change {added|+29} {removed|-1}                                                                    {accent||}
+{accent||} {muted|src/middleware/rate-limit.test.ts, src/middleware/rate-limit.ts}                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Restore code and conversation}                                                       {accent||}
+{accent||}      {muted|Files go back, and the conversation goes on from before this message, which goes}    {accent||}
+{accent||}      {muted|back into the prompt}                                                                {accent||}
+{accent||}   2. Restore conversation                                                                {accent||}
+{accent||}      {muted|The conversation goes on from before this message; the files stay as they are}       {accent||}
+{accent||}   3. Restore code                                                                        {accent||}
+{accent||}      {muted|Files go back; the conversation goes on as it is}                                    {accent||}
+{accent||}   4. Never mind                                                                          {accent||}
+{accent||}      {muted|Back to the messages}                                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|rewind ·} Up/Down {muted|move ·} Esc {muted|back}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+| Choice                        | What happens                                                                            |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
 | Restore code and conversation | Files and the conversation go back; your message returns to the prompt to edit and send |
-| Restore conversation          | The conversation goes back; files stay as they are                                     |
-| Restore code                  | Files go back; the conversation goes on                                                |
-| Never mind                    | Back to the list                                                                       |
+| Restore conversation          | The conversation goes back; files stay as they are                                      |
+| Restore code                  | Files go back; the conversation goes on                                                 |
+| Never mind                    | Back to the list                                                                        |
+
+When no file changed since that message, only Restore conversation and Never mind are offered.
 
 <Callout type="warn">
   Only changes made through the file tools come back. Changes made by commands, such as a `git checkout`, stay.

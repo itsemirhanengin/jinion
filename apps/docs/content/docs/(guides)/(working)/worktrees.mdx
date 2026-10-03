@@ -28,6 +28,9 @@ The conversation says where it works, and the status line shows `[W] swift-runni
 commands and commits there. `/diff`, `@` file mentions and rewind all look at the worktree. Jinion asks before the
 agent writes anywhere outside it, your own checkout included.
 
+The project needs to be in a git repository with at least one commit, so a folder of several repositories gets no
+worktree. If Jinion can't make one, it says why, and the conversation works in the project folder.
+
 A worktree is a fresh checkout, so dependencies and build output aren't there yet. Ask the agent to install them first:
 
 ```text
@@ -54,7 +57,7 @@ When you start another conversation or resume one, Jinion looks at the worktree 
 | The worktree has                  | What happens                                               |
 | --------------------------------- | ---------------------------------------------------------- |
 | No changes and no new commits     | It is removed, with its branch                             |
-| Changed files or new commits      | Jinion asks whether to keep it or remove it; `esc` stays   |
+| Changed files or new commits      | Jinion asks: Keep it, or Remove it; `esc` stays            |
 
 Removing a worktree deletes its folder and its branch, with the work in them. Merge or push the branch first if you
 want to keep the work.

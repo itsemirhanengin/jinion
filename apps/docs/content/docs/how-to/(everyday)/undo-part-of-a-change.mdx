@@ -2,3 +2,48 @@
 title: Undo part of a change
 description: Take back one turn of edits, or only the code, without losing the conversation.
 ---
+
+Rewind takes the files back to how they were before a message you sent. You choose whether the conversation goes back
+too. See [Rewind to an earlier message](/conversations/rewind) for every option.
+
+## 1. Find the turn that went wrong
+
+Type `/diff` and use `left` and `right` to go through the turns, newest first. Each turn shows only the files that
+message changed. Note which message it was.
+
+## 2. Open rewind
+
+Press `esc` twice with the prompt empty, or type `/rewind`. Move to the message that caused the change. Under it,
+Jinion shows what going back would change, such as `2 files change +29 -1`.
+
+Going back to a message takes back every file change made since then, in that turn and the ones after it.
+
+## 3. Pick what to take back
+
+Press `enter`, then:
+
+- **Restore code** to undo the files and keep talking. The conversation goes on as it is, so you can tell the agent
+  what to do instead:
+
+  ```text
+  I took back your last change to the rate limiter. Keep the limit per IP, but read it from the config
+  ```
+
+- **Restore code and conversation** to start that message over. The files and the conversation go back, and your
+  message returns to the prompt to edit and send again.
+
+Jinion confirms, such as `The files went back to how they were before “add a test for the window reset”; the
+conversation goes on.`
+
+## Undo a single file
+
+Rewind works per message. To undo one file only, ask the agent:
+
+```text
+undo your changes to src/server.ts, keep the rest
+```
+
+<Callout type="warn">
+  Rewind only takes back changes made through the agent's file tools. A file changed by a command, such as a code
+  generator or `git checkout`, stays as it is.
+</Callout>

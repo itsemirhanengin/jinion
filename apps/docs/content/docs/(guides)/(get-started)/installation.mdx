@@ -9,7 +9,7 @@ description: What Jinion needs, how to install and update it, and which terminal
 | ----------- | ----------------------------------------------------------------------------------------- |
 | Node.js     | 22 or later                                                                               |
 | System      | macOS or Linux                                                                            |
-| Account     | A Claude account, signed in on this machine with `claude` → `/login`                      |
+| Account     | A Claude account on a subscription, such as Pro or Max                                    |
 | Terminal    | Any modern terminal; see [recommended terminals](#recommended-terminals) for the best fit |
 
 ## Install
@@ -29,16 +29,19 @@ It prints the version, such as `0.1.0`. If your shell says `command not found`, 
 
 ## Sign in
 
-Jinion uses the Claude login on your machine. If you have never signed in, run `claude`, type `/login` and follow the
-browser. Then start Jinion in any project:
+Start Jinion in any project:
 
 ```sh
 cd ~/code/my-project
 jinion
 ```
 
-The banner shows the account you are signed in with. To use more than one account, see
-[Switch models and accounts](/models-and-accounts#switch-accounts).
+If you have signed in to Claude on this machine before, the banner shows the account and you're done. If not, type
+`/account`, go to the account that says "Not signed in" and press `enter`. Jinion opens the sign-in in your browser;
+paste the code the browser shows.
+
+When a login expires, sign it in again from the same panel; see [Sign in again](/models-and-accounts#sign-in-again).
+To use more than one account, see [Switch models and accounts](/models-and-accounts#switch-accounts).
 
 ## Try it without a model
 
@@ -65,8 +68,9 @@ Restart running sessions to pick up the new version. Your conversations and sett
 npm rm -g @jinion/cli
 ```
 
-Jinion's data stays in `~/.jinion`. Delete that folder to remove your conversations, memory and settings too. See
-[The ~/.jinion folder](/reference/jinion-folder).
+Jinion's data stays in `~/.jinion`. Delete that folder to remove your conversations, memory and settings too. If you
+added accounts with `/account`, [remove them](/models-and-accounts#remove-an-account) first, so they are signed out.
+See [The ~/.jinion folder](/reference/jinion-folder).
 
 ## Recommended terminals
 

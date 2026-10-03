@@ -2,3 +2,43 @@
 title: Work across several repositories
 description: Open a folder of repositories and make one change that spans them.
 ---
+
+## 1. Start Jinion in the folder above them
+
+```sh
+cd ~/code/acme
+jinion
+```
+
+Jinion finds the repositories up to three folders down, such as `api/` and `web/`, skipping `node_modules`, build
+output and hidden folders. The agent knows which repositories there are and the branch each is on.
+
+## 2. Ask for the change
+
+Mention the files on both sides with `@`, so the agent starts from them:
+
+```text
+rename the user's name field to fullName in @api/src/routes/users.ts and everywhere @web/src uses it
+```
+
+The agent edits both repositories and runs git in the one a change belongs to.
+
+## 3. Review it per repository
+
+Type `/diff`. Changes are grouped under each repository, with its branch. A repository without changes is named under
+the list.
+
+To see the repositories at a glance while you work, turn on the Git segment in [`/statusline`](/status-line). It sums
+them up, such as `2 repos *5`: two repositories, five changed files.
+
+## 4. Commit in each
+
+```text
+commit the change in each repository, with the same message
+```
+
+Jinion asks before each commit, in every mode.
+
+<Callout>
+  [Worktrees](/worktrees) need the project to be a single repository, so a folder of several gets none.
+</Callout>

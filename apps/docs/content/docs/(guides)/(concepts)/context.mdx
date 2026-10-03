@@ -12,9 +12,9 @@ tools, and the whole conversation so far. It has a limit, the context window. A 
 
 ```terminal
 {accent|+- Context} {muted|Opus 5.5 · 41.0k of 200.0k tokens · 21%} {accent|----------------------------------------+}
-{accent|| ■ ■ ■} {warning|■ ■ ■ ■ ■ ■ ■}   {accent|■} System prompt       {muted|6.2k tokens · 3%}                             {accent||}
-{accent||} {warning|■ ■} {string|■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Tools               {muted|14.8k tokens · 7%}                            {accent||}
-{accent||} {string|■} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Skills              {muted|1.9k tokens · 0.9%}                           {accent||}
+{accent|| ■ ■ ■} {code|■ ■ ■ ■ ■ ■ ■}   {accent|■} System prompt       {muted|6.2k tokens · 3%}                             {accent||}
+{accent||} {heading|■ ■} {string|■ ■ ■ ■ ■ ■ ■ ■}   {code|■} System tools        {muted|14.8k tokens · 7%}                            {accent||}
+{accent||} {string|■} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■}   {heading|■} Skills              {muted|1.9k tokens · 0.9%}                           {accent||}
 {accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {string|■} Messages            {muted|18.1k tokens · 9%}                            {accent||}
 {accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■} Free space          {muted|126.0k tokens · 63%}                          {accent||}
 {accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {border|■} Autocompact buffer  {muted|33.0k tokens · 17%}                           {accent||}
@@ -39,6 +39,6 @@ what matters most and it is kept above all:
 /compact the API changes
 ```
 
-Jinion also compacts on its own as the context fills. When a fifth or less is left, the rule under the prompt says how
-much. After compacting, the conversation marks where, such as `[x] Compacted · 160.2k → 21.4k tokens`. Click it
-to see the summary.
+Jinion also compacts on its own as the context fills. When a fifth or less is left before that, the rule under the
+prompt says how much, such as `15% context left until auto-compact · /compact`. After compacting, the conversation marks
+where, such as `[x] Compacted · 160.2k → 21.4k tokens`. Click it to see the summary.

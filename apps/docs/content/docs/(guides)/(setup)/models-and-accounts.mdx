@@ -1,6 +1,6 @@
 ---
 title: Switch models and accounts
-description: Pick the model and how much effort it puts in, and switch between your signed-in accounts.
+description: Pick the model and how much effort it puts in, and add, switch, sign in again and remove Claude accounts.
 ---
 
 ## Pick a model
@@ -41,7 +41,8 @@ with hard problems.
 /effort high
 ```
 
-`/effort default` leaves it to the model. Not every model has effort levels.
+`/effort default` leaves it to the model, and `/effort` alone opens the `/model` panel. Not every model has effort
+levels; for one without, the effort row in the panel says the model has no effort setting.
 
 ## Choose for one run
 
@@ -58,28 +59,76 @@ jinion --model sonnet --effort low
 
 ## Switch accounts
 
-If you have more than one Claude login, such as a personal and a work one, `/account` switches between them.
+If you have more than one Claude login, such as a personal and a work one, `/account` lists them and switches between
+them.
 
 ```terminal
 {accent|+- Account} {muted|Claude} {accent|-------------------------------------------------------------------------+}
 {accent||} {code|> 1.} {code,bold|default}                                                                     {muted|current} {accent||}
-{accent||}      {muted|me@example.com · Max}                                                                {accent||}
+{accent||}      {muted|me@example.com · Max · 5h 8% · 7d 20% just now}                                      {accent||}
 {accent||}   2. work                                                                                {accent||}
-{accent||}      {muted|ACME · Team · me@acme.dev}                                                           {accent||}
-{accent||}   3. Add an account                                                                      {accent||}
+{accent||}      {muted|ACME · Team · me@acme.dev · 5h 31% · 7d 12% 2h ago}                                  {accent||}
+{accent||}   3. client                                                                              {accent||}
+{accent||}      {muted|Not signed in; press enter to sign in}                                               {accent||}
+{accent||}   4. Add an account                                                                      {accent||}
 {accent||}      {muted|Signs another login in, in the browser}                                              {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} Enter {muted|switch ·} l {muted|sign in again ·} d {muted|remove ·} Up/Down {muted|move ·} Esc {muted|close}                     {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 ```
 
-A conversation in progress carries on under the other account, between turns. `/account work` switches straight away,
-and later sessions start with the account you picked.
+Each account shows who it is signed in as and, once you have used it, its plan limits when last seen. Press `enter` on
+one to switch to it. A conversation in progress carries on under the other account. The switch happens between turns,
+so finish or interrupt the current one first.
 
-The banner and the status line show who you're signed in as: the organization for a team plan, such as
-`ACME · Team`, and the email for a personal one, such as `me@example.com · Max`.
+`/account work` switches straight away, and later sessions start with the account you picked.
+
+The banner shows who you're signed in as: the organization for a team plan, such as `ACME · Team`, and the email for a
+personal one, such as `me@example.com · Max`. To see it in the status line too, turn on the Account segment in
+[`/statusline`](/status-line).
 
 ## Add an account
 
-Pick **Add an account** in `/account`, or type `/account add work`. Jinion opens the sign-in in your browser; paste
-the code it shows into the panel. Jinion never sees your password. Your first login is the `default` account.
+Pick **Add an account** in `/account`, type a name such as `work` and press `enter`. Or type `/account add work`. A
+name has letters, digits, `-` or `_`, up to 32 characters.
+
+Jinion opens the sign-in in your browser:
+
+```terminal
+{accent|+- Account} {muted|work} {accent|---------------------------------------------------------------------------+}
+{accent||} Signing in to {bold|work}. Finish it in your browser.                                           {accent||}
+{accent||} {muted|If the browser didn't open: }{code|https://claude.ai/oauth/authorize?code=true&client_id=…}      {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Paste the code the browser shows: }{muted|code}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|send ·} Esc {muted|cancel}                                                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Sign in, paste the code the browser shows and press `enter`. Jinion never sees your password. When it's done, Jinion
+says `Signed in to work as me@acme.dev. Pick it here to switch.` and the account is in the list.
+
+The `default` account is the Claude login already on your machine.
+
+## Sign in again
+
+When a login has expired or was signed out, its account shows `Not signed in; press enter to sign in`. Press `enter` on
+it to sign in again. To sign in again to an account that is still signed in, for example with another login, press `l`
+on it, or type `/account add work`.
+
+Signing in again to the account in use doesn't end the conversation: Jinion says
+`Signed in to work again as me@acme.dev. The conversation carries on with the new login.` If a turn is running, the
+new login takes over when it ends.
+
+## Remove an account
+
+Move to the account in `/account` and press `d`. The row shows `press d again to remove`; press `d` again, or any other
+key to keep it. Jinion signs the account out and removes it, and says
+`Removed the work account and signed it out. Its conversations stay.`
+
+`/account remove work` does the same without asking.
+
+Two accounts can't be removed:
+
+- the one in use, which shows `in use; switch to another account first`;
+- `default`, which shows `Claude's own login stays; l signs in again`.

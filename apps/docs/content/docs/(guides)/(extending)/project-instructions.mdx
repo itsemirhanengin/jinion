@@ -31,6 +31,10 @@ Keep it short. Every line goes into every conversation.
 Both work the same. `AGENTS.md` is the name many agents read, so one file serves all of them. If your project already
 has a `CLAUDE.md`, Jinion reads it as it is.
 
+Jinion reads only these two files, in the folder you start it in. Files with these names in parent or sub folders
+aren't read, and neither is `CLAUDE.local.md` or your global `~/.claude/CLAUDE.md`. To bring the global one in,
+`/memory import` adds it as a [memory](/memory) note.
+
 ## Instructions vs memory
 
 | Project instructions                 | [Memory](/memory)                               |
