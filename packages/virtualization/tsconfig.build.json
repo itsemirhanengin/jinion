@@ -9,5 +9,7 @@
     "sourceMap": true,
     "customConditions": []
   },
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+  "include": [
+    "src"
+  ]
 }

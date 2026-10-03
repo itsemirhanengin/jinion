@@ -16,7 +16,7 @@
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixture": "tsx --tsconfig ../../tsconfig.json src/test/fixture.ts"
+    "fixture": "tsx --tsconfig ../../tsconfig.json scripts/fixture.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.286",
