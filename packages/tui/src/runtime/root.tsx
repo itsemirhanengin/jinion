@@ -1,5 +1,5 @@
-import { useState, type ReactNode } from 'react';
-import { Box, useWindowSize } from 'ink';
+import { type RefObject, useState, type ReactNode } from 'react';
+import { Box, type DOMElement, useWindowSize } from 'ink';
 import type { Theme } from '../theme/themes.js';
 import type { MouseListener } from './input.js';
 import { MouseContext } from './mouse.js';
@@ -8,6 +8,7 @@ import { NO_TERMINAL, TerminalContext, type TerminalControl } from './terminal.j
 import { ThemeContext } from './theme.js';
 import { ToastProvider } from './toast.js';
 import { ViewProvider } from './view.js';
+import { WheelZonesContext } from './wheel.js';
 import { WidthContext } from './width.js';
 
 export interface RootProps {
@@ -22,12 +23,14 @@ export function Root({ theme, mouse, terminal, children }: RootProps) {
 
   // Without `mouse`, components still listen, but no events come.
   const [silent] = useState(() => new Set<MouseListener>());
+  const [zones] = useState(() => new Set<RefObject<DOMElement | null>>());
 
   return (
     <ThemeContext.Provider value={theme}>
       <WidthContext.Provider value={columns}>
         <ViewProvider>
           <MouseContext.Provider value={mouse ?? silent}>
+            <WheelZonesContext.Provider value={zones}>
             <TerminalContext.Provider value={terminal ?? NO_TERMINAL}>
               <ToastProvider>
                 <PanelsProvider>
@@ -37,6 +40,7 @@ export function Root({ theme, mouse, terminal, children }: RootProps) {
                 </PanelsProvider>
               </ToastProvider>
             </TerminalContext.Provider>
+            </WheelZonesContext.Provider>
           </MouseContext.Provider>
         </ViewProvider>
       </WidthContext.Provider>

@@ -13,6 +13,8 @@ export const KEYS = {
   backspace: '\x7f',
   up: '\x1b[A',
   down: '\x1b[B',
+  shiftUp: '\x1b[1;2A',
+  shiftDown: '\x1b[1;2B',
   right: '\x1b[C',
   left: '\x1b[D',
   pageUp: '\x1b[5~',
@@ -37,6 +39,8 @@ export interface TestTerminal {
   multiClick(text: string, times: number, at?: number): Promise<void>;
   clipboard(): string[];
   hover(text: string, at?: number): Promise<void>;
+  /** Turns the wheel with the pointer over `text`. */
+  wheel(text: string, direction: 'up' | 'down', at?: number): Promise<void>;
   backgroundOf(text: string, at?: number): Promise<string | undefined>;
   pointer(): string;
   focus(focused: boolean): Promise<void>;
@@ -194,6 +198,7 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
     },
     clipboard: () => [...clipboard],
     hover: async (text, at = 0) => send(`\x1b[<35;${await cellOf(text, at)}M`),
+    wheel: async (text, direction, at = 0) => send(`\x1b[<${direction === 'up' ? 64 : 65};${await cellOf(text, at)}M`),
     backgroundOf: async (text, at = 0) => {
       const cell = await cellShowing(text, at);
 

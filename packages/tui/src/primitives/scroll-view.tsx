@@ -3,6 +3,7 @@ import { Box, measureElement, Text, useInput, type DOMElement } from 'ink';
 import { useVirtual } from '@jinion/virtualization';
 import { contains, screenRect } from '../runtime/click.js';
 import { useMouse } from '../runtime/mouse.js';
+import { useWheelClaimed } from '../runtime/wheel.js';
 import { useTerminal } from '../runtime/terminal.js';
 import { useTheme } from '../runtime/theme.js';
 import { hoverColor } from '../theme/themes.js';
@@ -51,6 +52,7 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
   const pointer = useRef<{ x: number; y: number }>(undefined);
   const hoverables = useRef(new Map<string, RefObject<DOMElement | null>>([[JUMP, jumpRef]]));
   const [hover] = useState(() => new Hover());
+  const claimed = useWheelClaimed();
 
   latestMaxTop.current = maxTop;
   latestTop.current = top;
@@ -131,7 +133,7 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
     pointer.current = { x: event.x, y: event.y };
 
     if (event.type === 'move') hover.set(underPointer());
-    else if (event.type === 'wheel') scrollBy(event.direction === 'up' ? -wheelStep : wheelStep);
+    else if (event.type === 'wheel' && !claimed(event.x, event.y)) scrollBy(event.direction === 'up' ? -wheelStep : wheelStep);
     else if (event.type === 'press' && jumpRef.current && event.y === screenRect(jumpRef.current).y) setTop(undefined);
   });
 

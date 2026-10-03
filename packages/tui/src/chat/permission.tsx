@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useWindowSize } from 'ink';
 import { useTheme } from '../runtime/theme.js';
 import { ChoiceList, choiceIndent, useChoiceList, type Choice } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
+import { ScrollBox } from '../primitives/scroll-box.js';
 import { ShellCommand } from '../content/shell.js';
 import { EDITOR_HINTS, OptionEditor, useOptionEditor } from './option-editor.js';
 
@@ -27,6 +28,7 @@ export interface PermissionPanelProps {
 
 export function PermissionPanel({ request, agent, onDecide, onCancel }: PermissionPanelProps) {
   const theme = useTheme();
+  const { rows } = useWindowSize();
 
   const [note, setNote] = useState('');
 
@@ -76,21 +78,24 @@ export function PermissionPanel({ request, agent, onDecide, onCancel }: Permissi
       header={
         <>
           <Prose bold>{request.title}</Prose>
-          {request.command && (
-            <Box paddingLeft={2}>
-              <ShellCommand command={request.command} />
-            </Box>
-          )}
-          {request.subject && (
-            <Box paddingLeft={2}>
-              <Prose color={theme.code}>{request.subject}</Prose>
-            </Box>
-          )}
-          {request.description && (
-            <Box paddingLeft={2}>
-              <Prose color={theme.muted}>{request.description}</Prose>
-            </Box>
-          )}
+          {/* A long command would push the choices off the screen. */}
+          <ScrollBox maxHeight={detailHeight(rows)} isActive={editing === undefined}>
+            {request.command && (
+              <Box paddingLeft={2}>
+                <ShellCommand command={request.command} />
+              </Box>
+            )}
+            {request.subject && (
+              <Box paddingLeft={2}>
+                <Prose color={theme.code}>{request.subject}</Prose>
+              </Box>
+            )}
+            {request.description && (
+              <Box paddingLeft={2}>
+                <Prose color={theme.muted}>{request.description}</Prose>
+              </Box>
+            )}
+          </ScrollBox>
           <Text> </Text>
         </>
       }
@@ -109,3 +114,5 @@ export function PermissionPanel({ request, agent, onDecide, onCancel }: Permissi
     </Panel>
   );
 }
+
+const detailHeight = (rows: number) => Math.max(5, Math.min(20, Math.floor(rows / 3)));

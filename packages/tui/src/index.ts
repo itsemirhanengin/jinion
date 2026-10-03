@@ -62,6 +62,8 @@ export type { TreeNode, TreeProps } from './primitives/tree.js';
 export { Spinner, StatusMark, toneOf } from './primitives/spinner.js';
 export type { Status } from './primitives/spinner.js';
 export { ScrollView, useHoveredItem, useScrollArea } from './primitives/scroll-view.js';
+export { ScrollBox } from './primitives/scroll-box.js';
+export type { ScrollBoxProps } from './primitives/scroll-box.js';
 export type { ScrollViewProps } from './primitives/scroll-view.js';
 export { Clickable, useHovered } from './primitives/clickable.js';
 export type { ClickableProps } from './primitives/clickable.js';
