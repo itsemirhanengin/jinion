@@ -4,7 +4,7 @@ export const MENTION = /(?<=^|\s)@(?:"[^"\n]+"|[^\s"]+)/g;
 /** How a path goes into the prompt; paths with spaces are quoted. */
 export const mention = (path: string) => (/\s/.test(path) ? `@"${path}"` : `@${path}`);
 
-const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Mentions of known names after `sigil`, such as `$design` for a skill, for prompts and user messages to highlight.
@@ -13,8 +13,8 @@ const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 export function namedMention(sigil: string, names: string[]): RegExp | undefined {
   if (names.length === 0) return undefined;
   // Longest first, so `$design-system` doesn't stop at `$design`.
-  const alternatives = [...names].sort((a, b) => b.length - a.length).map(escape).join('|');
-  return new RegExp(`(?<=^|\\s)${escape(sigil)}(?:${alternatives})(?=$|[\\s.,;!?)])`, 'g');
+  const alternatives = [...names].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
+  return new RegExp(`(?<=^|\\s)${escapeRegExp(sigil)}(?:${alternatives})(?=$|[\\s.,;!?)])`, 'g');
 }
 
 /** One pattern that matches what any of `patterns` matches, for props that take a single one. */

@@ -9,7 +9,7 @@ import {
   type SDKMessage,
   type SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
-import type { ModelOption, ModelSelection } from '@jinion/tui';
+import type { ModelOption, ModelSelection, PermissionDecision } from '@jinion/tui';
 import type {
   Agent,
   AgentAccount,
@@ -19,14 +19,17 @@ import type {
   AgentMcp,
   AgentMode,
   AgentResume,
+  PlanDecision,
   RunContext,
   SignInOptions,
 } from '../types.js';
 import { accountEnv, accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
 import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
 import { guardReason } from './guard.js';
-import { serverInfos, toAgentCommands, toClaudeServer } from './mcp.js';
+import { toAgentCommands, toClaudePrompt, type Invocations } from './commands.js';
+import { serverInfos, toClaudeServer } from './mcp.js';
 import { isMemoryTool, MEMORY_SERVER, memoryServer } from './memory.js';
+import type { DebugLog } from '../../debug.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
@@ -90,9 +93,6 @@ const ASK = ['Bash(rm *)', 'Bash(rmdir *)', 'Bash(mv *)', 'Bash(cp *)', 'Bash(se
 
 const askRules = (mode: AgentMode) => (mode === 'edits' ? ASK : []);
 
-/** `$design` or `$vercel:nextjs`, at the start or after whitespace, without trailing punctuation. */
-const MENTIONED = /(?<=^|\s)\$([\w.:-]*[\w-])/g;
-
 /**
  * Tools that never ask: they only read, or load skills and tools the user installed. They are allowed in
  * `canUseTool`, since bare allow rules would bypass it.
@@ -111,6 +111,8 @@ export interface ClaudeAgentOptions {
   memory?: MemoryStore;
   /** The MCP servers configured in files, and which are off. */
   mcp?: McpConfig;
+  /** Records what goes to Claude Code and what comes back, for `--debug`. */
+  debug?: DebugLog;
 }
 
 interface Conversation {
@@ -136,8 +138,7 @@ export class ClaudeAgent implements Agent {
   private turn?: RunContext;
   /** The MCP servers changed; Claude Code only reads them when it starts, so the next turn starts a new process. */
   private stale = false;
-  /** What Claude Code calls each skill and MCP prompt the user mentions, e.g. `user:design` for `$design`. */
-  private invocations = new Map<string, string>();
+  private invocations: Invocations = new Map();
   private stderr = '';
   private readonly permissions: ProjectPermissions;
   /** Whole tools the user allowed. They are checked here, since bare allow rules would bypass `canUseTool`. */
@@ -219,7 +220,8 @@ export class ClaudeAgent implements Agent {
       this.stale = false;
       this.restart();
     }
-    return (this.conversation ??= this.start());
+    this.conversation ??= this.start();
+    return this.conversation;
   }
 
   /** Ends the process; the next one continues the same conversation. */
@@ -277,12 +279,15 @@ export class ClaudeAgent implements Agent {
     const interrupt = () => void conversation.query.interrupt().catch(() => {});
     context.signal.addEventListener('abort', interrupt, { once: true });
 
+    const { debug } = this.options;
     try {
       const uuid = randomUUID();
+      const content = toClaudePrompt(prompt, this.invocations);
+      debug?.write('prompt', { uuid, content });
       conversation.input.push({
         type: 'user',
         uuid,
-        message: { role: 'user', content: this.invocation(prompt) },
+        message: { role: 'user', content },
         parent_tool_use_id: null,
         origin: { kind: 'human' },
       });
@@ -291,6 +296,7 @@ export class ClaudeAgent implements Agent {
         const next = await conversation.output.next();
         if (next.done) throw new Error(this.exitMessage());
         const message = next.value;
+        debug?.write('message', message);
         yield* conversation.events.map(message);
         if (message.type !== 'result' || !answers(message, uuid)) continue;
 
@@ -299,6 +305,7 @@ export class ClaudeAgent implements Agent {
         return;
       }
     } catch (error) {
+      debug?.write('error', { message: error instanceof Error ? error.message : String(error), aborted: context.signal.aborted });
       // A process that died can't take another turn; the next prompt continues the conversation in a new one.
       if (!context.signal.aborted && !(error instanceof TurnFailed)) {
         const { sessionId, cost } = conversation.events;
@@ -309,30 +316,6 @@ export class ClaudeAgent implements Agent {
       context.signal.removeEventListener('abort', interrupt);
       this.turn = undefined;
     }
-  }
-
-  /**
-   * Claude Code runs a skill or an MCP prompt only as a slash command at the start of the prompt. A prompt that starts
-   * with its only skill goes as that command, `$design brief` as `/user:design brief`, and an MCP prompt moves to the
-   * front wherever it is. Other skills stay where the user put them, with a note to load them with the Skill tool.
-   */
-  private invocation(prompt: string) {
-    const mentioned = [...prompt.matchAll(MENTIONED)].flatMap((match) => {
-      const target = this.invocations.get(match[1]!);
-      return target ? [{ name: match[1]!, target, index: match.index, length: match[0].length }] : [];
-    });
-    if (mentioned.length === 0) return prompt;
-    const without = (mention: (typeof mentioned)[number]) =>
-      `${prompt.slice(0, mention.index)}${prompt.slice(mention.index + mention.length)}`.replace(/\s+/g, ' ').trim();
-
-    const mcp = mentioned.find((mention) => mention.target.startsWith('mcp__'));
-    const skills = mentioned.filter((mention) => !mention.target.startsWith('mcp__'));
-    if (!mcp && skills.length === 1 && skills[0]!.index === 0) return `/${skills[0]!.target}${prompt.slice(skills[0]!.length)}`;
-
-    const text = mcp ? `/${mcp.target} ${without(mcp)}`.trimEnd() : prompt;
-    if (skills.length === 0) return text;
-    const list = skills.map((skill) => `$${skill.name} is ${skill.target}`).join(', ');
-    return `${text}\n\n<system-reminder>The user picked skills for this request with $: ${list}. Load each with the Skill tool before you start.</system-reminder>`;
   }
 
   reset(resume?: AgentResume) {
@@ -359,9 +342,21 @@ export class ClaudeAgent implements Agent {
     this.stderr = '';
     const saved = this.permissions.list();
     for (const rule of saved) if (!rule.includes('(')) this.allowedTools.add(rule);
-    const { memory, mcp } = this.options;
+    const { memory, mcp, debug } = this.options;
     const servers = (mcp?.servers() ?? []).filter((server) => mcp!.isEnabled(server));
     const disabled = mcp?.disabled() ?? [];
+    const plugins = [...skillPlugins(cwd), ...claudePlugins(cwd)];
+    debug?.write('start', {
+      cwd,
+      model,
+      effort,
+      mode,
+      account: this.account,
+      resume: resume?.sessionId,
+      servers: servers.map((server) => server.name),
+      disabled,
+      plugins: plugins.map((plugin) => plugin.path),
+    });
     const conversation = query({
       prompt: input,
       options: {
@@ -380,7 +375,7 @@ export class ClaudeAgent implements Agent {
         },
         // Turns off, by name, the servers Claude Code finds itself. Only an admin's policy could turn them back on.
         managedSettings: disabled.length > 0 ? { deniedMcpServers: disabled.map((serverName) => ({ serverName })) } : undefined,
-        plugins: [...skillPlugins(cwd), ...claudePlugins(cwd)],
+        plugins,
         settings: {
           // Plugins' hooks would add context of their own to every conversation. Jinion's hooks below still run.
           disableAllHooks: true,
@@ -398,6 +393,7 @@ export class ClaudeAgent implements Agent {
         env: { ...env, ...accountEnv(this.account), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
         stderr: (data) => {
           this.stderr = (this.stderr + data).slice(-2000);
+          debug?.write('stderr', data);
         },
       },
     });
@@ -440,7 +436,7 @@ export class ClaudeAgent implements Agent {
 
     if (name === 'ExitPlanMode') {
       // Approval moves the session to the mode the user picked; "keep planning" sends the note back to the model.
-      let decision;
+      let decision: PlanDecision;
       try {
         decision = await turn.approvePlan(['auto', 'edits', 'manual']);
       } catch {
@@ -459,7 +455,7 @@ export class ClaudeAgent implements Agent {
     }
 
     const rules = alwaysRules(options);
-    let decision;
+    let decision: PermissionDecision;
     try {
       decision = await turn.approve(toPermissionRequest(name, input, options, rules));
     } catch {

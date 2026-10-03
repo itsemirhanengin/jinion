@@ -13,7 +13,10 @@
     "dev": "tsx --tsconfig ../../tsconfig.json --conditions=development src/main.tsx",
     "build": "tsc -p tsconfig.build.json",
     "start": "node bin/jinion.js",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fixture": "tsx --tsconfig ../../tsconfig.json src/test/fixture.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.286",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
-    "tsx": "^4.23.15"
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.3"
   }
 }

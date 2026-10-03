@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { isAbsolute, relative } from 'node:path';
 import type {
   SDKAssistantMessage,
@@ -8,6 +9,7 @@ import type {
 } from '@anthropic-ai/claude-agent-sdk';
 import type { Question, QuestionAnswer, TodoItem } from '@jinion/tui';
 import type { AgentEvent, AgentMode, GrepMatch, LimitWindow, ToolCall, Usage } from '../types.js';
+import { isPlanFile } from './guard.js';
 import { MEMORY_SERVER } from './memory.js';
 import { skillLabel } from './plugins.js';
 
@@ -52,6 +54,9 @@ export class ClaudeEvents {
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
   private model?: string;
   private session?: string;
+  /** The plan Claude Code wrote last in plan mode. */
+  private planFile?: string;
+  private planText?: string;
   private last?: AgentEvent['type'];
 
   constructor(
@@ -157,11 +162,14 @@ export class ClaudeEvents {
       case 'Bash':
         return { name: 'bash', input: { command: text(input.command), timeoutMs: number(input.timeout) ?? 120_000 } };
       case 'Edit':
+        // The plan shows when the agent asks to go ahead with it, not each time it is written.
+        if (this.isPlan(input)) return undefined;
         return {
           name: 'edit',
           input: { path: this.path(input.file_path), patch: replacePatch(text(input.old_string), text(input.new_string)) },
         };
       case 'Write':
+        if (this.isPlan(input)) return undefined;
         return { name: 'edit', input: { path: this.path(input.file_path), patch: addPatch(text(input.content)), created: true } };
       case 'AskUserQuestion':
         return { name: 'ask', input: { questions: toQuestions(input.questions as ClaudeQuestion[]) } };
@@ -169,7 +177,8 @@ export class ClaudeEvents {
       case 'Task':
         return { name: 'other', input: { title: 'Agent', detail: text(input.description) } };
       case 'ExitPlanMode':
-        return { name: 'plan', input: { plan: text(input.plan) } };
+        // Claude Code now passes the plan in its plan file rather than in the call.
+        return { name: 'plan', input: { plan: text(input.plan) || this.readPlan() } };
       case 'Skill':
         return { name: 'other', input: { title: 'Skill', detail: skillLabel(text(input.skill)) } };
       case 'ToolSearch':
@@ -232,6 +241,7 @@ export class ClaudeEvents {
       }
       case 'Edit':
       case 'Write': {
+        if (this.isPlan(call.input)) return;
         const hunks = Array.isArray(data?.structuredPatch) ? (data.structuredPatch as Hunk[]) : [];
         yield { type: 'tool-end', id, ok, result: hunks.length > 0 ? { patch: hunksToPatch(hunks) } : {} };
         return;
@@ -282,6 +292,25 @@ export class ClaudeEvents {
     const window = (this.model && models[this.model]?.contextWindow) || Object.values(models)[0]?.contextWindow;
     if (window) this.usage.contextWindow = window;
     yield { type: 'usage', usage: { ...this.usage } };
+  }
+
+  /** Whether a file tool works on Claude Code's plan file, which is remembered for `ExitPlanMode`. */
+  private isPlan(input: Input) {
+    const path = text(input.file_path);
+    if (!path || !isPlanFile(path)) return false;
+    this.planFile = path;
+    if (typeof input.content === 'string') this.planText = input.content;
+    else if (this.planText !== undefined) this.planText = this.planText.replace(text(input.old_string), text(input.new_string));
+    return true;
+  }
+
+  /** The plan file as it is now, or as the calls wrote it when it can't be read, e.g. in a replayed conversation. */
+  private readPlan() {
+    try {
+      return this.planFile ? readFileSync(this.planFile, 'utf8') : '';
+    } catch {
+      return this.planText ?? '';
+    }
   }
 
   /** Paths inside the project are shown relative to it. */

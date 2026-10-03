@@ -11,7 +11,7 @@ apps/cli        @jinion/cli   the `jinion` command
 packages/tui    @jinion/tui   terminal UI framework on top of Ink and React
 ```
 
-Turborepo runs `build` and `typecheck` across the workspace. Packages export their TypeScript sources under the `development` condition, so `pnpm dev` and `pnpm typecheck` work without building first.
+Turborepo runs `build`, `typecheck` and `test` across the workspace. Packages export their TypeScript sources under the `development` condition, so `pnpm dev`, `pnpm typecheck` and `pnpm test` work without building first.
 
 ## Getting started
 
@@ -23,7 +23,11 @@ pnpm dev                 # run from source, on this repo
 pnpm dev --demo          # the scripted demo
 pnpm build && pnpm start # run the compiled CLI
 pnpm typecheck
+pnpm test                # every package's tests; pnpm test:watch while working
+pnpm lint                # Biome; pnpm lint:fix applies the safe fixes
 ```
+
+CI runs lint, typecheck, test and build on every push to `main` and every pull request (`.github/workflows/ci.yml`).
 
 To use `jinion` in any project, build it once and link the command into a directory on your `PATH`:
 
@@ -38,6 +42,16 @@ The command runs the compiled CLI, so run `pnpm build` again after changing Jini
 `/model` switches the model and its effort from a list the agent provides, here the models your Claude account can use. `/model sonnet` and `/effort high` switch directly. The pick applies to the running conversation from the next request, and later runs start with it. `jinion --model <alias|id>` and `--effort <level>` (or `JINION_MODEL`, `JINION_EFFORT`) override it for one run; without any choice it's `opus` at the model's default effort.
 
 `jinion --theme light|dark` (or `JINION_THEME`) skips terminal background detection.
+
+`jinion --debug` (or `JINION_DEBUG=1`) writes what goes to Claude Code and what comes back to `~/.jinion/logs/<time>.jsonl`, one JSON line per record: how each process started, the prompts sent, every SDK message, Claude Code's stderr and how turns failed. The path is printed on exit.
+
+## Tests
+
+Tests sit next to the code as `*.test.ts(x)` and run with Vitest.
+
+- **Logic** is tested directly: the event mapper, the guard, commands and `$` mentions, MCP config, skill plugins, memory, sessions and completions. Anything that touches files runs in `sandbox()` (`apps/cli/src/test/sandbox.ts`), a temporary home and project, so tests never see the real `~/.claude` or `~/.jinion`.
+- **The screen** is tested with `renderTerminal()` from `@jinion/tui/testing`: it mounts a component or the whole app in an emulated terminal, types and presses keys, and reads back the screen and its colors. `app.test.tsx` runs the app with the demo agent at `pace` 0, so the full tour, questions included, takes about a second.
+- **Claude Code's messages** are replayed from fixtures of real conversations in `apps/cli/src/agent/claude/fixtures`, and the events they map to are compared with snapshots. To add one, have the conversation with `jinion --debug`, then `pnpm --filter @jinion/cli fixture <log> <name>` and add the name to `events.test.ts`. The script replaces the project and home paths and your user name, drops the commands and progress messages, and keeps only what the mapper reads of the init message. After a deliberate change to the mapper, `pnpm --filter @jinion/cli test -u` updates the snapshots; read the diff first.
 
 In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 

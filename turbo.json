@@ -5,6 +5,20 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
-    "typecheck": {}
+    "typecheck": {},
+    "test": {
+      "dependsOn": ["transit"]
+    },
+    "test:watch": {
+      "cache": false,
+      "persistent": true
+    },
+    "transit": {
+      "dependsOn": ["^transit"]
+    },
+    "//#lint": {},
+    "//#lint:fix": {
+      "cache": false
+    }
   }
 }

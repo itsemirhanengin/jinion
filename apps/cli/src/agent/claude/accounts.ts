@@ -12,7 +12,8 @@ const VALID_NAME = /^[a-z0-9][a-z0-9_-]{0,31}$/i;
 
 const PASTE_PROMPT = 'Paste code here if prompted';
 
-const root = () => join(jinionHome(), 'accounts', 'claude');
+/** Where the accounts other than `default` keep their Claude Code config, one folder each. */
+export const accountsDir = () => join(jinionHome(), 'accounts', 'claude');
 
 const defaultConfigDir = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
 
@@ -20,7 +21,7 @@ const defaultConfigDir = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), 
  * Each account is a Claude Code config directory of its own, which keeps its own login. Jinion never sees the
  * credentials; Claude Code signs in through its own flow and stores them.
  */
-export const configDirOf = (name: string) => (name === DEFAULT_ACCOUNT ? undefined : join(root(), name));
+export const configDirOf = (name: string) => (name === DEFAULT_ACCOUNT ? undefined : join(accountsDir(), name));
 
 /** The environment Claude Code runs with for `name`. */
 export function accountEnv(name: string) {
@@ -29,8 +30,8 @@ export function accountEnv(name: string) {
 }
 
 export function accountNames() {
-  const named = existsSync(root())
-    ? readdirSync(root(), { withFileTypes: true })
+  const named = existsSync(accountsDir())
+    ? readdirSync(accountsDir(), { withFileTypes: true })
         .filter((entry) => entry.isDirectory() && VALID_NAME.test(entry.name) && entry.name !== DEFAULT_ACCOUNT)
         .map((entry) => entry.name)
         .sort()

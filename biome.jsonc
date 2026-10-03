@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "includes": ["**", "!**/dist", "!**/node_modules", "!**/.turbo", "!**/fixtures", "!**/__snapshots__"]
+  },
+  // Lint only for now; formatting everything at once would rewrite most files.
+  "formatter": { "enabled": false },
+  "assist": { "enabled": false },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "style": {
+        // `noUncheckedIndexedAccess` is on, and `!` marks the places where an index is known to exist.
+        "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        // Terminal escape sequences are what the input and output code matches.
+        "noControlCharactersInRegex": "off",
+        // Rows of static text in Ink often have nothing better to key by.
+        "noArrayIndexKey": "off",
+        // `${VAR}` is the syntax of .mcp.json files.
+        "noTemplateCurlyInString": "off",
+        // Callbacks that may return `false` to say they handled something, and nothing otherwise.
+        "noConfusingVoidType": "off"
+      },
+      "correctness": {
+        // Effects that run once on mount, and memos keyed by a value derived from their inputs, are deliberate here.
+        "useExhaustiveDependencies": "off"
+      }
+    }
+  }
+}

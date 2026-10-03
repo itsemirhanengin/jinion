@@ -104,6 +104,23 @@ const slash: CompletionSource = (value) =>
     : undefined;
 ```
 
+## Testing
+
+`@jinion/tui/testing` mounts a component the way `run()` does, in an emulated terminal (xterm's headless one) instead of the real one. Input goes through the same mouse filter as in an app, and Ink stays interactive in CI too.
+
+```tsx
+import { KEYS, renderTerminal } from '@jinion/tui/testing';
+
+const terminal = renderTerminal(<App />, { columns: 80, rows: 24 });
+await terminal.type('$de');
+await terminal.press(KEYS.tab, KEYS.enter);
+const screen = await terminal.waitFor('Done');  // fails with the screen when it never shows up
+expect(await terminal.colorOf('$design')).toBe(darkTheme.code);
+terminal.unmount();
+```
+
+`type` sends one character at a time, as a person would. Colors need `FORCE_COLOR=3` in the test environment, since tests don't run in a TTY. The entry is only exported under the `development` condition, so it never ships in the build.
+
 ## Components
 
 Primitives

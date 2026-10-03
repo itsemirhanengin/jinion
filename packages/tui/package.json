@@ -10,12 +10,19 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "development": "./src/testing/index.tsx"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "ink": "^7.1.1",
@@ -27,6 +34,8 @@
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
-    "react": "^19.3.0"
+    "@xterm/headless": "^6.0.0",
+    "react": "^19.3.0",
+    "vitest": "^5.0.3"
   }
 }

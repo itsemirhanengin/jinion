@@ -1,6 +1,6 @@
-import type { McpServerConfig, McpServerStatus, SlashCommand } from '@anthropic-ai/claude-agent-sdk';
+import type { McpServerConfig, McpServerStatus } from '@anthropic-ai/claude-agent-sdk';
 import type { McpConfig, McpSource, McpTransport } from '../../mcp/config.js';
-import type { AgentCommand, McpServerInfo } from '../types.js';
+import type { McpServerInfo } from '../types.js';
 import { MEMORY_SERVER } from './memory.js';
 
 export function toClaudeServer(transport: McpTransport): McpServerConfig {
@@ -14,7 +14,8 @@ const SOURCES: Record<McpSource, string> = { jinion: 'jinion', claude: 'claude c
 const CONNECTOR = /^claude\.ai (.+)$/;
 const PLUGIN_SERVER = /^plugin:([^:]+):(.+)$/;
 
-const labelOf = (name: string) => CONNECTOR.exec(name)?.[1] ?? PLUGIN_SERVER.exec(name)?.[2] ?? name;
+/** `Linear` for `claude.ai Linear`, `vercel` for `plugin:vercel:vercel`. */
+export const labelOf = (name: string) => CONNECTOR.exec(name)?.[1] ?? PLUGIN_SERVER.exec(name)?.[2] ?? name;
 
 function sourceOf(name: string) {
   if (CONNECTOR.test(name)) return 'claude.ai';
@@ -76,53 +77,4 @@ function targetOf(config: unknown) {
   if (typeof url === 'string') return url;
   if (typeof command === 'string') return [command, ...(Array.isArray(args) ? args : [])].join(' ');
   return undefined;
-}
-
-/** Claude Code lists an MCP prompt as `claude.ai Figma:create_rules (MCP)`, and runs it as `/mcp__claude_ai_Figma__create_rules`. */
-const MCP_PROMPT = /^(.+):([^:]+) \(MCP\)$/;
-
-/** The part of a tool or command name Claude Code makes from a server's name. */
-const normalized = (server: string) => server.replace(/[^a-zA-Z0-9_-]/g, '_');
-
-/** Which comes first when two want the same short name: the project's, the user's, plugins', then MCP prompts. */
-const PRECEDENCE = ['project', 'user', 'plugin', 'mcp'] as const;
-
-/**
- * Claude Code's commands as Jinion's, with what to send Claude Code for each. Each gets its short name, `design` for
- * `user:design` or `nextjs` for `vercel:nextjs`, unless one that comes first already has it.
- */
-export function toAgentCommands(list: SlashCommand[]) {
-  const entries = list
-    .filter((command) => !command.builtin)
-    .map((command) => {
-      const prompt = MCP_PROMPT.exec(command.name);
-      if (prompt) {
-        const server = labelOf(prompt[1]!).replace(/\s+/g, '-');
-        const kind = 'mcp' as const;
-        return { command, kind, group: server, short: prompt[2]!, full: `${server}:${prompt[2]}`, target: `mcp__${normalized(prompt[1]!)}__${prompt[2]}` };
-      }
-      const colon = command.name.indexOf(':');
-      const plugin = colon === -1 ? undefined : command.name.slice(0, colon);
-      const kind: (typeof PRECEDENCE)[number] = plugin === 'project' || plugin === 'user' ? plugin : 'plugin';
-      const short = colon === -1 ? command.name : command.name.slice(colon + 1);
-      return { command, kind, group: plugin ?? 'plugin', short, full: command.name, target: command.name };
-    })
-    .sort((a, b) => PRECEDENCE.indexOf(a.kind) - PRECEDENCE.indexOf(b.kind));
-
-  const invocations = new Map<string, string>();
-  const commands: AgentCommand[] = [];
-  for (const { command, kind, group, short, full, target } of entries) {
-    const name = invocations.has(short) ? full : short;
-    if (invocations.has(name) || /\s/.test(name)) continue;
-    invocations.set(name, target);
-    commands.push({
-      name,
-      // Claude Code puts a plugin's name before its skills' descriptions; the pickers show it as the group instead.
-      description: command.description.replace(/^\([^)]+\) /, ''),
-      source: kind === 'mcp' ? 'mcp' : 'skill',
-      group,
-      argumentHint: command.argumentHint || undefined,
-    });
-  }
-  return { commands, invocations };
 }

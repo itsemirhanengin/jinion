@@ -1,10 +1,19 @@
 import { homedir } from 'node:os';
-import { isAbsolute, join, relative, resolve } from 'node:path';
+import { isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { accountsDir } from './accounts.js';
 
 type Input = Record<string, unknown>;
 
-/** Claude Code writes plans here in plan mode; that's its own bookkeeping, not a change to the user's files. */
-const PLANS = join(homedir(), '.claude', 'plans');
+/**
+ * Claude Code writes plans to `plans/` in its config folder in plan mode, `~/.claude` or an account's; that's its own
+ * bookkeeping, not a change to the user's files.
+ */
+export function isPlanFile(path: string) {
+  const configs = [join(homedir(), '.claude'), process.env.CLAUDE_CONFIG_DIR].filter((folder) => folder !== undefined);
+  if (configs.some((folder) => inside(path, join(folder, 'plans')))) return true;
+  const [account, folder, ...rest] = relative(accountsDir(), resolve(path)).split(sep);
+  return account !== '..' && !isAbsolute(account ?? '') && folder === 'plans' && rest.length > 0;
+}
 
 const FILE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit']);
 
@@ -22,7 +31,7 @@ const RULES: { reason: string; matches(tool: string, input: Input, cwd: string):
     matches: (tool, input, cwd) => {
       if (!FILE_TOOLS.has(tool)) return false;
       const path = typeof input.file_path === 'string' ? input.file_path : typeof input.notebook_path === 'string' ? input.notebook_path : '';
-      return path !== '' && !inside(path, cwd) && !inside(path, PLANS);
+      return path !== '' && !inside(path, cwd) && !isPlanFile(path);
     },
   },
 ];

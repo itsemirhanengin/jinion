@@ -6,6 +6,7 @@ import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
 import type { Agent } from './agent/types.js';
 import { App } from './app.js';
+import { DebugLog } from './debug.js';
 import { McpConfig } from './mcp/config.js';
 import { MemoryStore } from './memory/store.js';
 import { resumeOf } from './session.js';
@@ -23,6 +24,7 @@ Options:
   -m, --model <model>   Claude model alias or id (or JINION_MODEL); /model's last pick, else opus
   -e, --effort <level>  Effort level, e.g. low, medium, high, xhigh, max (or JINION_EFFORT)
   --demo                Play the scripted demo instead of running Claude
+  --debug               Log what goes to Claude Code and back to ~/.jinion/logs (or JINION_DEBUG=1)
   --theme <light|dark>  Skip background detection (or set JINION_THEME)
   -v, --version         Print the version
   -h, --help            Show this help`;
@@ -33,6 +35,7 @@ const { values } = parseArgs({
     model: { type: 'string', short: 'm' },
     effort: { type: 'string', short: 'e' },
     demo: { type: 'boolean' },
+    debug: { type: 'boolean' },
     theme: { type: 'string' },
     version: { type: 'boolean', short: 'v' },
     help: { type: 'boolean', short: 'h' },
@@ -61,9 +64,10 @@ const cwd = process.env.INIT_CWD ?? process.cwd();
 const { mode } = loadProjectSettings(cwd);
 const account = loadSettings().accounts?.Claude;
 const memory = new MemoryStore(cwd);
+const debug = values.debug || process.env.JINION_DEBUG === '1' ? new DebugLog() : undefined;
 const agent: Agent = values.demo
   ? new ScriptedAgent(scenarios, demoCommands)
-  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd) });
+  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd), debug });
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];
 const model = values.model ?? process.env.JINION_MODEL;
@@ -85,3 +89,4 @@ const instance = await run(<App agent={agent} info={info} sessions={sessions} me
 });
 await instance.waitUntilExit();
 agent.close?.();
+if (debug) console.log(`Debug log: ${debug.path}`);

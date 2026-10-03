@@ -1,0 +1,82 @@
+import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk';
+import type { AgentCommand } from '../types.js';
+import { labelOf } from './mcp.js';
+
+/** Claude Code lists an MCP prompt as `claude.ai Figma:create_rules (MCP)`, and runs it as `/mcp__claude_ai_Figma__create_rules`. */
+const MCP_PROMPT = /^(.+):([^:]+) \(MCP\)$/;
+
+/** The part of a tool or command name Claude Code makes from a server's name. */
+const normalized = (server: string) => server.replace(/[^a-zA-Z0-9_-]/g, '_');
+
+/** Which comes first when two want the same short name: the project's, the user's, plugins', then MCP prompts. */
+const PRECEDENCE = ['project', 'user', 'plugin', 'mcp'] as const;
+
+/** What Claude Code calls each skill and MCP prompt the user mentions, e.g. `user:design` for `$design`. */
+export type Invocations = Map<string, string>;
+
+/**
+ * Claude Code's commands as Jinion's, with what to send Claude Code for each. Each gets its short name, `design` for
+ * `user:design` or `nextjs` for `vercel:nextjs`, unless one that comes first already has it.
+ */
+export function toAgentCommands(list: SlashCommand[]) {
+  const entries = list
+    .filter((command) => !command.builtin)
+    .map((command) => {
+      const prompt = MCP_PROMPT.exec(command.name);
+      if (prompt) {
+        const server = labelOf(prompt[1]!).replace(/\s+/g, '-');
+        const kind = 'mcp' as const;
+        return { command, kind, group: server, short: prompt[2]!, full: `${server}:${prompt[2]}`, target: `mcp__${normalized(prompt[1]!)}__${prompt[2]}` };
+      }
+      const colon = command.name.indexOf(':');
+      const plugin = colon === -1 ? undefined : command.name.slice(0, colon);
+      const kind: (typeof PRECEDENCE)[number] = plugin === 'project' || plugin === 'user' ? plugin : 'plugin';
+      const short = colon === -1 ? command.name : command.name.slice(colon + 1);
+      return { command, kind, group: plugin ?? 'plugin', short, full: command.name, target: command.name };
+    })
+    .sort((a, b) => PRECEDENCE.indexOf(a.kind) - PRECEDENCE.indexOf(b.kind));
+
+  const invocations: Invocations = new Map();
+  const commands: AgentCommand[] = [];
+  for (const { command, kind, group, short, full, target } of entries) {
+    const name = invocations.has(short) ? full : short;
+    if (invocations.has(name) || /\s/.test(name)) continue;
+    invocations.set(name, target);
+    commands.push({
+      name,
+      // Claude Code puts a plugin's name before its skills' descriptions; the pickers show it as the group instead.
+      description: command.description.replace(/^\([^)]+\) /, ''),
+      source: kind === 'mcp' ? 'mcp' : 'skill',
+      group,
+      argumentHint: command.argumentHint || undefined,
+    });
+  }
+  return { commands, invocations };
+}
+
+/** `$design` or `$vercel:nextjs`, at the start or after whitespace, without trailing punctuation. */
+const MENTIONED = /(?<=^|\s)\$([\w.:-]*[\w-])/g;
+
+/**
+ * Claude Code runs a skill or an MCP prompt only as a slash command at the start of the prompt. A prompt that starts
+ * with its only skill goes as that command, `$design brief` as `/user:design brief`, and an MCP prompt moves to the
+ * front wherever it is. Other skills stay where the user put them, with a note to load them with the Skill tool.
+ */
+export function toClaudePrompt(prompt: string, invocations: Invocations) {
+  const mentioned = [...prompt.matchAll(MENTIONED)].flatMap((match) => {
+    const target = invocations.get(match[1]!);
+    return target ? [{ name: match[1]!, target, index: match.index, length: match[0].length }] : [];
+  });
+  if (mentioned.length === 0) return prompt;
+  const without = (mention: (typeof mentioned)[number]) =>
+    `${prompt.slice(0, mention.index)}${prompt.slice(mention.index + mention.length)}`.replace(/\s+/g, ' ').trim();
+
+  const mcp = mentioned.find((mention) => mention.target.startsWith('mcp__'));
+  const skills = mentioned.filter((mention) => !mention.target.startsWith('mcp__'));
+  if (!mcp && skills.length === 1 && skills[0]!.index === 0) return `/${skills[0]!.target}${prompt.slice(skills[0]!.length)}`;
+
+  const text = mcp ? `/${mcp.target} ${without(mcp)}`.trimEnd() : prompt;
+  if (skills.length === 0) return text;
+  const list = skills.map((skill) => `$${skill.name} is ${skill.target}`).join(', ');
+  return `${text}\n\n<system-reminder>The user picked skills for this request with $: ${list}. Load each with the Skill tool before you start.</system-reminder>`;
+}

@@ -20,6 +20,8 @@ export class ScriptedAgent implements Agent {
   constructor(
     private readonly scenarios: Scenario[],
     private readonly agentCommands: AgentCommand[] = [],
+    /** How long its pauses take: 1 plays like a real agent, 0 as fast as possible, for tests. */
+    private readonly pace = 1,
   ) {}
 
   async commands() {
@@ -32,7 +34,7 @@ export class ScriptedAgent implements Agent {
     if (!scenario) throw new Error('No scenario matches this prompt.');
 
     yield { type: 'title', title: typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt) };
-    yield* scenario.play(new Script(context, this.usage), prompt);
+    yield* scenario.play(new Script(context, this.usage, this.pace), prompt);
   }
 
   reset() {
@@ -56,6 +58,7 @@ export class Script {
   constructor(
     private readonly context: RunContext,
     private readonly totals: Usage,
+    private readonly pace = 1,
   ) {}
 
   think(text: string) {
@@ -66,6 +69,7 @@ export class Script {
     return this.stream('text', text);
   }
 
+  // biome-ignore lint/correctness/useYield: scenarios `yield*` every step, pauses included, to keep one shape.
   async *pause(ms: number): AsyncGenerator<AgentEvent> {
     await this.wait(ms);
   }
@@ -124,7 +128,7 @@ export class Script {
       const timer = setTimeout(() => {
         signal.removeEventListener('abort', onAbort);
         resolve();
-      }, ms);
+      }, ms * this.pace);
       const onAbort = () => {
         clearTimeout(timer);
         reject(signal.reason);

@@ -58,7 +58,7 @@ function frontmatter(text: string) {
   const fields: Record<string, string> = {};
   for (const line of match[1]!.split('\n')) {
     const field = /^\s*([\w-]+):\s*(.*)$/.exec(line);
-    if (field && field[2]) fields[field[1]!] = field[2].replace(/^["']|["']$/g, '');
+    if (field?.[2]) fields[field[1]!] = field[2].replace(/^["']|["']$/g, '');
   }
   return { fields, body: match[2]!.trim() };
 }

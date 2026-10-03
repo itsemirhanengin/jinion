@@ -10,9 +10,14 @@
     "dev": "pnpm --filter @jinion/cli dev",
     "start": "pnpm --filter @jinion/cli start",
     "build": "turbo run build",
-    "typecheck": "turbo run typecheck"
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
     "@types/node": "^24.0.0",
     "turbo": "^2.11.6",
     "typescript": "^7.0.2"
