@@ -7,7 +7,7 @@ Jinion keeps everything on your machine, in `~/.jinion`. Set `JINION_HOME` to us
 
 ```text
 ~/.jinion/
-|-- settings.json          the last model and account, the status line, servers turned off
+|-- settings.json          the last model and account, the status line, servers turned off, worktrees
 |-- limits.json            the plan limits last seen, per account
 |-- mcp.json               MCP servers of Jinion's own
 |-- memory/                user notes, one Markdown file each
@@ -20,7 +20,8 @@ Jinion keeps everything on your machine, in `~/.jinion`. Set `JINION_HOME` to us
         |-- settings.json      the mode, and the .mcp.json servers turned on
         |-- permissions.json   the "don't ask again" rules
         |-- memory/            project notes
-        '-- sessions/          one JSON file per conversation
+        |-- sessions/          one JSON file per conversation
+        '-- worktrees/         the conversations' git worktrees
 ```
 
 A project's folder is named after its path, with every character other than letters and digits turned into `-`.
@@ -29,7 +30,7 @@ A project's folder is named after its path, with every character other than lett
 
 | Path                               | What it holds                                                                          |
 | ---------------------------------- | -------------------------------------------------------------------------------------- |
-| `settings.json`                    | The model and account you picked last, the status line, and MCP servers you turned off |
+| `settings.json`                    | The model and account you picked last, the status line, MCP servers you turned off, and whether [worktrees](/worktrees) are on |
 | `limits.json`                      | Each account's plan limits when it was last used, shown in `/account`                  |
 | `mcp.json`                         | MCP servers only Jinion uses, in the same format as `.mcp.json`                        |
 | `memory/`                          | [User notes](/memory), as Markdown files you can edit                                  |
@@ -41,6 +42,7 @@ A project's folder is named after its path, with every character other than lett
 | `projects/<project>/permissions.json` | Rules you saved with "don't ask again"                                              |
 | `projects/<project>/memory/`       | [Project notes](/memory)                                                               |
 | `projects/<project>/sessions/`     | The project's [conversations](/conversations/resume)                                          |
+| `projects/<project>/worktrees/`    | The [worktrees](/worktrees) its conversations work in                                  |
 
 ## Back up or move
 

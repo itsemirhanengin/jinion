@@ -4,6 +4,7 @@
     "prompting",
     "conversations",
     "review-changes",
-    "background-tasks"
+    "background-tasks",
+    "worktrees"
   ]
 }

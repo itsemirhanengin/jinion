@@ -1,0 +1,89 @@
+---
+title: Work in parallel with worktrees
+description: Give each new conversation its own git worktree and branch, so several conversations can change one repository at once.
+---
+
+Two conversations that edit the same folder step on each other. With worktrees on, each new conversation works in a
+git worktree of its own: a separate checkout of the repository, on its own branch, sharing the repository's history.
+Your own checkout stays as it is.
+
+Worktrees are off until you turn them on.
+
+## Turn worktrees on
+
+Press `ctrl+g`, or type `/worktree on`. The setting stays on in every project until you turn it off.
+
+If you haven't sent a message in this conversation yet, it gets a worktree with its first message. Otherwise the next
+conversation does; `/clear` starts one.
+
+When that first message goes out, Jinion:
+
+1. Makes a worktree in `~/.jinion/projects/<project>/worktrees/`, named like `swift-running-fox`. Your repository gets
+   no new folder, so there is nothing to add to `.gitignore`.
+2. Puts it on a new branch, `worktree-swift-running-fox`, made from the remote's default branch, such as
+   `origin/main`. Without a remote, the branch starts from the commit you are on.
+3. Copies the ignored files that `.worktreeinclude` lists. See [Bring along ignored files](#bring-along-ignored-files).
+
+The conversation says where it works, and the status line shows `[W] swift-running-fox`. The agent edits, runs
+commands and commits there. `/diff`, `@` file mentions and rewind all look at the worktree. Jinion asks before the
+agent writes anywhere outside it, your own checkout included.
+
+A worktree is a fresh checkout, so dependencies and build output aren't there yet. Ask the agent to install them first:
+
+```text
+install the dependencies, then add a /health route
+```
+
+## Bring along ignored files
+
+Files git ignores, such as `.env`, aren't part of a checkout. To copy them into every new worktree, list them in a
+`.worktreeinclude` file at the root of the repository, in `.gitignore` syntax:
+
+```text
+.env
+.env.local
+config/secrets.json
+```
+
+Only files that match a line and are ignored by git are copied.
+
+## Leave a conversation
+
+When you start another conversation or resume one, Jinion looks at the worktree first:
+
+| The worktree has                  | What happens                                               |
+| --------------------------------- | ---------------------------------------------------------- |
+| No changes and no new commits     | It is removed, with its branch                             |
+| Changed files or new commits      | Jinion asks whether to keep it or remove it; `esc` stays   |
+
+Removing a worktree deletes its folder and its branch, with the work in them. Merge or push the branch first if you
+want to keep the work.
+
+When you quit, nothing is asked. An unchanged worktree is removed. One with work is kept, and Jinion prints where it is
+once the screen closes.
+
+## Go back to a worktree
+
+`/resume` lists the conversations of every worktree together with the project's, marked `worktree swift-running-fox`.
+Picking one goes back into its worktree, and so does `jinion --continue` for the last conversation.
+
+If the worktree was removed in the meantime, Jinion says so, and the conversation continues in the project folder.
+
+## Bring the work back
+
+The work is on the worktree's branch. Ask the agent to commit it, then merge the branch from your own checkout:
+
+```sh
+git merge worktree-swift-running-fox
+```
+
+Or ask the agent to push the branch and open a pull request:
+
+```text
+commit this, push the branch and open a pull request
+```
+
+## Turn worktrees off
+
+Press `ctrl+g` again, or type `/worktree off`. A conversation that already has a worktree keeps working in it. The next
+one works in the project folder.

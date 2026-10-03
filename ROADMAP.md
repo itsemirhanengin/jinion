@@ -55,14 +55,7 @@ how to work, acting with care, tools and parallel calls, git commits and pull re
 Left out on purpose: hooks (Jinion doesn't run the user's) and Claude Code's own commands. Still to do: watch it on a
 few real tasks and tighten what the model doesn't follow.
 
-### 2. Worktrees
-
-Each task in its own git worktree, so several conversations can work on one repository at once without stepping on
-each other. Claude Code has this (worktree sessions, `EnterWorktree`); look up how it creates, names and cleans them up
-before designing Jinion's. Touches where Claude Code is started (`agent/claude/options.ts`, its `cwd`), the session
-store, `/diff` and the status line, which should say which worktree a conversation is in.
-
-### 3. A Codex adapter
+### 2. A Codex adapter
 
 A second `Agent` (`apps/cli/src/agent/agent.ts`) proves the interface holds. `agent/claude/` is the reference: models
 with effort levels, modes, the event stream in and between turns, steering, background tasks, compaction, usage and
@@ -88,7 +81,7 @@ for it rather than build it early. What it takes:
 - **Tabs.** Several conversations, editors and shells open at once, each in its own tab, with a tab bar and shortcuts
   to move between them. Today the app is one conversation on the whole screen, with panels on top of it.
 - **More than one project.** Each tab belongs to a project folder, with its own session store, `/diff`, git state and
-  instruction files. Worktrees (item 2) are the first step: several conversations on one repository.
+  instruction files. Worktrees, turned on with `ctrl+g`, are the first step: several conversations on one repository.
 - **An editor.** Open a file from the conversation, from `/diff` or from a file tree, move around it, change it and save
   it, with syntax colors from the theme. The prompt's editor (`packages/tui/src/chat/prompt/`) and `/diff`'s
   file view are the pieces closest to it today.
@@ -112,5 +105,6 @@ steering and the queue, rewind; the subagent tree, `/diff` across folders of rep
 tasks; `/usage` and `/stats`; the guard for commands that write outside the project; `/compact` and `/context`;
 `/diff`'s turn views; thinking and command output that fold once done, and open one at a time on a click, lit up under
 the pointer; the card of what a turn changed, each file opening its diff; selecting text with the mouse, copied on
-release; web fetches, searches and MCP calls shown with what came back; the codebase restructured into controllers
-over a jotai store, with its conventions in `AGENTS.md`. `git log` has the details.
+release; web fetches, searches and MCP calls shown with what came back; a git worktree per conversation, opt-in with
+`ctrl+g`; the codebase restructured into controllers over a jotai store, with its conventions in `AGENTS.md`. `git log`
+has the details.
