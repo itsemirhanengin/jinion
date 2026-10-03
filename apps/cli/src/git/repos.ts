@@ -5,27 +5,19 @@ import { promisify } from 'node:util';
 
 const git = promisify(execFile);
 
-/** A git repository a project works in. */
 export interface Repo {
-  /** Absolute. */
   root: string;
-  /** Relative to the project, `''` when the project is in this repository. */
+  /** `''` when the project is in this repository. */
   path: string;
-  /** What the user reads: the folder's path, or its name for the project's own repository. */
   label: string;
 }
 
-/** Folders a repository is never looked for in. */
 const SKIPPED = new Set(['node_modules', 'dist', 'build', 'out', 'coverage', 'vendor', 'target', '.turbo', '.next', '.cache', '.venv']);
 
-/** How deep under the project repositories are looked for, and how many are taken. */
 const DEPTH = 3;
 const MAX_REPOS = 50;
 
-/**
- * The repositories a project works in: the one it is in, or, for a folder that isn't in one, such as a folder that
- * holds several projects, the repositories in its subfolders.
- */
+/** For a folder that isn't in one, such as one holding several projects, the repositories in its subfolders. */
 export function findRepos(cwd: string): Repo[] {
   try {
     // Relative, so the root is spelled like `cwd` even through a symlink, as the paths the agent edits are.
@@ -33,7 +25,6 @@ export function findRepos(cwd: string): Repo[] {
     const root = resolve(cwd, up);
     return [{ root, path: '', label: basename(root) }];
   } catch {
-    // Not inside a repository; look below.
   }
   const repos: Repo[] = [];
   let level = [cwd];
@@ -64,7 +55,6 @@ function safeEntries(folder: string) {
 export interface RepoState {
   /** The short commit when HEAD is detached. */
   branch: string;
-  /** Files with uncommitted changes, staged or not, untracked ones included. */
   changed: number;
   ahead: number;
   behind: number;
@@ -96,9 +86,7 @@ export function parseGitStatus(output: string): RepoState {
 }
 
 export interface FileChange {
-  /** Relative to the repository's root, as git names it. */
   file: string;
-  /** Absolute. */
   absolute: string;
   kind: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
   insertions: number;
@@ -106,10 +94,7 @@ export interface FileChange {
   binary: boolean;
 }
 
-/**
- * What changed in a repository since its last commit, staged or not, new files included: what a commit of everything
- * would take. With `since`, a commit, what the commits after it changed instead, e.g. a branch's own.
- */
+/** With `since`, a commit, what the commits after it changed instead, e.g. a branch's own. */
 export async function repoChanges(repo: Repo, since?: string): Promise<FileChange[]> {
   const head = await hasCommits(repo);
   const run = (args: string[]) => git('git', args, { cwd: repo.root, maxBuffer: 64 * 1024 * 1024 }).then(({ stdout }) => stdout);
@@ -135,7 +120,6 @@ export async function repoChanges(repo: Repo, since?: string): Promise<FileChang
   return changes.sort((a, b) => a.file.localeCompare(b.file));
 }
 
-/** The change as a unified diff; a new file shows all of its lines added. `since` as for `repoChanges`. */
 export async function fileDiff(repo: Repo, change: FileChange, since?: string): Promise<string> {
   if (change.binary) return '';
   if (change.kind === 'untracked') {
@@ -147,10 +131,6 @@ export async function fileDiff(repo: Repo, change: FileChange, since?: string): 
   return stdout;
 }
 
-/**
- * Where a branch left the default branch, for what it adds on top: the commit they share and the default branch's
- * name. `undefined` on the default branch itself, or a branch with nothing of its own.
- */
 export async function branchBase(repo: Repo): Promise<{ base: string; against: string } | undefined> {
   const run = async (...args: string[]) => {
     try {
@@ -216,7 +196,6 @@ function parseNameStatus(output: string) {
   return kinds;
 }
 
-/** `undefined` for a file that isn't text. */
 function countLines(path: string) {
   try {
     if (statSync(path).size > 4 * 1024 * 1024) return undefined;

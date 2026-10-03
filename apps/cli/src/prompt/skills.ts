@@ -1,32 +1,26 @@
-import { fuzzyMatch, namedMention, type CompletionItem, type CompletionSource } from '@jinion/tui';
-import type { AgentCommand } from './agent/types.js';
+import { fuzzyMatch } from '@jinion/tui';
+import { namedMention, type CompletionItem, type CompletionSource } from '@jinion/tui/chat';
+import type { AgentCommand } from '../agent/agent.js';
 
 const AT_CURSOR = /(?:^|\s)\$([\w.:-]*)$/;
 
-/** The project's skills, the user's, then plugins' and MCP servers' prompts. */
 const order = (skill: AgentCommand) =>
   skill.source === 'mcp' ? 3 : skill.group === 'project' ? 0 : skill.group === 'user' ? 1 : 2;
 
-/** The header a skill shows under, e.g. `Yours` or `vercel`. */
 export function skillGroup(skill: AgentCommand) {
   if (skill.source === 'mcp') return `${skill.group} prompts`;
   return skill.group === 'project' ? 'Project' : skill.group === 'user' ? 'Yours' : skill.group;
 }
 
-/** In the order the pickers show them, grouped. */
 export function sortSkills(skills: AgentCommand[]) {
   return [...skills].sort(
     (a, b) => order(a) - order(b) || skillGroup(a).localeCompare(skillGroup(b)) || a.name.localeCompare(b.name),
   );
 }
 
-/** `$design` in prompts and messages, for the skills and MCP prompts the agent has. */
 export const skillMention = (skills: AgentCommand[]) => namedMention('$', skills.map((skill) => skill.name));
 
-/**
- * Completes `$skill` mentions anywhere in the prompt, grouped by where the skills come from. While typing, the group
- * with the best match comes first, so Enter takes it.
- */
+/** While typing, the group with the best match comes first, so Enter takes it. */
 export function skillCompletion(skills: AgentCommand[]): CompletionSource {
   return (value, cursor) => {
     const typed = AT_CURSOR.exec(value.slice(0, cursor));

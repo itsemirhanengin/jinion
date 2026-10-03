@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { jinionHome, projectDir } from '../paths.js';
+import { jinionHome, projectDir } from '../lib/paths.js';
+import { frontmatter } from '../lib/text.js';
 
-/** `user` notes are about the user and hold in every project; `project` notes belong to one project. */
 export const MEMORY_SCOPES = ['user', 'project'] as const;
 export const MEMORY_TYPES = ['preference', 'decision', 'fact', 'reference'] as const;
 
@@ -11,23 +11,17 @@ export type MemoryType = (typeof MEMORY_TYPES)[number];
 
 export interface Memory {
   scope: MemoryScope;
-  /** Unique within its scope; `scope/id` names a note everywhere. */
   id: string;
   title: string;
-  /** One line, for the index the agent sees in every conversation. */
   description: string;
   type: MemoryType;
-  /** `YYYY-MM-DD` */
   updated: string;
   content: string;
 }
 
 export type NewMemory = Omit<Memory, 'id' | 'updated'> & { id?: string };
 
-/**
- * Notes that carry over between conversations, one markdown file each with a small frontmatter, so they can be read
- * and edited by hand: `~/.jinion/memory` for the user, `~/.jinion/projects/<project>/memory` for the project.
- */
+/** One markdown file per note, so they can be read and edited by hand. */
 export class MemoryStore {
   constructor(private readonly cwd: string) {}
 
@@ -53,13 +47,11 @@ export class MemoryStore {
     });
   }
 
-  /** `user/id` or `project/id`. */
   find(name: string) {
     const [scope, id] = name.split('/') as [MemoryScope, string | undefined];
     return this.list().find((memory) => memory.scope === scope && memory.id === id);
   }
 
-  /** Writes a new note, or replaces the one with `id`. */
   save(note: NewMemory): Memory {
     const taken = new Set(this.list().filter((memory) => memory.scope === note.scope).map((memory) => memory.id));
     const id = note.id && taken.has(note.id) ? note.id : unique(slug(note.id ?? note.title), taken);
@@ -93,14 +85,9 @@ function format(memory: Memory) {
 }
 
 function parse(scope: MemoryScope, id: string, text: string): Memory | undefined {
-  const match = /^---\n([\s\S]*?)\n---\n?([\s\S]*)$/.exec(text);
-  if (!match) return undefined;
-  const fields: Record<string, string> = Object.fromEntries(
-    match[1]!.split('\n').flatMap((line) => {
-      const colon = line.indexOf(':');
-      return colon === -1 ? [] : [[line.slice(0, colon).trim(), line.slice(colon + 1).trim()]];
-    }),
-  );
+  const parsed = frontmatter(text);
+  if (!parsed) return undefined;
+  const { fields, body } = parsed;
   const type = (MEMORY_TYPES as readonly string[]).includes(fields.type ?? '') ? (fields.type as MemoryType) : 'fact';
   return {
     scope,
@@ -109,7 +96,7 @@ function parse(scope: MemoryScope, id: string, text: string): Memory | undefined
     description: fields.description || fields.title || id,
     type,
     updated: fields.updated ?? '',
-    content: match[2]!.trim(),
+    content: body.trim(),
   };
 }
 

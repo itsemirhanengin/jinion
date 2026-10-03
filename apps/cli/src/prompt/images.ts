@@ -2,7 +2,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { extname, isAbsolute, join } from 'node:path';
-import type { ImageData } from '@jinion/tui';
+import type { ImageData } from '@jinion/tui/chat';
 
 const MEDIA_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -15,13 +15,9 @@ const MEDIA_TYPES: Record<string, string> = {
 /** Claude takes images up to 5 MB once encoded, and base64 makes them a third bigger. */
 const MAX_BYTES = 3_750_000;
 
-/** Bigger images are scaled down to this many pixels on their longer side. */
 const SHRINK_TO = 2048;
 
-/**
- * The image a paste names, when it is the path of an image file: terminals paste a file's path when it is dragged in,
- * quoted, with backslashes before spaces, or as a `file://` URL. `undefined` for any other text.
- */
+/** Terminals paste a dragged file's path quoted, with backslashes before spaces, or as a `file://` URL. */
 export function imageFromPaste(text: string): ImageData | undefined {
   const path = pastedPath(text);
   const mediaType = path && MEDIA_TYPES[extname(path).toLowerCase()];
@@ -38,7 +34,6 @@ function pastedPath(text: string) {
   return isAbsolute(path) ? path : undefined;
 }
 
-/** The image on the clipboard, or `undefined` when there is none or the system can't say. */
 export async function clipboardImage(): Promise<ImageData | undefined> {
   const png = await clipboardPng();
   return png && png.length > 0 ? fitting(png, 'image/png') : undefined;
@@ -77,7 +72,6 @@ function clipboardPng(): Promise<Buffer | undefined> {
   return Promise.resolve(undefined);
 }
 
-/** The image as Claude takes it: scaled down when it is too big, where the system has a tool for it. */
 function fitting(bytes: Buffer, mediaType: string): ImageData {
   if (bytes.length <= MAX_BYTES) return { mediaType, data: bytes.toString('base64') };
   const smaller = shrink(bytes);
@@ -87,7 +81,6 @@ function fitting(bytes: Buffer, mediaType: string): ImageData {
   return { mediaType: 'image/jpeg', data: smaller.toString('base64') };
 }
 
-/** A JPEG no bigger than `SHRINK_TO` pixels across, made with macOS's own `sips`. */
 function shrink(bytes: Buffer) {
   if (process.platform !== 'darwin') return undefined;
   const folder = mkdtempSync(join(tmpdir(), 'jinion-image-'));

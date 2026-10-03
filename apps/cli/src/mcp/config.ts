@@ -1,18 +1,15 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import { readJson } from '../json-file.js';
-import { jinionHome } from '../paths.js';
-import { loadProjectSettings, loadSettings, saveMcpSettings, saveProjectSettings } from '../settings.js';
+import { readJson } from '../lib/json-file.js';
+import { jinionHome } from '../lib/paths.js';
+import { loadProjectSettings, saveProjectSettings } from '../settings/project.js';
+import { loadSettings, saveMcpSettings } from '../settings/user.js';
 
-/** How to reach a server, in the shape `.mcp.json` files use. */
 export type McpTransport =
   | { type?: 'stdio'; command: string; args?: string[]; env?: Record<string, string> }
   | { type: 'http' | 'sse'; url: string; headers?: Record<string, string> };
 
-/**
- * `jinion` is `~/.jinion/mcp.json`, `claude` is Claude Code's own config (`claude mcp add`), and `project` is the
- * project's `.mcp.json`, which anyone with commit access can change and so runs only once the user turned it on.
- */
+/** `project` is the project's `.mcp.json`, which anyone with commit access can change, so it runs only once the user turned it on. */
 export type McpSource = 'jinion' | 'claude' | 'project';
 
 export interface McpServerConfig {
@@ -23,7 +20,6 @@ export interface McpServerConfig {
 
 type McpFile = { mcpServers?: Record<string, McpTransport> };
 
-/** The MCP servers configured in files, and which of them the user turned off or, for project ones, on. */
 export class McpConfig {
   constructor(private readonly cwd: string) {}
 
@@ -68,7 +64,6 @@ export class McpConfig {
   }
 }
 
-/** Where `claude mcp add` writes: `~/.claude.json`, or the file in `CLAUDE_CONFIG_DIR`. */
 const claudeConfigFile = () =>
   process.env.CLAUDE_CONFIG_DIR ? join(process.env.CLAUDE_CONFIG_DIR, '.claude.json') : join(homedir(), '.claude.json');
 
@@ -78,7 +73,6 @@ function isTransport(value: unknown): value is McpTransport {
   return typeof transport.command === 'string' || typeof transport.url === 'string';
 }
 
-/** `${VAR}` and `${VAR:-default}` in a server's strings, the way `.mcp.json` files use them for secrets. */
 function expand(transport: McpTransport): McpTransport {
   const replace = (value: string) =>
     value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)(?::-([^}]*))?\}/g, (_, name: string, fallback?: string) => process.env[name] ?? fallback ?? '');

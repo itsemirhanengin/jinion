@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { AgentEvent } from './agent/types.js';
-import { conversationDigest, createSession, editTurns, inRunningTurn, reduce, titleDue, type Entry, type Session } from './session.js';
+import type { AgentEvent } from '../agent/events.js';
+import { editTurns } from './edits.js';
+import type { Entry } from './entries.js';
+import { reduce } from './reducer.js';
+import { createSession, inRunningTurn, type Session } from './session.js';
+import { conversationDigest, titleDue } from './titles.js';
 
 const events = (session: Session, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);

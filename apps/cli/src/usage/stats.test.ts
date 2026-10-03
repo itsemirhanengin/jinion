@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { DayUsage, UsageHistory } from '../agent/types.js';
+import type { DayUsage, UsageHistory } from '../agent/usage.js';
 import { usageStats } from './stats.js';
 
 const TODAY = new Date(2026, 9, 3, 12);

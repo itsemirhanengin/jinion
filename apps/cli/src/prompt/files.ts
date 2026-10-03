@@ -2,17 +2,15 @@ import { execFile } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { useEffect, useState } from 'react';
-import { fuzzyMatch, mention, type CompletionItem, type CompletionSource } from '@jinion/tui';
+import { fuzzyMatch } from '@jinion/tui';
+import { mention, type CompletionItem, type CompletionSource } from '@jinion/tui/chat';
 
 /** Skipped when the project isn't a git repository and nothing says what to ignore. */
 const IGNORED = new Set(['.git', 'node_modules', 'dist', 'build', 'out', 'coverage', '.turbo', '.next', '.cache', '.venv']);
 const LIMIT = 50_000;
 const SHOWN = 50;
 
-/**
- * The project's files and the folders they sit in, relative to `cwd`, folders with a trailing `/`. Git decides what
- * counts when it can, so ignored files stay out and untracked ones are in.
- */
+/** Git decides what counts when it can, so ignored files stay out and untracked ones are in. */
 export async function listProjectFiles(cwd: string) {
   const files = await gitFiles(cwd).catch(() => walk(cwd));
   const folders = new Set<string>();
@@ -51,7 +49,6 @@ async function walk(cwd: string) {
   return files.sort();
 }
 
-/** The project's files, listed again whenever `refresh` changes, e.g. after each turn. */
 export function useProjectFiles(cwd: string, refresh: unknown) {
   const [files, setFiles] = useState<string[]>([]);
   useEffect(() => {
@@ -69,10 +66,7 @@ export function useProjectFiles(cwd: string, refresh: unknown) {
 
 const AT_CURSOR = /(?:^|\s)@([^\s"]*)$/;
 
-/**
- * Completes `@path` mentions, which Claude Code reads into the conversation itself. A file goes in with a space after
- * it; a folder without, so typing on lists what is inside.
- */
+/** Claude Code reads `@path` mentions itself. A folder gets no trailing space, so typing on lists what is inside. */
 export function fileCompletion(files: string[]): CompletionSource {
   return (value, cursor) => {
     const typed = AT_CURSOR.exec(value.slice(0, cursor));
@@ -88,7 +82,6 @@ export function fileCompletion(files: string[]): CompletionSource {
   };
 }
 
-/** Matches in the file or folder name rank above matches spread over the whole path, and shorter paths win ties. */
 function rank(files: string[], query: string) {
   if (!query) return files.filter((path) => !path.slice(0, -1).includes('/')).map((path) => ({ path, positions: [] }));
   return files

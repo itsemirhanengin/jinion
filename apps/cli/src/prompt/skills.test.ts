@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { AgentCommand } from './agent/types.js';
+import type { AgentCommand } from '../agent/agent.js';
 import { skillCompletion, skillGroup } from './skills.js';
 
 const skill = (name: string, group: string, source: AgentCommand['source'] = 'skill'): AgentCommand => ({

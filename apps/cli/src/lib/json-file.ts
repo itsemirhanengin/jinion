@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-/** `fallback` when the file is missing or unreadable. */
 export function readJson<T>(path: string, fallback: T): T {
   if (!existsSync(path)) return fallback;
   try {

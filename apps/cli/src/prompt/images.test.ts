@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { imageFromPaste } from './images.js';
-import { sandbox, type Sandbox } from './test/sandbox.js';
+import { sandbox, type Sandbox } from '../test/sandbox.js';
 
 let box: Sandbox;
 beforeEach(() => {
@@ -9,7 +9,6 @@ beforeEach(() => {
 });
 afterEach(() => box.restore());
 
-/** The eight bytes every PNG file starts with, which is all these tests need of one. */
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 
 describe('imageFromPaste', () => {

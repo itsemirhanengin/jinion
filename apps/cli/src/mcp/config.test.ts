@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadProjectSettings, loadSettings } from '../settings.js';
+import { loadProjectSettings } from '../settings/project.js';
+import { loadSettings } from '../settings/user.js';
 import { sandbox, type Sandbox } from '../test/sandbox.js';
 import { McpConfig } from './config.js';
 

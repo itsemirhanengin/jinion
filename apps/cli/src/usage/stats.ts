@@ -1,5 +1,5 @@
 import { addDays, dayKey, parseDay } from '@jinion/tui';
-import type { DayUsage, ModelTokens, UsageHistory } from '../agent/types.js';
+import type { DayUsage, ModelTokens, UsageHistory } from '../agent/usage.js';
 
 export type StatsRange = 'all' | 'month' | 'week';
 
@@ -13,23 +13,19 @@ export interface ModelShare {
   name: string;
   tokens: ModelTokens;
   total: number;
-  /** Of all tokens in the range, from 0 to 1. */
   share: number;
 }
 
-/** What the stats tab shows for a range. */
 export interface UsageStats {
   sessions: number;
   messages: number;
   activeDays: number;
-  /** Days from the first active one in the range to today. */
   spanDays: number;
   mostActive?: DayUsage;
   longestSession?: { ms: number; date: string };
   currentStreak: number;
   longestStreak: number;
   tokens: ModelTokens & { total: number };
-  /** Most tokens first. */
   models: ModelShare[];
 }
 
@@ -82,10 +78,7 @@ export function usageStats(history: UsageHistory, range: StatsRange, today = new
   };
 }
 
-/**
- * The longest run of active days, and the one going on: up to today, or up to yesterday while today hasn't had any
- * activity yet.
- */
+/** The current streak runs up to yesterday while today has no activity yet. */
 function streaks(active: Set<string>, today: string) {
   let longestStreak = 0;
   for (const day of active) {

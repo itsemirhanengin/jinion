@@ -3,7 +3,6 @@ import type { MemoryStore } from './store.js';
 /** More than this and the index points to `recall` for the rest, so it never crowds the context. */
 const INDEX_LIMIT = 150;
 
-/** The system prompt's memory section: how to use the notes, and an index of the ones there are. */
 export function memorySection(store: MemoryStore) {
   const notes = store.list();
   const index = notes
