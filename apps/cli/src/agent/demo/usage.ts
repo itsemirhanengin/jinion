@@ -1,5 +1,5 @@
 import { addDays, dayKey, parseDay } from '@jinion/tui';
-import type { AgentUsage, DayUsage, UsageHistory } from './types.js';
+import type { AgentUsage, DayUsage, UsageHistory } from '../usage.js';
 
 /** The same number for the same text, so the demo's history looks the same every run. */
 function hash(text: string) {
@@ -14,7 +14,6 @@ const MODELS: [name: string, share: number][] = [
   ['Haiku 4.5', 0.12],
 ];
 
-/** Five months of a working week, busier lately, with a few days off. */
 export function demoHistory(today = new Date()): UsageHistory {
   const last = dayKey(today);
   const days: DayUsage[] = [];
