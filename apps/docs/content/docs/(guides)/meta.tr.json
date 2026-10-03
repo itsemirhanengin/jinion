@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "title": "Rehberler",
+  "description": "İlk oturumdan her özelliğe, Jinion'u öğren",
+  "icon": "BookOpen",
+  "pages": [
+    "---Başlarken---",
+    "...(get-started)",
+    "---Kavramlar---",
+    "...(concepts)",
+    "---Jinion ile çalışmak---",
+    "...(working)",
+    "---Genişletmek---",
+    "...(extending)",
+    "---Kurulumun---",
+    "...(setup)"
+  ]
+}

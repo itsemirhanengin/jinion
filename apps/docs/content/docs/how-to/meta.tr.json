@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "Nasıl yapılır",
+  "description": "Sık yapılan işler için adım adım tarifler",
+  "icon": "ListChecks",
+  "pages": [
+    "index",
+    "---Günlük işler---",
+    "...(everyday)",
+    "---Uzun süren işler---",
+    "...(long-running)",
+    "---Kurulum---",
+    "...(setup)"
+  ]
+}

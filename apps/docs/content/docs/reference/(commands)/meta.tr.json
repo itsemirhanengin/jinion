@@ -1,0 +1,9 @@
+{
+  "title": "Komutlar ve tuşlar",
+  "pages": [
+    "cli",
+    "commands",
+    "keyboard-shortcuts",
+    "status-line-segments"
+  ]
+}

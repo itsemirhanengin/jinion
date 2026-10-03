@@ -23,10 +23,15 @@ export function remarkTerminal() {
   };
 }
 
+const shells = new Set(['sh', 'bash', 'shell', 'zsh']);
+
 function walk(parent: Node) {
   parent.children?.forEach((node, index) => {
     if (node.type === 'code' && node.lang === 'terminal') {
       parent.children![index] = toElement(node);
+    } else if (node.type === 'code' && shells.has(node.lang ?? '') && !/title=/.test(node.meta ?? '')) {
+      // Commands to type in a shell are titled as such, apart from prompts to the agent.
+      node.meta = `title="Terminal"${node.meta ? ` ${node.meta}` : ''}`;
     } else {
       walk(node);
     }

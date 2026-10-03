@@ -1,63 +1,7 @@
 ---
-title: Introduction
-description: Jinion is a coding agent for your terminal. Install it and run your first session in three steps.
+title: Your first task
+description: Watch Jinion take a request from a question to tested code.
 ---
-
-Jinion reads your code, edits files and runs commands, right in your terminal. You describe what you want in plain
-words. Jinion works out the steps, asks when a decision is yours, and shows every change it makes.
-
-```terminal title="~/code/api"
-{border|+-} {accent,bold|jinion} {muted|v0.1.0} {border|------------------------------------+}
-{border||} {muted|model}    {accent|Opus 5.5 · high}   {muted|/model to change}        {border||}
-{border||} {muted|account}  {accent|me@example.com · Max}   {muted|/account to change} {border||}
-{border||} {muted|cwd}      {code|~/code/api}                                {border||}
-{border|+----------------------------------------------------+}
-
-{border|--------------------------------------------------------------------------------------------}
- {accent|A}{muted|sk jinion anything · / commands · $ skills · @ files}
-{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
- {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
-```
-
-## Get started
-
-<Steps>
-<Step>
-
-### Install Jinion
-
-Jinion needs Node.js 22 or later.
-
-```npm
-npm i -g @jinion/cli
-```
-
-`jinion --version` prints the version you installed.
-
-</Step>
-<Step>
-
-### Sign in to Claude
-
-Jinion works with your Claude account and uses the Claude Code login on your machine. If you haven't signed in yet,
-run `claude`, then `/login`, and follow the browser. You only do this once.
-
-</Step>
-<Step>
-
-### Start a session in your project
-
-```sh
-cd ~/code/api
-jinion
-```
-
-You see the banner with your model, account and folder, and the prompt at the bottom. Jinion is ready.
-
-</Step>
-</Steps>
-
-## Your first task
 
 Type what you want done and press `enter`:
 
@@ -102,14 +46,3 @@ Jinion looks through the code first. When a choice is yours to make, it asks ins
 
 Then it edits the files, runs the tests, and fixes what fails. Every edit shows as a diff in the conversation. At the
 end you get a short summary of what changed and how it was checked.
-
-## Learn more
-
-<Cards>
-  <Card title="Prompt the agent" href="/prompting" description="Steer it while it works, mention files, use skills." />
-  <Card title="Choose a permission mode" href="/permission-modes" description="Decide what runs without asking." />
-  <Card title="Review changes" href="/review-changes" description="See every change, turn by turn, with /diff." />
-  <Card title="Manage conversations" href="/conversations" description="Resume, rewind and compact conversations." />
-  <Card title="Use memory" href="/memory" description="Notes the agent keeps between conversations." />
-  <Card title="Commands" href="/commands" description="Every slash command in one table." />
-</Cards>

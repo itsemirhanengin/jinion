@@ -1,0 +1,26 @@
+---
+title: Status line segments
+description: Every segment the status line can show, with an example and its styles.
+---
+
+Choose which ones show with `/statusline`. See [Customize the status line](/status-line).
+
+| Segment      | Shows                                                       | Styles                                        |
+| ------------ | ----------------------------------------------------------- | --------------------------------------------- |
+| Jinion       | `jinion`                                                    |                                               |
+| Model        | `[M] Opus 5.5 · high`                                       | with effort, name only                        |
+| Mode         | `Auto`                                                      |                                               |
+| Account      | `[A] work`                                                  |                                               |
+| Directory    | `[D] code/api`                                              | last two folders, full path, folder name      |
+| Git          | `[G] main *3 ↑1`, or `[G] 4 repos *7` in a folder of several | with changes and commits ahead or behind, branch only |
+| Context      | `ctx [====------] 41%`                                      | tokens, percent, meter                        |
+| Plan limits  | `5h 8% · 7d 20%`                                            | 5h and 7d, 5h with reset time, 7d, 5h meter   |
+| Cost         | `$0.12`, at API prices                                      |                                               |
+| Changes      | `+42 -7` lines in this conversation                         |                                               |
+| Tasks        | `tasks 2/5`                                                 |                                               |
+| Title        | What the conversation is about                              |                                               |
+| Duration     | How long the conversation has run                           |                                               |
+| Turns        | How many prompts you sent                                   |                                               |
+| Clock        | The time                                                    |                                               |
+| Agent        | The agent in use                                            |                                               |
+| Version      | Jinion's version                                            |                                               |

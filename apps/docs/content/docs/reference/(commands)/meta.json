@@ -1,0 +1,9 @@
+{
+  "title": "Commands and keys",
+  "pages": [
+    "cli",
+    "commands",
+    "keyboard-shortcuts",
+    "status-line-segments"
+  ]
+}

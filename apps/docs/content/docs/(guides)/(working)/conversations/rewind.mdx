@@ -1,0 +1,29 @@
+---
+title: Rewind to an earlier message
+description: Go back to before a message you sent, taking back the code, the conversation or both.
+---
+
+Press `esc` twice, or type `/rewind`, to go back to before a message you sent. The panel lists your messages, newest
+first, with what going back would change in files.
+
+```terminal
+{accent|+- Rewind} {muted|1 message} {accent|-----------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|add rate limiting to the api}                                                        {accent||}
+{accent||}      {muted|No file changes since then}                                                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|pick ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Then pick what to take back:
+
+| Choice                        | What happens                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| Restore code and conversation | Files and the conversation go back; your message returns to the prompt to edit and send |
+| Restore conversation          | The conversation goes back; files stay as they are                                     |
+| Restore code                  | Files go back; the conversation goes on                                                |
+| Never mind                    | Back to the list                                                                       |
+
+<Callout type="warn">
+  Only changes made through the file tools come back. Changes made by commands, such as a `git checkout`, stay.
+</Callout>

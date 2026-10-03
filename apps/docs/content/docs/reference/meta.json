@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "title": "Reference",
+  "description": "Every command, flag, key and file",
+  "icon": "Library",
+  "pages": [
+    "---Commands and keys---",
+    "...(commands)",
+    "---Files and fixes---",
+    "...(files)"
+  ]
+}

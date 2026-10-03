@@ -1,0 +1,12 @@
+{
+  "root": true,
+  "title": "Referans",
+  "description": "Her komut, flag, tuş ve dosya",
+  "icon": "Library",
+  "pages": [
+    "---Komutlar ve tuşlar---",
+    "...(commands)",
+    "---Dosyalar ve sorunlar---",
+    "...(files)"
+  ]
+}

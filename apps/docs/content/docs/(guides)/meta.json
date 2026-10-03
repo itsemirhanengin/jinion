@@ -1,0 +1,18 @@
+{
+  "root": true,
+  "title": "Guides",
+  "description": "Learn Jinion, from the first session to every feature",
+  "icon": "BookOpen",
+  "pages": [
+    "---Get started---",
+    "...(get-started)",
+    "---Concepts---",
+    "...(concepts)",
+    "---Working with Jinion---",
+    "...(working)",
+    "---Extending---",
+    "...(extending)",
+    "---Your setup---",
+    "...(setup)"
+  ]
+}

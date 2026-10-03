@@ -1,0 +1,44 @@
+---
+title: Context
+description: What the model holds in mind during a conversation, what fills it, and how compacting frees it.
+---
+
+The context is everything the model reads before it answers: the system prompt, your project's instructions, the
+tools, and the whole conversation so far. It has a limit, the context window. A long conversation fills it.
+
+## See what fills the context
+
+`/context` shows the context window as a grid, a square per percent, by what fills it:
+
+```terminal
+{accent|+- Context} {muted|Opus 5.5 · 41.0k of 200.0k tokens · 21%} {accent|----------------------------------------+}
+{accent|| ■ ■ ■} {warning|■ ■ ■ ■ ■ ■ ■}   {accent|■} System prompt       {muted|6.2k tokens · 3%}                             {accent||}
+{accent||} {warning|■ ■} {string|■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Tools               {muted|14.8k tokens · 7%}                            {accent||}
+{accent||} {string|■} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Skills              {muted|1.9k tokens · 0.9%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {string|■} Messages            {muted|18.1k tokens · 9%}                            {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■} Free space          {muted|126.0k tokens · 63%}                          {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {border|■} Autocompact buffer  {muted|33.0k tokens · 17%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■} {border|■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {border|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Compacts on its own at 167.0k tokens (84%); /compact does it now, with a focus if you g…} {accent||}
+{accent||} {muted|Listed by name and loaded when used, so they take no room yet: MCP tools 52.0k}           {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Esc {muted|close}                                                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Compact a long conversation
+
+A long conversation fills the model's context. `/compact` summarizes it so far and carries on from the summary. Name
+what matters most and it is kept above all:
+
+```text
+/compact the API changes
+```
+
+Jinion also compacts on its own as the context fills. When a fifth or less is left, the rule under the prompt says how
+much. After compacting, the conversation marks where, such as `[x] Compacted · 160.2k → 21.4k tokens`, and `ctrl+o`
+shows the summary.

@@ -1,0 +1,35 @@
+---
+title: Resume a conversation
+description: Pick up an earlier conversation where it left off, or start a new one.
+---
+
+Every conversation is saved after each turn, per project. Nothing is lost when you quit.
+
+`/resume` lists the project's conversations, newest first. Type to filter, then press `enter`. The agent picks up
+where it left off and remembers what was said.
+
+```terminal
+{accent|+- Resume} {muted|4 conversations} {accent|-----------------------------------------------------------------+}
+{accent||} {muted|search} {accent|T}{muted|ype to filter}                                                                    {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>} {code,bold|Fix the flaky checkout e2e test}                                                 {muted|2h ago} {accent||}
+{accent||}     {muted|2 messages · "the checkout e2e test fails every few runs, can you find out why?"}     {accent||}
+{accent||}   Migrate auth to OIDC                                                         {muted|yesterday} {accent||}
+{accent||}     {muted|4 messages · "plan the migration from our session cookies to OIDC"}                   {accent||}
+{accent||}   Explain the billing reconciliation job                                          {muted|3d ago} {accent||}
+{accent||}     {muted|2 messages · "how does the nightly billing reconciliation work?"}                     {accent||}
+{accent||}   Speed up the CI cache                                                           {muted|1w ago} {accent||}
+{accent||}     {muted|2 messages · "CI takes 14 minutes, most of it installing dependencies"}               {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|resume ·} Up/Down {muted|move ·} PgUp/PgDn {muted|page ·} Esc {muted|close}                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+To open the last conversation straight away, start Jinion with `-c`:
+
+```sh
+jinion -c
+```
+
+`/clear` saves the current conversation and starts a new one.

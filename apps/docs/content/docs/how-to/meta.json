@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "title": "How to",
+  "description": "Step-by-step recipes for common tasks",
+  "icon": "ListChecks",
+  "pages": [
+    "index",
+    "---Everyday work---",
+    "...(everyday)",
+    "---Long-running work---",
+    "...(long-running)",
+    "---Setting up---",
+    "...(setup)"
+  ]
+}
