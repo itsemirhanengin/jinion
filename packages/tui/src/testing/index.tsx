@@ -4,6 +4,7 @@ import { render } from 'ink';
 import xterm from '@xterm/headless';
 import { Root } from '../runtime/context.js';
 import { createInput, type MouseListener } from '../runtime/input.js';
+import { createTerminalControl } from '../runtime/terminal.js';
 import { darkTheme, type Theme } from '../theme/themes.js';
 
 /** What a terminal sends for keys that aren't text. */
@@ -37,6 +38,10 @@ export interface TestTerminal {
   waitFor(text: string | RegExp, timeout?: number): Promise<string>;
   /** The foreground color of the first cell that shows `text`, as `#rrggbb`, or `undefined` for the default. */
   colorOf(text: string): Promise<string | undefined>;
+  /** Reports the window gaining or losing focus, as a terminal does. */
+  focus(focused: boolean): Promise<void>;
+  /** The desktop notifications shown so far, as `title: body`. */
+  notifications(): string[];
   unmount(): void;
 }
 
@@ -64,12 +69,24 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
     unref: () => keyboard,
   }) as unknown as NodeJS.ReadStream;
   const mouse = new Set<MouseListener>();
-  const input = createInput(keyboard, (event) => {
-    for (const listener of mouse) listener(event);
+  // Notifications go out as OSC 777, as in Ghostty, and the emulator keeps them.
+  const terminalControl = createTerminalControl((data) => stdout.write(data), 'osc777');
+  const notifications: string[] = [];
+  terminal.parser.registerOscHandler(777, (data) => {
+    const [, title, ...body] = data.split(';');
+    notifications.push(`${title}: ${body.join(';')}`);
+    return true;
   });
+  const input = createInput(
+    keyboard,
+    (event) => {
+      for (const listener of mouse) listener(event);
+    },
+    terminalControl.setFocused,
+  );
 
   const instance = render(
-    <Root theme={theme} mouse={mouse}>
+    <Root theme={theme} mouse={mouse} terminal={terminalControl.control}>
       {node}
     </Root>,
     { stdout, stdin: input.stdin, interactive: true, alternateScreen: true, exitOnCtrlC: false, patchConsole: false },
@@ -123,6 +140,8 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
       }
       return undefined;
     },
+    focus: (focused) => send(focused ? '\x1b[I' : '\x1b[O'),
+    notifications: () => [...notifications],
     unmount: () => {
       instance.unmount();
       input.close();

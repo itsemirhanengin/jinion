@@ -193,6 +193,8 @@ Jinion also works in a folder that isn't a repository but holds several, such as
 - the status line's Git segment sums them up, as `4 repos *7`;
 - the system prompt lists the repositories and their branches, and tells the agent to run git in the one a change belongs to (`git -C api status`).
 
+While the terminal window isn't focused, Jinion notifies when it waits for you (a question, a permission or a plan to review) and when a turn of 15 seconds or more ends, with what it is about: `jinion · api: Done with “add rate limiting” after 1m 12s.` The notification is the terminal's own: OSC 777 in Ghostty, WezTerm, Warp, foot and rxvt, OSC 9 in iTerm2, OSC 99 in kitty, and the bell elsewhere and inside tmux or screen. The terminal reports focus changes (mode 1004), so nothing pops up while you watch. `/notifications` turns them off or on again.
+
 When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 
 | Command | Does |
@@ -209,6 +211,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/diff` | Full screen list of what changed since the last commit, in every repository here, with the agent's changes marked; `enter` opens a file's diff |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
+| `/notifications [on \| off]` | Turns notifications on or off, for every project; without an argument, switches them |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
 | `/exit` (`/quit`) | Quits |

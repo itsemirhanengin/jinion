@@ -19,9 +19,11 @@ export type { ColorScheme, Theme, Tone } from './theme/themes.js';
 export { run } from './runtime/run.js';
 export type { RunOptions } from './runtime/run.js';
 export { detectColorScheme } from './runtime/detect-scheme.js';
-export { Inset, Root, useContentWidth, useMouse, useTheme, useView } from './runtime/context.js';
+export { Inset, Root, useContentWidth, useMouse, useTerminal, useTheme, useView } from './runtime/context.js';
 export type { RootProps } from './runtime/context.js';
-export type { MouseEvent, MouseListener } from './runtime/input.js';
+export type { FocusListener, MouseEvent, MouseListener } from './runtime/input.js';
+export { notificationMethod } from './runtime/terminal.js';
+export type { NotificationMethod, TerminalControl } from './runtime/terminal.js';
 export { Shell, usePanel, usePanels } from './runtime/panels.js';
 export type { PanelPlacement, Panels, PanelSpec, ShellProps } from './runtime/panels.js';
 

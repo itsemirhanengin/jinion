@@ -1,4 +1,4 @@
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import {
   AskPanel,
@@ -15,6 +15,7 @@ import {
   useApp,
   useInput,
   usePanels,
+  useTerminal,
   useTheme,
   useView,
   PastedImages,
@@ -67,6 +68,7 @@ import {
   saveAccount,
   saveLimits,
   saveModel,
+  saveNotifications,
   saveProjectSettings,
   saveStatusLine,
 } from './settings.js';
@@ -123,6 +125,16 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   );
 
   const notice = (text: string, tone?: NoticeTone) => dispatch({ type: 'notice', text, tone });
+
+  const terminal = useTerminal();
+  const [notifications, setNotifications] = useState(() => loadSettings().notifications !== false);
+  // Read when a turn that started earlier notifies.
+  const notificationsOn = useRef(notifications);
+  notificationsOn.current = notifications;
+  /** Reaches the user in another window when jinion needs them or is done; nothing while they look at it. */
+  const notify = (body: string) => {
+    if (notificationsOn.current && !terminal.focused()) terminal.notify(`jinion · ${basename(info.cwd)}`, body);
+  };
 
   const [selection, setSelection] = useState(agent.selection);
   const [account, setAccount] = useState(agent.accounts?.current);
@@ -306,11 +318,12 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     const abort = new AbortController();
     controller.current = abort;
     const full = pastes.expand(text);
+    const started = Date.now();
     dispatch({ type: 'submit', text, prompt: full === text ? undefined : full });
 
     // Parallel tool calls can ask at the same time, so their panels open one after another.
     let panelsInLine = Promise.resolve();
-    const interact = <T,>(id: string, render: (resolve: (value: T) => void) => ReactNode) => {
+    const interact = <T,>(id: string, message: string, render: (resolve: (value: T) => void) => ReactNode) => {
       const open = () =>
         new Promise<T>((resolve, reject) => {
           if (abort.signal.aborted) return reject(abort.signal.reason);
@@ -319,6 +332,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
             resolve(value);
           });
           panels.open({ id, placement: 'bottom', element });
+          notify(message);
           abort.signal.addEventListener(
             'abort',
             () => {
@@ -337,15 +351,15 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     };
 
     const ask = (questions: Question[]) =>
-      interact<QuestionAnswer[]>('ask', (resolve) => (
+      interact<QuestionAnswer[]>('ask', `jinion asks: ${questions[0]?.prompt ?? 'a question'}`, (resolve) => (
         <AskPanel questions={questions} onSubmit={resolve} onCancel={() => abort.abort()} />
       ));
     const approve = (request: PermissionRequest) =>
-      interact<PermissionDecision>('permission', (resolve) => (
+      interact<PermissionDecision>('permission', [request.title, request.command ?? request.subject].filter(Boolean).join(': '), (resolve) => (
         <PermissionPanel request={request} onDecide={resolve} onCancel={() => abort.abort()} />
       ));
     const approvePlan = (modes: AgentMode[]) =>
-      interact<PlanDecision>('plan', (resolve) => (
+      interact<PlanDecision>('plan', 'The plan is ready for you to review.', (resolve) => (
         <PlanPanel
           options={modes.map((option) => ({ id: option, label: PLAN_CHOICES[option], description: MODES[option].description }))}
           onDecide={(decision) => {
@@ -360,15 +374,23 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
         />
       ));
 
+    // A long turn may have sent the user elsewhere; a short one they likely watched.
+    const quoted = `“${text.split('\n')[0]!.slice(0, 60)}”`;
+    const notifyLong = (body: string) => Date.now() - started >= LONG_TURN_MS && notify(body);
     try {
       const sent = { text: full, images: images.in(text) };
       for await (const event of agent.run(sent, { signal: abort.signal, ask, approve, approvePlan })) {
         apply(event);
       }
       dispatch({ type: 'finish', outcome: 'done' });
+      notifyLong(`Done with ${quoted} after ${seconds(Date.now() - started)}.`);
     } catch (error) {
       if (abort.signal.aborted) dispatch({ type: 'finish', outcome: 'interrupted' });
-      else dispatch({ type: 'finish', outcome: 'failed', message: error instanceof Error ? error.message : String(error) });
+      else {
+        const message = error instanceof Error ? error.message : String(error);
+        dispatch({ type: 'finish', outcome: 'failed', message });
+        notifyLong(`${quoted} stopped with an error: ${message}`);
+      }
       // What waited for a turn that didn't finish comes back into the prompt, for the user to send or drop.
       const waiting = queue.current;
       if (waiting.length > 0) {
@@ -458,6 +480,10 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       saveStatusLine(items);
     },
     rewind: openRewind,
+    setNotifications: (on) => {
+      setNotifications(on);
+      saveNotifications(on);
+    },
     reloadCommands,
     toggleExpanded,
     exit: quit,
@@ -477,6 +503,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     sessions,
     memory,
     edited,
+    notifications: { on: notifications, method: terminal.method },
     sessionId: session.id,
   };
 
@@ -588,6 +615,15 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
 /** Two presses of esc this close together open the rewind panel. */
 const DOUBLE_ESCAPE_MS = 600;
+
+/** A turn this long notifies when it ends, should the user have gone to another window meanwhile. */
+const LONG_TURN_MS = 15_000;
+
+/** `42s`, or `3m 5s`. */
+function seconds(ms: number) {
+  const total = Math.round(ms / 1000);
+  return total < 60 ? `${total}s` : `${Math.floor(total / 60)}m ${total % 60}s`;
+}
 
 /** What each mode reads as in the plan panel. */
 const PLAN_CHOICES: Record<AgentMode, string> = {

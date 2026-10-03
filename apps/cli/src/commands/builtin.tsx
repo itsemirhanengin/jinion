@@ -156,6 +156,26 @@ export const builtinCommands: Command[] = [
     run: (app) => app.actions.rewind(),
   },
   {
+    name: 'notifications',
+    description: 'Turn on or off notifications when jinion waits for you or ends a long turn in another window',
+    argumentHint: '[on | off]',
+    run: (app, args) => {
+      const wanted = args.trim().toLowerCase();
+      if (wanted && wanted !== 'on' && wanted !== 'off') return app.actions.notice('Type /notifications on or /notifications off.', 'error');
+      const on = wanted ? wanted === 'on' : !app.notifications.on;
+      app.actions.setNotifications(on);
+      if (!on) return app.actions.notice('Notifications are off. /notifications on turns them back on.', 'muted');
+      const how =
+        app.notifications.method === 'bell'
+          ? 'the terminal bell rings, since this terminal has no desktop notifications jinion knows of'
+          : 'your terminal shows a desktop notification';
+      app.actions.notice(
+        `Notifications are on: when jinion waits for you, or ends a turn of 15s or more, while this window isn't focused, ${how}.`,
+        'success',
+      );
+    },
+  },
+  {
     name: 'statusline',
     description: 'Choose what the status line shows',
     run: (app) => app.panels.open({ id: 'statusline', placement: 'bottom', element: <StatusLinePanel /> }),

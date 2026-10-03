@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
 import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
@@ -33,6 +33,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   terminal.unmount();
   box.restore();
 });
@@ -202,6 +203,43 @@ describe('App', () => {
     const list = await terminal.waitFor('2 files');
     expect(list).toMatch(/^\| > README\.md +\+1 -1 +\|$/m);
     expect(list).toMatch(/^\| {3}src\/server\.ts +\+1 +agent \|$/m);
+  });
+
+  it('notifies when it waits for an answer in a window that isn’t focused, and not while it is', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.focus(false);
+    await terminal.type('add rate limiting to the api');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Where should the limiter keep its counters?');
+    expect(terminal.notifications()).toEqual(['jinion · project: jinion asks: Where should the limiter keep its counters?']);
+
+    await terminal.focus(true);
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Which routes should be limited?');
+    expect(terminal.notifications()).toHaveLength(1);
+  });
+
+  it('notifies when a long turn ends, unless notifications are off', async () => {
+    // Slow enough that the turn is still going when the clock jumps.
+    start(1);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.focus(false);
+    const now = Date.now;
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Type to queue');
+    // The turn seems to take 20s.
+    vi.spyOn(Date, 'now').mockImplementation(() => now() + 20_000);
+    await terminal.waitFor(/> hello[\s\S]*Ask jinion anything/, 15_000);
+    expect(terminal.notifications()).toEqual([expect.stringMatching(/^jinion · project: Done with “hello” after 2\ds\.$/)]);
+
+    await terminal.type('/notifications');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Notifications are off.');
+    await terminal.type('hello again');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/> hello again[\s\S]*Ask jinion anything/, 15_000);
+    expect(terminal.notifications()).toHaveLength(1);
   });
 });
 

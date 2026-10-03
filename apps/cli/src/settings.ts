@@ -15,6 +15,8 @@ export interface Settings {
   accounts?: Record<string, string>;
   /** MCP servers turned off in `/mcp`, by name, in every project. */
   mcp?: { disabled?: string[] };
+  /** `false` after `/notifications off`. */
+  notifications?: boolean;
 }
 
 const file = () => join(jinionHome(), 'settings.json');
@@ -34,6 +36,8 @@ export function saveAccount(agent: string, account: string) {
 }
 
 export const saveMcpSettings = (mcp: Settings['mcp']) => update({ mcp });
+
+export const saveNotifications = (notifications: boolean) => update({ notifications });
 
 /** The plan limits last seen for each account, so accounts not in use still show how full they were. */
 export type SeenLimits = Record<string, { windows: LimitWindow[]; at: number }>;

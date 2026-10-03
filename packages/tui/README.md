@@ -23,9 +23,10 @@ Everything is drawn with plain ASCII: frames use `+`, `-` and `|`, trees use `|-
 
 Apps run full screen in the alternate screen buffer. The root is a column exactly as tall as the terminal, and `Shell` lays it out: `content` (usually a `ScrollView`) takes the remaining height, while `aside`, `prompt` and `status` stay pinned to the bottom.
 
-- `run(<App />)` detects a light or dark background, enters the alternate screen, turns on mouse reporting and returns Ink's instance.
+- `run(<App />)` detects a light or dark background, enters the alternate screen, turns on mouse and focus reporting and returns Ink's instance.
 - `ScrollView` follows the newest line. The mouse wheel or PageUp scrolls it; once scrolled, the view holds still while content grows below it, and a `Jump to bottom (click)` row brings it back.
 - Mouse reports are filtered out of stdin before Ink sees them, so key handlers never receive them. `useMouse()` subscribes to wheel and click events. While reporting is on, terminals select text with Shift held (Option in iTerm2).
+- `useTerminal()` tells whether the window has focus (`focused()`, from the terminal's focus reports, which are filtered out like mouse reports) and shows desktop notifications (`notify(title, body)`) with the sequence the terminal understands: OSC 777, 9 or 99, or the bell (`method`).
 - `useView()` exposes the global `expanded` flag that collapsible output reads; `ctrl+o` in the CLI toggles it.
 - `useTheme()` returns the active `Theme`. `useContentWidth()` returns the columns available at the current depth; `Frame` and other containers reduce it for their children with `Inset`.
 
@@ -119,7 +120,7 @@ expect(await terminal.colorOf('$design')).toBe(darkTheme.code);
 terminal.unmount();
 ```
 
-`type` sends one character at a time, as a person would. Colors need `FORCE_COLOR=3` in the test environment, since tests don't run in a TTY. The entry is only exported under the `development` condition, so it never ships in the build.
+`type` sends one character at a time, as a person would. `focus(false)` reports the window losing focus, and `notifications()` lists what was notified, as `title: body`. Colors need `FORCE_COLOR=3` in the test environment, since tests don't run in a TTY. The entry is only exported under the `development` condition, so it never ships in the build.
 
 ## Components
 

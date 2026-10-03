@@ -6,12 +6,18 @@ export type MouseEvent =
   | { type: 'press' | 'release'; button: number; x: number; y: number };
 
 export type MouseListener = (event: MouseEvent) => void;
+export type FocusListener = (focused: boolean) => void;
 
 /** Button presses and the wheel, reported with SGR coordinates. */
 export const ENABLE_MOUSE = '\x1b[?1000h\x1b[?1006h';
 export const DISABLE_MOUSE = '\x1b[?1000l\x1b[?1006l';
 
+/** The terminal sends `\x1b[I` when its window gains focus and `\x1b[O` when it loses it. */
+export const ENABLE_FOCUS = '\x1b[?1004h';
+export const DISABLE_FOCUS = '\x1b[?1004l';
+
 const MOUSE_SEQUENCE = /\x1b\[<(\d+);(\d+);(\d+)([Mm])/g;
+const FOCUS_SEQUENCE = /\x1b\[([IO])/g;
 const PARTIAL_MOUSE_SEQUENCE = /\x1b\[<[\d;]*$/;
 const WHEEL = 64;
 const MOTION = 32;
@@ -24,10 +30,10 @@ function parseMouse(code: number, column: number, row: number, final: string): M
 }
 
 /**
- * Wraps the terminal's stdin so mouse reports never reach Ink's key parser.
- * Ink reads the returned stream; mouse events go to `onMouse` instead.
+ * Wraps the terminal's stdin so mouse and focus reports never reach Ink's key parser.
+ * Ink reads the returned stream; mouse events go to `onMouse` and focus changes to `onFocus` instead.
  */
-export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener) {
+export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, onFocus?: FocusListener) {
   const stream = new PassThrough();
   const decoder = new StringDecoder('utf8');
   let pending = '';
@@ -40,6 +46,10 @@ export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener) {
     text = text.replace(MOUSE_SEQUENCE, (_, code: string, column: string, row: string, final: string) => {
       const event = parseMouse(Number(code), Number(column), Number(row), final);
       if (event) onMouse(event);
+      return '';
+    });
+    text = text.replace(FOCUS_SEQUENCE, (_, which: string) => {
+      onFocus?.(which === 'I');
       return '';
     });
     if (text) stream.write(text);
