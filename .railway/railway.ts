@@ -17,6 +17,7 @@ export default defineRailway(() => {
     build: 'pnpm --filter @jinion/website build',
     start: 'pnpm --filter @jinion/website start',
     healthcheck: '/',
+    domains: ['jinion.co', 'www.jinion.co'],
     replicas: { ams: 1 },
   });
 
