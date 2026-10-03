@@ -16,6 +16,8 @@ export type Entry =
   | { id: string; kind: 'compaction'; trigger: 'manual' | 'auto'; before: number; after?: number; summary?: string }
   /** A background task that ended, with what the agent said about it. */
   | { id: string; kind: 'task'; task: BackgroundTask; summary?: string }
+  /** The files a turn changed, at its end; `turn` is the message whose turn view in `/diff` has them. */
+  | { id: string; kind: 'changes'; turn: string; files: ChangedFile[] }
   /** `children` are the tool calls of the subagent an `agent` call runs. */
   | {
       id: string;
@@ -32,6 +34,14 @@ export type Entry =
     };
 
 type ToolEntry = Extract<Entry, { kind: 'tool' }>;
+
+/** A file the agent changed in a turn, and by how many lines. */
+export interface ChangedFile {
+  path: string;
+  created: boolean;
+  added: number;
+  removed: number;
+}
 
 /** A subagent's tool call. */
 export interface ToolCallEntry {
@@ -179,6 +189,8 @@ function next(session: Session, action: Action): Session {
           ? entry
           : { ...cancel(entry), children: isBackground(entry) ? entry.children : entry.children?.map(cancel) },
       );
+      const changes = turnChanges(entries, session.turnFrom ?? entries.length);
+      if (changes) entries.push(changes);
       if (action.outcome === 'interrupted') entries.push(notice('Interrupted. Tell jinion what to do instead.', 'warning'));
       if (action.outcome === 'failed') entries.push(notice(action.message ?? 'Something went wrong.', 'error'));
       return { ...session, entries, busySince: undefined, turnFrom: undefined, compacting: undefined };
@@ -328,7 +340,9 @@ export function conversationDigest(entries: Entry[]) {
 
 /** The files the agent changed in a turn, from its edits rather than from git, for `/diff`'s turn views. */
 export interface EditTurn {
-  /** The message that started the turn. */
+  /** The id of the message that started the turn. */
+  id: string;
+  /** What it said. */
   prompt: string;
   /** In the order they were made, subagents' included; a file changed twice has two. */
   edits: { path: string; patch: string; created?: boolean }[];
@@ -341,14 +355,53 @@ export interface EditTurn {
 export function editTurns(entries: Entry[]): EditTurn[] {
   const turns: EditTurn[] = [];
   for (const entry of entries) {
-    if (entry.kind === 'user' && !entry.steered) turns.push({ prompt: entry.text, edits: [] });
-    if (entry.kind !== 'tool') continue;
-    for (const call of [entry, ...(entry.children ?? [])]) {
-      if (call.run.name !== 'edit' || call.status !== 'done') continue;
-      turns.at(-1)?.edits.push({ path: call.run.input.path, patch: call.run.result?.patch ?? call.run.input.patch, created: call.run.input.created });
-    }
+    if (entry.kind === 'user' && !entry.steered) turns.push({ id: entry.id, prompt: entry.text, edits: [] });
+    turns.at(-1)?.edits.push(...edits(entry));
   }
   return turns.filter((turn) => turn.edits.length > 0).reverse();
+}
+
+/** The edits a tool call and a subagent's calls under it went through with. */
+function edits(entry: Entry): EditTurn['edits'] {
+  if (entry.kind !== 'tool') return [];
+  return [entry, ...(entry.children ?? [])].flatMap((call) =>
+    call.run.name === 'edit' && call.status === 'done'
+      ? [{ path: call.run.input.path, patch: call.run.result?.patch ?? call.run.input.patch, created: call.run.input.created }]
+      : [],
+  );
+}
+
+/** Each file in `edits` once, in the order first changed, with its patches together and the lines they add and remove. */
+export function changedFiles(list: EditTurn['edits']): (ChangedFile & { patch: string })[] {
+  const files = new Map<string, { patches: string[]; created: boolean }>();
+  for (const edit of list) {
+    const file = files.get(edit.path) ?? { patches: [], created: false };
+    file.patches.push(edit.patch);
+    file.created ||= edit.created === true;
+    files.set(edit.path, file);
+  }
+  return [...files].map(([path, file]) => {
+    const patch = file.patches.join('\n');
+    const lines = patch.split('\n');
+    return {
+      path,
+      created: file.created,
+      added: lines.filter((line) => line.startsWith('+')).length,
+      removed: lines.filter((line) => line.startsWith('-')).length,
+      patch,
+    };
+  });
+}
+
+/**
+ * What the turn that began at `from` changed, for the card at its end; `undefined` when it changed nothing. A turn the
+ * agent started itself shows in `/diff` with the message before it, as its edits do.
+ */
+function turnChanges(entries: Entry[], from: number): Entry | undefined {
+  const files = changedFiles(entries.slice(from).flatMap(edits)).map(({ patch: _, ...file }) => file);
+  const turn = entries.slice(0, from + 1).findLast((entry) => entry.kind === 'user' && !entry.steered);
+  if (files.length === 0 || !turn) return undefined;
+  return { id: nextId(), kind: 'changes', turn: turn.id, files };
 }
 
 /** A command or subagent call that went on as a background task. */

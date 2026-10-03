@@ -2,8 +2,11 @@ import { memo } from 'react';
 import {
   AskResult,
   Box,
+  Clickable,
   EditBlock,
   Expandable,
+  ExpandHint,
+  FRAME_INSET,
   Frame,
   Markdown,
   Notice,
@@ -18,7 +21,9 @@ import {
   toneOf,
   UserMessage,
   useAnimation,
+  useContentWidth,
   useHovered,
+  usePanels,
   useTheme,
   useView,
   type TreeNode,
@@ -26,7 +31,8 @@ import {
 import type { FileRef, ToolRun } from '../agent/types.js';
 import { compact } from '../usage/format.js';
 import { useConversation } from '../context.js';
-import type { Entry, ToolCallEntry } from '../session.js';
+import { DiffPanel } from '../panels/diff.js';
+import type { ChangedFile, Entry, ToolCallEntry } from '../session.js';
 import { Banner } from './banner.js';
 
 type ToolEntry = Extract<Entry, { kind: 'tool' }>;
@@ -58,6 +64,7 @@ export const EntryView = memo(function EntryView({ entry, live = false }: EntryV
   const fullWidth =
     entry.kind === 'banner' ||
     entry.kind === 'user' ||
+    entry.kind === 'changes' ||
     (entry.kind === 'tool' && ['bash', 'edit', 'todo', 'ask', 'plan'].includes(entry.run.name));
 
   const body = <EntryBody entry={entry} live={live} />;
@@ -127,9 +134,77 @@ function EntryBody({ entry, live }: { entry: Entry; live: boolean }) {
       return <TaskEnd entry={entry} />;
     case 'compaction':
       return <Compaction entry={entry} />;
+    case 'changes':
+      return <ChangesCard entry={entry} />;
     case 'tool':
       return <ToolView entry={entry} live={live} />;
   }
+}
+
+/** Files listed on a turn's card before the rest is counted; a click on the count opens them all in `/diff`. */
+const CARD_FILES = 8;
+
+/**
+ * What a turn changed, at its end, as Cursor shows it: each file with the lines it gained and lost. A click on a file
+ * opens its diff in `/diff`, in the view of that turn.
+ */
+function ChangesCard({ entry }: { entry: Extract<Entry, { kind: 'changes' }> }) {
+  const theme = useTheme();
+  const panels = usePanels();
+  const width = useContentWidth();
+  const open = (file?: string) =>
+    panels.open({ id: 'diff', placement: 'fullscreen', element: <DiffPanel turn={entry.turn} file={file} /> });
+  const shown = entry.files.slice(0, CARD_FILES);
+  const more = entry.files.length - shown.length;
+  const total = {
+    path: '',
+    created: false,
+    added: entry.files.reduce((sum, file) => sum + file.added, 0),
+    removed: entry.files.reduce((sum, file) => sum + file.removed, 0),
+  };
+  // The paths in one column, as long as the longest, leaving room for the counts after them.
+  const pathWidth = Math.min(Math.max(...shown.map((file) => file.path.length)) + 2, Math.max(10, width - FRAME_INSET - 16));
+
+  return (
+    <Frame
+      title={
+        <Text>
+          <Text bold>{plural(entry.files.length, 'file')} changed</Text> <LineCounts file={total} />
+        </Text>
+      }
+    >
+      {shown.map((file) => (
+        <Clickable key={file.path} id={`${entry.id}:${file.path}`} fit onClick={() => open(file.path)}>
+          <Box>
+            <Box width={pathWidth} flexShrink={0}>
+              <Text color={theme.code} wrap="truncate-start">
+                {file.path}
+              </Text>
+            </Box>
+            <LineCounts file={file} column={entry.files.some((other) => other.created)} />
+          </Box>
+        </Clickable>
+      ))}
+      {more > 0 && (
+        <Clickable id={`${entry.id}:more`} fit onClick={() => open()}>
+          <ExpandHint>{`+${plural(more, 'more file')}`}</ExpandHint>
+        </Clickable>
+      )}
+    </Frame>
+  );
+}
+
+/** `new +29`, `+2 -1`, as `/diff` lists them; in a `column`, `new` takes its place on every line so the counts line up. */
+function LineCounts({ file, column = false }: { file: ChangedFile; column?: boolean }) {
+  const theme = useTheme();
+  return (
+    <Text>
+      {(file.created || column) && <Text color={theme.muted}>{file.created ? 'new ' : '    '}</Text>}
+      {file.added > 0 && <Text color={theme.diff.added}>+{file.added}</Text>}
+      {file.added > 0 && file.removed > 0 && ' '}
+      {file.removed > 0 && <Text color={theme.diff.removed}>-{file.removed}</Text>}
+    </Text>
+  );
 }
 
 /** Where the conversation was summarized: how much it held before and after; the summary on a click. */

@@ -102,6 +102,34 @@ describe('reduce', () => {
     ]);
   });
 
+  it('ends a turn that changed files with what it changed, counted per file, and one that changed none without', () => {
+    const edit = (id: string, path: string, patch: string, created?: boolean): AgentEvent[] => [
+      { type: 'tool-start', id, call: { name: 'edit', input: { path, patch, created } } },
+      { type: 'tool-end', id, ok: true, result: {} },
+    ];
+    let session = reduce(createSession(200_000), { type: 'submit', text: 'add the limiter' });
+    const prompt = session.entries.at(-1)!.id;
+    session = events(
+      session,
+      ...edit('e1', 'src/limit.ts', '@@ -0,0 +1,2 @@\n+a\n+b', true),
+      ...edit('e2', 'src/server.ts', '@@ -1 +1 @@\n-old\n+new'),
+      ...edit('e3', 'src/limit.ts', '@@ -1 +1 @@\n-a\n+c'),
+      { type: 'text', delta: 'Done.' },
+    );
+    session = reduce(session, { type: 'finish', outcome: 'done' });
+    expect(session.entries.at(-1)).toMatchObject({
+      kind: 'changes',
+      turn: prompt,
+      files: [
+        { path: 'src/limit.ts', created: true, added: 3, removed: 1 },
+        { path: 'src/server.ts', created: false, added: 1, removed: 1 },
+      ],
+    });
+
+    session = reduce(reduce(session, { type: 'submit', text: 'explain it' }), { type: 'finish', outcome: 'done' });
+    expect(session.entries.at(-1)!.kind).toBe('user');
+  });
+
   it('replaces consecutive todo updates and keeps the list', () => {
     const todo = (text: string): AgentEvent => ({
       type: 'tool-start',

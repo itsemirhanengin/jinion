@@ -17,7 +17,7 @@ import {
 } from '@jinion/tui';
 import { useJinion } from '../context.js';
 import { branchBase, fileDiff, findRepos, repoChanges, repoState, type FileChange, type Repo } from '../git/repos.js';
-import type { EditTurn } from '../session.js';
+import { changedFiles, type EditTurn } from '../session.js';
 
 /** Rows the panel itself takes around the list or the diff: edges, header, dividers and hints. */
 const CHROME_ROWS = 8;
@@ -45,6 +45,8 @@ interface ChangeRow {
 /** Current, from git, or one turn's edits, from the conversation. */
 interface View {
   label: string;
+  /** For a turn's view, the id of the message that started it. */
+  turn?: string;
   /** `undefined` while it is read. */
   rows?: ChangeRow[];
   subtitle?: string;
@@ -66,12 +68,19 @@ interface RepoView {
  * repositories of a folder that holds several, or what a branch adds to the default branch when nothing is; left and
  * right go through the turns in which the agent changed files, each with just its edits. Enter opens a file's diff.
  */
-export function DiffPanel() {
+export interface DiffPanelProps {
+  /** Opens on the view of the turn started by this message, e.g. from the card at the turn's end. */
+  turn?: string;
+  /** And on this file's diff in it; `esc` goes back to the turn's list. */
+  file?: string;
+}
+
+export function DiffPanel({ turn, file }: DiffPanelProps = {}) {
   const app = useJinion();
   const current = useCurrentView();
   const views = [current, ...app.turns.map(turnView)];
-  const [active, setActive] = useState(0);
-  const [open, setOpen] = useState<ChangeRow>();
+  const [active, setActive] = useState(() => Math.max(0, views.findIndex((view) => turn !== undefined && view.turn === turn)));
+  const [open, setOpen] = useState<ChangeRow | undefined>(() => views[active]?.rows?.find((row) => row.file === file));
 
   if (open) return <FileDiff row={open} onBack={() => setOpen(undefined)} />;
   return (
@@ -139,29 +148,21 @@ function useCurrentView(): View {
 
 /** A turn's edits, a file each, from the conversation rather than git: what the agent changed then, and only that. */
 function turnView(turn: EditTurn): View {
-  const files = new Map<string, { patches: string[]; created: boolean }>();
-  for (const edit of turn.edits) {
-    const file = files.get(edit.path) ?? { patches: [], created: false };
-    file.patches.push(edit.patch);
-    file.created ||= edit.created === true;
-    files.set(edit.path, file);
-  }
-  const rows = [...files].map(([path, file]): ChangeRow => {
-    const patch = file.patches.join('\n');
-    const lines = patch.split('\n');
-    return {
-      key: path,
-      file: path,
+  const rows = changedFiles(turn.edits).map(
+    (file): ChangeRow => ({
+      key: file.path,
+      file: file.path,
       kind: file.created ? 'added' : 'modified',
-      insertions: lines.filter((line) => line.startsWith('+')).length,
-      deletions: lines.filter((line) => line.startsWith('-')).length,
-      where: path,
-      patch: async () => patch,
-    };
-  });
+      insertions: file.added,
+      deletions: file.removed,
+      where: file.path,
+      patch: async () => file.patch,
+    }),
+  );
   const prompt = turn.prompt.split('\n').find((line) => line.trim()) ?? turn.prompt;
   return {
     label: prompt.length > TURN_LABEL ? `${prompt.slice(0, TURN_LABEL - 1)}…` : prompt,
+    turn: turn.id,
     rows,
     subtitle: [`“${prompt.length > 60 ? `${prompt.slice(0, 59)}…` : prompt}”`, ...totals(rows)].join(' · '),
     empty: '',

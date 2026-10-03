@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import { useHovered } from '../primitives/expandable.js';
+import { useHovered } from '../primitives/clickable.js';
 import { useTheme } from '../runtime/context.js';
 import { hoverColor } from '../theme/themes.js';
 import { Prose } from '../primitives/prose.js';

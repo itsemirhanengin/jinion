@@ -1,5 +1,5 @@
 import { Box, Text } from 'ink';
-import { useHovered } from '../primitives/expandable.js';
+import { useHovered } from '../primitives/clickable.js';
 import { useTheme, useView } from '../runtime/context.js';
 import { printable } from '../utils/printable.js';
 

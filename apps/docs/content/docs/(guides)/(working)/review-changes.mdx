@@ -5,6 +5,23 @@ description: See what the agent changed with /diff, turn by turn, in one reposit
 
 Every edit the agent makes shows as a diff in the conversation. To look at everything together, type `/diff`.
 
+## See what a turn changed
+
+When a turn has changed files, it ends with a card of them: each file with the lines it gained and lost, and the total
+in its title.
+
+```terminal
+{border|+---} {bold|4 files changed} {added|+63} {removed|-4} {border|---------------------------------------------------------------+}
+{border||} {code|src/middleware/rate-limit.ts}       {muted|new} {added|+30} {removed|-1}                                            {border||}
+{border||} {code|src/server.ts}                          {added|+2} {removed|-1}                                             {border||}
+{border||} {code|src/routes/auth.ts}                     {added|+2} {removed|-2}                                             {border||}
+{border||} {code|src/middleware/rate-limit.test.ts}  {muted|new} {added|+29}                                               {border||}
+{border|+------------------------------------------------------------------------------------------+}
+```
+
+Click a file to open its diff in `/diff`, in the view of that turn; `esc` goes back to the turn's list. A card of more
+than eight files counts the rest on its last line, which opens the turn's list.
+
 ## See what isn't committed
 
 `/diff` opens full screen. Its Current view lists every file that isn't committed, staged or not, new files included,

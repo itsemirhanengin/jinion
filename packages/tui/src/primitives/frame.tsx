@@ -2,7 +2,7 @@ import { Children, isValidElement, type ReactElement, type ReactNode } from 'rea
 import { Box, Text } from 'ink';
 import { Inset, useTheme } from '../runtime/context.js';
 import { hoverColor, type Tone } from '../theme/themes.js';
-import { useHovered } from './expandable.js';
+import { useHovered } from './clickable.js';
 import { Fill } from './fill.js';
 
 const SIDES = {

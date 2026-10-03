@@ -205,6 +205,26 @@ describe('App', () => {
     expect(all).toContain('Tests  3 passed (3)');
   });
 
+  it('ends a turn that changed files with a card of them, and opens a file’s diff from it on a click', async () => {
+    start(0, 80);
+    await playTour();
+    const card = await terminal.waitFor('4 files changed +63 -4');
+    expect(card).toMatch(/^\| src\/middleware\/rate-limit\.ts +new \+30 -1 +\|$/m);
+    expect(card).toMatch(/^\| src\/server\.ts {26}\+2 -1 +\|$/m);
+
+    // The rows light up as far as their text goes.
+    await terminal.hover('| src/server.ts', 2);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(await terminal.backgroundOf('| src/server.ts', 2)).toBe(hoverColor(darkTheme));
+    expect(await terminal.backgroundOf('| src/server.ts', 60)).toBeUndefined();
+
+    await terminal.click('| src/server.ts', 2);
+    await terminal.waitFor(/Diff src\/server\.ts[\s\S]*rateLimit/);
+    // Back is that turn's list, rather than the uncommitted changes.
+    await terminal.press(KEYS.escape);
+    await terminal.waitFor('“add rate limiting to the api” · 4 files · +63 -4');
+  });
+
   it('keeps the task list above the prompt while it has work left, and not once it is all done', () => {
     const list = (...statuses: TodoStatus[]) => [{ title: 'Tasks', items: statuses.map((status, index) => ({ text: `task ${index}`, status })) }];
     expect(hasWorkLeft(list('done', 'active', 'pending'))).toBe(true);

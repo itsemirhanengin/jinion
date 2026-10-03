@@ -208,6 +208,8 @@ Thinking shows as it comes, then folds into `Thought for 12s` once the agent mov
 
 `/diff` works as in Claude Code. Its Current view shows what isn't committed, staged or not, new files included, with `+`/`-` lines per file, or, when nothing is, what the branch adds on top of the default branch. Files the agent changed in this conversation, subagents included, are marked `agent`, so they stand apart from your own edits. `left`/`right` go through the turns in which the agent changed files, newest first, each showing just that turn's edits; these come from the agent's edits rather than git, so a change made by a command shows only under Current. `enter` opens a file's diff, scrolled with `up`/`down` and `pgup`/`pgdn`, and `esc` goes back to the list. To take changes back, rewind (`esc` `esc`).
 
+A turn that changed files ends with a card of them, as Cursor shows it: each file with the lines it gained and lost, and the total in its title (`4 files changed +63 -4`). A click on a file opens its diff in `/diff`, in that turn's view; past eight files, the last line counts the rest and opens the turn's list.
+
 Jinion also works in a folder that isn't a repository but holds several, such as a parent folder of four repositories opened for the context across them. It finds the repositories up to three folders down (skipping `node_modules`, build output and hidden folders), and:
 
 - `/diff` groups the changes under each repository with its branch, and shows what a branch adds for each repository with nothing uncommitted;
