@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { findRepos } from '../../git/repos.js';
 import { memorySection } from '../../memory/prompt.js';
 import type { MemoryStore } from '../../memory/store.js';
@@ -76,7 +76,7 @@ function gitLine(cwd: string) {
   const repos = findRepos(cwd);
   const [only] = repos;
   if (!only) return 'not a git repository';
-  if (only.path === '') return gitBranch(only.root);
+  if (only.path === '') return gitBranch(only.root) + worktreeNote(only.root);
 
   const list = repos.map((repo) => `${repo.path}/ (${gitBranch(repo.root)})`).join(', ');
 
@@ -90,6 +90,22 @@ function gitBranch(cwd: string) {
     return branch.trim() ? `on branch ${branch.trim()}` : 'detached HEAD';
   } catch {
     return 'not a git repository';
+  }
+}
+
+function worktreeNote(root: string) {
+  try {
+    const [gitDir, common] = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-dir', '--git-common-dir'], {
+      cwd: root,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).split('\n');
+
+    if (!gitDir || !common || gitDir === common) return '';
+
+    return `, in a git worktree of ${dirname(common)}. Work and commit here; the main checkout is the user's own and stays as it is.`;
+  } catch {
+    return '';
   }
 }
 

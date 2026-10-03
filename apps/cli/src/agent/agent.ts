@@ -40,8 +40,8 @@ export interface Agent {
   context?(): Promise<ContextUsage>;
   usage?(options?: { drivers?: boolean }): Promise<AgentUsage>;
   history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
-  /** The next prompt starts a new conversation, or continues `resume` when given. */
-  reset?(resume?: AgentResume): void;
+  /** The next prompt starts a new conversation, or continues `resume`; in `cwd`, such as a worktree, instead of the project. */
+  reset?(resume?: AgentResume, cwd?: string): void;
   close?(): void;
 }
 

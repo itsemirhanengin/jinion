@@ -12,7 +12,9 @@ import { type ClaudeQuestion, toClaudeAnswers, toQuestions } from './questions.j
 const UNASKED = new Set(['WebFetch', 'WebSearch', 'Skill', 'ToolSearch', 'ListMcpResourcesTool', 'ReadMcpResourceTool']);
 
 export interface ApprovalsOptions {
-  cwd: string;
+  project: string;
+  /** Where the conversation works, which changes with it. */
+  cwd(): string;
   turn(): RunContext | undefined;
   onPlanApproved(mode: AgentMode): Promise<void>;
 }
@@ -23,7 +25,7 @@ export class ClaudeApprovals {
   private readonly allowedTools = new Set<string>();
 
   constructor(private readonly options: ApprovalsOptions) {
-    this.permissions = new ProjectPermissions(options.cwd);
+    this.permissions = new ProjectPermissions(options.project);
   }
 
   savedRules() {
@@ -43,7 +45,7 @@ export class ClaudeApprovals {
       return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion memory' } };
     }
 
-    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Input, this.options.cwd);
+    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Input, this.options.cwd());
     if (!reason) return {};
 
     return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };

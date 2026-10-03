@@ -41,6 +41,7 @@ export class ClaudeAgent implements Agent {
   private modelList?: Promise<ModelOption[]>;
   private claude?: ClaudeProcess;
   private resume?: ClaudeResume;
+  private cwd: string;
   private turn?: RunContext;
   /** Claude Code only reads MCP servers when it starts, so the next turn starts a new process. */
   private stale = false;
@@ -50,6 +51,7 @@ export class ClaudeAgent implements Agent {
 
   constructor(private readonly options: ClaudeAgentOptions) {
     this.current = options.selection ?? { model: 'opus' };
+    this.cwd = options.cwd;
     this.currentMode = options.mode ?? 'edits';
 
     this.accounts = new ClaudeAccounts({
@@ -62,7 +64,8 @@ export class ClaudeAgent implements Agent {
     });
 
     this.approvals = new ClaudeApprovals({
-      cwd: options.cwd,
+      project: options.cwd,
+      cwd: () => this.cwd,
       turn: () => this.turn,
       onPlanApproved: async (mode) => {
         this.currentMode = mode;
@@ -113,16 +116,16 @@ export class ClaudeAgent implements Agent {
     if (!conversation) return;
 
     const resume = this.resumeOf(claude);
-    if (!resume) return this.reset();
+    if (!resume) return this.drop();
 
     const read = this.options.sessionMessages ?? getSessionMessages;
-    const transcript = await read(resume.sessionId, { dir: this.options.cwd });
+    const transcript = await read(resume.sessionId, { dir: this.cwd });
     const index = transcript.findIndex((message) => message.uuid === id);
     if (index === -1) throw new Error("That message isn't in Claude Code's transcript of this conversation.");
 
     const before = transcript[index - 1]?.uuid;
 
-    this.reset(before ? { ...resume, at: before } : undefined);
+    this.drop(before ? { ...resume, at: before } : undefined);
   }
 
   async commands(): Promise<AgentCommand[]> {
@@ -227,7 +230,17 @@ export class ClaudeAgent implements Agent {
     return readHistory(progress);
   }
 
-  reset(resume?: ClaudeResume) {
+  reset(resume?: ClaudeResume, cwd?: string) {
+    this.cwd = cwd ?? this.options.cwd;
+    this.drop(resume);
+  }
+
+  close() {
+    this.drop();
+  }
+
+  /** Ends the process; the next prompt continues `resume`, or starts afresh, in the same folder. */
+  private drop(resume?: ClaudeResume) {
     this.resume = resume;
     const claude = this.claude;
 
@@ -238,10 +251,6 @@ export class ClaudeAgent implements Agent {
     const stopped = claude.events.tasks.stopAll();
 
     if (stopped) this.emit(stopped);
-  }
-
-  close() {
-    this.reset();
   }
 
   private async *follow(claude: ClaudeProcess, context: RunContext, messages: AsyncIterable<SDKMessage>): AsyncGenerator<AgentEvent> {
@@ -301,7 +310,7 @@ export class ClaudeAgent implements Agent {
   }
 
   private restart() {
-    this.reset(this.claude ? this.resumeOf(this.claude) : this.resume);
+    this.drop(this.claude ? this.resumeOf(this.claude) : this.resume);
   }
 
   /** Falls back to what the process itself continued, which a process that never took a turn would otherwise lose. */
@@ -312,13 +321,14 @@ export class ClaudeAgent implements Agent {
   }
 
   private start() {
-    const { cwd, memory, mcp, debug, spawn } = this.options;
-    const resume = this.resume;
+    const { memory, mcp, debug, spawn } = this.options;
+    const { cwd, resume } = this;
 
     this.resume = undefined;
 
     const options = claudeOptions({
       cwd,
+      project: this.options.cwd,
       selection: this.current,
       mode: this.currentMode,
       account: this.accounts.current,
@@ -357,7 +367,7 @@ export class ClaudeAgent implements Agent {
       },
       // A process that died can't take another turn; the next prompt continues the conversation in a new one.
       onExit: () => {
-        if (claude === this.claude) this.reset(this.resumeOf(claude));
+        if (claude === this.claude) this.drop(this.resumeOf(claude));
       },
     });
 

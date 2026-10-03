@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { git, repo } from '../../support/git.js';
@@ -21,6 +22,17 @@ describe('systemPrompt', () => {
 
     expect(gitLine()).toBe(
       "- Git: this folder isn't a repository, but these folders in it are: api/ (on branch main), web/ (on branch redesign). Run git in the repository a change belongs to, e.g. `git -C api status`.",
+    );
+  });
+
+  it('says when the project is a git worktree, and of which checkout', () => {
+    repo(box.project, (path) => box.write(join(path, 'a.ts'), ''));
+    const worktree = join(box.home, 'worktree');
+
+    git(box.project, 'worktree', 'add', '-qb', 'worktree-swift-fox', worktree);
+
+    expect(systemPrompt(worktree).split('\n').find((line) => line.startsWith('- Git: '))).toBe(
+      `- Git: on branch worktree-swift-fox, in a git worktree of ${realpathSync(box.project)}. Work and commit here; the main checkout is the user's own and stays as it is.`,
     );
   });
 

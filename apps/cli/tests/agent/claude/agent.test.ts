@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { claudeSays, FakeClaude, settle } from '../../support/fake-claude.js';
 import { sandboxEach } from '../../support/sandbox.js';
@@ -121,6 +122,24 @@ describe('ClaudeAgent', () => {
     await agent.commands();
 
     expect(fake.processes.map((spawned) => spawned.options.resume)).toEqual(['session-9', 'session-9']);
+  });
+
+  it('works in the folder a conversation is reset into, through restarts, until the next conversation', async () => {
+    const worktree = join(box.home, 'worktree');
+
+    agent.reset({ sessionId: 'session-4', cost: 0 }, worktree);
+    await turn('hello', (uuid) => [claudeSays.init('session-4'), claudeSays.result(uuid)]);
+    fake.exit();
+    await settle();
+    await turn('still there?', (uuid) => [claudeSays.result(uuid)]);
+
+    expect(fake.processes.map((spawned) => spawned.options.cwd)).toEqual([worktree, worktree]);
+    expect(fake.current.options.systemPrompt).toMatchObject({ prompt: expect.stringContaining(`Working directory: ${worktree}`) });
+
+    agent.reset();
+    await turn('new one', (uuid) => [claudeSays.result(uuid)]);
+
+    expect(fake.current.options.cwd).toBe(box.project);
   });
 
   it('continues the conversation in a new process after Claude Code exits on its own', async () => {
