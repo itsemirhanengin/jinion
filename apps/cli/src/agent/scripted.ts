@@ -1,3 +1,6 @@
+import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { ModelOption, ModelSelection, Question, QuestionAnswer } from '@jinion/tui';
 import type {
   Agent,
@@ -5,6 +8,7 @@ import type {
   AgentEvent,
   AgentMode,
   AgentPrompt,
+  BackgroundTask,
   RunContext,
   ToolCall,
   ToolName,
@@ -12,6 +16,70 @@ import type {
   Tools,
   Usage,
 } from './types.js';
+
+/** What the agent says on its own once a background task ended, in a turn it starts itself. */
+export type Followup = (script: Script, task: BackgroundTask) => AsyncGenerator<AgentEvent, void>;
+
+export interface BackgroundScript {
+  /** Printed one after another over `durationMs`; a task without `exitCode` runs until it is stopped. */
+  output: string[];
+  durationMs?: number;
+  exitCode?: number;
+  followup?: Followup;
+}
+
+/**
+ * The demo's background tasks: their output goes to files the tasks panel reads, and they end on a timer or when
+ * stopped, between turns, with a turn the agent starts itself to look at them.
+ */
+class DemoTasks {
+  readonly listeners = new Set<(event: AgentEvent) => void>();
+  private readonly tasks = new Map<string, { task: BackgroundTask; timers: NodeJS.Timeout[]; followup?: Followup }>();
+  /** The turn a `turn-start` announced, until `join` plays it. */
+  pending?: (context: RunContext) => AsyncGenerator<AgentEvent>;
+
+  constructor(private readonly play: (followup: Followup, task: BackgroundTask, context: RunContext) => AsyncGenerator<AgentEvent>, private readonly pace: number) {}
+
+  start(id: string, command: string, { output, durationMs = 3000, exitCode, followup }: BackgroundScript) {
+    const folder = join(tmpdir(), 'jinion-demo-tasks');
+    mkdirSync(folder, { recursive: true });
+    const file = join(folder, `${id}.output`);
+    writeFileSync(file, '');
+    const task: BackgroundTask = { id, kind: 'shell', title: command, status: 'running', startedAt: Date.now(), output: file };
+    const step = (durationMs / Math.max(1, output.length)) * this.pace;
+    const timers = output.map((line, index) => setTimeout(() => appendFileSync(file, `${line}\n`), step * index));
+    if (exitCode !== undefined) {
+      timers.push(setTimeout(() => this.end(id, exitCode === 0 ? 'completed' : 'failed', `exit code ${exitCode}`), durationMs * this.pace));
+    }
+    this.tasks.set(id, { task, timers, followup });
+    return this.list();
+  }
+
+  stop(id: string) {
+    if (this.tasks.get(id)?.task.status === 'running') this.end(id, 'stopped');
+  }
+
+  private end(id: string, status: BackgroundTask['status'], summary?: string) {
+    const entry = this.tasks.get(id)!;
+    for (const timer of entry.timers) clearTimeout(timer);
+    Object.assign(entry.task, { status, endedAt: Date.now() });
+    this.emit(this.list());
+    this.emit({ type: 'task-end', task: { ...entry.task }, summary });
+    const { followup } = entry;
+    if (!followup) return;
+    const task = { ...entry.task };
+    this.pending = (context) => this.play(followup, task, context);
+    this.emit({ type: 'turn-start' });
+  }
+
+  list(): AgentEvent {
+    return { type: 'tasks', tasks: [...this.tasks.values()].map(({ task }) => ({ ...task })) };
+  }
+
+  private emit(event: AgentEvent) {
+    for (const listener of this.listeners) listener(event);
+  }
+}
 
 export interface Scenario {
   title: string | ((prompt: string) => string);
@@ -28,13 +96,16 @@ export class ScriptedAgent implements Agent {
   readonly mode: AgentMode = 'edits';
   readonly modes: AgentMode[] = ['edits'];
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
+  private readonly tasks: DemoTasks;
 
   constructor(
     private readonly scenarios: Scenario[],
     private readonly agentCommands: AgentCommand[] = [],
     /** How long its pauses take: 1 plays like a real agent, 0 as fast as possible, for tests. */
     private readonly pace = 1,
-  ) {}
+  ) {
+    this.tasks = new DemoTasks((followup, task, context) => followup(this.script(context), task), pace);
+  }
 
   async commands() {
     return this.agentCommands;
@@ -47,7 +118,26 @@ export class ScriptedAgent implements Agent {
 
     yield { type: 'sent', id: `prompt_${++promptSequence}` };
     yield { type: 'title', title: typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt) };
-    yield* scenario.play(new Script(context, this.usage, this.pace), prompt);
+    yield* scenario.play(this.script(context), prompt);
+  }
+
+  subscribe(listener: (event: AgentEvent) => void) {
+    this.tasks.listeners.add(listener);
+    return () => void this.tasks.listeners.delete(listener);
+  }
+
+  join(context: RunContext): AsyncIterable<AgentEvent> {
+    const play = this.tasks.pending;
+    this.tasks.pending = undefined;
+    return play ? play(context) : (async function* () {})();
+  }
+
+  async stopTask(id: string) {
+    this.tasks.stop(id);
+  }
+
+  private script(context: RunContext) {
+    return new Script(context, this.usage, this.pace, this.tasks);
   }
 
   /** The demo changes no real files, so there is never anything to restore. */
@@ -81,7 +171,19 @@ export class Script {
     private readonly context: RunContext,
     private readonly totals: Usage,
     private readonly pace = 1,
+    private readonly tasks?: DemoTasks,
   ) {}
+
+  /** A command that goes on in the background; the turn goes on without waiting for it. */
+  async *background(command: string, script: BackgroundScript): AsyncGenerator<AgentEvent> {
+    if (!this.tasks) throw new Error('This script runs no background tasks.');
+    const id = `tool_${++toolSequence}`;
+    yield { type: 'tool-start', id, call: { name: 'bash', input: { command, timeoutMs: 120_000 } } };
+    await this.wait(300);
+    const task = `task_${toolSequence}`;
+    yield this.tasks.start(task, command, script);
+    yield { type: 'tool-end', id, ok: true, result: { exitCode: 0, wallMs: 300, background: task } };
+  }
 
   think(text: string) {
     return this.stream('thinking', text);

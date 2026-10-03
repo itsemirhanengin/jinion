@@ -1,5 +1,136 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`ClaudeEvents replaying recorded conversations > maps the background conversation as before 1`] = `
+[
+  "mode edits",
+  "session",
+  "usage 14742/200000 $0.0000",
+  "thinking: The user wants",
+  "limits 5h, 7d",
+  "thinking:  me to:
+1. Start three bash commands in the background using run_in_background: true
+   - \`for i in 1 2 3; do echo tick $i; sleep 1; done\`
+   - \`sleep 2; echo boom >&2; exit 3\`
+   - \`sleep 120\`
+2. Launch an Explore agent with run_in_background: true that lists files here with Glob
+3. Reply with just "started"
+
+All of these should be done in one message with multiple tool calls. Let me structure this:
+
+1. Three Bash calls with run_in_background: true
+2. One Agent call (Explore type) with run_in_background: true
+
+Let me make all these calls in parallel since they're independent.",
+  "start t1 bash {"command":"for i in 1 2 3; do echo tick $i; sleep 1; done","timeoutMs":120000}",
+  "start t2 bash {"command":"sleep 2; echo boom >&2; exit 3","timeoutMs":120000}",
+  "start t3 bash {"command":"sleep 120","timeoutMs":120000}",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done"",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done"",
+  "end t1 ok {"exitCode":0,"wallMs":0,"background":"bjmc33vfh"}",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell running "sleep 2; echo boom >&2; exit 3"",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell running "sleep 2; echo boom >&2; exit 3"",
+  "end t2 ok {"exitCode":0,"wallMs":0,"background":"bqq4str8d"}",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell running "sleep 2; echo boom >&2; exit 3", shell running "sleep 120"",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell running "sleep 2; echo boom >&2; exit 3", shell running "sleep 120"",
+  "end t3 ok {"exitCode":0,"wallMs":0,"background":"bm6agifc9"}",
+  "start t4 agent {"description":"List files in current directory","kind":"Explore"}",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell running "sleep 2; echo boom >&2; exit 3", shell running "sleep 120", agent running "List files in current directory"",
+  "end t4 ok {"background":"ad669354bd060668d"}",
+  "usage 24302/200000 $0.0000",
+  "thinking: Good, all the background tasks have been started:
+1. Three bash commands are running in background (IDs: bjmc33vfh, bqq4str",
+  "tasks shell running "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell running "sleep 120", agent running "List files in current directory"",
+  "task-end "sleep 2; echo boom >&2; exit 3" failed: Background command "sleep 2; echo boom >&2; exit 3" failed with exit code 3",
+  "thinking: 8d, bm6agifc9)
+2. One Explore agent is running in background (ID: ad669354bd060668d)
+
+The user asked me to reply with just "started". Let me do that.",
+  "text: started",
+  "usage 24302/200000 $0.0262",
+  "mode edits",
+  "session",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell running "sleep 120", agent running "List files in current directory"",
+  "task-end "for i in 1 2 3; do echo tick $i; sleep 1; done" completed: Background command "for i in 1 2 3; do echo tick $i; sleep 1; done" completed (exit code 0)",
+  "usage 24751/200000 $0.0262",
+  "thinking: The task",
+  "start t5 glob {"pattern":"*"} in t4",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell running "sleep 120", agent running "List files in current directory"",
+  "end t5 ok {"files":[]} in t4",
+  "thinking:  notification indicates that the second bash command has completed with a failure. The command was \`sleep 2; echo boom >&2; exit 3\`, which:
+1. Sleeps for 2 seconds
+2. Echoes "boom" to stderr
+3. Exits with code 3
+
+This is expected behavior based on the command itself - it's designed to exit with code 3. The notification system correctly flagged it as "failed" because the exit code is non-zero.
+
+The user hasn't sent any new user input, so I should not respond with anything unless they ask. This is just a notification of background task completion. I should wait for the user to ask about the results or for other tasks to complete.
+
+However, based on the system reminder, I should acknowledge that I received this notification but not treat it as user confirmation or input. I should continue to wait for actual user input.",
+  "text: Noted. Background task \`bqq4str8d\` completed with exit code 3 as expected (it ran \`sleep 2;",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent running "List files in current directory"",
+  "task-end "sleep 120" stopped: sleep 120",
+  "text:  echo boom >&2; exit 3\`).",
+  "usage 24751/200000 $0.0445",
+  "mode edits",
+  "session",
+  "usage 25555/200000 $0.0445",
+  "thinking: Two more background task notifications:
+
+1. Task bm6agifc9 (\`sleep 120\`) was killed",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent completed "List files in current directory"",
+  "task-end "List files in current directory" completed: The current directory contains 1 file:
+
+- **math.ts**
+
+This is the only item in the directory at \`/project\`.",
+  "thinking: /stopped by the user
+2. Task bjmc33vfh (\`for i in 1 2 3; do echo tick $i; sleep 1; done\`) completed successfully with exit code 0
+
+These are just notifications. I should wait for actual user input or for the Explore agent to complete before responding.",
+  "text: Noted. Task \`bjmc33vfh\` completed successfully (exit code 0) — the for loop printed tick 1, tick 2, tick 3 over 3 seconds. Task \`bm6agifc9\` (\`sleep 120\`) was stopped.",
+  "usage 25555/200000 $0.0548",
+  "mode edits",
+  "session",
+  "usage 26239/200000 $0.0548",
+  "thinking: The Explore agent has completed and found that the current directory contains 1 file: \`math.ts\`.
+
+This is just a notification. The user hasn't sent any new input, so I should wait for them to ask something. I'll acknowledge the agent result.",
+  "text: Explore agent completed. The current directory contains one file: **math.ts**.",
+  "usage 26239/200000 $0.0591",
+  "mode edits",
+  "session",
+  "usage 26394/200000 $0.0591",
+  "thinking: The user wants me to run a bash command in the foreground (not in the background). I should use the Bash tool with run_in_background set to false (or just omit it, since false is the default).
+
+The command is: \`sleep 10; echo slept\`
+
+Let me run this with run_in_background: false (or just omit it since that's the default).",
+  "start t6 bash {"command":"sleep 10; echo slept","timeoutMs":120000}",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent completed "List files in current directory", shell foreground running "sleep 10; echo slept"",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent completed "List files in current directory", shell running "sleep 10; echo slept"",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent completed "List files in current directory", shell running "sleep 10; echo slept"",
+  "end t6 ok {"exitCode":0,"wallMs":0,"background":"bsff2yu88"}",
+  "usage 26751/200000 $0.0591",
+  "thinking: Interesting - the command result says "Command was manually backgrounded by user with ID: bsff2yu88". This suggests that even though I didn't specify run_in_background: true, the system backgrounded it anyway. This might be because 10 seconds is considered too long to block in the foreground, or there's some other policy at play.
+
+I should tell the user that the command was backgrounded instead and wait for the result notification.",
+  "text: The command was backgrounded by the system (ID: bsff2yu88). Waiting for it to complete.",
+  "usage 26751/200000 $0.0669",
+  "tasks shell completed "for i in 1 2 3; do echo tick $i; sleep 1; done", shell failed "sleep 2; echo boom >&2; exit 3", shell stopped "sleep 120", agent completed "List files in current directory", shell completed "sleep 10; echo slept"",
+  "task-end "sleep 10; echo slept" completed: Background command "sleep 10; echo slept" completed (exit code 0)",
+  "mode edits",
+  "session",
+  "usage 27321/200000 $0.0669",
+  "thinking: The background command completed successfully. It printed "slept" (the echo command output) after sleeping for 10 seconds. Let me report this to the user.",
+  "text: Command completed. It printed:
+
+\`\`\`
+slept
+\`\`\`",
+  "usage 27321/200000 $0.0710",
+]
+`;
+
 exports[`ClaudeEvents replaying recorded conversations > maps the interrupt conversation as before 1`] = `
 [
   "limits 5h, 7d",
@@ -148,8 +279,11 @@ exports[`ClaudeEvents replaying recorded conversations > maps the subagent conve
 
 Let me invoke the general-purpose agent to search for files under src that mention "export".",
   "start t1 agent {"description":"Find files mentioning \\"export\\" under src","kind":"general-purpose"}",
+  "tasks agent foreground running "Find files mentioning \\"export\\" under src"",
+  "tasks agent foreground running "Find files mentioning \\"export\\" under src"",
   "start t2 grep {"pattern":"export","path":"src"} in t1",
   "end t2 ok {"matches":[],"files":[]} in t1",
+  "tasks ",
   "end t1 ok {}",
   "usage 22402/200000 $0.0000",
   "thinking: The agent found that the files under the src directory that contain the word "export" are:

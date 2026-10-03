@@ -6,8 +6,16 @@ import { ClaudeProcess } from './process.js';
 function start(fake: FakeClaude) {
   const idle: SDKMessage[] = [];
   const onExit = vi.fn();
-  const claude = new ClaudeProcess({ options: {}, cwd: '/project', spawn: fake.spawn, onIdle: (message) => idle.push(message), onExit });
-  return { claude, idle, onExit };
+  const onTurn = vi.fn();
+  const claude = new ClaudeProcess({
+    options: {},
+    cwd: '/project',
+    spawn: fake.spawn,
+    onIdle: (message) => idle.push(message),
+    onTurn,
+    onExit,
+  });
+  return { claude, idle, onExit, onTurn };
 }
 
 const collect = async (turn: AsyncGenerator<SDKMessage>) => {
@@ -69,6 +77,29 @@ describe('ClaudeProcess', () => {
     claude.interrupt();
     fake.reply(claudeSays.result(uuid!, 'interrupted'));
     expect(await turn).toHaveLength(1);
+  });
+
+  it('follows a turn Claude Code starts itself, e.g. after a background task ended, until its result', async () => {
+    const fake = new FakeClaude();
+    const { claude, idle, onTurn } = start(fake);
+    const subagent = { ...claudeSays.text('still listing'), parent_tool_use_id: 'toolu_agent' } as SDKMessage;
+    fake.reply(subagent, claudeSays.init(), claudeSays.text('The tests pass.'), claudeSays.ownResult(), claudeSays.commands('x'));
+    await settle();
+    // A background subagent's messages come on their own, without a turn.
+    expect(idle.map((message) => message.type)).toEqual(['assistant', 'system']);
+    expect(onTurn).toHaveBeenCalledOnce();
+    expect((await collect(claude.follow())).map((item) => item.type)).toEqual(['system', 'assistant', 'result']);
+    expect(await collect(claude.follow())).toEqual([]);
+  });
+
+  it('keeps a prompt’s turn open through a turn Claude Code started itself', async () => {
+    const fake = new FakeClaude();
+    const { claude } = start(fake);
+    const prompt = fake.nextPrompt();
+    const turn = collect(claude.send('run the tests'));
+    const { uuid } = await prompt;
+    fake.reply(claudeSays.text('The server is up.'), claudeSays.ownResult(), claudeSays.text('Running them'), claudeSays.result(uuid!));
+    expect((await turn).map((item) => item.type)).toEqual(['assistant', 'result', 'assistant', 'result']);
   });
 
   it('takes one prompt at a time', async () => {

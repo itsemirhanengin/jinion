@@ -55,7 +55,10 @@ const replacements: [string, string][] = [
   [homedir(), '/home/user'],
   [userInfo().username, 'user'],
 ];
-const clean = (text: string) => replacements.reduce((current, [from, to]) => current.replaceAll(from, to), text);
+/** Claude Code's temporary folder for the project, where background tasks write their output. */
+const CLAUDE_TEMP = /(?:\/private)?\/tmp\/claude-\d+\/[^/"\\]+\//g;
+const clean = (text: string) =>
+  replacements.reduce((current, [from, to]) => current.replaceAll(from, to), text).replace(CLAUDE_TEMP, '/tmp/claude/project/');
 
 const messages = records
   .filter((record) => record.kind === 'message')

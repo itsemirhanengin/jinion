@@ -34,9 +34,11 @@ import type {
   AgentCommand,
   AgentEvent,
   AgentMode,
+  BackgroundTask,
   LimitWindow,
   PlanDecision,
   RewindScope,
+  RunContext,
 } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { CommandRegistry } from './commands/registry.js';
@@ -79,6 +81,7 @@ import { EntryView } from './ui/entry.js';
 import { fileCompletion, useProjectFiles } from './files.js';
 import { clipboardImage, imageFromPaste } from './images.js';
 import { RewindPanel, type RewindPoint } from './panels/rewind.js';
+import { backgroundTasks, TaskLine, TasksPanel } from './panels/tasks.js';
 import { skillCompletion, skillMention } from './skills.js';
 
 export interface AppProps {
@@ -202,16 +205,26 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     });
   };
 
+  // The agent's background tasks, which outlive the turn that started them.
+  const [tasks, setTasks] = useState<BackgroundTask[]>([]);
+
   /** What an event does, whether it comes in a turn or between turns. */
   const apply = (event: AgentEvent) => {
     if (event.type === 'limits') recordLimits(event.windows);
     if (event.type === 'mode') showMode(event.mode);
     if (event.type === 'commands') setSkills(event.commands);
+    if (event.type === 'tasks') setTasks(event.tasks);
+    if (event.type === 'task-end') {
+      const { kind, status, title } = event.task;
+      notify(`${kind === 'agent' ? 'Subagent' : 'Background command'} ${status}: ${title.split('\n')[0]}`);
+    }
+    if (event.type === 'turn-start') return followAgent();
     dispatch({ type: 'event', event });
   };
   const latestApply = useRef(apply);
   latestApply.current = apply;
-  // Between turns the agent still has news: commands that change as servers connect, limits that come after a turn.
+  // Between turns the agent still has news: commands that change as servers connect, limits that come after a turn,
+  // background tasks, and turns it starts itself.
   useEffect(() => agent.subscribe?.((event) => latestApply.current(event)), [agent]);
 
   const shownItems = statusPreview ?? statusItems;
@@ -263,8 +276,33 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const switchSession = (action: Extract<Action, { type: 'clear' | 'load' }>) => {
     if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
     save();
+    const running = backgroundTasks(tasks).filter((task) => task.status === 'running');
+    // The conversation's background tasks end with it.
     agent.reset?.(action.type === 'load' ? resumeOf(action.session) : undefined);
+    setTasks([]);
     dispatch(action);
+    if (running.length > 0) {
+      notice(`Stopped what ran in the background of the last conversation: ${running.map((task) => task.title.split('\n')[0]).join(', ')}.`);
+    }
+  };
+
+  const openTasks = () => panels.open({ id: 'tasks', placement: 'bottom', element: <TasksPanel /> });
+
+  const stopTask = (id: string) => {
+    agent.stopTask?.(id).catch((error: unknown) =>
+      notice(`Couldn't stop the task: ${error instanceof Error ? error.message : error}`, 'error'),
+    );
+  };
+
+  /** ctrl+b: the command or subagent the turn waits for goes on in the background, and the turn without it. */
+  const sendToBackground = () => {
+    if (!agent.background) return;
+    if (!tasks.some((task) => task.foreground && task.status === 'running')) {
+      return notice('Nothing to send to the background yet: a command or subagent can go there once it has run a few seconds.', 'muted');
+    }
+    agent.background().catch((error: unknown) =>
+      notice(`Couldn't send it to the background: ${error instanceof Error ? error.message : error}`, 'error'),
+    );
   };
 
   /** A pasted path of an image file, e.g. one dragged into the terminal, goes in as the image. */
@@ -307,19 +345,49 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   };
 
   useEffect(() => {
-    if (busy || queue.current.length === 0) return;
+    if (busy) return;
+    if (agentTurn.current) {
+      agentTurn.current = false;
+      return followAgent();
+    }
+    if (queue.current.length === 0) return;
     const [next, ...rest] = queue.current;
     setQueue(rest);
     void prompt(next!);
   }, [busy]);
 
+  // A turn already on its way, before the render that shows it.
+  const working = () => busy || controller.current !== undefined;
+
   const prompt = async (text: string) => {
-    if (busy) return notice('jinion is still working. Press esc to interrupt it first.', 'warning');
+    if (working()) return notice('jinion is still working. Press esc to interrupt it first.', 'warning');
+    const full = pastes.expand(text);
+    dispatch({ type: 'submit', text, prompt: full === text ? undefined : full });
+    const sent = { text: full, images: images.in(text) };
+    await runTurn(`“${text.split('\n')[0]!.slice(0, 60)}”`, (context) => agent.run(sent, context));
+  };
+
+  /** A turn the agent started itself, e.g. to look at a background task that ended; after the one in progress. */
+  const agentTurn = useRef(false);
+  const followAgent = () => {
+    const join = agent.join?.bind(agent);
+    if (!join) return;
+    if (controller.current) {
+      agentTurn.current = true;
+      return;
+    }
+    dispatch({ type: 'agent-turn' });
+    void runTurn('the background task', join);
+  };
+
+  /**
+   * Follows a turn's events: the panels it asks in, esc to interrupt it, a notification when a long one ends, and what
+   * was queued for after it. `label` names it in notifications.
+   */
+  const runTurn = async (label: string, events: (context: RunContext) => AsyncIterable<AgentEvent>) => {
     const abort = new AbortController();
     controller.current = abort;
-    const full = pastes.expand(text);
     const started = Date.now();
-    dispatch({ type: 'submit', text, prompt: full === text ? undefined : full });
 
     // Parallel tool calls can ask at the same time, so their panels open one after another.
     let panelsInLine = Promise.resolve();
@@ -375,21 +443,19 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       ));
 
     // A long turn may have sent the user elsewhere; a short one they likely watched.
-    const quoted = `“${text.split('\n')[0]!.slice(0, 60)}”`;
     const notifyLong = (body: string) => Date.now() - started >= LONG_TURN_MS && notify(body);
     try {
-      const sent = { text: full, images: images.in(text) };
-      for await (const event of agent.run(sent, { signal: abort.signal, ask, approve, approvePlan })) {
+      for await (const event of events({ signal: abort.signal, ask, approve, approvePlan })) {
         apply(event);
       }
       dispatch({ type: 'finish', outcome: 'done' });
-      notifyLong(`Done with ${quoted} after ${seconds(Date.now() - started)}.`);
+      notifyLong(`Done with ${label} after ${seconds(Date.now() - started)}.`);
     } catch (error) {
       if (abort.signal.aborted) dispatch({ type: 'finish', outcome: 'interrupted' });
       else {
         const message = error instanceof Error ? error.message : String(error);
         dispatch({ type: 'finish', outcome: 'failed', message });
-        notifyLong(`${quoted} stopped with an error: ${message}`);
+        notifyLong(`Stopped with an error, working on ${label}: ${message}`);
       }
       // What waited for a turn that didn't finish comes back into the prompt, for the user to send or drop.
       const waiting = queue.current;
@@ -453,7 +519,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       if (!text) return;
       setDraft('');
       setSubmitted((items) => [...items, text]);
-      if (!isCommand) return busy ? steer(text) : void prompt(text);
+      if (!isCommand) return working() ? steer(text) : void prompt(text);
 
       const [name = '', ...args] = text.slice(1).split(/\s+/);
       const command = commands.find(name);
@@ -480,6 +546,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       saveStatusLine(items);
     },
     rewind: openRewind,
+    openTasks,
+    stopTask,
     setNotifications: (on) => {
       setNotifications(on);
       saveNotifications(on);
@@ -503,12 +571,15 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     sessions,
     memory,
     edited,
+    tasks,
     notifications: { on: notifications, method: terminal.method },
     sessionId: session.id,
   };
 
   useInput((input, key) => {
     if (key.ctrl && input === 'o') return toggleExpanded();
+    if (key.ctrl && input === 't' && !panels.top) return openTasks();
+    if (key.ctrl && input === 'b' && busy && !panels.top) return sendToBackground();
     if (key.tab && key.shift && !panels.top && agent.modes.length > 1) {
       return selectMode(nextMode(agent.modes, currentMode.current));
     }
@@ -558,7 +629,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
           <>
             {busy && (
               <Box marginTop={1}>
-                <Working label={activity(session, panels.top?.id)} since={session.busySince!} />
+                <Working label={activity(session, panels.top?.id, tasks)} since={session.busySince!} />
               </Box>
             )}
             {showTodos && (
@@ -566,6 +637,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
                 <TodoPanel groups={session.todos} />
               </Box>
             )}
+            <TaskLine tasks={tasks} />
             {queued.length > 0 && (
               <Box marginTop={1} flexDirection="column" paddingX={1}>
                 {queued.map((text, index) => (
@@ -633,15 +705,18 @@ const PLAN_CHOICES: Record<AgentMode, string> = {
   plan: 'Yes, and keep planning mode',
 };
 
-function activity(session: Session, panel: string | undefined) {
+function activity(session: Session, panel: string | undefined, tasks: BackgroundTask[]) {
   if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
   const last = session.entries.at(-1);
   if (last?.kind === 'thinking') return 'Thinking';
   if (last?.kind === 'text') return 'Writing';
+  if (last?.kind === 'task') return 'Looking at the background task that ended';
   if (last?.kind === 'tool' && last.status === 'running') {
     if (last.run.name === 'ask') return 'Waiting for your answer';
-    if (last.run.name === 'agent') return `A subagent is on it: ${last.run.input.description}`;
-    return `Running ${last.run.name === 'other' ? last.run.input.title : last.run.name}`;
+    // A long command or subagent can go on in the background once the agent lists it.
+    const hint = tasks.some((task) => task.foreground && task.status === 'running') ? ' · ctrl+b to run it in the background' : '';
+    if (last.run.name === 'agent') return `A subagent is on it: ${last.run.input.description}${hint}`;
+    return `Running ${last.run.name === 'other' ? last.run.input.title : last.run.name}${hint}`;
   }
   return 'Working';
 }

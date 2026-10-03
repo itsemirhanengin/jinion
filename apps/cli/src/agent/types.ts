@@ -24,7 +24,8 @@ export interface Tools {
   /** `files` is set when only file names were searched for, without matching lines. */
   grep: { input: { pattern: string; path: string }; result: { matches: GrepMatch[]; files?: string[] } };
   glob: { input: { pattern: string }; result: { files: string[] } };
-  bash: { input: { command: string; timeoutMs: number }; result: { exitCode: number; wallMs: number } };
+  /** `background` is the id of the background task the command went on as, instead of an exit code. */
+  bash: { input: { command: string; timeoutMs: number }; result: { exitCode: number; wallMs: number; background?: string } };
   /** The input patch can be a preview; the result carries the applied one when it differs. */
   edit: { input: { path: string; patch: string; created?: boolean }; result: { patch?: string } };
   todo: { input: { groups: TodoGroup[] }; result: Record<string, never> };
@@ -35,8 +36,32 @@ export interface Tools {
   plan: { input: { plan: string }; result: Record<string, never> };
   /** Any tool without a dedicated view, such as MCP tools or subagents. */
   other: { input: { title: string; detail?: string }; result: Record<string, never> };
-  /** A subagent at work on part of the task. Its own tool calls come as events with this call's id as `parent`. */
-  agent: { input: { description: string; kind?: string }; result: Record<string, never> };
+  /**
+   * A subagent at work on part of the task. Its own tool calls come as events with this call's id as `parent`, also
+   * after the call ended when it went on in the `background` task.
+   */
+  agent: { input: { description: string; kind?: string }; result: { background?: string } };
+}
+
+/** A command or subagent that runs on while the conversation goes on, e.g. a dev server. */
+export interface BackgroundTask {
+  id: string;
+  kind: 'shell' | 'agent' | 'other';
+  /** The command, or what the subagent does. */
+  title: string;
+  status: 'running' | 'completed' | 'failed' | 'stopped';
+  startedAt: number;
+  endedAt?: number;
+  /** The file its output goes to as it runs. */
+  output?: string;
+  /** For a subagent: how many tool calls it made and the latest one. */
+  calls?: number;
+  lastCall?: string;
+  /**
+   * Still in the foreground: the turn waits for it, and `Agent.background` can send it to the background. The backend
+   * lists a long command here after a few seconds.
+   */
+  foreground?: boolean;
 }
 
 /**
@@ -78,7 +103,16 @@ export type AgentEvent =
   /** The skills and MCP prompts changed, e.g. as servers connect. */
   | { type: 'commands'; commands: AgentCommand[] }
   /** The backend's id for the prompt that started the turn, which `Agent.rewind` takes. */
-  | { type: 'sent'; id: string };
+  | { type: 'sent'; id: string }
+  /** Every background task of the conversation, running or ended, whenever one starts, changes or ends. */
+  | { type: 'tasks'; tasks: BackgroundTask[] }
+  /** A background task ended; `summary` is the backend's own line about it. */
+  | { type: 'task-end'; task: BackgroundTask; summary?: string }
+  /**
+   * Between turns: the agent started a turn of its own, e.g. to look at a background task that ended. `Agent.join`
+   * follows it the way `run` follows a prompt.
+   */
+  | { type: 'turn-start'; reason?: string };
 
 /** One usage window of the user's plan, such as the 5-hour limit. */
 export interface LimitWindow {
@@ -166,6 +200,15 @@ export interface Agent {
    * Returns a function that stops listening. Backends that only speak when spoken to leave it out.
    */
   subscribe?(listener: (event: AgentEvent) => void): () => void;
+  /** Follows the turn a `turn-start` event announced, with the same context as `run`; empty when there is none. */
+  join?(context: RunContext): AsyncIterable<AgentEvent>;
+  /** Stops a background task; it ends as `stopped`. */
+  stopTask?(id: string): Promise<void>;
+  /**
+   * Sends the commands and subagents the running turn waits for to the background, where they go on as tasks; the
+   * turn goes on without them. Resolves `false` when there was nothing to send.
+   */
+  background?(): Promise<boolean>;
   /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
   reset?(resume?: AgentResume): void;
   close?(): void;

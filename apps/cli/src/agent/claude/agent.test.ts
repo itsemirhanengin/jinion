@@ -140,4 +140,30 @@ describe('ClaudeAgent', () => {
     expect(fake.processes).toHaveLength(2);
     expect(fake.current.options.resume).toBe('session-7');
   });
+
+  it('follows a background task to its end and the turn Claude Code starts to look at it, and stops tasks', async () => {
+    const heard: AgentEvent[] = [];
+    agent.subscribe((event) => heard.push(event));
+    await turn('start the server', (uuid) => [claudeSays.taskStarted('b1', 'toolu_1', 'Start the server'), claudeSays.result(uuid)]);
+    expect(fake.current.options).toMatchObject({ perTaskStopAffordance: true });
+    expect(fake.current.options.env?.CLAUDE_CODE_DISABLE_BACKGROUND_TASKS).toBeUndefined();
+
+    fake.reply(claudeSays.taskEnded('b1', 'failed', 'exit code 1'), claudeSays.init(), claudeSays.text('The server crashed.'), claudeSays.ownResult());
+    await settle();
+    expect(heard.map((event) => event.type)).toEqual(['tasks', 'task-end', 'turn-start']);
+    const events: AgentEvent[] = [];
+    for await (const event of agent.join(context())) events.push(event);
+    expect(events).toContainEqual({ type: 'text', delta: 'The server crashed.' });
+
+    await agent.stopTask('b1');
+    expect(fake.stopped).toEqual(['b1']);
+  });
+
+  it('marks running background tasks stopped when their process ends', async () => {
+    const heard: AgentEvent[] = [];
+    agent.subscribe((event) => heard.push(event));
+    await turn('start the server', (uuid) => [claudeSays.taskStarted('b1', 'toolu_1', 'Start the server'), claudeSays.result(uuid)]);
+    agent.reset();
+    expect(heard.at(-1)).toMatchObject({ type: 'tasks', tasks: [{ id: 'b1', status: 'stopped' }] });
+  });
 });

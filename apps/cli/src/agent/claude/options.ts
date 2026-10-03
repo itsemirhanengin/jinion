@@ -123,7 +123,8 @@ export function claudeOptions({ cwd, selection, mode, account, resume, memory, m
     canUseTool: approvals.canUseTool,
     hooks: { PreToolUse: [{ hooks: [approvals.guard] }] },
     includePartialMessages: true,
-    // Background tasks finish after the turn and start turns of their own, which Jinion can't follow yet.
-    env: { ...env, ...accountEnv(account), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
+    // The tasks panel stops background tasks one at a time, so esc only stops the turn and leaves them running.
+    perTaskStopAffordance: true,
+    env: { ...env, ...accountEnv(account) },
   };
 }

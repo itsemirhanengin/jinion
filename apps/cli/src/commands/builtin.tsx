@@ -151,6 +151,11 @@ export const builtinCommands: Command[] = [
     run: (app) => app.panels.open({ id: 'diff', placement: 'fullscreen', element: <DiffPanel /> }),
   },
   {
+    name: 'tasks',
+    description: 'What runs in the background: dev servers, long commands, subagents; x stops one (ctrl+t)',
+    run: (app) => app.actions.openTasks(),
+  },
+  {
     name: 'rewind',
     description: 'Go back to before an earlier message: code, conversation or both (esc esc)',
     run: (app) => app.actions.rewind(),

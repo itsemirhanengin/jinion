@@ -15,6 +15,8 @@ export class FakeClaude {
   commands: SlashCommand[] = [];
   /** The prompts files were rewound to, dry runs left out. */
   readonly rewound: string[] = [];
+  /** The background tasks stopped. */
+  readonly stopped: string[] = [];
   private readonly prompts: SDKUserMessage[] = [];
   private readonly waiting: ((prompt: SDKUserMessage) => void)[] = [];
 
@@ -37,6 +39,7 @@ export class FakeClaude {
       setPermissionMode: async () => {},
       setModel: async () => {},
       supportedCommands: async () => this.commands,
+      stopTask: async (id: string) => void this.stopped.push(id),
       rewindFiles: async (id: string, { dryRun = false } = {}) => {
         if (!dryRun) this.rewound.push(id);
         return { canRewind: true, filesChanged: ['/project/a.ts'], insertions: 2, deletions: 1 };
@@ -87,6 +90,22 @@ export const claudeSays = {
       is_error: error !== undefined,
       result: error ?? 'done',
       user_message_uuid: answering,
+      total_cost_usd: 0.01,
+      modelUsage: {},
+    }) as unknown as SDKMessage,
+  /** A command `toolu` started went on in the background as task `id`, and how it ended. */
+  taskStarted: (id: string, toolu: string, description: string) =>
+    ({ type: 'system', subtype: 'task_started', task_id: id, tool_use_id: toolu, description, task_type: 'local_bash', is_backgrounded: true }) as unknown as SDKMessage,
+  taskEnded: (id: string, status: 'completed' | 'failed' | 'stopped', summary = '') =>
+    ({ type: 'system', subtype: 'task_notification', task_id: id, status, output_file: `/tmp/${id}.output`, summary }) as unknown as SDKMessage,
+  /** The result of a turn Claude Code started itself, e.g. after a background task, which answers no prompt. */
+  ownResult: (text = 'done') =>
+    ({
+      type: 'result',
+      subtype: 'success',
+      is_error: false,
+      result: text,
+      origin: { kind: 'task-notification', producer: 'session-task' },
       total_cost_usd: 0.01,
       modelUsage: {},
     }) as unknown as SDKMessage,

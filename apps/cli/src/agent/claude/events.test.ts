@@ -67,6 +67,14 @@ function transcript(events: AgentEvent[]) {
       case 'title':
         lines.push(`title ${event.title}`);
         break;
+      case 'tasks':
+        lines.push(
+          `tasks ${event.tasks.map((task) => `${task.kind}${task.foreground ? ' foreground' : ''} ${task.status} ${JSON.stringify(task.title)}`).join(', ')}`,
+        );
+        break;
+      case 'task-end':
+        lines.push(`task-end ${JSON.stringify(event.task.title)} ${event.task.status}: ${event.summary}`);
+        break;
     }
   }
   return lines;
@@ -76,7 +84,7 @@ const started = (events: AgentEvent[]) =>
   events.flatMap((event) => (event.type === 'tool-start' ? [event.call] : []));
 
 describe('ClaudeEvents replaying recorded conversations', () => {
-  for (const name of ['tools', 'plan', 'skills', 'interrupt', 'subagent']) {
+  for (const name of ['tools', 'plan', 'skills', 'interrupt', 'subagent', 'background']) {
     it(`maps the ${name} conversation as before`, () => {
       expect(transcript(replay(name))).toMatchSnapshot();
     });
@@ -116,6 +124,30 @@ describe('ClaudeEvents replaying recorded conversations', () => {
     expect(children.length).toBeGreaterThan(0);
     expect(children.every((event) => 'parent' in event && event.parent === (agent as { id: string }).id)).toBe(true);
     expect(events.some((event) => event.type === 'tool-output')).toBe(false);
+  });
+
+  it('follows background tasks from start to end: commands, one that fails, one stopped, a subagent and ctrl+b', () => {
+    const events = replay('background');
+    const lists = events.flatMap((event) => (event.type === 'tasks' ? [event.tasks] : []));
+    expect(lists.at(-1)!.map(({ kind, title, status }) => `${kind} ${status} ${title}`)).toEqual([
+      'shell completed for i in 1 2 3; do echo tick $i; sleep 1; done',
+      'shell failed sleep 2; echo boom >&2; exit 3',
+      'shell stopped sleep 120',
+      'agent completed List files in current directory',
+      'shell completed sleep 10; echo slept',
+    ]);
+    // Each command's output file, for the tasks panel to show while it runs.
+    const running = lists.flatMap((tasks) => tasks.filter((task) => task.kind === 'shell' && task.status === 'running' && !task.foreground));
+    for (const title of new Set(running.map((task) => task.title))) {
+      expect(running.find((task) => task.title === title && task.output)?.output, title).toMatch(/\/tasks\/\w+\.output$/);
+    }
+    // The foreground command shows once ctrl+b sent it to the background, not while it ran where it started.
+    expect(lists.some((tasks) => tasks.some((task) => task.title.startsWith('sleep 10') && task.status === 'running'))).toBe(true);
+
+    const ends = events.flatMap((event) => (event.type === 'tool-end' && !event.parent ? [event.result] : []));
+    expect(ends.filter((result) => result && 'background' in result)).toHaveLength(5);
+    const summaries = events.flatMap((event) => (event.type === 'task-end' ? [`${event.task.status}: ${event.summary}`] : []));
+    expect(summaries).toContain('failed: Background command "sleep 2; echo boom >&2; exit 3" failed with exit code 3');
   });
 
   it('ends an interrupted turn without a result of its own and carries on with the next', () => {

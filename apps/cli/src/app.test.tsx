@@ -205,6 +205,40 @@ describe('App', () => {
     expect(list).toMatch(/^\| {3}src\/server\.ts +\+1 +agent \|$/m);
   });
 
+  it('keeps a dev server running in the background, shows it above the prompt and in ctrl+t, and stops it with x', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('start the dev server');
+    await terminal.press(KEYS.enter);
+    const screen = await terminal.waitFor(/ctrl\+t shows its output[\s\S]*Ask jinion anything/);
+    expect(screen).toContain('[In the background | ctrl+t to see it]');
+    expect(screen).toMatch(/^ bg \[.\] pnpm dev \d+s · ctrl\+t$/m);
+
+    await terminal.press('\x14');
+    const panel = await terminal.waitFor('Server listening on http://localhost:3000');
+    expect(panel).toMatch(/\| > 1\. \[.\] pnpm dev +\d+s \|/);
+    expect(panel).toContain('x stop');
+
+    await terminal.press('x');
+    await terminal.waitFor('The dev server is stopped.');
+    await terminal.press(KEYS.escape);
+    const after = await terminal.waitFor(/The dev server is stopped\.[\s\S]*Ask jinion anything/);
+    expect(after).toMatch(/\[-\] Background pnpm dev · stopped after/);
+    expect(after).not.toMatch(/^ bg /m);
+  });
+
+  it('looks at tests that failed in the background on its own, and notifies about them', async () => {
+    // Slow enough that the tests end after the turn that started them, as with a real agent.
+    start(1);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.focus(false);
+    await terminal.type('run the tests in the background');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/I'll tell you how they did once they finish\.[\s\S]*Ask jinion anything/, 10_000);
+    const screen = await terminal.waitFor(/The check should use `?>=`?\.[\s\S]*Ask jinion anything/, 15_000);
+    expect(screen).toMatch(/\[!\] Background pnpm vitest run · failed after [\d.]+s · exit 1/);
+    expect(terminal.notifications()).toContain('jinion · project: Background command failed: pnpm vitest run');
+  });
+
   it('notifies when it waits for an answer in a window that isn’t focused, and not while it is', async () => {
     await terminal.waitFor('Ask jinion anything');
     await terminal.focus(false);

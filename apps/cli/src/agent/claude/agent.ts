@@ -224,13 +224,34 @@ export class ClaudeAgent implements Agent {
   async *run(prompt: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
     const claude = this.running();
     this.turn = context;
+    const id = randomUUID();
+    yield { type: 'sent', id };
+    yield* this.follow(claude, context, claude.send(toClaudeContent(prompt, this.invocations), id));
+  }
+
+  /** The turn Claude Code started itself; set up at once, so a message typed right away steers into it. */
+  join(context: RunContext): AsyncIterable<AgentEvent> {
+    const claude = this.claude;
+    if (!claude) return (async function* () {})();
+    this.turn = context;
+    return this.follow(claude, context, claude.follow());
+  }
+
+  async stopTask(id: string) {
+    await this.claude?.query.stopTask(id);
+  }
+
+  async background() {
+    return this.claude ? this.claude.query.backgroundTasks() : false;
+  }
+
+  /** The events of a turn's messages; esc interrupts it, and a result that is an error fails it. */
+  private async *follow(claude: ClaudeProcess, context: RunContext, messages: AsyncIterable<SDKMessage>): AsyncGenerator<AgentEvent> {
     const interrupt = () => claude.interrupt();
     context.signal.addEventListener('abort', interrupt, { once: true });
     try {
-      const id = randomUUID();
-      yield { type: 'sent', id };
       let last: SDKMessage | undefined;
-      for await (const message of claude.send(toClaudeContent(prompt, this.invocations), id)) {
+      for await (const message of messages) {
         last = message;
         yield* this.eventsOf(claude, message);
       }
@@ -246,20 +267,31 @@ export class ClaudeAgent implements Agent {
     }
   }
 
+  /** Ends the process, and its background tasks with it. */
   reset(resume?: ClaudeResume) {
     this.resume = resume;
     const claude = this.claude;
     this.claude = undefined;
-    claude?.close();
+    if (!claude) return;
+    claude.close();
+    const stopped = claude.events.tasks.stopAll();
+    if (stopped) this.emit(stopped);
+  }
+
+  private emit(event: AgentEvent) {
+    for (const listener of this.listeners) listener(event);
   }
 
   close() {
     this.reset();
   }
 
-  /** The running Claude Code, started when there is none or when it runs with MCP servers that changed since. */
+  /**
+   * The running Claude Code, started when there is none or when it runs with MCP servers that changed since; not while
+   * background tasks run, which would end with it.
+   */
   private running() {
-    if (this.stale && !this.turn) {
+    if (this.stale && !this.turn && !this.claude?.events.tasks.running) {
       this.stale = false;
       this.restart();
     }
@@ -315,7 +347,10 @@ export class ClaudeAgent implements Agent {
       spawn,
       onIdle: (message) => {
         if (claude !== this.claude) return;
-        for (const event of this.eventsOf(claude, message)) for (const listener of this.listeners) listener(event);
+        for (const event of this.eventsOf(claude, message)) this.emit(event);
+      },
+      onTurn: () => {
+        if (claude === this.claude) this.emit({ type: 'turn-start' });
       },
       // A process that died can't take another turn; the next prompt continues the conversation in a new one.
       onExit: () => {

@@ -1,5 +1,5 @@
 import type { NoticeTone, Status, TodoGroup } from '@jinion/tui';
-import type { AgentEvent, AgentResume, ToolRun, Usage } from './agent/types.js';
+import type { AgentEvent, AgentResume, BackgroundTask, ToolRun, Usage } from './agent/types.js';
 
 export type Entry =
   | { id: string; kind: 'banner' }
@@ -11,6 +11,8 @@ export type Entry =
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
+  /** A background task that ended, with what the agent said about it. */
+  | { id: string; kind: 'task'; task: BackgroundTask; summary?: string }
   /** `children` are the tool calls of the subagent an `agent` call runs. */
   | {
       id: string;
@@ -51,6 +53,8 @@ export type SavedSession = Omit<Session, 'busySince' | 'title'> & { title: strin
 
 export type Action =
   | { type: 'submit'; text: string; prompt?: string }
+  /** The agent started a turn itself, e.g. to look at a background task that ended. */
+  | { type: 'agent-turn' }
   /** A message added to the turn in progress; `id` is what the agent calls it. */
   | { type: 'steer'; text: string; prompt?: string; id?: string }
   /** The conversation went back to before this user entry, which leaves it with everything after it. */
@@ -113,6 +117,8 @@ export function reduce(session: Session, action: Action): Session {
         title: session.title ?? titleOf(action.text),
         busySince: Date.now(),
       };
+    case 'agent-turn':
+      return { ...session, busySince: Date.now() };
     case 'steer':
       return {
         ...session,
@@ -126,8 +132,11 @@ export function reduce(session: Session, action: Action): Session {
     case 'finish': {
       const cancel = <T extends { status: Status; endedAt?: number }>(call: T): T =>
         call.status === 'running' ? { ...call, status: 'cancelled', endedAt: Date.now() } : call;
+      // A subagent sent to the background goes on after the turn, and its calls with it.
       const entries: Entry[] = session.entries.map((entry) =>
-        entry.kind === 'tool' ? { ...cancel(entry), children: entry.children?.map(cancel) } : entry,
+        entry.kind !== 'tool'
+          ? entry
+          : { ...cancel(entry), children: isBackground(entry) ? entry.children : entry.children?.map(cancel) },
       );
       if (action.outcome === 'interrupted') entries.push(notice('Interrupted. Tell jinion what to do instead.', 'warning'));
       if (action.outcome === 'failed') entries.push(notice(action.message ?? 'Something went wrong.', 'error'));
@@ -209,13 +218,21 @@ function apply(session: Session, event: AgentEvent): Session {
       const entries = session.entries.map((entry, at) => (at === index ? { ...entry, promptId: event.id } : entry));
       return { ...session, entries };
     }
+    case 'task-end':
+      return { ...session, entries: [...session.entries, { id: nextId(), kind: 'task', task: event.task, summary: event.summary }] };
     case 'limits':
     case 'mode':
     case 'commands':
-      // Kept by the app: they belong to the account or the agent and outlive the conversation.
+    case 'tasks':
+    case 'turn-start':
+      // Kept by the app: they belong to the account or the agent's process and outlive the conversation on screen.
       return session;
   }
 }
+
+/** A command or subagent call that went on as a background task. */
+export const isBackground = (entry: ToolEntry) =>
+  (entry.run.name === 'bash' || entry.run.name === 'agent') && entry.run.result?.background !== undefined;
 
 function updateTool(session: Session, id: string, update: (entry: ToolEntry) => Entry): Session {
   return {

@@ -51,7 +51,7 @@ const greeting: Scenario = {
     yield* script.say(
       [
         "Hey! I'm **Jinion**, a coding agent that lives in your terminal.",
-        'This build runs a scripted demo agent, so nothing touches your files yet. Ask me to `add rate limiting to the api` to watch the whole loop: reading code, asking you a question, editing files, running tests and recovering from a failing one.',
+        'This build runs a scripted demo agent, so nothing touches your files yet. Ask me to `add rate limiting to the api` to watch the whole loop: reading code, asking you a question, editing files, running tests and recovering from a failing one. `start the dev server` or `run the tests in the background` shows background tasks.',
         '- `/` lists commands, skills and MCP prompts\n- the mouse wheel or `pgup`/`pgdn` scrolls the conversation\n- `ctrl+o` expands collapsed output\n- `esc` interrupts a running turn',
       ].join('\n\n'),
     );
@@ -408,4 +408,44 @@ const rateLimiting: Scenario = {
   },
 };
 
-export const scenarios: Scenario[] = [agentCommand, greeting, rateLimiting];
+const devServer: Scenario = {
+  title: 'Start the dev server',
+  match: /dev server|npm run dev|pnpm dev/i,
+  async *play(script) {
+    yield* script.think('A dev server keeps running, so it goes in the background and the conversation goes on.');
+    yield* script.background('pnpm dev', {
+      output: ['> acme-api@1.4.0 dev', '> tsx watch src/server.ts', '', '[watch] starting `node src/server.ts`', 'Server listening on http://localhost:3000'],
+      durationMs: 1500,
+      async *followup(next) {
+        yield* next.say('The dev server is stopped. Ask me to start it again whenever you need it.');
+      },
+    });
+    yield* script.usage(1_100, 0.003);
+    yield* script.say(
+      'The dev server runs in the background on **http://localhost:3000**. `ctrl+t` shows its output, and `x` there stops it; I keep it running while we work.',
+    );
+  },
+};
+
+const backgroundTests: Scenario = {
+  title: 'Run the tests in the background',
+  match: /tests? in the background/i,
+  async *play(script) {
+    yield* script.think('The suite takes a while; it can run in the background and I will look at it when it is done.');
+    yield* script.background('pnpm vitest run', {
+      output: FAILING_RUN,
+      durationMs: 4000,
+      exitCode: 1,
+      async *followup(next) {
+        yield* next.think('The background run failed. The window reset test expects 200 right at the boundary.');
+        yield* next.usage(900, 0.003);
+        yield* next.say(
+          'The test run in the background failed: `resets the window after it elapses` gets 429 where it expects 200, so the window is still closed exactly at its boundary. The check should use `>=`.',
+        );
+      },
+    });
+    yield* script.say("The tests run in the background. I'll tell you how they did once they finish.");
+  },
+};
+
+export const scenarios: Scenario[] = [agentCommand, greeting, devServer, backgroundTests, rateLimiting];

@@ -63,9 +63,36 @@ function EntryBody({ entry }: { entry: Entry }) {
       return <Markdown text={entry.text} />;
     case 'notice':
       return <Notice text={entry.text} tone={entry.tone} />;
+    case 'task':
+      return <TaskEnd entry={entry} />;
     case 'tool':
       return <ToolView entry={entry} />;
   }
+}
+
+const TASK_MARKS = { running: 'running', completed: 'done', failed: 'error', stopped: 'cancelled' } as const;
+
+/** A background task that ended: what it was, how, and how long it ran. */
+function TaskEnd({ entry }: { entry: Extract<Entry, { kind: 'task' }> }) {
+  const theme = useTheme();
+  const { task, summary } = entry;
+  const took = formatSeconds((task.endedAt ?? Date.now()) - task.startedAt);
+  // Claude Code's summary of a command repeats it; the exit code is what it adds.
+  const exitCode = /exit code (\d+)/.exec(summary ?? '')?.[1];
+  const how =
+    task.status === 'failed' ? `failed after ${took}${exitCode ? ` · exit ${exitCode}` : ''}` : task.status === 'stopped' ? `stopped after ${took}` : `done in ${took}`;
+  return (
+    <ToolLine
+      status={TASK_MARKS[task.status]}
+      name={task.kind === 'agent' ? 'Background agent' : 'Background'}
+      detail={
+        <Text>
+          <Text color={task.kind === 'shell' ? theme.code : undefined}>{task.title.split('\n')[0]}</Text>
+          <Text color={task.status === 'failed' ? theme.error : theme.muted}> · {how}</Text>
+        </Text>
+      }
+    />
+  );
 }
 
 /** Skills show highlighted, as they were in the prompt. */
@@ -210,26 +237,32 @@ function ToolView({ entry }: { entry: ToolEntry }) {
 function AgentView({ entry }: { entry: ToolEntry }) {
   const theme = useTheme();
   const { expanded } = useView();
+  const { tasks } = useJinion();
   if (entry.run.name !== 'agent') return null;
+  // Sent to the background, it works on after its call ended, as its task says.
+  const background = entry.run.result?.background;
+  const task = background ? tasks.find((candidate) => candidate.id === background) : undefined;
+  const status = task?.status === 'running' ? 'running' : entry.status;
   const calls = entry.children ?? [];
   let tree: TreeNode[];
-  if (entry.status === 'running' || expanded) {
+  if (status === 'running' || expanded) {
     const shown = expanded ? calls : calls.slice(-LIVE_CALLS);
     tree = shown.map((call) => ({ label: <CallLine call={call} /> }));
     if (shown.length < calls.length) tree.unshift({ label: <Text color={theme.muted}>… {calls.length - shown.length} earlier</Text> });
   } else {
-    const took = formatSeconds((entry.endedAt ?? Date.now()) - entry.startedAt);
+    const took = formatSeconds((task?.endedAt ?? entry.endedAt ?? Date.now()) - entry.startedAt);
     const hint = calls.length > 0 ? ' · ctrl+o to expand' : '';
     tree = [{ label: <Text color={theme.muted}>{`${plural(calls.length, 'tool call')} · ${took}${hint}`}</Text> }];
   }
   return (
     <ToolLine
-      status={entry.status}
+      status={status}
       name="Agent"
       detail={
         <Text>
           <Text color={theme.muted}>· </Text>
           {entry.run.input.description}
+          {background && <Text color={theme.muted}> · in the background</Text>}
         </Text>
       }
       tree={tree}
@@ -284,6 +317,7 @@ function ShellFooter({ entry }: { entry: ToolEntry }) {
   const running = entry.status === 'running';
   useAnimation({ interval: 100, isActive: running });
   if (entry.run.name !== 'bash') return null;
+  if (entry.run.result?.background) return <BackgroundState id={entry.run.result.background} />;
 
   const timeout = `Timeout: ${formatSeconds(entry.run.input.timeoutMs)}`;
   if (running) return <>[Running: {formatSeconds(Date.now() - entry.startedAt)} | {timeout}]</>;
@@ -292,6 +326,14 @@ function ShellFooter({ entry }: { entry: ToolEntry }) {
   const exitCode = entry.run.result?.exitCode;
   if (entry.status === 'cancelled') return <>[Cancelled | {wall}]</>;
   return <>[{exitCode ? `Exit: ${exitCode} | ` : ''}{wall} | {timeout}]</>;
+}
+
+/** A command that went on in the background, as its task is now. */
+function BackgroundState({ id }: { id: string }) {
+  const { tasks } = useJinion();
+  const task = tasks.find((candidate) => candidate.id === id);
+  if (!task || task.status === 'running') return <>[In the background | ctrl+t to see it]</>;
+  return <>[In the background | {task.status === 'completed' ? 'done' : task.status}]</>;
 }
 
 function FileLabel({ file }: { file: FileRef }) {

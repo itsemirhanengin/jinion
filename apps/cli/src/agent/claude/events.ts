@@ -12,6 +12,7 @@ import type { AgentEvent, AgentMode, GrepMatch, LimitWindow, ToolCall, Usage } f
 import { isPlanFile } from './guard.js';
 import { MEMORY_SERVER } from './memory.js';
 import { skillLabel } from './plugins.js';
+import { ClaudeTasks } from './tasks.js';
 
 type Input = Record<string, unknown>;
 
@@ -38,6 +39,9 @@ export interface ClaudeQuestion {
 
 const TASK_TOOLS = new Set(['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet']);
 
+/** What Claude Code says about background tasks, unlike the task tools above, which keep the todo list. */
+const TASK_MESSAGES = new Set(['task_started', 'task_updated', 'task_progress', 'task_notification']);
+
 const MODES_BY_PERMISSION: Record<string, AgentMode> = {
   default: 'manual',
   acceptEdits: 'edits',
@@ -48,11 +52,14 @@ const MODES_BY_PERMISSION: Record<string, AgentMode> = {
 /** Claude Code's result for a tool call that was rejected by stopping the turn. */
 const INTERRUPTED = /^The user doesn't want to proceed with this tool use/;
 
-/** Turns Claude Code's SDK messages into Jinion agent events. Subagent messages are skipped for now. */
+/** Turns Claude Code's SDK messages into Jinion agent events. */
 export class ClaudeEvents {
+  /** The conversation's background tasks. */
+  readonly tasks = new ClaudeTasks();
   private readonly streamed = new Set<string>();
   private readonly calls = new Map<string, Call>();
-  private readonly tasks = new Map<string, TodoItem>();
+  /** Claude Code's todo list, which it keeps with its task tools. */
+  private readonly todoItems = new Map<string, TodoItem>();
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
   private model?: string;
   private session?: string;
@@ -86,6 +93,13 @@ export class ClaudeEvents {
   private *events(message: SDKMessage): Generator<AgentEvent> {
     switch (message.type) {
       case 'system': {
+        if (TASK_MESSAGES.has(message.subtype)) {
+          yield* this.tasks.map(message, (id) => {
+            const call = this.calls.get(id);
+            return call?.name === 'Bash' ? text(call.input.command) : undefined;
+          });
+          return;
+        }
         // Claude Code reports the mode it really runs in, e.g. Manual when the model has no auto mode.
         const mode = 'permissionMode' in message ? MODES_BY_PERMISSION[message.permissionMode as string] : undefined;
         if (mode) yield { type: 'mode', mode };
@@ -235,6 +249,13 @@ export class ClaudeEvents {
     if (call.parent && TASK_TOOLS.has(call.name)) return;
     switch (call.name) {
       case 'Bash': {
+        // Sent to the background, by the agent or with ctrl+b: it goes on as a task, which says how it ends.
+        const background = typeof data?.backgroundTaskId === 'string' ? data.backgroundTaskId : undefined;
+        if (background) {
+          yield* this.tasks.output(background, output);
+          yield { type: 'tool-end', id, ok, result: { exitCode: 0, wallMs: Date.now() - call.startedAt, background } };
+          return;
+        }
         const exitCode = error ? Number(/^(?:Error: )?Exit code (\d+)/.exec(output)?.[1] ?? 1) : 0;
         const printed = data ? [text(data.stdout), text(data.stderr)].filter(Boolean).join('\n') : stripExitCode(output);
         const lines = printed.replace(/\n+$/, '');
@@ -264,6 +285,12 @@ export class ClaudeEvents {
         yield { type: 'tool-end', id, ok, result: hunks.length > 0 ? { patch: hunksToPatch(hunks) } : {} };
         return;
       }
+      case 'Agent':
+      case 'Task': {
+        const background = data?.isAsync === true && typeof data.agentId === 'string' ? data.agentId : undefined;
+        yield { type: 'tool-end', id, ok, result: background ? { background } : {} };
+        return;
+      }
       case 'AskUserQuestion': {
         const questions = (call.input.questions ?? []) as ClaudeQuestion[];
         const answers = ok && isObject(data?.answers) ? fromClaudeAnswers(questions, data) : [];
@@ -273,15 +300,15 @@ export class ClaudeEvents {
       case 'TaskCreate': {
         const task = isObject(data?.task) ? data.task : undefined;
         if (!ok || !task) return;
-        this.tasks.set(text(task.id), { text: text(task.subject), status: 'pending' });
+        this.todoItems.set(text(task.id), { text: text(task.subject), status: 'pending' });
         yield* this.todos(id);
         return;
       }
       case 'TaskUpdate': {
-        const task = this.tasks.get(text(call.input.taskId));
+        const task = this.todoItems.get(text(call.input.taskId));
         if (!ok || !task) return;
         const { status, subject } = call.input;
-        if (status === 'deleted') this.tasks.delete(text(call.input.taskId));
+        if (status === 'deleted') this.todoItems.delete(text(call.input.taskId));
         else {
           if (typeof subject === 'string') task.text = subject;
           if (status === 'pending') task.status = 'pending';
@@ -299,7 +326,7 @@ export class ClaudeEvents {
 
   /** Claude Code updates its task list one task at a time; Jinion shows the whole list. */
   private *todos(id: string): Generator<AgentEvent> {
-    const items = [...this.tasks.values()].map((item) => ({ ...item }));
+    const items = [...this.todoItems.values()].map((item) => ({ ...item }));
     yield { type: 'tool-start', id, call: { name: 'todo', input: { groups: [{ title: 'Tasks', items }] } } };
     yield { type: 'tool-end', id, ok: true, result: {} };
   }

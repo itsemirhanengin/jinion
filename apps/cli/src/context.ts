@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { ModelOption, ModelSelection, NoticeTone, NotificationMethod, Panels } from '@jinion/tui';
-import type { AgentAccount, AgentAccounts, AgentCommand, AgentMcp, AgentMode } from './agent/types.js';
+import type { AgentAccount, AgentAccounts, AgentCommand, AgentMcp, AgentMode, BackgroundTask } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { MemoryStore } from './memory/store.js';
@@ -51,6 +51,10 @@ export interface AppActions {
   saveStatusLine(items: StatusItem[]): void;
   /** Opens the rewind panel, to go back to before an earlier message. */
   rewind(): void;
+  /** Opens the panel of background tasks. */
+  openTasks(): void;
+  /** Stops a background task; it shows as stopped once the agent says so. */
+  stopTask(id: string): void;
   /** Turns notifications on or off, from now on and in later runs. */
   setNotifications(on: boolean): void;
   /** Asks the agent for its skills and MCP prompts again, e.g. after servers were turned on or off. */
@@ -78,6 +82,8 @@ export interface Jinion {
   memory: MemoryStore;
   /** The files the agent changed in this conversation, subagents included, as absolute paths. */
   edited: Set<string>;
+  /** The agent's background tasks, running or ended, and a command or subagent the turn waits for, `foreground`. */
+  tasks: BackgroundTask[];
   /** Whether jinion notifies when it waits for the user or ends a long turn in an unfocused window, and how. */
   notifications: { on: boolean; method: NotificationMethod };
   /** The conversation on screen. */

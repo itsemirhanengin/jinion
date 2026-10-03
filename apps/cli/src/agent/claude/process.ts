@@ -27,8 +27,10 @@ export interface ClaudeProcessOptions {
   /** The conversation this process continues. */
   resume?: ClaudeResume;
   debug?: DebugLog;
-  /** What Claude Code sends while no turn runs, e.g. its commands changing after a turn, or a turn it starts itself. */
+  /** What Claude Code sends while no turn runs, e.g. its commands changing, or a background task's progress. */
   onIdle(message: SDKMessage): void;
+  /** Claude Code started a turn of its own, e.g. to look at a background task that ended; `follow()` reads it. */
+  onTurn(): void;
   /** The process ended, whether it was closed or exited on its own. */
   onExit(): void;
   /** Starts Claude Code: the SDK's `query`, or a stand-in in tests. */
@@ -46,8 +48,13 @@ export class ClaudeProcess {
   /** The conversation this process continues, if any. */
   readonly resumed?: ClaudeResume;
   private readonly input = new Inbox<SDKUserMessage>();
-  /** The prompts the turn in progress still has to answer, and where what it sends goes. */
-  private turn?: { waiting: Set<string>; messages: Inbox<SDKMessage | Error>; interrupted?: boolean };
+  /**
+   * The prompts the turn in progress still has to answer, and where what it sends goes. `own` is a turn Claude Code
+   * started itself, which answers no prompt unless one was steered into it.
+   */
+  private turn?: { waiting: Set<string>; messages: Inbox<SDKMessage | Error>; interrupted?: boolean; own?: boolean };
+  /** The turn Claude Code started itself last, until `follow()` takes it. */
+  private unfollowed?: ClaudeProcess['turn'];
   private exited?: Error;
   private stderr = '';
 
@@ -79,6 +86,20 @@ export class ClaudeProcess {
     const turn = { waiting: new Set<string>(), messages: new Inbox<SDKMessage | Error>() };
     this.turn = turn;
     this.push(content, uuid, turn);
+    yield* this.drain(turn);
+  }
+
+  /**
+   * Yields what Claude Code sends in the turn it started itself, until its result, also when that came before. Empty
+   * when there is none to follow.
+   */
+  async *follow(): AsyncGenerator<SDKMessage> {
+    const turn = this.unfollowed;
+    this.unfollowed = undefined;
+    if (turn) yield* this.drain(turn);
+  }
+
+  private async *drain(turn: NonNullable<ClaudeProcess['turn']>) {
     try {
       for await (const item of turn.messages) {
         if (item instanceof Error) throw item;
@@ -130,7 +151,13 @@ export class ClaudeProcess {
     try {
       for await (const message of this.query) {
         this.options.debug?.write('message', message);
-        const turn = this.turn;
+        let turn = this.turn;
+        if (!turn && startsTurn(message)) {
+          turn = { waiting: new Set(), messages: new Inbox(), own: true };
+          this.turn = turn;
+          this.unfollowed = turn;
+          this.options.onTurn();
+        }
         if (!turn) {
           this.options.onIdle(message);
           continue;
@@ -153,11 +180,22 @@ export class ClaudeProcess {
   }
 }
 
+/**
+ * A turn starts with Claude Code's init message, or with what the main agent says when that didn't come. A background
+ * subagent's messages come on their own while no turn runs.
+ */
+function startsTurn(message: SDKMessage) {
+  if (message.type === 'system') return message.subtype === 'init';
+  return (message.type === 'assistant' || message.type === 'stream_event') && message.parent_tool_use_id === null;
+}
+
 /** Takes the prompts `result` answers off `waiting`, and says whether none are left. */
 function answered(result: Result, waiting: Set<string>) {
   const ids = result.user_message_uuids ?? (result.user_message_uuid ? [result.user_message_uuid] : undefined);
-  // A result that doesn't say which prompts it answers ends the turn, as before Claude Code reported them.
-  if (!ids) waiting.clear();
+  // A result that doesn't say which prompts it answers ends the turn, as before Claude Code reported them, unless it
+  // ends a turn Claude Code started itself, e.g. for a background task, which answers none of them.
+  const own = result.origin !== undefined && result.origin.kind !== 'human';
+  if (!ids && !own) waiting.clear();
   for (const id of ids ?? []) waiting.delete(id);
   return waiting.size === 0;
 }

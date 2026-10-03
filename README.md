@@ -157,6 +157,8 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 | `esc` | Interrupt the running turn |
 | `esc` `esc` | On an empty prompt, between turns: rewind to before an earlier message (`/rewind`) |
 | `ctrl+o` | Expand or collapse long output and pasted text |
+| `ctrl+t` | Background tasks: what runs there, its latest output, `x` to stop one (`/tasks`) |
+| `ctrl+b` | While a command or subagent has run a few seconds, send it to the background; the turn goes on without it |
 | paste | Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`; the agent gets all of it |
 | `/` | Command palette: Jinion's own commands, filtered as you type |
 | `$` | Picks a skill or an MCP prompt, anywhere in the message, grouped by where it comes from |
@@ -182,6 +184,10 @@ Images go into the prompt as placeholders like long pastes, and the agent gets t
 Files come back from Claude Code's checkpoints, which it takes before each change and keeps across processes, so a resumed conversation can still be rewound. The conversation continues in a new Claude Code process from the transcript entry before the message. Jinion's memory notes stay: they belong to no single conversation.
 
 The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
+
+Commands that keep running, like a dev server or a long test run, and subagents can go on in the background while the conversation goes on: the agent starts them there, or `ctrl+b` sends the one the turn waits for (the line under the prompt offers it once Claude Code lists the command, after a few seconds). While something runs there, a line above the prompt says what and for how long, `bg [/] pnpm dev 3m · ctrl+t`. `ctrl+t` (or `/tasks`) opens the panel: every task of the conversation with how it ended, the focused one's latest output under it, `enter` for the whole output full screen, following its end, and `x` to stop it. `esc` stops the turn and leaves background tasks running.
+
+When a task ends, the conversation says so (`[!] Background pnpm test · failed after 41s · exit 1`), and the agent looks at it in a turn of its own, the way Claude Code does: it shows as working, panels ask as in any turn, `esc` stops it, and messages typed meanwhile wait for it. A task that ends while the window isn't focused notifies. Tasks belong to the Claude Code process, so they stop with `/clear`, `/resume`, an account switch or quitting; MCP changes wait to restart Claude Code until none runs.
 
 When the agent hands part of the work to a subagent, its tool calls grow as a tree under `Agent · what it is doing`, one line each, the latest six in view; the line under the prompt says what the subagent is on. Once it is done, the tree folds into `6 tool calls · 34s`, and `ctrl+o` opens it again.
 
@@ -211,6 +217,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/diff` | Full screen list of what changed since the last commit, in every repository here, with the agent's changes marked; `enter` opens a file's diff |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
+| `/tasks` | What runs in the background, its output, and `x` to stop it, as `ctrl+t` does |
 | `/notifications [on \| off]` | Turns notifications on or off, for every project; without an argument, switches them |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
@@ -223,9 +230,9 @@ The demo agent also offers skills (`$review`, `$commit`, `$explain <path>`) and 
 - `agent/types.ts` defines the `Agent` interface: the `AgentEvent` stream every agent emits in a turn (`run()`) and between turns (`subscribe()`), the commands (skills, MCP prompts) it offers, its MCP servers (`mcp`), and its models. An agent names itself (`Claude`), lists the models with their effort levels (`models()`), and switches between them (`select()`). The model picker, `/model`, `/effort`, the status line and the saved choice all work from that, so another backend such as Codex only implements those methods. `ScriptedAgent` plays `agent/scenarios.ts` through it.
 - `agent/claude/` implements it on the Claude Agent SDK:
   - `agent.ts` is the `Agent`: models, modes, accounts, MCP servers and commands, and which process runs the conversation.
-  - `process.ts` is one Claude Code process. It reads everything Claude Code sends for as long as it runs: what answers a prompt goes to that turn, the rest to `subscribe()`, e.g. the commands changing as MCP servers connect. A process that exits fails its turn with what Claude Code printed, and the next prompt continues the conversation in a new one.
+  - `process.ts` is one Claude Code process. It reads everything Claude Code sends for as long as it runs: what answers a prompt goes to that turn, the rest to `subscribe()`, e.g. the commands changing as MCP servers connect. A turn Claude Code starts itself, e.g. after a background task ended, is announced with `turn-start`, and `Agent.join` follows it like a prompted one. A process that exits fails its turn with what Claude Code printed, and the next prompt continues the conversation in a new one.
   - `options.ts` is how Claude Code starts: tools, permission rules, system prompt, skills and MCP servers. `approvals.ts` answers what Claude Code asks before a tool runs: the guard, questions, plans and permissions.
-  - `events.ts` maps SDK messages to `AgentEvent`s (Claude Code's task tools become the todo list), `commands.ts` maps skills and `$` mentions, `mcp.ts` servers, `plugins.ts` hands over skills and plugins, and `prompt.ts` builds the system prompt.
+  - `events.ts` maps SDK messages to `AgentEvent`s (Claude Code's task tools become the todo list, and `tasks.ts` follows its background tasks), `commands.ts` maps skills and `$` mentions, `mcp.ts` servers, `plugins.ts` hands over skills and plugins, and `prompt.ts` builds the system prompt.
   - Tests start a stand-in for Claude Code (`test/fake-claude.ts`) through the agent's `spawn` option, to script what it sends back.
 - `mcp/config.ts` reads the MCP servers configured in files, and which are on, for any backend.
 - `context.ts` is the app's single control surface. `useJinion()` gives commands, panels and key handlers the same `actions` (submit, prompt, fill, notice, newSession, resume, …), the panel stack, the command registry and the session store.
