@@ -22,7 +22,7 @@ import {
 } from '@jinion/tui';
 import type { FileRef, ToolRun } from '../agent/types.js';
 import { compact } from '../usage/format.js';
-import { useJinion } from '../context.js';
+import { useConversation } from '../context.js';
 import type { Entry, ToolCallEntry } from '../session.js';
 import { Banner } from './banner.js';
 
@@ -129,8 +129,8 @@ function TaskEnd({ entry }: { entry: Extract<Entry, { kind: 'task' }> }) {
 
 /** Skills show highlighted, as they were in the prompt. */
 function UserEntry({ text, steered }: { text: string; steered?: boolean }) {
-  const { skills } = useJinion();
-  return <UserMessage text={text} mentions={[skills.mention]} aside={steered ? 'while working' : undefined} />;
+  const { mention } = useConversation();
+  return <UserMessage text={text} mentions={[mention]} aside={steered ? 'while working' : undefined} />;
 }
 
 function ToolView({ entry }: { entry: ToolEntry }) {
@@ -269,7 +269,7 @@ function ToolView({ entry }: { entry: ToolEntry }) {
 function AgentView({ entry }: { entry: ToolEntry }) {
   const theme = useTheme();
   const { expanded } = useView();
-  const { tasks } = useJinion();
+  const { tasks } = useConversation();
   if (entry.run.name !== 'agent') return null;
   // Sent to the background, it works on after its call ended, as its task says.
   const background = entry.run.result?.background;
@@ -366,7 +366,7 @@ function ShellFooter({ entry }: { entry: ToolEntry }) {
 
 /** A command that went on in the background, as its task is now. */
 function BackgroundState({ id }: { id: string }) {
-  const { tasks } = useJinion();
+  const { tasks } = useConversation();
   const task = tasks.find((candidate) => candidate.id === id);
   if (!task || task.status === 'running') return <>[In the background | ctrl+t to see it]</>;
   return <>[In the background | {task.status === 'completed' ? 'done' : task.status}]</>;

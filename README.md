@@ -7,8 +7,9 @@ Jinion runs Claude Code headless and brings its own terminal UI, system prompt a
 ## Layout
 
 ```
-apps/cli        @jinion/cli   the `jinion` command
-packages/tui    @jinion/tui   terminal UI framework on top of Ink and React
+apps/cli                 @jinion/cli              the `jinion` command
+packages/tui             @jinion/tui              terminal UI framework on top of Ink and React
+packages/virtualization  @jinion/virtualization   mounts only what is in view of a long list, for the TUI's ScrollView
 ```
 
 Turborepo runs `build`, `typecheck` and `test` across the workspace. Packages export their TypeScript sources under the `development` condition, so `pnpm dev`, `pnpm typecheck` and `pnpm test` work without building first.

@@ -45,6 +45,7 @@ import type {
 import { builtinCommands } from './commands/builtin.js';
 import { CommandRegistry } from './commands/registry.js';
 import {
+  ConversationContext,
   JinionContext,
   modelLabel,
   type AppActions,
@@ -730,16 +731,19 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const contextLeft = contextWarning(session.usage);
 
   const showTodos = hasWorkLeft(session.todos);
+  const conversation = useMemo(() => ({ mention, tasks }), [mention, tasks]);
 
   return (
     <JinionContext.Provider value={jinion}>
       <Shell
         content={
-          <ScrollView key={session.id}>
-            {session.entries.map((entry) => (
-              <EntryView key={entry.id} entry={entry} />
-            ))}
-          </ScrollView>
+          <ConversationContext.Provider value={conversation}>
+            <ScrollView key={session.id}>
+              {session.entries.map((entry) => (
+                <EntryView key={entry.id} entry={entry} />
+              ))}
+            </ScrollView>
+          </ConversationContext.Provider>
         }
         aside={
           <>

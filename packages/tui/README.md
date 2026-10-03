@@ -26,7 +26,7 @@ Text from outside, such as command output, file contents and diffs, goes through
 Apps run full screen in the alternate screen buffer. The root is a column exactly as tall as the terminal, and `Shell` lays it out: `content` (usually a `ScrollView`) takes the remaining height, while `aside`, `prompt` and `status` stay pinned to the bottom.
 
 - `run(<App />)` detects a light or dark background, enters the alternate screen, turns on mouse and focus reporting and returns Ink's instance. It draws every frame whole (`runtime/drawing.ts`, which the test terminal shares): a character the terminal measures differently than Ink, such as some emoji, would otherwise leave stray cells on rows Ink thinks are unchanged; a whole frame erases them.
-- `ScrollView` follows the newest line. The mouse wheel or PageUp scrolls it; once scrolled, the view holds still while content grows below it, and a `Jump to bottom (click)` row brings it back.
+- `ScrollView` follows the newest line. The mouse wheel or PageUp scrolls it; once scrolled, the view holds still while content grows below it, and a `Jump to bottom (click)` row brings it back. Each child is an item with a stable `key`, and only the items in view and about a screen around it are mounted, through [`@jinion/virtualization`](../virtualization/README.md), so a conversation of thousands of entries costs what a few screens do. State inside an item is lost when it scrolls far out of view, so keep it outside, as `useView()` keeps `expanded`.
 - Mouse reports are filtered out of stdin before Ink sees them, so key handlers never receive them. `useMouse()` subscribes to wheel and click events. While reporting is on, terminals select text with Shift held (Option in iTerm2).
 - `useTerminal()` tells whether the window has focus (`focused()`, from the terminal's focus reports, which are filtered out like mouse reports) and shows desktop notifications (`notify(title, body)`) with the sequence the terminal understands: OSC 777, 9 or 99, or the bell (`method`).
 - `useView()` exposes the global `expanded` flag that collapsible output reads; `ctrl+o` in the CLI toggles it.
@@ -131,7 +131,7 @@ Primitives
 | Component | Renders |
 | --- | --- |
 | `Shell` | the screen layout that hosts panels |
-| `ScrollView` | the scrolling message area with `Jump to bottom` |
+| `ScrollView` | the scrolling message area with `Jump to bottom`, mounting only the items near the view |
 | `Panel`, `KeyHints` | the shared panel chrome and its `Enter select · Esc close` footer |
 | `SelectList`, `ListRow` | windowed lists and the standard row |
 | `OptionRow`, `NoteLine` | a numbered option with its description, a `[x]` box when several can be picked, a muted `aside` such as `current`, and a note |

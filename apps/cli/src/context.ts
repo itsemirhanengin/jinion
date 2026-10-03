@@ -127,3 +127,17 @@ export function useJinion() {
   if (!jinion) throw new Error('useJinion() must be called inside <App>.');
   return jinion;
 }
+
+/**
+ * What the conversation's entries draw with besides themselves. Kept apart from `Jinion`, which is new on every key
+ * typed, so that only entries whose part of it changed draw again.
+ */
+export interface Conversation {
+  /** Highlights skills mentioned as `$name`, as they were in the prompt. */
+  mention?: RegExp;
+  tasks: BackgroundTask[];
+}
+
+export const ConversationContext = createContext<Conversation>({ tasks: [] });
+
+export const useConversation = () => useContext(ConversationContext);

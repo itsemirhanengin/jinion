@@ -1,7 +1,7 @@
 {
-  "name": "@jinion/tui",
+  "name": "@jinion/virtualization",
   "version": "0.1.0",
-  "description": "Terminal UI framework for Jinion, built on Ink and React",
+  "description": "Mounts only what is in view of a long list of items of different heights, with an Ink hook",
   "license": "MIT",
   "homepage": "https://jinion.co",
   "type": "module",
@@ -10,9 +10,6 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
-    },
-    "./testing": {
-      "development": "./src/testing/index.tsx"
     }
   },
   "files": [
@@ -24,18 +21,13 @@
     "test": "vitest run",
     "test:watch": "vitest"
   },
-  "dependencies": {
-    "@jinion/virtualization": "workspace:*",
-    "ink": "^7.1.1",
-    "marked": "^18.0.0",
-    "string-width": "^8.2.0"
-  },
   "peerDependencies": {
+    "ink": "^7.1.1",
     "react": ">=19.3.0"
   },
   "devDependencies": {
     "@types/react": "^19.3.0",
-    "@xterm/headless": "^6.0.0",
+    "ink": "^7.1.1",
     "react": "^19.3.0",
     "vitest": "^5.0.3"
   }

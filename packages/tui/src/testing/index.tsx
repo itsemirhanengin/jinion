@@ -19,6 +19,8 @@ export const KEYS = {
   down: '\x1b[B',
   right: '\x1b[C',
   left: '\x1b[D',
+  pageUp: '\x1b[5~',
+  pageDown: '\x1b[6~',
   ctrlC: '\x03',
 } as const;
 
