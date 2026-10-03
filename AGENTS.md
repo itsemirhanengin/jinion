@@ -13,7 +13,7 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 A coding agent in the terminal. `apps/cli` is the app (`jinion`), `packages/tui` the terminal UI framework it is built
 on (Ink and React), `packages/virtualization` the list virtualizer under its scroll view, `packages/spacing` the checker for the vertical
-layout below, `apps/docs` the docs site.
+layout below, `apps/docs` the docs site, `apps/website` the page at jinion.co.
 `ROADMAP.md` has what is left to build.
 
 ## Architecture of `apps/cli/src`

@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-source-serif: var(--font-source-serif);
+  --font-radio-canada-big: var(--font-radio-canada-big);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  font-family: var(--font-source-serif);
+  min-height: 100vh;
+  background: linear-gradient(180deg, #A8D3FF 0%, #FFF4DF 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background: radial-gradient(
+      ellipse 80% 60% at 20% 30%,
+      rgba(168, 211, 255, 0.6) 0%,
+      transparent 70%
+    ),
+    radial-gradient(
+      ellipse 70% 50% at 75% 20%,
+      rgba(190, 220, 255, 0.5) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 60% 70% at 50% 80%,
+      rgba(255, 244, 223, 0.7) 0%,
+      transparent 60%
+    );
+  animation: drift1 20s ease-in-out infinite alternate;
+}
+
+body::after {
+  background: radial-gradient(
+      ellipse 65% 55% at 70% 60%,
+      rgba(168, 211, 255, 0.4) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 75% 65% at 30% 70%,
+      rgba(255, 237, 200, 0.5) 0%,
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 50% 40% at 60% 15%,
+      rgba(195, 225, 255, 0.45) 0%,
+      transparent 70%
+    );
+  animation: drift2 25s ease-in-out infinite alternate;
+}
+
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes drift1 {
+  0% {
+    transform: translate(0%, 0%) scale(1);
+    opacity: 0.8;
+  }
+  25% {
+    transform: translate(3%, -2%) scale(1.05);
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(-2%, 3%) scale(1.02);
+    opacity: 0.75;
+  }
+  75% {
+    transform: translate(4%, 1%) scale(1.08);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-3%, -1%) scale(1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes drift2 {
+  0% {
+    transform: translate(0%, 0%) scale(1.05);
+    opacity: 0.7;
+  }
+  25% {
+    transform: translate(-4%, 2%) scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: translate(3%, -3%) scale(1.1);
+    opacity: 0.65;
+  }
+  75% {
+    transform: translate(-2%, -2%) scale(1.03);
+    opacity: 0.75;
+  }
+  100% {
+    transform: translate(2%, 3%) scale(1.05);
+    opacity: 0.7;
+  }
+}
+
