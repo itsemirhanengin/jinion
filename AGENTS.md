@@ -12,7 +12,8 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 # Jinion
 
 A coding agent in the terminal. `apps/cli` is the app (`jinion`), `packages/tui` the terminal UI framework it is built
-on (Ink and React), `packages/virtualization` the list virtualizer under its scroll view, `apps/docs` the docs site.
+on (Ink and React), `packages/virtualization` the list virtualizer under its scroll view, `packages/spacing` the checker for the vertical
+layout below, `apps/docs` the docs site.
 `ROADMAP.md` has what is left to build.
 
 ## Architecture of `apps/cli/src`
@@ -60,6 +61,29 @@ Rules that keep it that way:
   simpler.
 - The look is plain ASCII (`+`, `-`, `|`, `|--`); `■` only for heatmap and waffle squares.
 - Where Claude Code has a feature, match its behavior and wording; improve the look where that helps.
+
+## Vertical layout
+
+Code reads in paragraphs: lines that belong together touch, a new thought starts after one blank line. `pnpm lint`
+checks the rules below with `packages/spacing`, and `pnpm lint:fix` applies them.
+
+- A blank line before `return` and `throw`, unless it is the only statement in its block.
+- A blank line after a group of declarations. A one-line guard (`if (!value) return;`) stays right under the value it
+  checks, and a blank line follows it.
+- A blank line around any statement or declaration that spans lines.
+- A blank line after the imports, between top-level declarations that span lines, and between class members that span
+  lines.
+- The cases of a switch are spaced alike: all apart once one of them spans lines, all together otherwise; cases that
+  fall through stay together.
+- No blank line at the start or end of a block, never two in a row.
+
+What the checker can't judge, keep by hand:
+
+- Components in sections, a blank line between each: context and store reads, state and refs, derived values, effects
+  and input, handlers, early returns, then the JSX.
+- Long functions in paragraphs where the thought changes, related lines kept together rather than spaced out.
+- Files from the top down: the main export first, the helpers it uses below it. In classes: fields, constructor,
+  public methods, private methods.
 
 ## Tests
 
