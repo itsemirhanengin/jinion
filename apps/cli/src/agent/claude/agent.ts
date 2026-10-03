@@ -1,4 +1,5 @@
-import type { EffortLevel, query, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import { randomUUID } from 'node:crypto';
+import { getSessionMessages, type EffortLevel, type query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { ModelOption, ModelSelection } from '@jinion/tui';
 import type { DebugLog } from '../../debug.js';
 import type { McpConfig } from '../../mcp/config.js';
@@ -12,7 +13,8 @@ import type {
   AgentMcp,
   AgentMode,
   AgentPrompt,
-  AgentResume,
+  FileChanges,
+  RewindScope,
   RunContext,
   SignInOptions,
 } from '../types.js';
@@ -20,7 +22,7 @@ import { accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, sign
 import { ClaudeApprovals } from './approvals.js';
 import { toAgentCommands, toClaudeContent, type Invocations } from './commands.js';
 import { serverInfos } from './mcp.js';
-import { askRules, claudeOptions, PERMISSION_MODES } from './options.js';
+import { askRules, claudeOptions, PERMISSION_MODES, type ClaudeResume } from './options.js';
 import { ClaudeProcess, errorOf } from './process.js';
 
 export interface ClaudeAgentOptions {
@@ -39,6 +41,8 @@ export interface ClaudeAgentOptions {
   debug?: DebugLog;
   /** Starts Claude Code: the SDK's `query`, or a stand-in in tests. */
   spawn?: typeof query;
+  /** Reads a conversation's transcript: the SDK's `getSessionMessages`, or a stand-in in tests. */
+  sessionMessages?: typeof getSessionMessages;
 }
 
 /** Drives Claude Code headless, with Jinion's system prompt and project instructions instead of Claude Code's own. */
@@ -53,7 +57,7 @@ export class ClaudeAgent implements Agent {
   private accountInfo?: Promise<AgentAccount>;
   private claude?: ClaudeProcess;
   /** The conversation the next process continues. */
-  private resume?: AgentResume;
+  private resume?: ClaudeResume;
   private turn?: RunContext;
   /** The MCP servers changed; Claude Code only reads them when it starts, so the next turn starts a new process. */
   private stale = false;
@@ -115,7 +119,34 @@ export class ClaudeAgent implements Agent {
   }
 
   steer(prompt: AgentPrompt) {
-    return this.turn !== undefined && (this.claude?.steer(toClaudeContent(prompt, this.invocations)) ?? false);
+    return this.turn ? this.claude?.steer(toClaudeContent(prompt, this.invocations)) : undefined;
+  }
+
+  async rewindPreview(id: string): Promise<FileChanges | undefined> {
+    const preview = await this.running().query.rewindFiles(id, { dryRun: true });
+    if (!preview.canRewind || !preview.filesChanged?.length) return undefined;
+    return { files: preview.filesChanged, insertions: preview.insertions ?? 0, deletions: preview.deletions ?? 0 };
+  }
+
+  /**
+   * Files come back from Claude Code's checkpoints. The conversation is resumed in a new process up to the transcript
+   * entry before the prompt, or started over when the prompt was the first.
+   */
+  async rewind(id: string, { code, conversation }: RewindScope) {
+    const claude = this.running();
+    if (code) {
+      const result = await claude.query.rewindFiles(id);
+      if (!result.canRewind) throw new Error(result.error ?? "Claude Code couldn't restore the files.");
+    }
+    if (!conversation) return;
+    const resume = this.resumeOf(claude);
+    if (!resume) return this.reset();
+    const read = this.options.sessionMessages ?? getSessionMessages;
+    const transcript = await read(resume.sessionId, { dir: this.options.cwd });
+    const index = transcript.findIndex((message) => message.uuid === id);
+    if (index === -1) throw new Error("That message isn't in Claude Code's transcript of this conversation.");
+    const before = transcript[index - 1]?.uuid;
+    this.reset(before ? { ...resume, at: before } : undefined);
   }
 
   /** Asks the running Claude Code who it is signed in as; the process it starts takes the next prompt. */
@@ -196,8 +227,10 @@ export class ClaudeAgent implements Agent {
     const interrupt = () => claude.interrupt();
     context.signal.addEventListener('abort', interrupt, { once: true });
     try {
+      const id = randomUUID();
+      yield { type: 'sent', id };
       let last: SDKMessage | undefined;
-      for await (const message of claude.send(toClaudeContent(prompt, this.invocations))) {
+      for await (const message of claude.send(toClaudeContent(prompt, this.invocations), id)) {
         last = message;
         yield* this.eventsOf(claude, message);
       }
@@ -213,7 +246,7 @@ export class ClaudeAgent implements Agent {
     }
   }
 
-  reset(resume?: AgentResume) {
+  reset(resume?: ClaudeResume) {
     this.resume = resume;
     const claude = this.claude;
     this.claude = undefined;
@@ -239,9 +272,13 @@ export class ClaudeAgent implements Agent {
     this.reset(this.claude ? this.resumeOf(this.claude) : this.resume);
   }
 
-  private resumeOf(claude: ClaudeProcess): AgentResume | undefined {
+  /**
+   * What a process's conversation is to continue from: its session once Claude Code named it, else what the process
+   * itself continued, which a process that never took a turn would otherwise lose.
+   */
+  private resumeOf(claude: ClaudeProcess): ClaudeResume | undefined {
     const { sessionId, cost } = claude.events;
-    return sessionId ? { sessionId, cost } : this.resume;
+    return sessionId ? { sessionId, cost } : claude.resumed;
   }
 
   private start() {
@@ -265,6 +302,7 @@ export class ClaudeAgent implements Agent {
       mode: this.currentMode,
       account: this.account,
       resume: resume?.sessionId,
+      resumeAt: resume?.at,
       servers: Object.keys(options.mcpServers ?? {}),
       disabled: mcp?.disabled() ?? [],
       plugins: options.plugins?.map((plugin) => plugin.path),

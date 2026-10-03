@@ -47,6 +47,27 @@ describe('reduce', () => {
     expect(session.todos[0]!.items[0]!.text).toBe('two');
   });
 
+  it('names the newest message the agent sent, and goes back to before a message with its task list', () => {
+    const todo = (text: string): AgentEvent => ({
+      type: 'tool-start',
+      id: text,
+      call: { name: 'todo', input: { groups: [{ title: 'Tasks', items: [{ text, status: 'pending' }] }] } },
+    });
+    let session = reduce(createSession(200_000), { type: 'submit', text: 'first' });
+    session = events(session, { type: 'sent', id: 'p1' }, todo('one'));
+    session = reduce(session, { type: 'submit', text: 'second' });
+    session = events(session, { type: 'sent', id: 'p2' }, todo('two'));
+    const [first, second] = session.entries.filter((entry) => entry.kind === 'user');
+    expect([first, second].map((entry) => entry?.kind === 'user' && entry.promptId)).toEqual(['p1', 'p2']);
+
+    session = reduce(session, { type: 'rewind', entry: second!.id });
+    expect(session.entries.at(-1)).toMatchObject({ kind: 'tool', run: { name: 'todo' } });
+    expect(session.todos[0]!.items[0]!.text).toBe('one');
+    session = reduce(session, { type: 'rewind', entry: first!.id });
+    expect(kinds(session)).toEqual(['banner']);
+    expect(session.todos).toEqual([]);
+  });
+
   it('cancels tools still running when the turn ends, and says why it ended', () => {
     let session = reduce(createSession(200_000), { type: 'submit', text: 'go' });
     session = events(session, { type: 'tool-start', id: 't1', call: { name: 'glob', input: { pattern: '*' } } });

@@ -5,9 +5,9 @@ export type Entry =
   | { id: string; kind: 'banner' }
   /**
    * `prompt` is what the agent got, when pasted text made it longer than what is shown. `steered` messages were sent
-   * into a turn in progress.
+   * into a turn in progress. `promptId` is what the agent calls the message, for going back to before it.
    */
-  | { id: string; kind: 'user'; text: string; prompt?: string; steered?: boolean }
+  | { id: string; kind: 'user'; text: string; prompt?: string; steered?: boolean; promptId?: string }
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
@@ -32,8 +32,10 @@ export type SavedSession = Omit<Session, 'busySince' | 'title'> & { title: strin
 
 export type Action =
   | { type: 'submit'; text: string; prompt?: string }
-  /** A message added to the turn in progress. */
-  | { type: 'steer'; text: string; prompt?: string }
+  /** A message added to the turn in progress; `id` is what the agent calls it. */
+  | { type: 'steer'; text: string; prompt?: string; id?: string }
+  /** The conversation went back to before this user entry, which leaves it with everything after it. */
+  | { type: 'rewind'; entry: string }
   | { type: 'event'; event: AgentEvent }
   | { type: 'finish'; outcome: 'done' | 'interrupted' | 'failed'; message?: string }
   | { type: 'notice'; text: string; tone?: NoticeTone }
@@ -95,7 +97,10 @@ export function reduce(session: Session, action: Action): Session {
     case 'steer':
       return {
         ...session,
-        entries: [...session.entries, { id: nextId(), kind: 'user', text: action.text, prompt: action.prompt, steered: true }],
+        entries: [
+          ...session.entries,
+          { id: nextId(), kind: 'user', text: action.text, prompt: action.prompt, steered: true, promptId: action.id },
+        ],
       };
     case 'event':
       return apply(session, action.event);
@@ -115,6 +120,14 @@ export function reduce(session: Session, action: Action): Session {
       return createSession(session.usage.contextWindow);
     case 'load':
       return fromSaved(action.session);
+    case 'rewind': {
+      const index = session.entries.findIndex((entry) => entry.id === action.entry);
+      if (index === -1) return session;
+      const entries = session.entries.slice(0, index);
+      // The task list goes back to what the last update before that message showed.
+      const todos = entries.findLast((entry) => entry.kind === 'tool' && entry.run.name === 'todo');
+      return { ...session, entries, todos: todos?.kind === 'tool' && todos.run.name === 'todo' ? todos.run.input.groups : [] };
+    }
   }
 }
 
@@ -159,6 +172,13 @@ function apply(session: Session, event: AgentEvent): Session {
       return { ...session, title: event.title };
     case 'session':
       return { ...session, agentSession: event.id };
+    case 'sent': {
+      // The prompt that started the turn is the newest message the agent hasn't named yet.
+      const index = session.entries.findLastIndex((entry) => entry.kind === 'user' && !entry.promptId);
+      if (index === -1) return session;
+      const entries = session.entries.map((entry, at) => (at === index ? { ...entry, promptId: event.id } : entry));
+      return { ...session, entries };
+    }
     case 'limits':
     case 'mode':
     case 'commands':

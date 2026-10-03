@@ -49,6 +49,8 @@ export interface AppActions {
   /** Shows `items` in the status line until saved or reverted with `undefined`. */
   previewStatusLine(items: StatusItem[] | undefined): void;
   saveStatusLine(items: StatusItem[]): void;
+  /** Opens the rewind panel, to go back to before an earlier message. */
+  rewind(): void;
   /** Asks the agent for its skills and MCP prompts again, e.g. after servers were turned on or off. */
   reloadCommands(): void;
   toggleExpanded(): void;

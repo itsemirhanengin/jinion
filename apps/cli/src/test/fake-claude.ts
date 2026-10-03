@@ -13,6 +13,8 @@ interface Spawned {
 export class FakeClaude {
   readonly processes: Spawned[] = [];
   commands: SlashCommand[] = [];
+  /** The prompts files were rewound to, dry runs left out. */
+  readonly rewound: string[] = [];
   private readonly prompts: SDKUserMessage[] = [];
   private readonly waiting: ((prompt: SDKUserMessage) => void)[] = [];
 
@@ -35,6 +37,10 @@ export class FakeClaude {
       setPermissionMode: async () => {},
       setModel: async () => {},
       supportedCommands: async () => this.commands,
+      rewindFiles: async (id: string, { dryRun = false } = {}) => {
+        if (!dryRun) this.rewound.push(id);
+        return { canRewind: true, filesChanged: ['/project/a.ts'], insertions: 2, deletions: 1 };
+      },
     };
     return fake as unknown as Query;
   }) as typeof query;

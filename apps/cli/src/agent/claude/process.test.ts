@@ -48,15 +48,15 @@ describe('ClaudeProcess', () => {
     const turn = collect(claude.send('fix the tests'));
     const { uuid } = await first;
     const second = fake.nextPrompt();
-    expect(claude.steer('keep the old API')).toBe(true);
+    const id = claude.steer('keep the old API');
     const steered = await second;
-    expect(steered.priority).toBe('next');
+    expect(steered).toMatchObject({ uuid: id, priority: 'next' });
 
     // Claude Code answered the first prompt before it read the second, so the second gets a turn of its own.
     fake.reply(claudeSays.text('Fixed'), claudeSays.result(uuid!), claudeSays.text('Kept it'), claudeSays.result(steered.uuid!));
     expect((await turn).map((item) => item.type)).toEqual(['assistant', 'result', 'assistant', 'result']);
     expect(idle).toEqual([]);
-    expect(claude.steer('too late')).toBe(false);
+    expect(claude.steer('too late')).toBeUndefined();
   });
 
   it('ends an interrupted turn at its next result, whatever was steered into it', async () => {

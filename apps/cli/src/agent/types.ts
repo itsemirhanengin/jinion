@@ -73,7 +73,9 @@ export type AgentEvent =
   /** The mode the agent is really in, e.g. after a plan was approved or when a mode isn't available. */
   | { type: 'mode'; mode: AgentMode }
   /** The skills and MCP prompts changed, e.g. as servers connect. */
-  | { type: 'commands'; commands: AgentCommand[] };
+  | { type: 'commands'; commands: AgentCommand[] }
+  /** The backend's id for the prompt that started the turn, which `Agent.rewind` takes. */
+  | { type: 'sent'; id: string };
 
 /** One usage window of the user's plan, such as the 5-hour limit. */
 export interface LimitWindow {
@@ -145,9 +147,17 @@ export interface Agent {
   run(prompt: AgentPrompt, context: RunContext): AsyncIterable<AgentEvent>;
   /**
    * Adds a message to the turn in progress, which the agent reads at its next step; its events come through that
-   * turn's `run`. False when no turn runs to take it. Backends that can't leave it out, and messages wait instead.
+   * turn's `run`. Returns the message's id, or `undefined` when no turn runs to take it. Backends that can't leave it
+   * out, and messages wait instead.
    */
-  steer?(prompt: AgentPrompt): boolean;
+  steer?(prompt: AgentPrompt): string | undefined;
+  /** What going back to before the prompt `id` would change in files; `undefined` when there is nothing to restore. */
+  rewindPreview?(id: string): Promise<FileChanges | undefined>;
+  /**
+   * Takes the files, the conversation or both back to how they were before the prompt `id` was sent, between turns.
+   * The prompt and everything after it leave the conversation.
+   */
+  rewind?(id: string, scope: RewindScope): Promise<void>;
   /**
    * Events that come while no turn runs: the commands or plan limits changing, or a turn the backend starts itself.
    * Returns a function that stops listening. Backends that only speak when spoken to leave it out.
@@ -226,4 +236,17 @@ export interface AgentResume {
   sessionId: string;
   /** What the conversation has cost so far, so the total keeps adding up. */
   cost: number;
+}
+
+/** What `Agent.rewind` takes back. */
+export interface RewindScope {
+  code: boolean;
+  conversation: boolean;
+}
+
+export interface FileChanges {
+  /** Paths, absolute. */
+  files: string[];
+  insertions: number;
+  deletions: number;
 }

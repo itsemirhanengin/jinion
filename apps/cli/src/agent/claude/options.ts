@@ -67,12 +67,15 @@ const ASK = ['Bash(rm *)', 'Bash(rmdir *)', 'Bash(mv *)', 'Bash(cp *)', 'Bash(se
 
 export const askRules = (mode: AgentMode) => (mode === 'edits' ? ASK : []);
 
+/** A conversation to continue, up to `at` after a rewind took the rest away. */
+export type ClaudeResume = AgentResume & { at?: string };
+
 export interface ClaudeSetup {
   cwd: string;
   selection: ModelSelection;
   mode: AgentMode;
   account: string;
-  resume?: AgentResume;
+  resume?: ClaudeResume;
   memory?: MemoryStore;
   mcp?: McpConfig;
   approvals: ClaudeApprovals;
@@ -92,6 +95,9 @@ export function claudeOptions({ cwd, selection, mode, account, resume, memory, m
     model: selection.model,
     effort: selection.effort as EffortLevel | undefined,
     resume: resume?.sessionId,
+    resumeSessionAt: resume?.at,
+    // Files are backed up before each change, so a rewind can restore them.
+    enableFileCheckpointing: true,
     // Not snapshotted, so a resumed conversation sees the notes saved since it began.
     systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, memory), snapshot: false },
     // Claude Code's own settings, CLAUDE.md files and memory stay out. Jinion passes the MCP servers configured in files

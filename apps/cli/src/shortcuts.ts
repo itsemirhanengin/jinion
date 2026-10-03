@@ -8,6 +8,7 @@ export const SHORTCUTS: [keys: string, action: string][] = [
   ['shift+enter', 'new line'],
   ['up/down', 'prompt history'],
   ['esc', 'interrupt the turn'],
+  ['esc esc', 'rewind to an earlier message'],
   ['shift+tab', 'switch mode'],
   ['ctrl+c', 'interrupt, clear, quit'],
   ['ctrl+o', 'expand output'],

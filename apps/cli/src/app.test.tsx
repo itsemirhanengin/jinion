@@ -99,6 +99,27 @@ describe('App', () => {
     expect(screen).not.toContain('queued:');
   });
 
+  it('goes back to before an earlier message with esc twice, and puts it back in the prompt', async () => {
+    for (const message of ['hello', 'hey again']) {
+      await terminal.waitFor('Ask jinion anything');
+      await terminal.type(message);
+      await terminal.press(KEYS.enter);
+      await terminal.waitFor(new RegExp(`> ${message}[\\s\\S]*Ask jinion anything`));
+    }
+    await terminal.press(KEYS.escape, KEYS.escape);
+    const list = await terminal.waitFor('+- Rewind 2 messages');
+    // Newest first, the focused one with what going back would change.
+    expect(list).toMatch(/> 1\. hey again +\|\n\| +No file changes since then +\|\n\| +2\. hello/);
+
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Restore code and conversation');
+    await terminal.press(KEYS.enter);
+    const screen = await terminal.waitFor('Went back to before “hey again”');
+    expect(screen).toContain('> hello');
+    expect(screen).not.toContain('> hey again');
+    expect(screen).toMatch(/^ hey again$/m);
+  });
+
   it('puts what was queued back in the prompt when the turn is interrupted', async () => {
     start(1);
     await terminal.waitFor('Ask jinion anything');

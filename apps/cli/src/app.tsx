@@ -26,7 +26,16 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent, AgentAccount, AgentCommand, AgentEvent, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
+import type {
+  Agent,
+  AgentAccount,
+  AgentCommand,
+  AgentEvent,
+  AgentMode,
+  LimitWindow,
+  PlanDecision,
+  RewindScope,
+} from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { CommandRegistry } from './commands/registry.js';
 import {
@@ -66,6 +75,7 @@ import { findSegment, type StatusData } from './status/segments.js';
 import { EntryView } from './ui/entry.js';
 import { fileCompletion, useProjectFiles } from './files.js';
 import { clipboardImage, imageFromPaste } from './images.js';
+import { RewindPanel, type RewindPoint } from './panels/rewind.js';
 import { skillCompletion, skillMention } from './skills.js';
 
 export interface AppProps {
@@ -91,6 +101,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const images = useMemo(() => new PastedImages(), []);
   const [submitted, setSubmitted] = useState<string[]>([]);
   const controller = useRef<AbortController>(undefined);
+  const lastEscape = useRef(0);
   const busy = session.busySince !== undefined;
 
   const commands = useMemo(() => new CommandRegistry(builtinCommands), []);
@@ -272,9 +283,9 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   /** A message typed while the agent works goes into its turn, or waits for it when the agent can't take it. */
   const steer = (text: string) => {
     const full = pastes.expand(text);
-    if (agent.steer?.({ text: full, images: images.in(text) })) {
-      dispatch({ type: 'steer', text, prompt: full === text ? undefined : full });
-    } else enqueue(text);
+    const id = agent.steer?.({ text: full, images: images.in(text) });
+    if (id !== undefined) dispatch({ type: 'steer', text, prompt: full === text ? undefined : full, id });
+    else enqueue(text);
   };
 
   useEffect(() => {
@@ -365,6 +376,48 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     }
   };
 
+  /** Goes back to before a message: its files, the conversation, or both; a message taken back returns to the prompt. */
+  const rewindTo = async (point: RewindPoint, scope: RewindScope) => {
+    const quoted = `“${point.text.split('\n')[0]!.slice(0, 60)}”`;
+    try {
+      await agent.rewind!(point.promptId, scope);
+    } catch (error) {
+      return notice(`Couldn't rewind: ${error instanceof Error ? error.message : error}`, 'error');
+    }
+    if (scope.conversation) {
+      dispatch({ type: 'rewind', entry: point.entry });
+      setDraft(point.text);
+    }
+    notice(
+      scope.code && scope.conversation
+        ? `Went back to before ${quoted}, files and conversation.`
+        : scope.conversation
+          ? `The conversation went back to before ${quoted}; the files stay as they are.`
+          : `The files went back to how they were before ${quoted}; the conversation goes on.`,
+      'success',
+    );
+  };
+
+  const openRewind = () => {
+    if (!agent.rewind) return notice(`${agent.name} can't rewind.`, 'warning');
+    if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
+    const points = session.entries
+      .flatMap((entry) => (entry.kind === 'user' && entry.promptId ? [{ entry: entry.id, promptId: entry.promptId, text: entry.text, steered: entry.steered }] : []))
+      .reverse();
+    if (points.length === 0) return notice('There is nothing to rewind yet.', 'muted');
+    panels.open({
+      id: 'rewind',
+      placement: 'bottom',
+      element: (
+        <RewindPanel
+          points={points}
+          preview={(point) => agent.rewindPreview?.(point.promptId) ?? Promise.resolve(undefined)}
+          onRewind={(point, scope) => void rewindTo(point, scope)}
+        />
+      ),
+    });
+  };
+
   const actions: AppActions = {
     submit: (value) => {
       const text = value.trim();
@@ -398,6 +451,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       setStatusPreview(undefined);
       saveStatusLine(items);
     },
+    rewind: openRewind,
     reloadCommands,
     toggleExpanded,
     exit: quit,
@@ -426,6 +480,16 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     }
     // Open panels handle their own esc.
     if (key.escape && busy && !panels.top) return controller.current?.abort();
+    // Esc twice on an empty prompt goes back to an earlier message.
+    if (key.escape && !busy && !panels.top && !draft) {
+      const now = Date.now();
+      if (now - lastEscape.current < DOUBLE_ESCAPE_MS) {
+        lastEscape.current = 0;
+        return openRewind();
+      }
+      lastEscape.current = now;
+      return;
+    }
     // Sends the message after the turn in progress rather than into it; with nothing running, right away.
     if (key.ctrl && input === 'q' && !panels.top) {
       const text = draft.trim();
@@ -514,6 +578,9 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     </JinionContext.Provider>
   );
 }
+
+/** Two presses of esc this close together open the rewind panel. */
+const DOUBLE_ESCAPE_MS = 600;
 
 /** What each mode reads as in the plan panel. */
 const PLAN_CHOICES: Record<AgentMode, string> = {

@@ -155,6 +155,7 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 | `shift+enter`, `alt+enter`, trailing `\` | New line |
 | `up` / `down` | Prompt history |
 | `esc` | Interrupt the running turn |
+| `esc` `esc` | On an empty prompt, between turns: rewind to before an earlier message (`/rewind`) |
 | `ctrl+o` | Expand or collapse long output and pasted text |
 | paste | Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`; the agent gets all of it |
 | `/` | Command palette: Jinion's own commands, filtered as you type |
@@ -169,6 +170,16 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 The prompt grows to 20 lines, then scrolls inside, with the rules above and below saying how many lines are out of view. A paste placeholder acts as one character: the cursor steps over it and backspace removes it whole.
 
 Images go into the prompt as placeholders like long pastes, and the agent gets them after the text, in the order the placeholders come: from the clipboard with `ctrl+v` (macOS, or Linux with `wl-paste` or `xclip`), or as files, since a terminal pastes a dragged file's path (PNG, JPEG, GIF and WebP). Images over 3.7 MB are scaled down with macOS's `sips` before they go out; elsewhere they are refused.
+
+`esc` twice (or `/rewind`) goes back to before an earlier message. The panel lists the conversation's messages, newest first, and under the highlighted one what going back would change in files (`2 files change +24 -7`, and which). Then it asks what to take back:
+
+| Choice | Does |
+| --- | --- |
+| Restore code and conversation | Files go back to how they were before the message, the conversation goes on from before it, and the message returns to the prompt to edit and send again |
+| Conversation only | The same, but the files stay as they are |
+| Code only | Files go back; the conversation goes on as it is |
+
+Files come back from Claude Code's checkpoints, which it takes before each change and keeps across processes, so a resumed conversation can still be rewound. The conversation continues in a new Claude Code process from the transcript entry before the message. Jinion's memory notes stay: they belong to no single conversation.
 
 The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
 
@@ -186,6 +197,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
 | `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
+| `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
 | `/exit` (`/quit`) | Quits |

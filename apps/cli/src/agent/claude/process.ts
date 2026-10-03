@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { query, type Options, type SDKMessage, type SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
 import type { DebugLog } from '../../debug.js';
-import type { AgentResume } from '../types.js';
+import type { ClaudeResume } from './options.js';
 import { ClaudeEvents } from './events.js';
 import { Inbox } from './inbox.js';
 
@@ -9,6 +9,8 @@ type Result = Extract<SDKMessage, { type: 'result' }>;
 
 /** A prompt's text, or its text and images. */
 export type Content = SDKUserMessage['message']['content'];
+
+export type Uuid = ReturnType<typeof randomUUID>;
 
 /** Images in the debug log say how big they were rather than holding them. */
 const loggable = (content: Content) =>
@@ -23,7 +25,7 @@ export interface ClaudeProcessOptions {
   options: Options;
   cwd: string;
   /** The conversation this process continues. */
-  resume?: AgentResume;
+  resume?: ClaudeResume;
   debug?: DebugLog;
   /** What Claude Code sends while no turn runs, e.g. its commands changing after a turn, or a turn it starts itself. */
   onIdle(message: SDKMessage): void;
@@ -41,6 +43,8 @@ export class ClaudeProcess {
   readonly query: ReturnType<typeof query>;
   /** Maps this conversation's messages; it keeps their session id, cost and tool calls. */
   readonly events: ClaudeEvents;
+  /** The conversation this process continues, if any. */
+  readonly resumed?: ClaudeResume;
   private readonly input = new Inbox<SDKUserMessage>();
   /** The prompts the turn in progress still has to answer, and where what it sends goes. */
   private turn?: { waiting: Set<string>; messages: Inbox<SDKMessage | Error>; interrupted?: boolean };
@@ -50,6 +54,7 @@ export class ClaudeProcess {
   constructor(private readonly options: ClaudeProcessOptions) {
     const { spawn = query, debug } = options;
     this.events = new ClaudeEvents(options.cwd, options.resume?.cost);
+    this.resumed = options.resume;
     this.query = spawn({
       prompt: this.input,
       options: {
@@ -65,14 +70,15 @@ export class ClaudeProcess {
 
   /**
    * Sends a prompt, then yields what Claude Code sends until the results that answer it and the messages steered into
-   * the turn, which come last. Fails when the process exits first.
+   * the turn, which come last. Fails when the process exits first. `uuid` names the prompt in the transcript, where
+   * rewinding finds it.
    */
-  async *send(content: Content): AsyncGenerator<SDKMessage> {
+  async *send(content: Content, uuid: Uuid = randomUUID()): AsyncGenerator<SDKMessage> {
     if (this.exited) throw this.exited;
     if (this.turn) throw new Error('Claude Code is still answering the previous prompt.');
     const turn = { waiting: new Set<string>(), messages: new Inbox<SDKMessage | Error>() };
     this.turn = turn;
-    this.push(content, turn);
+    this.push(content, uuid, turn);
     try {
       for await (const item of turn.messages) {
         if (item instanceof Error) throw item;
@@ -86,12 +92,14 @@ export class ClaudeProcess {
 
   /**
    * Adds a message to the turn in progress. Claude Code reads it as soon as the current tool calls finish, or answers
-   * it in a turn of its own right after, which still belongs to this one. False when no turn runs to take it.
+   * it in a turn of its own right after, which still belongs to this one. Returns the message's uuid, or `undefined`
+   * when no turn runs to take it.
    */
   steer(content: Content) {
-    if (!this.turn || this.exited) return false;
-    this.push(content, this.turn, 'next');
-    return true;
+    if (!this.turn || this.exited) return undefined;
+    const uuid = randomUUID();
+    this.push(content, uuid, this.turn, 'next');
+    return uuid;
   }
 
   /** Stops the turn in progress; it ends with the next result, whatever was steered into it. */
@@ -105,8 +113,7 @@ export class ClaudeProcess {
     this.query.close();
   }
 
-  private push(content: Content, turn: NonNullable<ClaudeProcess['turn']>, priority?: 'next') {
-    const uuid = randomUUID();
+  private push(content: Content, uuid: Uuid, turn: NonNullable<ClaudeProcess['turn']>, priority?: 'next') {
     turn.waiting.add(uuid);
     this.options.debug?.write('prompt', { uuid, content: loggable(content), priority });
     this.input.push({

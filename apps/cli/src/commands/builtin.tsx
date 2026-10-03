@@ -145,6 +145,11 @@ export const builtinCommands: Command[] = [
     },
   },
   {
+    name: 'rewind',
+    description: 'Go back to before an earlier message: code, conversation or both (esc esc)',
+    run: (app) => app.actions.rewind(),
+  },
+  {
     name: 'statusline',
     description: 'Choose what the status line shows',
     run: (app) => app.panels.open({ id: 'statusline', placement: 'bottom', element: <StatusLinePanel /> }),

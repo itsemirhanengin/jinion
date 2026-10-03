@@ -44,9 +44,18 @@ export class ScriptedAgent implements Agent {
       this.scenarios.find((candidate) => !candidate.match);
     if (!scenario) throw new Error('No scenario matches this prompt.');
 
+    yield { type: 'sent', id: `prompt_${++promptSequence}` };
     yield { type: 'title', title: typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt) };
     yield* scenario.play(new Script(context, this.usage, this.pace), prompt);
   }
+
+  /** The demo changes no real files, so there is never anything to restore. */
+  async rewindPreview() {
+    return undefined;
+  }
+
+  /** Nothing to undo but the conversation on screen, which the app takes back itself. */
+  async rewind() {}
 
   reset() {
     Object.assign(this.usage, { contextTokens: 0, cost: 0 });
@@ -64,6 +73,7 @@ export class ScriptedAgent implements Agent {
 }
 
 let toolSequence = 0;
+let promptSequence = 0;
 
 export class Script {
   constructor(
