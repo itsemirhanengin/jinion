@@ -36,9 +36,8 @@ Steps:
 4. **Guides**: the Use Jinion and Customize pages.
 5. **Wrap up**: shorten the README to point at the docs, deploy to docs.jinion.co.
 
-Steps 2 to 4 have a first draft on every page, written from the README and the code so the site has real content for
-its design. Still to do on them: go through each against the code, add what landed after them (`/rename` and
-conversation titles, signing an account in again and removing one from `/account`), and decide whether the reference tables get a test that fails when a command or shortcut is missing.
+Steps 2 to 4 are done: every page was checked against the code, and `tests/commands/builtin.test.ts` and
+`tests/app/shortcuts.test.ts` in `apps/cli` fail when a command or shortcut is missing from the reference pages.
 The screens in the pages were captured from the demo app in the test terminal, with each cell's color turned into the
 theme's name; that capture could become a script that refreshes them when the TUI changes.
 
