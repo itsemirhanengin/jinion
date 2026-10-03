@@ -3,13 +3,14 @@ import { StatGrid } from '../primitives/stat-grid.js';
 import { renderTerminal, type TestTerminal } from '../testing/index.js';
 import { darkTheme } from '../theme/themes.js';
 import { BarList } from './bar-list.js';
-import { addDays, dayKey, Heatmap, heatLevels } from './heatmap.js';
+import { addDays, dayKey } from '../utils/dates.js';
+import { Heatmap, heatLevels } from './heatmap.js';
 import { Waffle, waffleCells } from './waffle.js';
 
 let terminal: TestTerminal | undefined;
 afterEach(() => terminal?.unmount());
 
-/** A Saturday, so the last week is whole. */
+// A Saturday, so the last week is whole.
 const END = new Date(2026, 9, 3);
 
 const lines = async (screen: Promise<string>) => (await screen).split('\n').filter(Boolean);
@@ -42,7 +43,6 @@ describe('Heatmap', () => {
     const values = { [dayKey(END)]: 100, [addDays(dayKey(END), -1)]: 1 };
     terminal = renderTerminal(<Heatmap values={values} end={END} weeks={1} />, { columns: 20, rows: 10, theme: darkTheme });
     expect(await lines(terminal.screen())).toEqual(['    Oct', '    ■', 'Mon ■', '    ■', 'Wed ■', '    ■', 'Fri ■', '    ■']);
-    // Friday had a little, Saturday the most.
     expect(await terminal.colorOf('Fri ■', 4)).toBe(darkTheme.heat[1]);
     expect(await terminal.colorOf('Mon ■', 4)).toBe(darkTheme.heat[0]);
   });
@@ -53,11 +53,9 @@ describe('Heatmap', () => {
       rows: 10,
       theme: darkTheme,
     });
-    // Friday's row: the same squares, the last one marked.
     expect(await lines(terminal.screen())).toContain('Fri ■ ■');
     expect(await terminal.colorOf('Fri ■ ■', 6)).toBe(darkTheme.accent);
     expect(await terminal.colorOf('Fri ■ ■', 4)).toBe(darkTheme.heat[0]);
-    // The busiest day is the last level; the theme's shades go from nothing to the most.
     expect(heatLevels([1, 2, 3, 4, 100])(100)).toBe(4);
     expect(heatLevels([1, 2, 3, 4, 100])(1)).toBe(1);
     expect(heatLevels([1, 2, 3, 4, 100])(0)).toBe(0);

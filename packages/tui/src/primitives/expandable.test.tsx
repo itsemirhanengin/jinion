@@ -1,6 +1,6 @@
 import { Box, Text, useInput } from 'ink';
 import { afterEach, expect, it } from 'vitest';
-import { useView } from '../runtime/context.js';
+import { useView } from '../runtime/view.js';
 import { darkTheme, hoverColor } from '../theme/themes.js';
 import { renderTerminal, type TestTerminal } from '../testing/index.js';
 import { Expandable } from './expandable.js';
@@ -96,7 +96,6 @@ it('keeps a clicked item under the pointer while following the bottom, and follo
 
   await terminal.click('item 25 closed');
   const opened = await terminal.waitFor('item 25 details');
-  // It opens downwards, pushing what is below it out of view, rather than the view moving up.
   expect(rowOf(opened, 'item 25 open')).toBe(row);
   expect(opened).toContain('Jump to bottom');
 
@@ -131,7 +130,6 @@ it('moves the light to what scrolls under a still pointer', async () => {
   await new Promise((resolve) => setTimeout(resolve, 60));
   expect(await terminal.backgroundOf('item 25 closed')).toBe(hoverColor(darkTheme));
 
-  // A wheel notch moves the items three lines down under the pointer.
   const screen = await terminal.screen();
   const y = rowOf(screen, 'item 25 closed') + 1;
   await terminal.press(`\x1b[<64;1;${y}M`);

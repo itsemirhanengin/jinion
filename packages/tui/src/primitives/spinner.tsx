@@ -1,5 +1,6 @@
 import { Text, useAnimation } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
+import type { Tone } from '../theme/themes.js';
 
 const FRAMES = ['|', '/', '-', '\\'];
 
@@ -10,7 +11,19 @@ export function Spinner({ color }: { color?: string }) {
 
 export type Status = 'pending' | 'running' | 'done' | 'error' | 'cancelled';
 
-/** `[ ]` pending, `[/]` running (animated), `[x]` done, `[!]` error, `[-]` cancelled. */
+export function toneOf(status: Status): Tone {
+  switch (status) {
+    case 'done':
+      return 'success';
+    case 'error':
+      return 'error';
+    case 'cancelled':
+      return 'neutral';
+    default:
+      return 'pending';
+  }
+}
+
 export function StatusMark({ status }: { status: Status }) {
   const theme = useTheme();
 

@@ -12,7 +12,7 @@ let add: (count: number) => void = () => {};
 beforeEach(() => mounted.clear());
 afterEach(() => terminal?.unmount());
 
-/** One to three lines, so items differ in height as a conversation's do. */
+// One to three lines, so items differ in height.
 function Item({ index }: { index: number }) {
   useEffect(() => {
     mounted.add(index);
@@ -43,7 +43,6 @@ function Items({ initial }: { initial: number }) {
   );
 }
 
-/** Every line drawn, as its place among all the items' lines. */
 const position = (index: number, line: number) => {
   const whole = Math.floor(index / 3);
   return whole * 6 + [0, 1, 3][index % 3]! + line;
@@ -51,7 +50,7 @@ const position = (index: number, line: number) => {
 const shown = (screen: string) =>
   [...screen.matchAll(/item (\d+) line (\d+)/g)].map((match) => position(Number(match[1]), Number(match[2])));
 
-/** The screen once it stopped changing: Ink draws at most every frame, and an item drawn for the first time takes two. */
+// Ink draws at most every frame, and an item drawn for the first time takes two.
 async function settled() {
   let last = '';
   for (;;) {
@@ -77,7 +76,6 @@ it('goes up a page at a time to the first line without skipping or repeating one
   while (lines[0] !== 0) {
     await terminal.press(KEYS.pageUp);
     const next = shown(await settled());
-    // Each line follows the one before, and the page moved by all but two lines of the view it was in.
     expect(next).toEqual(next.map((_, at) => next[0]! + at));
     expect(next[0]).toBe(Math.max(0, lines[0]! - (lines.length - 2)));
     lines = next;

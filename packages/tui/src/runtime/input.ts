@@ -4,17 +4,16 @@ import { StringDecoder } from 'node:string_decoder';
 export type MouseEvent =
   | { type: 'wheel'; direction: 'up' | 'down'; x: number; y: number }
   | { type: 'press' | 'release'; button: number; x: number; y: number }
-  /** The pointer moved: with no button held, `button` is `undefined`; with one held, it is a drag. */
   | { type: 'move'; button: number | undefined; x: number; y: number };
 
 export type MouseListener = (event: MouseEvent) => void;
 export type FocusListener = (focused: boolean) => void;
 
-/** Button presses, the wheel and every move of the pointer, for hovering, reported with SGR coordinates. */
+/** 1000 presses and the wheel, 1003 every move (for hovering), 1006 SGR coordinates. */
 export const ENABLE_MOUSE = '\x1b[?1000h\x1b[?1003h\x1b[?1006h';
 export const DISABLE_MOUSE = '\x1b[?1003l\x1b[?1000l\x1b[?1006l';
 
-/** The terminal sends `\x1b[I` when its window gains focus and `\x1b[O` when it loses it. */
+/** The terminal sends `\x1b[I` on gaining focus and `\x1b[O` on losing it. */
 export const ENABLE_FOCUS = '\x1b[?1004h';
 export const DISABLE_FOCUS = '\x1b[?1004l';
 
@@ -24,7 +23,7 @@ const PARTIAL_MOUSE_SEQUENCE = /\x1b\[<[\d;]*$/;
 const WHEEL = 64;
 const MOTION = 32;
 
-/** A move reports this as its button when none is held. */
+// A move reports this as its button when none is held.
 const NO_BUTTON = 3;
 
 function parseMouse(code: number, column: number, row: number, final: string): MouseEvent | undefined {
@@ -37,10 +36,7 @@ function parseMouse(code: number, column: number, row: number, final: string): M
   return { type: final === 'M' ? 'press' : 'release', button: code & 3, ...position };
 }
 
-/**
- * Wraps the terminal's stdin so mouse and focus reports never reach Ink's key parser.
- * Ink reads the returned stream; mouse events go to `onMouse` and focus changes to `onFocus` instead.
- */
+/** Keeps mouse and focus reports out of Ink's key parser. */
 export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, onFocus?: FocusListener) {
   const stream = new PassThrough();
   const decoder = new StringDecoder('utf8');
@@ -64,9 +60,7 @@ export function createInput(source: NodeJS.ReadStream, onMouse: MouseListener, o
   };
 
   source.on('data', onData);
-  // Background detection pauses stdin, and a new 'data' listener does not
-  // restart an explicitly paused stream; without this nothing keeps the
-  // process alive and it exits right after mounting.
+  // Background detection pauses stdin and a new 'data' listener won't resume it; without this the process exits.
   source.resume();
 
   const stdin = Object.assign(stream, {

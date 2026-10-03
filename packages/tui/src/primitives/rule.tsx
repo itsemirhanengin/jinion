@@ -1,17 +1,15 @@
 import type { ReactNode } from 'react';
 import { Box, Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { Fill } from './fill.js';
 
 export interface RuleProps {
   title?: ReactNode;
-  /** On the right: `--- title ------ aside ---`. */
   aside?: ReactNode;
   char?: string;
   color?: string;
 }
 
-/** A full-width dashed line: `------`, `--- title ------`, or with an aside on the right, `------ aside ---`. */
 export function Rule({ title, aside, char = '-', color }: RuleProps) {
   const theme = useTheme();
   const lineColor = color ?? theme.border;

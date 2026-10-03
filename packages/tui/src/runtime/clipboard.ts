@@ -1,12 +1,10 @@
 import { spawn } from 'node:child_process';
 
-/** How text gets to the clipboard: the system's own tool, or the terminal through OSC 52. */
 export type ClipboardMethod = 'system' | 'osc52';
 
-/** OSC 52: the terminal puts the text on the clipboard of the machine it runs on, over SSH too. */
+/** OSC 52: the terminal sets the clipboard of the machine it runs on, so it works over SSH too. */
 export const osc52 = (text: string) => `\x1b]52;c;${Buffer.from(text).toString('base64')}\x07`;
 
-/** The tools that put text on this machine's clipboard, first the ones most likely to be there. */
 function systemTools(platform: NodeJS.Platform, env: NodeJS.ProcessEnv): [string, string[]][] {
   if (platform === 'darwin') return [['pbcopy', []]];
   if (platform === 'win32') return [['powershell', ['-NoProfile', '-Command', '$input | Set-Clipboard']]];
@@ -27,9 +25,8 @@ function pipe(command: string, args: string[], text: string) {
 }
 
 /**
- * Puts `text` on the clipboard, as Claude Code does: through the system's tool when Jinion runs on the machine in front
- * of the user, and through the terminal (`write`) over SSH or where no tool works. Inside tmux it also goes to tmux's
- * paste buffer. Whether it got anywhere.
+ * As Claude Code does: the system's tool locally, the terminal (`write`) over SSH or where no tool works, and
+ * tmux's paste buffer inside tmux.
  */
 export async function copyToClipboard(
   text: string,

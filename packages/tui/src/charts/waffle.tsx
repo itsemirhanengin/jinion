@@ -7,20 +7,16 @@ export interface WafflePart {
   label: string;
   value: number;
   color: string;
-  /** In the legend after the label, e.g. `617 tokens · 0.3%`. */
   text?: ReactNode;
 }
 
 export interface WaffleProps {
-  /** The parts of the whole, in order; each takes squares in proportion, at least one when it has anything. */
   parts: WafflePart[];
   columns?: number;
   rows?: number;
-  /** The parts with their colors beside the grid. */
   legend?: boolean;
 }
 
-/** How many of `cells` squares each value gets: in proportion, the rounding left to the largest remainders. */
 export function waffleCells(values: number[], cells: number) {
   const total = values.reduce((sum, value) => sum + Math.max(0, value), 0);
   if (total <= 0) return values.map(() => 0);
@@ -43,14 +39,6 @@ export function waffleCells(values: number[], cells: number) {
   return counts;
 }
 
-/**
- * A whole as a grid of squares, filled part by part in order, e.g. what fills a context window, a square per percent:
- *
- * ```
- * ■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■ System prompt  617 tokens
- * ■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■ Messages       12.1k tokens
- * ```
- */
 export function Waffle({ parts, columns = 10, rows = 10, legend = false }: WaffleProps) {
   const counts = waffleCells(
     parts.map((part) => part.value),

@@ -1,24 +1,18 @@
 import { useState } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { Box, Text } from 'ink';
+import { useTheme } from '../runtime/theme.js';
 import { ChoiceList, choiceIndent, useChoiceList, type Choice } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
 import { Prose } from '../primitives/prose.js';
 import { ShellCommand } from '../content/shell.js';
-import { PromptInput } from './prompt-input.js';
+import { EDITOR_HINTS, OptionEditor, useOptionEditor } from './option-editor.js';
 
 export interface PermissionRequest {
-  /** What the agent wants to do, e.g. `jinion wants to run a command`. */
   title: string;
-  /** Shown highlighted as `$ command`. */
   command?: string;
-  /** A path, URL or other target, when there is no command. */
   subject?: string;
-  /** Why it is needed, or why this needs asking. */
   description?: string;
-  /** What "don't ask again" would allow, e.g. `pnpm add:*`. Without it that choice is not offered. */
   always?: string;
-  /** Focuses "No" first, so a stray Enter can't approve. */
   defaultToNo?: boolean;
 }
 
@@ -26,31 +20,23 @@ export type PermissionDecision = { allow: true; always?: boolean } | { allow: fa
 
 export interface PermissionPanelProps {
   request: PermissionRequest;
+  agent: string;
   onDecide(decision: PermissionDecision): void;
   onCancel(): void;
 }
 
-/**
- * Asks before the agent runs something, in the prompt's place:
- *
- *     +- Permission ---------------------+
- *     | jinion wants to run a command    |
- *     |   $ pnpm add zod                 |
- *     +----------------------------------+
- *     | > 1. Yes                         |
- *     |   2. Yes, and don't ask again    |
- *     |   3. No                          |
- *     +----------------------------------+
- */
-export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanelProps) {
+export function PermissionPanel({ request, agent, onDecide, onCancel }: PermissionPanelProps) {
   const theme = useTheme();
   const [note, setNote] = useState('');
-  const [editing, setEditing] = useState<string>();
+  const [editing, setEditing] = useOptionEditor(() => {
+    list.setFocus('deny');
+    return note;
+  });
 
   const decisions = [
     { key: 'once', label: 'Yes' },
     ...(request.always ? [{ key: 'always', label: `Yes, and don't ask again for ${request.always} in this project` }] : []),
-    { key: 'deny', label: 'No', description: 'Press n to tell jinion what to do instead' },
+    { key: 'deny', label: 'No', description: `Press n to tell ${agent} what to do instead` },
   ];
 
   const list = useChoiceList({
@@ -63,35 +49,18 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
       key === 'deny' ? onDecide({ allow: false, note: note || undefined }) : onDecide({ allow: true, always: key === 'always' }),
   });
 
-  useInput(
-    (input) => {
-      if (input !== 'n') return;
-      list.setFocus('deny');
-      setEditing(note);
-    },
-    { isActive: editing === undefined },
-  );
-  useInput(
-    (_, key) => {
-      if (key.escape) setEditing(undefined);
-    },
-    { isActive: editing !== undefined },
-  );
-
   const editor = editing !== undefined && (
-    <Box paddingLeft={choiceIndent(list)}>
-      <Text color={theme.muted}>note: </Text>
-      <PromptInput
-        value={editing}
-        onChange={setEditing}
-        onSubmit={(value) => {
-          setNote(value.trim());
-          setEditing(undefined);
-        }}
-        placeholder="What should jinion do instead?"
-        paddingX={0}
-      />
-    </Box>
+    <OptionEditor
+      indent={choiceIndent(list)}
+      note
+      value={editing}
+      onChange={setEditing}
+      onSubmit={(value) => {
+        setNote(value.trim());
+        setEditing(undefined);
+      }}
+      placeholder={`What should ${agent} do instead?`}
+    />
   );
 
   const choices: Choice[] = decisions.map((decision) =>
@@ -124,10 +93,7 @@ export function PermissionPanel({ request, onDecide, onCancel }: PermissionPanel
       }
       hints={
         editing !== undefined
-          ? [
-              ['Enter', 'save'],
-              ['Esc', 'back'],
-            ]
+          ? EDITOR_HINTS
           : [
               ['Enter', 'select'],
               ['n', 'note'],

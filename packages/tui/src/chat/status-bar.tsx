@@ -1,14 +1,12 @@
 import { Fragment, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 
 export interface StatusBarProps {
   items: ReactNode[];
-  /** Right-aligned; gives way first when the line is too narrow. */
   right?: ReactNode | ReactNode[];
 }
 
-/** `jinion · [M] model · [D] dir · ctx: 12K/200K · $0.04          session title`. The right side gives way first. */
 export function StatusBar({ items, right }: StatusBarProps) {
   const rightItems = right === undefined ? [] : Array.isArray(right) ? right : [right];
   return (
@@ -39,7 +37,6 @@ function Joined({ items }: { items: ReactNode[] }) {
   ));
 }
 
-/** `[M] value` */
 export function Tag({ name, value, color }: { name: string; value: ReactNode; color?: string }) {
   const theme = useTheme();
   return (

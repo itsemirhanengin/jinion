@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { KEYS, renderTerminal, type TestTerminal } from '../testing/index.js';
-import { darkTheme } from '../theme/themes.js';
-import { Composer, type CompletionSource } from './composer.js';
-import { namedMention } from './mentions.js';
+import { KEYS, renderTerminal, type TestTerminal } from '../../testing/index.js';
+import { darkTheme } from '../../theme/themes.js';
+import { namedMention } from '../mentions.js';
+import { Composer } from './composer.js';
+import type { CompletionSource } from './use-completion.js';
 
 const SKILLS = [
   { name: 'hello', group: 'Project' },

@@ -1,5 +1,5 @@
 import { Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import type { Theme } from '../theme/themes.js';
 import { printable } from '../utils/printable.js';
 
@@ -47,7 +47,6 @@ function colorOf(kind: ShellTokenKind, theme: Theme) {
   }
 }
 
-/** A highlighted `$ command` line. */
 export function ShellCommand({ command }: { command: string }) {
   const theme = useTheme();
   return (

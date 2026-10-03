@@ -1,32 +1,28 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, measureElement, Text, useInput, usePaste, type DOMElement, type Key } from 'ink';
+import { Box, measureElement, useInput, usePaste, type DOMElement, type Key } from 'ink';
 import stringWidth from 'string-width';
-import { useContentWidth, useTheme } from '../runtime/context.js';
+import { useContentWidth } from '../../runtime/width.js';
+import { layout, offsetAt, rowOf } from './layout.js';
+import { Placeholder, RowText } from './row-text.js';
+import { marksOf, spansOf } from './spans.js';
+import { useHistory } from './use-history.js';
 
 export interface PromptInputProps {
   value: string;
   onChange(value: string): void;
   onSubmit(value: string): void;
   placeholder?: string;
-  /** Previous submissions, oldest first, browsed with up/down. */
   history?: string[];
   isActive?: boolean;
   paddingX?: number;
-  /** Sees every key first; return `true` to consume it, e.g. while a completion list is open. */
   onKeyDown?(input: string, key: Key): boolean | void;
   onCursorChange?(cursor: number): void;
-  /** Rows the editor grows to before it scrolls inside, keeping the cursor in view. */
   maxRows?: number;
-  /** Rows out of view above and below, while the text is taller than `maxRows`. */
   onScroll?(hidden: HiddenRows): void;
-  /** What to insert for pasted text, e.g. a placeholder for a long paste. */
   onPaste?(text: string): string;
-  /**
-   * Spans that act as one character, such as paste placeholders: the cursor steps over them, backspace and delete
-   * remove them whole, and they are drawn highlighted. Needs the `g` flag.
-   */
+  /** Spans the cursor steps over and deletes whole, e.g. paste placeholders. Needs the `g` flag. */
   atoms?: RegExp;
-  /** Spans drawn highlighted but edited as plain text, such as @-mentions. Needs the `g` flag. */
+  /** Needs the `g` flag. */
   highlight?: RegExp;
 }
 
@@ -35,28 +31,9 @@ export interface HiddenRows {
   below: number;
 }
 
-interface Row {
-  start: number;
-  end: number;
-}
-
-interface Span {
-  start: number;
-  end: number;
-}
-
-/** A span drawn in a color of its own: atoms in the accent, highlights in the code color. */
-interface Mark extends Span {
-  atom: boolean;
-}
-
 const WORD_LEFT = /\S+\s*$/;
 const WORD_RIGHT = /^\s*\S+/;
 
-/**
- * Multiline prompt editor. Enter submits; shift+enter, alt+enter or a trailing backslash inserts a newline. Supports
- * the usual readline shortcuts. Long lines wrap, and past `maxRows` the editor scrolls instead of growing.
- */
 export function PromptInput({
   value,
   onChange,
@@ -77,8 +54,7 @@ export function PromptInput({
   const box = useRef<DOMElement>(null);
   const [width, setWidth] = useState(Math.max(1, contentWidth - paddingX * 2));
   const [cursor, setCursor] = useState(value.length);
-  const [historyIndex, setHistoryIndex] = useState<number>();
-  const draft = useRef('');
+  const earlier = useHistory(history);
   const emitted = useRef(value);
   const top = useRef(0);
   const latestOnScroll = useRef(onScroll);
@@ -101,24 +77,15 @@ export function PromptInput({
 
   useEffect(() => onCursorChange?.(position), [position, onCursorChange]);
 
-  const find = (pattern: RegExp | undefined): Span[] =>
-    pattern ? [...value.matchAll(pattern)].map((match) => ({ start: match.index, end: match.index + match[0].length })) : [];
-  const spans = find(atoms);
-  const marks: Mark[] = [
-    ...spans.map((span) => ({ ...span, atom: true })),
-    ...find(highlight)
-      .filter((span) => !spans.some((atom) => atom.start < span.end && span.start < atom.end))
-      .map((span) => ({ ...span, atom: false })),
-  ];
+  const spans = spansOf(value, atoms);
+  const marks = marksOf(value, spans, highlight);
   const spanEnding = (at: number) => spans.find((span) => span.end === at);
   const spanStarting = (at: number) => spans.find((span) => span.start === at);
-  /** A position inside a span moves to the span's `edge`. */
   const outside = (at: number, edge: 'start' | 'end') => spans.find((span) => span.start < at && at < span.end)?.[edge] ?? at;
 
   // One column stays free at the end of each row for the cursor.
   const rows = layout(value, Math.max(1, width - 1));
   const caretRow = rowOf(rows, position);
-  // Scrolls just enough to keep the cursor in view.
   if (caretRow < top.current) top.current = caretRow;
   if (caretRow >= top.current + maxRows) top.current = caretRow - maxRows + 1;
   top.current = Math.max(0, Math.min(top.current, rows.length - maxRows));
@@ -138,21 +105,13 @@ export function PromptInput({
   const lineStart = value.lastIndexOf('\n', position - 1) + 1;
   const lineEnd = value.indexOf('\n', position) === -1 ? value.length : value.indexOf('\n', position);
 
-  const browseHistory = (direction: -1 | 1) => {
-    if (history.length === 0) return;
-    const current = historyIndex ?? history.length;
-    const next = Math.min(history.length, Math.max(0, current + direction));
-    if (next === current) return;
-    if (historyIndex === undefined) draft.current = value;
-    setHistoryIndex(next === history.length ? undefined : next);
-    const text = next === history.length ? draft.current : history[next]!;
-    update(text, text.length);
-  };
-
-  /** Up and down move by rows as they are drawn, keeping the column; past the first or last row they browse history. */
   const moveVertically = (direction: -1 | 1) => {
     const target = rows[caretRow + direction];
-    if (!target) return browseHistory(direction);
+    if (!target) {
+      const text = earlier.browse(direction, value);
+      if (text !== undefined) update(text, text.length);
+      return;
+    }
     const row = rows[caretRow]!;
     setCursor(outside(offsetAt(value, target, stringWidth(value.slice(row.start, position))), 'end'));
   };
@@ -165,7 +124,7 @@ export function PromptInput({
         if (value[position - 1] === '\\') {
           return update(`${value.slice(0, position - 1)}\n${value.slice(position)}`, position);
         }
-        setHistoryIndex(undefined);
+        earlier.leave();
         return onSubmit(value);
       }
 
@@ -225,117 +184,5 @@ export function PromptInput({
         )}
       </Box>
     </Box>
-  );
-}
-
-/** Splits `value` into rows: at newlines, and where a line runs past `width` columns. */
-function layout(value: string, width: number): Row[] {
-  const rows: Row[] = [];
-  let start = 0;
-  let column = 0;
-  for (let index = 0; index < value.length; ) {
-    const char = String.fromCodePoint(value.codePointAt(index)!);
-    if (char === '\n') {
-      rows.push({ start, end: index });
-      start = index + 1;
-      column = 0;
-      index += 1;
-      continue;
-    }
-    const charWidth = stringWidth(char);
-    if (column + charWidth > width && index > start) {
-      rows.push({ start, end: index });
-      start = index;
-      column = 0;
-    }
-    column += charWidth;
-    index += char.length;
-  }
-  rows.push({ start, end: value.length });
-  return rows;
-}
-
-/** The row the cursor is drawn on. At a wrap, it goes to the start of the next row. */
-function rowOf(rows: Row[], position: number) {
-  const index = rows.findIndex(
-    (row, at) => position < row.end || (position === row.end && rows[at + 1]?.start !== row.end),
-  );
-  return index === -1 ? rows.length - 1 : index;
-}
-
-/** The offset in `row` at `column`, or the row's end when it is shorter. */
-function offsetAt(value: string, row: Row, column: number) {
-  let width = 0;
-  for (let index = row.start; index < row.end; ) {
-    const char = String.fromCodePoint(value.codePointAt(index)!);
-    const charWidth = stringWidth(char);
-    if (width + charWidth > column) return index;
-    width += charWidth;
-    index += char.length;
-  }
-  return row.end;
-}
-
-interface RowTextProps {
-  value: string;
-  row: Row;
-  marks: Mark[];
-  /** Where the cursor is, when it is on this row. */
-  caret?: number;
-  dim: boolean;
-}
-
-function RowText({ value, row, marks, caret, dim }: RowTextProps) {
-  const theme = useTheme();
-  const cuts = new Set([row.start, row.end]);
-  for (const span of marks) {
-    if (span.start > row.start && span.start < row.end) cuts.add(span.start);
-    if (span.end > row.start && span.end < row.end) cuts.add(span.end);
-  }
-  if (caret !== undefined && caret < row.end) {
-    cuts.add(caret);
-    cuts.add(caret + String.fromCodePoint(value.codePointAt(caret)!).length);
-  }
-  const points = [...cuts].filter((point) => point <= row.end).sort((a, b) => a - b);
-
-  return (
-    <Text wrap="truncate" dimColor={dim}>
-      {points.slice(0, -1).map((start, index) => {
-        const end = points[index + 1]!;
-        const text = value.slice(start, end);
-        if (start === caret) return <Caret key={start} char={text} />;
-        const mark = marks.find((span) => span.start <= start && end <= span.end);
-        return mark ? (
-          <Text key={start} color={mark.atom ? theme.accent : theme.code}>
-            {text}
-          </Text>
-        ) : (
-          text
-        );
-      })}
-      {caret === row.end && <Caret />}
-      {/* An empty line still takes its row. */}
-      {row.start === row.end && caret === undefined && ' '}
-    </Text>
-  );
-}
-
-function Caret({ char }: { char?: string }) {
-  const theme = useTheme();
-  return (
-    <Text inverse color={theme.accent}>
-      {char === undefined || char === '\n' ? ' ' : char}
-    </Text>
-  );
-}
-
-function Placeholder({ text, showCaret }: { text: string; showCaret: boolean }) {
-  const theme = useTheme();
-  if (!showCaret) return <Text color={theme.muted}>{text || ' '}</Text>;
-  return (
-    <Text>
-      <Caret char={text[0]} />
-      <Text color={theme.muted}>{text.slice(1)}</Text>
-    </Text>
   );
 }

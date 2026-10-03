@@ -1,9 +1,8 @@
 import { useState } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { Text } from 'ink';
 import { ChoiceList, choiceIndent, useChoiceList, type Choice } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
-import { PromptInput } from './prompt-input.js';
+import { EDITOR_HINTS, OptionEditor, useOptionEditor } from './option-editor.js';
 
 export interface PlanOption {
   id: string;
@@ -14,7 +13,6 @@ export interface PlanOption {
 export type PlanPanelDecision = { approve: true; option: string } | { approve: false; note?: string };
 
 export interface PlanPanelProps {
-  /** Ways to carry on once the plan is approved; the first is focused. */
   options: PlanOption[];
   onDecide(decision: PlanPanelDecision): void;
   onCancel(): void;
@@ -22,21 +20,12 @@ export interface PlanPanelProps {
 
 const KEEP = 'keep';
 
-/**
- * Asks whether to go ahead with the plan shown above it, in the prompt's place:
- *
- *     +- Plan -----------------------------------+
- *     | Ready to start? The plan is above.       |
- *     +------------------------------------------+
- *     | > 1. Yes, and use auto mode              |
- *     |   2. Yes, and accept edits               |
- *     |   3. No, keep planning                   |
- *     +------------------------------------------+
- */
 export function PlanPanel({ options, onDecide, onCancel }: PlanPanelProps) {
-  const theme = useTheme();
   const [note, setNote] = useState('');
-  const [editing, setEditing] = useState<string>();
+  const [editing, setEditing] = useOptionEditor(() => {
+    list.setFocus(KEEP);
+    return note;
+  });
 
   const list = useChoiceList({
     keys: [...options.map((option) => option.id), KEEP],
@@ -47,35 +36,18 @@ export function PlanPanel({ options, onDecide, onCancel }: PlanPanelProps) {
       key === KEEP ? onDecide({ approve: false, note: note || undefined }) : onDecide({ approve: true, option: key! }),
   });
 
-  useInput(
-    (input) => {
-      if (input !== 'n') return;
-      list.setFocus(KEEP);
-      setEditing(note);
-    },
-    { isActive: editing === undefined },
-  );
-  useInput(
-    (_, key) => {
-      if (key.escape) setEditing(undefined);
-    },
-    { isActive: editing !== undefined },
-  );
-
   const editor = editing !== undefined && (
-    <Box paddingLeft={choiceIndent(list)}>
-      <Text color={theme.muted}>note: </Text>
-      <PromptInput
-        value={editing}
-        onChange={setEditing}
-        onSubmit={(value) => {
-          setNote(value.trim());
-          setEditing(undefined);
-        }}
-        placeholder="What should change in the plan?"
-        paddingX={0}
-      />
-    </Box>
+    <OptionEditor
+      indent={choiceIndent(list)}
+      note
+      value={editing}
+      onChange={setEditing}
+      onSubmit={(value) => {
+        setNote(value.trim());
+        setEditing(undefined);
+      }}
+      placeholder="What should change in the plan?"
+    />
   );
 
   const choices: Choice[] = [
@@ -100,10 +72,7 @@ export function PlanPanel({ options, onDecide, onCancel }: PlanPanelProps) {
       }
       hints={
         editing !== undefined
-          ? [
-              ['Enter', 'save'],
-              ['Esc', 'back'],
-            ]
+          ? EDITOR_HINTS
           : [
               ['Enter', 'select'],
               ['n', 'note'],

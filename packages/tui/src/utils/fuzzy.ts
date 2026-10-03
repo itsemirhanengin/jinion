@@ -1,16 +1,11 @@
 export interface FuzzyMatch<T> {
   item: T;
   score: number;
-  /** Indexes of the matched characters in the searched text, for highlighting. */
   positions: number[];
 }
 
 const SEPARATORS = new Set([' ', '-', '_', '/', ':', '.']);
 
-/**
- * Matches `query` as a subsequence of `text`, case-insensitively. Consecutive
- * characters and matches at the start of words score higher.
- */
 export function fuzzyMatch(text: string, query: string): { score: number; positions: number[] } | undefined {
   const haystack = text.toLowerCase();
   const needle = query.toLowerCase();
@@ -33,7 +28,6 @@ export function fuzzyMatch(text: string, query: string): { score: number; positi
   return { score, positions };
 }
 
-/** Keeps the items whose text matches, best first. An empty query keeps everything in order. */
 export function fuzzyFilter<T>(items: T[], query: string, text: (item: T) => string): FuzzyMatch<T>[] {
   if (!query.trim()) return items.map((item) => ({ item, score: 0, positions: [] }));
   return items

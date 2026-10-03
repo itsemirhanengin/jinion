@@ -1,34 +1,33 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useInput } from 'ink';
-import { useMouse, useTerminal, useTheme, useToast } from './context.js';
-import { orderRange, rangeText, type Cell, type Point, type Range, type Screen } from './screen.js';
+import { plural } from '../utils/plural.js';
+import { orderRange, rangeText, type Cell, type Point, type Range } from './cells.js';
+import { useMouse } from './mouse.js';
+import type { Screen } from './screen.js';
+import { useTerminal } from './terminal.js';
+import { useTheme } from './theme.js';
+import { useShowToast } from './toast.js';
 
 interface SelectionControl {
-  /** Whether text is selected. */
   active: boolean;
-  /** Copies the selection again and lets go of it, for ctrl+c; whether there was one. */
   copy(): boolean;
 }
 
 const SelectionContext = createContext<SelectionControl>({ active: false, copy: () => false });
 
-/** The text selected with the mouse, if any. */
 export const useSelection = () => useContext(SelectionContext);
 
-/** Presses on one cell this close together count as a double or triple click. */
 const MULTI_CLICK_MS = 500;
 
-/** As iTerm2 has it: letters and digits, and `/-+\~_.`, so a path selects as one word. */
+// As iTerm2 has it, so a path selects as one word.
 const WORD = /^[\p{L}\p{N}\p{M}_/\-+\\~.]+$/u;
 const URL = /\b[a-z][a-z\d+.-]*:\/\/[^\s<>"'`|]+/gi;
 
-/** The columns of the word under column `x` of a row: a whole URL, a run of word characters, or the one cell. */
 export function wordAt(row: Cell[], x: number): { from: number; to: number } | undefined {
   const index = row.findIndex((cell) => x >= cell.x && x < cell.x + cell.width);
   if (index === -1) return undefined;
   const span = (first: number, last: number) => ({ from: row[first]!.x, to: row[last]!.x + row[last]!.width - 1 });
 
-  // Where each cell starts in the row's text, to find URLs in it.
   const starts: number[] = [];
   let text = '';
   for (const cell of row) {
@@ -50,7 +49,6 @@ export function wordAt(row: Cell[], x: number): { from: number; to: number } | u
   return span(first, last);
 }
 
-/** All of a row, without the spaces around it. */
 function lineSpan(row: Cell[]) {
   const shown = row.filter((cell) => cell.text.trim());
   const first = shown[0];
@@ -58,17 +56,11 @@ function lineSpan(row: Cell[]) {
   return first && last ? { from: first.x, to: last.x + last.width - 1 } : undefined;
 }
 
-const plural = (count: number) => (count === 1 ? '1 char' : `${count} chars`);
-
-/**
- * Text selection with the mouse, as in Claude Code's fullscreen mode, since Jinion takes the mouse from the terminal:
- * drag to select, double-click for a word, triple-click for a line. What is selected is copied when the button is let
- * go, with a toast saying so. A key, a click or the wheel lets go of it; esc keeps it.
- */
+/** Jinion takes the mouse from the terminal, so it selects and copies text itself, as Claude Code's fullscreen mode does. */
 export function SelectionLayer({ screen, children }: { screen?: Screen; children: ReactNode }) {
   const theme = useTheme();
   const terminal = useTerminal();
-  const toast = useToast();
+  const showToast = useShowToast();
   const [range, setRange] = useState<Range>();
   const latest = useRef(range);
   const drag = useRef<{ anchor: Point; moved: boolean }>(undefined);
@@ -96,7 +88,7 @@ export function SelectionLayer({ screen, children }: { screen?: Screen; children
       return false;
     }
     show(selected, text);
-    void terminal.copy(text).then((ok) => toast.show(ok ? `copied ${plural([...text].length)} to clipboard` : "couldn't copy to the clipboard"));
+    void terminal.copy(text).then((ok) => showToast(ok ? `copied ${plural([...text].length, 'char')} to clipboard` : "couldn't copy to the clipboard"));
     return true;
   };
 

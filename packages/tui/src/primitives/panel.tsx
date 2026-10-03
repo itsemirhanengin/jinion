@@ -1,11 +1,10 @@
 import { Fragment, type ReactNode } from 'react';
 import { Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { Frame, FrameDivider } from './frame.js';
 
 export type KeyHint = [key: string, action: string];
 
-/** `Enter select · Esc close` */
 export function KeyHints({ hints }: { hints: KeyHint[] }) {
   const theme = useTheme();
   return (
@@ -24,25 +23,12 @@ export function KeyHints({ hints }: { hints: KeyHint[] }) {
 export interface PanelProps {
   title: string;
   subtitle?: string;
-  /** Shown above the body and separated from it, e.g. tabs, a search field or a question. */
   header?: ReactNode;
   hints?: KeyHint[];
-  /** Fill the available height; full screen panels use this. */
   grow?: boolean;
   children?: ReactNode;
 }
 
-/**
- * The chrome every panel shares:
- *
- *     +- Title subtitle --------------+
- *     | header                        |
- *     +-------------------------------+
- *     | body                          |
- *     +-------------------------------+
- *     | Enter select · Esc close      |
- *     +-------------------------------+
- */
 export function Panel({ title, subtitle, header, hints, grow = false, children }: PanelProps) {
   const theme = useTheme();
   const hasHeader = header !== undefined;

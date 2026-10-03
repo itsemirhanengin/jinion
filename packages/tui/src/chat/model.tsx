@@ -1,31 +1,26 @@
 import { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { ChoiceList, useChoiceList } from '../primitives/choice-list.js';
 import { Panel } from '../primitives/panel.js';
-import { stepIndex } from '../primitives/select-list.js';
+import { stepIndex } from '../primitives/list-navigation.js';
 import { Tabs } from '../primitives/tabs.js';
 
 export interface ModelOption {
-  /** What the agent takes, e.g. `opus` or `gpt-5.5-codex`. */
   id: string;
   name: string;
   description?: string;
-  /** Effort levels the model accepts, lowest first. Empty when it has none. */
   efforts: string[];
 }
 
 export interface ModelSelection {
   model: string;
-  /** `undefined` leaves it to the model's default. */
   effort?: string;
 }
 
 export interface ModelPanelProps {
-  /** `undefined` while the agent is still looking them up. */
   models: ModelOption[] | undefined;
   current: ModelSelection;
-  /** Shown next to the title, e.g. the agent's name. */
   subtitle?: string;
   onSelect(selection: ModelSelection): void;
   onCancel(): void;
@@ -34,17 +29,6 @@ export interface ModelPanelProps {
 const DEFAULT = 'default';
 const VISIBLE = 5;
 
-/**
- * Picks a model and its effort, in the prompt's place:
- *
- *     +- Model Claude -----------------------------------+
- *     | effort  default  low  medium [high] xhigh  max   |
- *     +--------------------------------------------------+
- *     | > 1. Opus 5.5                           current  |
- *     |      For complex work and everyday tasks         |
- *     |   2. Sonnet 5.5                                  |
- *     +--------------------------------------------------+
- */
 export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: ModelPanelProps) {
   const theme = useTheme();
   const options = models ?? [];

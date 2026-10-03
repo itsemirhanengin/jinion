@@ -11,6 +11,11 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./chat": {
+      "development": "./src/chat/index.ts",
+      "types": "./dist/chat/index.d.ts",
+      "default": "./dist/chat/index.js"
+    },
     "./testing": {
       "development": "./src/testing/index.tsx"
     }

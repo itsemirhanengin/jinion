@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Box, Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 
 export interface TreeNode {
   label: ReactNode;
@@ -11,13 +11,6 @@ export interface TreeProps {
   nodes: TreeNode[];
 }
 
-/**
- * ASCII tree:
- *
- *     |-- first
- *     |  '-- nested
- *     '-- last
- */
 export function Tree({ nodes }: TreeProps) {
   return (
     <Box flexDirection="column">

@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { Virtualizer } from './virtualizer.js';
 
 const keys = (count: number) => Array.from({ length: count }, (_, index) => `item-${index}`);
-/** Every slot's height measured as `height`, as the renderer would hand them over. */
 const laidOut = (slots: { key: string | number }[], height: (key: string) => number) =>
   new Map(slots.map((slot) => [slot.key, height(String(slot.key))]));
 
@@ -36,7 +35,6 @@ describe('Virtualizer', () => {
     virtualizer.measure(bottom, laidOut(bottom.slots, () => 2), 40);
 
     const scrolled = virtualizer.window(keys(100), { height: 10, top: 170 });
-    // Rows 160 to 190: the screen above, the view, and the screen below, which the view came from.
     expect(scrolled).toMatchObject({ follows: false, first: 170, before: 160, after: 10 });
     expect(scrolled.slots.map((slot) => [slot.index, slot.ready])).toEqual([
       ...Array.from({ length: 10 }, (_, at) => [80 + at, false]),
@@ -48,7 +46,6 @@ describe('Virtualizer', () => {
     const virtualizer = new Virtualizer({ estimate: 2 });
     virtualizer.measure(virtualizer.window(keys(100), { height: 10 }), new Map(), 40);
     const scrolled = virtualizer.window(keys(100), { height: 10, top: 100 });
-    // Items 45 to 49 are mounted above the first row in view, 50 on are in it or below.
     const { shift } = virtualizer.measure(scrolled, laidOut(scrolled.slots, () => 3), 40);
     expect(shift).toBe(5);
 

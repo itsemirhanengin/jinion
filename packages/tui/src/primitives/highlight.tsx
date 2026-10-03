@@ -1,14 +1,12 @@
 import { Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 
 export interface HighlightProps {
   text: string;
-  /** Character indexes to emphasize, e.g. from `fuzzyMatch`. */
   positions?: number[];
   color?: string;
 }
 
-/** Text with matched characters emphasized. */
 export function Highlight({ text, positions = [], color }: HighlightProps) {
   const theme = useTheme();
   if (positions.length === 0) return <Text color={color}>{text}</Text>;

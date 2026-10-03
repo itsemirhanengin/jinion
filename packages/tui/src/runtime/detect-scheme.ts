@@ -1,4 +1,5 @@
 import type { ColorScheme } from '../theme/themes.js';
+import { hexColor } from '../utils/color.js';
 
 interface DetectOptions {
   stdin?: NodeJS.ReadStream;
@@ -13,17 +14,12 @@ const DEVICE_ATTRIBUTES_REPLY = /\x1b\[\?[\d;]*c/;
 
 export interface TerminalBackground {
   scheme: ColorScheme;
-  /** The background color as `#rrggbb`, when the terminal said what it is. */
   color?: string;
 }
 
 /**
- * Detects the terminal's background: whether it is light or dark, and its color.
- *
- * Asks the terminal for its background color (OSC 11), followed by a device
- * attributes query that every terminal answers. Terminals reply in order, so
- * the second reply arriving first means OSC 11 is unsupported and we can stop
- * waiting. Falls back to `COLORFGBG`, then to dark, without a color.
+ * Asks for OSC 11 and then device attributes, which every terminal answers. Replies come in order, so the second
+ * arriving first means OSC 11 is unsupported. Falls back to `COLORFGBG`, then to dark.
  */
 export async function detectBackground(options: DetectOptions = {}): Promise<TerminalBackground> {
   const { stdin = process.stdin, stdout = process.stdout, timeout = 200 } = options;
@@ -37,11 +33,9 @@ export async function detectBackground(options: DetectOptions = {}): Promise<Ter
 
   const [r, g, b] = match.slice(1, 4).map(normalizeChannel) as [number, number, number];
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  const hex = (channel: number) => Math.round(channel * 255).toString(16).padStart(2, '0');
-  return { scheme: luminance > 0.5 ? 'light' : 'dark', color: `#${hex(r)}${hex(g)}${hex(b)}` };
+  return { scheme: luminance > 0.5 ? 'light' : 'dark', color: hexColor([r, g, b].map((channel) => channel * 255)) };
 }
 
-/** Whether the terminal has a light or dark background. */
 export async function detectColorScheme(options: DetectOptions = {}): Promise<ColorScheme> {
   return (await detectBackground(options)).scheme;
 }

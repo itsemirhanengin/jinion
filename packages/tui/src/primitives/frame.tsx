@@ -1,6 +1,7 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
-import { Inset, useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
+import { Inset } from '../runtime/width.js';
 import { hoverColor, type Tone } from '../theme/themes.js';
 import { useHovered } from './clickable.js';
 import { Fill } from './fill.js';
@@ -16,46 +17,29 @@ const SIDES = {
   bottomRight: '',
 };
 
-/** Columns a frame takes from its content: two borders plus one column of padding on each side. */
+/** Two borders plus a column of padding on each side. */
 export const FRAME_INSET = 4;
 
 export interface FrameProps {
   title?: ReactNode;
-  /**
-   * Tints the whole frame with the matching surface color. Plain frames keep the terminal background. Either way the
-   * frame lights up while the pointer is over the expandable item it is in.
-   */
   tone?: Tone | 'plain';
   borderColor?: string;
-  /** Dashes between the corner and a title: 3 gives `+--- title`, 1 gives `+- title`. */
   lead?: number;
-  /** Stretches the first section so the frame fills its parent's height. */
   grow?: boolean;
-  /** As wide as its content instead of the full width. */
   fit?: boolean;
   children?: ReactNode;
 }
 
 export interface FrameDividerProps {
   title?: ReactNode;
-  /** Stretches the section after this divider so the frame fills its parent's height. */
   grow?: boolean;
 }
 
-/** Splits a frame into sections with a `+--- title ---+` line. Must be a direct child of `Frame`. */
+/** Must be a direct child of `Frame`. */
 export function FrameDivider(_props: FrameDividerProps) {
   return null;
 }
 
-/**
- * ASCII frame:
- *
- *     +--- title ----------+
- *     | content            |
- *     +--- section --------+
- *     | more content       |
- *     +--------------------+
- */
 export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = false, fit = false, children }: FrameProps) {
   const theme = useTheme();
   const hovered = useHovered();

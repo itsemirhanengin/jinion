@@ -1,16 +1,12 @@
 import { Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 
 export interface MeterProps {
-  /** From 0 to 1; values outside are clamped. */
   value: number;
-  /** Cells between the brackets. */
   width?: number;
-  /** For the filled part; picks success, warning or error by `value` when left out. */
   color?: string;
 }
 
-/** `[======----]`, the filled part colored by how full it is. */
 export function Meter({ value, width = 10, color }: MeterProps) {
   const theme = useTheme();
   const level = Math.min(1, Math.max(0, value));

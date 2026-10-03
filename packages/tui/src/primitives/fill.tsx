@@ -6,12 +6,7 @@ export interface FillProps {
   backgroundColor?: string;
 }
 
-/**
- * Repeats a character across the remaining width of a row.
- *
- * Drawn as the top border of an empty box, so Yoga sizes it and it stays
- * correct inside nested layouts without measuring anything.
- */
+/** Drawn as an empty box's top border, so Yoga sizes it without measuring anything. */
 export function Fill({ char = '-', color, backgroundColor }: FillProps) {
   return (
     <Box

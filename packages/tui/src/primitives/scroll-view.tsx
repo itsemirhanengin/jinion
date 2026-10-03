@@ -2,52 +2,34 @@ import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef,
 import { Box, measureElement, Text, useInput, type DOMElement } from 'ink';
 import { useVirtual } from '@jinion/virtualization';
 import { contains, screenRect } from '../runtime/click.js';
-import { useMouse, useTerminal, useTheme } from '../runtime/context.js';
+import { useMouse } from '../runtime/mouse.js';
+import { useTerminal } from '../runtime/terminal.js';
+import { useTheme } from '../runtime/theme.js';
 import { hoverColor } from '../theme/themes.js';
+import { Hover, useHoveredId, useIsHovered } from './hover.js';
 
 export interface ScrollViewProps {
-  /**
-   * The items, one per child, each with a stable `key`. Only those in view and about a screen around it are mounted, so
-   * a long conversation costs what a few screens of it do.
-   */
   children?: ReactNode;
-  /** Lines moved per wheel notch. */
   wheelStep?: number;
 }
 
 interface ScrollArea {
-  /** The box the items are cut off by. */
   viewport: RefObject<DOMElement | null>;
-  /**
-   * Keeps the lines in view where they are, for an item about to change its height on a click: following the bottom,
-   * the view would move it away from under the pointer.
-   */
+  /** Before a click changes an item's height: following the bottom would move it from under the pointer. */
   hold(): void;
-  /** Something that reacts to the pointer over it, by `id`, until the returned function forgets it. */
   hoverable(id: string, ref: RefObject<DOMElement | null>): () => void;
+  hover: Hover;
 }
 
 const ScrollAreaContext = createContext<ScrollArea | undefined>(undefined);
-const HoveredContext = createContext<string | undefined>(undefined);
 
-/** The scroll view around this component, if any. */
 export const useScrollArea = () => useContext(ScrollAreaContext);
 
-/** The id of the item the pointer is over in the scroll view around this component. */
-export const useHoveredItem = () => useContext(HoveredContext);
+export const useHoveredItem = () => useHoveredId(useScrollArea()?.hover);
 
-/** The jump row reacts to the pointer like the items do. */
 const JUMP = '\0jump';
 
-/**
- * A vertically scrolling region that fills the remaining height.
- *
- * Follows the newest line until the user scrolls up with the wheel or PageUp; from then on the view stays put while
- * content grows below it, and a "Jump to bottom" row brings it back. Which children are mounted is up to
- * `@jinion/virtualization`.
- */
 export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
-  const theme = useTheme();
   const terminal = useTerminal();
   const viewportRef = useRef<DOMElement>(null);
   const jumpRef = useRef<DOMElement>(null);
@@ -63,10 +45,7 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
   latestMaxTop.current = maxTop;
   const latestTop = useRef(top);
   latestTop.current = top;
-  /**
-   * Where a click stopped the view, and how tall the items were then. Until the items are measured again, `maxTop`
-   * still says the view is at the bottom, which would pin it again.
-   */
+  // Until the items are measured again, `maxTop` still says the view is at the bottom, which would pin it again.
   const held = useRef<{ top: number; rows: number; measured?: boolean }>(undefined);
 
   const scrollBy = (delta: number) => {
@@ -96,10 +75,9 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
     if (top !== undefined && top >= maxTop - 1) setTop(undefined);
   }, [top, maxTop]);
 
-  // Where the pointer was last, and what over there reacts to it.
   const pointer = useRef<{ x: number; y: number }>(undefined);
   const hoverables = useRef(new Map<string, RefObject<DOMElement | null>>([[JUMP, jumpRef]]));
-  const [hovered, setHovered] = useState<string>();
+  const [hover] = useState(() => new Hover());
   const underPointer = () => {
     const at = pointer.current;
     if (!at) return undefined;
@@ -112,14 +90,14 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
   };
 
   // Items move under a still pointer as the view scrolls or they grow; what is under it now is hovered.
-  useLayoutEffect(() => setHovered(underPointer()));
+  useLayoutEffect(() => hover.set(underPointer()));
 
-  useEffect(() => terminal.pointer(hovered ? 'pointer' : 'default'), [terminal, hovered]);
+  useEffect(() => hover.subscribe(() => terminal.pointer(hover.current() ? 'pointer' : 'default')), [hover, terminal]);
   useEffect(() => () => terminal.pointer('default'), [terminal]);
 
   useMouse((event) => {
     pointer.current = { x: event.x, y: event.y };
-    if (event.type === 'move') setHovered(underPointer());
+    if (event.type === 'move') hover.set(underPointer());
     else if (event.type === 'wheel') scrollBy(event.direction === 'up' ? -wheelStep : wheelStep);
     else if (event.type === 'press' && jumpRef.current && event.y === screenRect(jumpRef.current).y) setTop(undefined);
   });
@@ -136,8 +114,9 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
         hoverables.current.set(id, ref);
         return () => void hoverables.current.delete(id);
       },
+      hover,
     }),
-    [contentRef],
+    [contentRef, hover],
   );
 
   useInput((_, key) => {
@@ -151,29 +130,33 @@ export function ScrollView({ children, wheelStep = 3 }: ScrollViewProps) {
   return (
     <Box flexDirection="column" flexGrow={1} flexBasis={0}>
       <ScrollAreaContext.Provider value={area}>
-        <HoveredContext.Provider value={hovered}>
-          <Box
-            ref={viewportRef}
-            flexDirection="column"
-            flexGrow={1}
-            flexBasis={0}
-            overflow="hidden"
-            justifyContent={pinned && virtual.total > height ? 'flex-end' : 'flex-start'}
-          >
-            <Box ref={contentRef} flexDirection="column" flexShrink={0} marginTop={pinned ? 0 : -virtual.first}>
-              {virtual.content}
-            </Box>
-            {virtual.offscreen}
+        <Box
+          ref={viewportRef}
+          flexDirection="column"
+          flexGrow={1}
+          flexBasis={0}
+          overflow="hidden"
+          justifyContent={pinned && virtual.total > height ? 'flex-end' : 'flex-start'}
+        >
+          <Box ref={contentRef} flexDirection="column" flexShrink={0} marginTop={pinned ? 0 : -virtual.first}>
+            {virtual.content}
           </Box>
-        </HoveredContext.Provider>
-      </ScrollAreaContext.Provider>
-      {!pinned && (
-        <Box ref={jumpRef} flexShrink={0} justifyContent="center">
-          <Text color={hovered === JUMP ? undefined : theme.muted} backgroundColor={hovered === JUMP ? hoverColor(theme) : undefined}>
-            Jump to bottom (click) ↓
-          </Text>
+          {virtual.offscreen}
         </Box>
-      )}
+      </ScrollAreaContext.Provider>
+      {!pinned && <JumpRow rowRef={jumpRef} hover={hover} />}
+    </Box>
+  );
+}
+
+function JumpRow({ rowRef, hover }: { rowRef: RefObject<DOMElement | null>; hover: Hover }) {
+  const theme = useTheme();
+  const hovered = useIsHovered(hover, JUMP);
+  return (
+    <Box ref={rowRef} flexShrink={0} justifyContent="center">
+      <Text color={hovered ? undefined : theme.muted} backgroundColor={hovered ? hoverColor(theme) : undefined}>
+        Jump to bottom (click) ↓
+      </Text>
     </Box>
   );
 }

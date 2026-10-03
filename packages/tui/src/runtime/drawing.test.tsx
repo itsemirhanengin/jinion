@@ -6,7 +6,6 @@ import { renderTerminal, type TestTerminal } from '../testing/index.js';
 let terminal: TestTerminal | undefined;
 afterEach(() => terminal?.unmount());
 
-/** A screen mostly at rest, with one line that keeps changing, like a spinner's. */
 function Ticking() {
   const [tick, setTick] = useState(0);
   useEffect(() => {

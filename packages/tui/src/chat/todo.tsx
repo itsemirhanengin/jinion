@@ -1,9 +1,8 @@
 import { Box, Text } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { Frame } from '../primitives/frame.js';
-import { StatusMark, type Status } from '../primitives/spinner.js';
+import { StatusMark, toneOf, type Status } from '../primitives/spinner.js';
 import { TreeRow } from '../primitives/tree.js';
-import { toneOf } from './tool.js';
 
 export type TodoStatus = 'pending' | 'active' | 'done';
 
@@ -64,7 +63,6 @@ function TodoText({ item }: { item: TodoItem }) {
   }
 }
 
-/** Todo list as a tool result frame. Incomplete groups are expanded. */
 export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; status?: Status }) {
   const theme = useTheme();
   const total = groups.reduce((sum, group) => sum + group.items.length, 0);
@@ -100,7 +98,6 @@ export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; st
   );
 }
 
-/** Pinned panel above the input showing the group currently being worked on. */
 export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
   const theme = useTheme();
   const current = groups.findIndex((group) => !isComplete(group));

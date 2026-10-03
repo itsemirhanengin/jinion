@@ -9,7 +9,6 @@ import { printable } from './printable.js';
 let terminal: TestTerminal | undefined;
 afterEach(() => terminal?.unmount());
 
-/** What a compiled file, a progress bar, a colored log and a Windows file print. */
 const MESSY = ['function f() {', '\tif (a)\t{ return 1; }', '}', 'progress 10%\rprogress 100%', '\x1b[32mok\x1b[0m done', 'windows line\r'];
 
 describe('printable', () => {
@@ -30,7 +29,6 @@ describe('printable', () => {
 });
 
 describe('outside text in a frame', () => {
-  /** Every line of the frame ends at the same column, as it does when the terminal and Ink agree on widths. */
   const aligned = (screen: string) => {
     const rows = screen.split('\n').filter((line) => /^[|+]/.test(line));
     return new Set(rows.map((line) => line.length)).size === 1 && rows.every((line) => /[|+]$/.test(line));

@@ -13,18 +13,15 @@ import { Box, measureElement, useBoxMetrics, useWindowSize, type DOMElement } fr
 import { Virtualizer, type ItemKey, type VirtualizerOptions } from './virtualizer.js';
 
 export interface VirtualOptions extends VirtualizerOptions {
-  /** The box the items scroll in, which clips them; its height is the view's, its width the items'. */
   viewport: RefObject<DOMElement | null>;
-  /** The first row in view; `undefined` follows the newest row at the bottom. */
+  /** `undefined` follows the newest row at the bottom. */
   top: number | undefined;
-  /** The view has to move by `rows` to keep still, as items above it turned out taller or shorter. */
   onShift(rows: number): void;
 }
 
 /**
- * Mounts only the children in and around the view, for an Ink box that scrolls them. Each child is an item with a
- * stable `key`. Put `content` in a box with `contentRef`, offset by `-first` rows while scrolled, and `offscreen` in the
- * viewport after it: that is where items are laid out out of sight before they take their place.
+ * Put `content` in a box with `contentRef`, offset by `-first` rows while scrolled, and `offscreen` in the viewport
+ * after it, where items are laid out out of sight before they take their place.
  */
 export function useVirtual(children: ReactNode, { viewport, top, onShift, ...options }: VirtualOptions) {
   const { rows } = useWindowSize();
@@ -85,7 +82,6 @@ export function useVirtual(children: ReactNode, { viewport, top, onShift, ...opt
         {pending.map((slot) => mount(slot.key))}
       </Box>
     ),
-    /** Rows in view. */
     height,
     total: window.total,
     first: window.first,

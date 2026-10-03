@@ -1,50 +1,15 @@
-import { useState, type ReactNode } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { useTheme } from '../runtime/context.js';
-
-/** Moves a list index by `delta`, wrapping around or stopping at the ends. */
-export function stepIndex(index: number, delta: number, count: number, wrap = true) {
-  if (count === 0) return 0;
-  if (wrap) return (((index + delta) % count) + count) % count;
-  return Math.min(count - 1, Math.max(0, index + delta));
-}
-
-export interface ListNavigationOptions {
-  isActive?: boolean;
-  wrap?: boolean;
-  /** Enables PageUp and PageDown, moving this many items. */
-  pageSize?: number;
-}
-
-/** Up/down selection over `count` items. The index stays in range when the list shrinks. */
-export function useListNavigation(count: number, { isActive = true, wrap = true, pageSize }: ListNavigationOptions = {}) {
-  const [index, setIndex] = useState(0);
-  const current = count === 0 ? 0 : Math.min(index, count - 1);
-
-  useInput(
-    (_, key) => {
-      if (key.upArrow) setIndex(stepIndex(current, -1, count, wrap));
-      else if (key.downArrow) setIndex(stepIndex(current, 1, count, wrap));
-      else if (pageSize && key.pageUp) setIndex(stepIndex(current, -pageSize, count, false));
-      else if (pageSize && key.pageDown) setIndex(stepIndex(current, pageSize, count, false));
-    },
-    { isActive: isActive && count > 0 },
-  );
-
-  return [current, setIndex] as const;
-}
+import type { ReactNode } from 'react';
+import { Box, Text } from 'ink';
+import { useTheme } from '../runtime/theme.js';
 
 export interface SelectListProps<T> {
   items: T[];
   selected: number;
-  /** Items shown at once; the window follows the selection. */
   limit?: number;
-  /** `first` is the first item in view, e.g. to repeat the header of the group it belongs to. */
   renderItem(item: T, state: { selected: boolean; index: number; first: boolean }): ReactNode;
   empty?: string;
 }
 
-/** A windowed list with `… n more` markers above and below the visible items. */
 export function SelectList<T>({ items, selected, limit = 8, renderItem, empty = 'No matches' }: SelectListProps<T>) {
   const theme = useTheme();
   if (items.length === 0) return <Text color={theme.muted}>{empty}</Text>;
@@ -68,16 +33,12 @@ export function SelectList<T>({ items, selected, limit = 8, renderItem, empty = 
 export interface ListRowProps {
   selected?: boolean;
   label: ReactNode;
-  /** Fixed label column, so descriptions line up across rows. */
   labelWidth?: number;
   description?: ReactNode;
-  /** Right-aligned, e.g. a source tag or a timestamp. */
   aside?: ReactNode;
-  /** A second, indented line. */
   detail?: ReactNode;
 }
 
-/** The standard list row: `> label   description          aside`. */
 export function ListRow({ selected = false, label, labelWidth, description, aside, detail }: ListRowProps) {
   const theme = useTheme();
   const color = selected ? theme.selection : undefined;

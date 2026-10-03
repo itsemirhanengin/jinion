@@ -1,6 +1,6 @@
 import { useRef, type RefObject } from 'react';
 import type { DOMElement } from 'ink';
-import { useMouse } from './context.js';
+import { useMouse } from './mouse.js';
 
 export interface Rect {
   x: number;
@@ -9,7 +9,6 @@ export interface Rect {
   height: number;
 }
 
-/** Where `element` was last laid out on the screen, in cells from the top left. */
 export function screenRect(element: DOMElement): Rect {
   let x = 0;
   let y = 0;
@@ -24,15 +23,12 @@ export const contains = (rect: Rect, x: number, y: number) =>
   x >= rect.x && x < rect.x + rect.width && y >= rect.y && y < rect.y + rect.height;
 
 export interface ClickOptions {
-  /** The box that cuts `ref` off, such as a scrolling view: a click outside it is on whatever is drawn there instead. */
+  /** A click outside this box is on whatever is drawn there instead. */
   clip?: RefObject<DOMElement | null>;
   isActive?: boolean;
 }
 
-/**
- * Calls `onClick` when the left button goes down and up again on the same cell of `ref`. A press that moves before it
- * is let go is a drag, which selects text instead.
- */
+/** A press that moves before it is let go is a drag, which selects text instead. */
 export function useClick(ref: RefObject<DOMElement | null>, onClick: () => void, { clip, isActive = true }: ClickOptions = {}) {
   const pressed = useRef<{ x: number; y: number }>(undefined);
   useMouse(

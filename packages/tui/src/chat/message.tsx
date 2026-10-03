@@ -1,32 +1,25 @@
 import { Box, Text } from 'ink';
 import { useHovered } from '../primitives/clickable.js';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { hoverColor } from '../theme/themes.js';
 import { Prose } from '../primitives/prose.js';
-import { anyOf, MENTION } from './mentions.js';
-import { PASTED_IMAGE } from './pasted-images.js';
-import { PASTED_TEXT } from './pasted-texts.js';
 import { printable } from '../utils/printable.js';
+import { PLACEHOLDERS, useMentions } from './highlights.js';
 
 export interface UserMessageProps {
   text: string;
-  /** Highlighted like @-mentions, e.g. skills. */
   mentions?: (RegExp | undefined)[];
-  /** Muted, on the right, e.g. how the message was sent. */
   aside?: string;
 }
 
-/**
- * The user's prompt. Paste placeholders and @-mentions are highlighted as they were in the prompt, and so is what
- * `mentions` matches.
- */
 export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
   const hovered = useHovered();
+  const highlight = useMentions(mentions);
   const text = printable(raw);
   const marks = [
-    ...[...text.matchAll(anyOf([PASTED_TEXT, PASTED_IMAGE])!)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
-    ...[...text.matchAll(anyOf([MENTION, ...mentions])!)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
+    ...[...text.matchAll(PLACEHOLDERS)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
+    ...[...text.matchAll(highlight)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
   ].sort((a, b) => a.index - b.index);
   const parts: { text: string; color?: string }[] = [];
   let at = 0;
@@ -67,9 +60,7 @@ export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProp
 
 export interface ThinkingProps {
   text: string;
-  /** Down to one line, as Claude Code shows thinking once the agent has moved on. */
   folded?: boolean;
-  /** How long the agent thought, e.g. `12s`, said on the folded line. */
   took?: string;
 }
 

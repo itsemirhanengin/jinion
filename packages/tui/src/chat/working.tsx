@@ -1,15 +1,13 @@
 import { Box, Text, useAnimation } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
 import { StatusMark } from '../primitives/spinner.js';
 
 export interface WorkingProps {
   label: string;
-  /** Epoch milliseconds the work started at. */
   since: number;
   hint?: string;
 }
 
-/** `[/] Thinking… 12s · esc to interrupt` */
 export function Working({ label, since, hint = 'esc to interrupt' }: WorkingProps) {
   const theme = useTheme();
   useAnimation({ interval: 250 });

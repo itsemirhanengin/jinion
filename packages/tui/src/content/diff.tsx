@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { Box, Text } from 'ink';
-import { useTheme, useView } from '../runtime/context.js';
+import { useTheme } from '../runtime/theme.js';
+import { useView } from '../runtime/view.js';
+import { plural } from '../utils/plural.js';
 import { printable } from '../utils/printable.js';
 import { ExpandHint } from './output.js';
 
@@ -11,13 +13,11 @@ export interface DiffLine {
   text: string;
   oldNumber?: number;
   newNumber?: number;
-  /** Changed span within a modified line, as `[start, end)` character offsets. */
   highlight?: [number, number];
 }
 
 const HUNK_HEADER = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
-/** Parses the hunks of a unified diff. File headers and `\ No newline` markers are skipped. */
 export function parsePatch(patch: string): DiffLine[] {
   const lines: DiffLine[] = [];
   let oldNumber = 1;
@@ -53,7 +53,6 @@ export function countChanges(lines: DiffLine[]) {
   };
 }
 
-/** Pairs equal-length runs of removed and added lines and marks the span that differs. */
 function highlightModifiedLines(lines: DiffLine[]) {
   for (let start = 0; start < lines.length; ) {
     let middle = start;
@@ -86,19 +85,10 @@ function commonEnds(a: string, b: string): [number, number] {
 
 export interface DiffProps {
   patch: string;
-  /** Lines shown while collapsed. */
   maxLines?: number;
-  /** Only these lines, one row each, cut at the edge: for a view that scrolls through a long diff. */
   window?: { start: number; rows: number };
 }
 
-/**
- * Renders a unified diff with a line number gutter:
- *
- *     | 12|unchanged
- *     |-13|removed
- *     |+13|added
- */
 export function Diff({ patch, maxLines = 24, window }: DiffProps) {
   const theme = useTheme();
   const { expanded } = useView();
@@ -148,7 +138,7 @@ export function Diff({ patch, maxLines = 24, window }: DiffProps) {
           </Box>
         );
       })}
-      {!window && visible.length < lines.length && <ExpandHint>{`+${lines.length - visible.length} more ${lines.length - visible.length === 1 ? 'line' : 'lines'}`}</ExpandHint>}
+      {!window && visible.length < lines.length && <ExpandHint>{`+${plural(lines.length - visible.length, 'more line')}`}</ExpandHint>}
     </Box>
   );
 }
