@@ -48,14 +48,7 @@ the search engine Fumadocs ships stems English alone. Turkish needs a stemmer pa
 
 ## Next
 
-### 1. A fuller system prompt
-
-`BASE` in `apps/cli/src/agent/claude/prompt.ts` now follows Claude Code's prompt section by section, in Jinion's words:
-how to work, acting with care, tools and parallel calls, git commits and pull requests, and how to talk to the user.
-Left out on purpose: hooks (Jinion doesn't run the user's) and Claude Code's own commands. Still to do: watch it on a
-few real tasks and tighten what the model doesn't follow.
-
-### 2. A Codex adapter
+### A Codex adapter
 
 A second `Agent` (`apps/cli/src/agent/agent.ts`) proves the interface holds. `agent/claude/` is the reference: models
 with effort levels, modes, the event stream in and between turns, steering, background tasks, compaction, usage and
@@ -71,6 +64,21 @@ history. Optional parts of the interface stay optional, so the UI already copes 
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
+
+## Later: a system prompt sized to the request
+
+Most of the quota a small request spends goes to the frame around it: a long system prompt, then lint, typecheck,
+tests and a build to change one word. The idea: before a turn, a cheap model (Haiku, as `agent/claude/title.ts` already
+uses for titles) reads the request and judges how much it asks for. "Change GitHUB to GitHub in the sidebar" gets a
+lean prompt and no verification beyond looking at the change; a detailed task, or a small change made 150 times, gets
+the full frame with its checks. What is known so far:
+
+- The prompt is set once, when the Claude Code process starts (`systemPrompt` in `agent/claude/options.ts`). Changing it
+  between turns means a new process, and a different prompt misses the prompt cache, which can cost more than it
+  saves. The first request of a conversation could pick the prompt, and later turns get a short note in the message
+  instead.
+- The classification itself is a call; it has to be quick and cheap enough to be worth it on every request.
+- Measure before and after on the same tasks with `/usage`, so the saving is a number rather than a feeling.
 
 ## Later: Jinion as a full IDE
 
@@ -97,6 +105,8 @@ for it rather than build it early. What it takes:
 - **`/stats` tokens** come out lower than Claude Code's: Jinion counts each response once (Claude Code writes a line
   per block of a response, each with the whole usage). Days, sessions, streaks and models match.
 - **The usage call** behind `/usage` is marked experimental in the SDK; only `agent/claude/usage.ts` touches it.
+- **The system prompt** (`BASE` in `agent/claude/prompt.ts`) was written after Claude Code's; what the model doesn't
+  follow is noted while Jinion is used and tightened in one go.
 
 ## Done
 
@@ -106,5 +116,5 @@ tasks; `/usage` and `/stats`; the guard for commands that write outside the proj
 `/diff`'s turn views; thinking and command output that fold once done, and open one at a time on a click, lit up under
 the pointer; the card of what a turn changed, each file opening its diff; selecting text with the mouse, copied on
 release; web fetches, searches and MCP calls shown with what came back; a git worktree per conversation, opt-in with
-`ctrl+g`; the codebase restructured into controllers over a jotai store, with its conventions in `AGENTS.md`. `git log`
-has the details.
+`ctrl+g`; a fuller system prompt after Claude Code's; the codebase restructured into controllers over a jotai store,
+with its conventions in `AGENTS.md`. `git log` has the details.
