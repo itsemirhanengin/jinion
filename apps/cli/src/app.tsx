@@ -27,6 +27,7 @@ import {
   type PermissionRequest,
   type Question,
   type QuestionAnswer,
+  type TodoGroup,
 } from '@jinion/tui';
 import type {
   Agent,
@@ -638,8 +639,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
   const contextLeft = contextWarning(session.usage);
 
-  const showTodos =
-    session.todos.length > 0 && (busy || session.todos.some((group) => group.items.some((item) => item.status !== 'done')));
+  const showTodos = hasWorkLeft(session.todos);
 
   return (
     <JinionContext.Provider value={jinion}>
@@ -723,6 +723,12 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
 /** Two presses of esc this close together open the rewind panel. */
 const DOUBLE_ESCAPE_MS = 600;
+
+/**
+ * Whether the task list stays above the prompt: while there is work left on it. Once it is all done, its last state is
+ * in the conversation, and later turns don't bring it back.
+ */
+export const hasWorkLeft = (todos: TodoGroup[]) => todos.some((group) => group.items.some((item) => item.status !== 'done'));
 
 /** How much context is left before auto-compaction when the warning under the prompt shows. */
 const CONTEXT_WARNING = 0.2;

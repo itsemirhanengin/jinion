@@ -1,9 +1,10 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
+import type { TodoStatus } from '@jinion/tui';
 import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
-import { App, contextWarning } from './app.js';
+import { App, contextWarning, hasWorkLeft } from './app.js';
 import { MemoryStore } from './memory/store.js';
 import { MemorySessionStore } from './session-store.js';
 import { git, repo } from './test/git.js';
@@ -171,6 +172,15 @@ describe('App', () => {
     const screen = await playTour();
     expect(screen).toContain('src/middleware/rate-limit.ts');
     expect(screen).not.toContain('Interrupted');
+  });
+
+  it('keeps the task list above the prompt while it has work left, and not once it is all done', () => {
+    const list = (...statuses: TodoStatus[]) => [{ title: 'Tasks', items: statuses.map((status, index) => ({ text: `task ${index}`, status })) }];
+    expect(hasWorkLeft(list('done', 'active', 'pending'))).toBe(true);
+    expect(hasWorkLeft(list('pending'))).toBe(true);
+    // Finished, even while a later turn works.
+    expect(hasWorkLeft(list('done', 'done'))).toBe(false);
+    expect(hasWorkLeft([])).toBe(false);
   });
 
   it('shows the changes in each repository of a folder that holds several, and a file’s diff on enter', async () => {
