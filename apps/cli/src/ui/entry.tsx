@@ -320,9 +320,13 @@ function ShellFooter({ entry }: { entry: ToolEntry }) {
   if (entry.run.result?.background) return <BackgroundState id={entry.run.result.background} />;
 
   const timeout = `Timeout: ${formatSeconds(entry.run.input.timeoutMs)}`;
-  if (running) return <>[Running: {formatSeconds(Date.now() - entry.startedAt)} | {timeout}]</>;
+  if (running && entry.waiting) return <>[Waiting for your approval | {timeout}]</>;
+  // A command asked about runs from when it was allowed.
+  const started = entry.approvedAt ?? entry.startedAt;
+  if (running) return <>[Running: {formatSeconds(Date.now() - started)} | {timeout}]</>;
 
-  const wall = `Wall: ${formatSeconds(entry.run.result?.wallMs ?? (entry.endedAt ?? Date.now()) - entry.startedAt)}`;
+  const took = entry.approvedAt ? (entry.endedAt ?? Date.now()) - entry.approvedAt : (entry.run.result?.wallMs ?? (entry.endedAt ?? Date.now()) - started);
+  const wall = `Wall: ${formatSeconds(took)}`;
   const exitCode = entry.run.result?.exitCode;
   if (entry.status === 'cancelled') return <>[Cancelled | {wall}]</>;
   return <>[{exitCode ? `Exit: ${exitCode} | ` : ''}{wall} | {timeout}]</>;

@@ -11,7 +11,6 @@ export interface RewindPoint {
   /** What the agent calls the message. */
   promptId: string;
   text: string;
-  steered?: boolean;
 }
 
 export interface RewindPanelProps {
@@ -24,6 +23,7 @@ export interface RewindPanelProps {
 const VISIBLE = 8;
 const FILES_SHOWN = 3;
 
+/** Claude Code's choices, in its words, so they read the same as there. */
 const SCOPES: { key: string; label: string; description: string; scope: RewindScope }[] = [
   {
     key: 'both',
@@ -33,17 +33,19 @@ const SCOPES: { key: string; label: string; description: string; scope: RewindSc
   },
   {
     key: 'conversation',
-    label: 'Conversation only',
-    description: 'The files stay as they are',
+    label: 'Restore conversation',
+    description: 'The conversation goes on from before this message; the files stay as they are',
     scope: { code: false, conversation: true },
   },
   {
     key: 'code',
-    label: 'Code only',
+    label: 'Restore code',
     description: 'Files go back; the conversation goes on as it is',
     scope: { code: true, conversation: false },
   },
 ];
+
+const NEVER_MIND = { key: 'never-mind', label: 'Never mind', description: 'Back to the messages' };
 
 const firstLine = (text: string) => text.split('\n').find((line) => line.trim()) ?? text;
 
@@ -95,7 +97,6 @@ function PointStep({
   const choices: Choice[] = points.map((point) => ({
     key: point.entry,
     label: firstLine(point.text),
-    aside: point.steered ? 'while working' : undefined,
     editor: point.entry === list.focus ? <Changes changes={previewOf(point)} indent={choiceIndent(list)} /> : undefined,
   }));
 
@@ -127,13 +128,25 @@ function ScopeStep({
 }) {
   const theme = useTheme();
   const { close } = usePanel();
+  // Restoring code is offered only where there are file changes to take back.
+  const [known, setKnown] = useState<{ changes?: FileChanges }>();
+  useEffect(() => {
+    let current = true;
+    void changes.then((result) => current && setKnown({ changes: result }));
+    return () => {
+      current = false;
+    };
+  }, [changes]);
+  const options = !known ? [] : [...SCOPES.filter((scope) => known.changes || !scope.scope.code), NEVER_MIND];
   const list = useChoiceList({
-    keys: SCOPES.map((scope) => scope.key),
+    keys: options.map((option) => option.key),
     mode: 'single',
     onCancel: onBack,
     onSubmit: ([key]) => {
+      const scope = SCOPES.find((candidate) => candidate.key === key);
+      if (!scope) return onBack();
       close();
-      onPick(SCOPES.find((scope) => scope.key === key)!.scope);
+      onPick(scope.scope);
     },
   });
 
@@ -150,7 +163,7 @@ function ScopeStep({
     >
       <ChoiceList
         list={list}
-        choices={SCOPES.map(({ key, label, description }) => ({ key, label, description: <Text color={theme.muted}>{description}</Text> }))}
+        choices={options.map(({ key, label, description }) => ({ key, label, description: <Text color={theme.muted}>{description}</Text> }))}
       />
     </Panel>
   );

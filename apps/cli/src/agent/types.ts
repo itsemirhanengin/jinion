@@ -187,8 +187,11 @@ export interface RunContext {
   signal: AbortSignal;
   /** Shows the questions to the user and resolves with one answer per question. */
   ask(questions: Question[]): Promise<QuestionAnswer[]>;
-  /** Asks the user whether the agent may go ahead. Rejects when the turn is interrupted instead. */
-  approve(request: PermissionRequest): Promise<PermissionDecision>;
+  /**
+   * Asks the user whether the agent may go ahead. Rejects when the turn is interrupted instead. `call` is the tool call
+   * it is for, which waits meanwhile.
+   */
+  approve(request: PermissionRequest, call?: string): Promise<PermissionDecision>;
   /** Asks the user to approve the plan shown in the conversation, offering these modes to carry on in. */
   approvePlan(modes: AgentMode[]): Promise<PlanDecision>;
 }

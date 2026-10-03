@@ -130,7 +130,7 @@ Segments live in `apps/cli/src/status/segments.tsx`; a new one is one entry ther
 | Plan | Reads only. When the plan is ready it shows in the conversation, and the plan panel asks whether to carry on in auto mode, accepting edits or approving each one, or to keep planning with a note |
 | Auto | What Claude Code's safety classifier lets through: routine work runs, and actions beyond the request, like force pushes, piping downloads into a shell or sending secrets out, are blocked. Needs a model that supports it, such as Opus or Sonnet; with others Claude Code runs in Manual, which the rule under the prompt shows from the first prompt on, while the project keeps Auto for next time |
 
-In every mode, Jinion itself asks before a commit and before a file outside the project changes, without a "don't ask again" choice. These checks run as a hook ahead of Claude Code's own (`apps/cli/src/agent/claude/guard.ts`).
+In every mode, Jinion itself asks before a commit and before a file outside the project changes, without a "don't ask again" choice: through the file tools, and through commands, by what they write to (`>`, `>>`, `tee`), change (`rm`, `mv`, `touch`, `chmod`, `sed -i`, `dd of=`) or copy to (`cp`, `ln`), also after a `cd`. Temporary folders such as `/tmp` and streams such as `/dev/null` don't count, and neither does a path behind a variable other than `$HOME`, which only the shell can tell. These checks run as a hook ahead of Claude Code's own (`apps/cli/src/agent/claude/guard.ts`). A command asked about shows that it waits for your approval, and its time runs from when you allowed it.
 
 ### Permissions
 
@@ -155,7 +155,7 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 | `shift+enter`, `alt+enter`, trailing `\` | New line |
 | `up` / `down` | Prompt history |
 | `esc` | Interrupt the running turn |
-| `esc` `esc` | On an empty prompt, between turns: rewind to before an earlier message (`/rewind`) |
+| `esc` `esc` | Between turns: rewind to before an earlier message (`/rewind`); with something typed, clear it first, keeping it in the history for `up` |
 | `ctrl+o` | Expand or collapse long output and pasted text |
 | `ctrl+t` | Background tasks: what runs there, its latest output, `x` to stop one (`/tasks`) |
 | `ctrl+b` | While a command or subagent has run a few seconds, send it to the background; the turn goes on without it |
@@ -173,15 +173,16 @@ The prompt grows to 20 lines, then scrolls inside, with the rules above and belo
 
 Images go into the prompt as placeholders like long pastes, and the agent gets them after the text, in the order the placeholders come: from the clipboard with `ctrl+v` (macOS, or Linux with `wl-paste` or `xclip`), or as files, since a terminal pastes a dragged file's path (PNG, JPEG, GIF and WebP). Images over 3.7 MB are scaled down with macOS's `sips` before they go out; elsewhere they are refused.
 
-`esc` twice (or `/rewind`) goes back to before an earlier message. The panel lists the conversation's messages, newest first, and under the highlighted one what going back would change in files (`2 files change +24 -7`, and which). Then it asks what to take back:
+`esc` twice (or `/rewind`) goes back to before an earlier message, the way Claude Code does. The panel lists the messages you sent, newest first, leaving out ones that joined a running turn, and under the highlighted one what going back would change in files (`2 files change +24 -7`, and which). Then it asks what to take back; the two that restore code show only where there are file changes:
 
 | Choice | Does |
 | --- | --- |
 | Restore code and conversation | Files go back to how they were before the message, the conversation goes on from before it, and the message returns to the prompt to edit and send again |
-| Conversation only | The same, but the files stay as they are |
-| Code only | Files go back; the conversation goes on as it is |
+| Restore conversation | The same, but the files stay as they are |
+| Restore code | Files go back; the conversation goes on as it is |
+| Never mind | Back to the messages |
 
-Files come back from Claude Code's checkpoints, which it takes before each change and keeps across processes, so a resumed conversation can still be rewound. The conversation continues in a new Claude Code process from the transcript entry before the message. Jinion's memory notes stay: they belong to no single conversation.
+Files come back from Claude Code's checkpoints, which it takes before each change and keeps across processes, so a resumed conversation can still be rewound. The conversation continues in a new Claude Code process from the transcript entry before the message. As in Claude Code, only what the file tools changed comes back: changes made by commands stay, and so do Jinion's memory notes, which belong to no single conversation.
 
 The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
 

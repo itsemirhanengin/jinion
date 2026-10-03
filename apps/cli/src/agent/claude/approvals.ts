@@ -90,7 +90,7 @@ export class ClaudeApprovals {
     const rules = alwaysRules(options);
     let decision: PermissionDecision;
     try {
-      decision = await turn.approve(toPermissionRequest(name, input, options, rules));
+      decision = await turn.approve(toPermissionRequest(name, input, options, rules), options.toolUseID);
     } catch {
       return { behavior: 'deny', message: 'The user stopped the turn.', interrupt: true };
     }

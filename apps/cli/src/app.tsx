@@ -422,10 +422,18 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       interact<QuestionAnswer[]>('ask', `jinion asks: ${questions[0]?.prompt ?? 'a question'}`, (resolve) => (
         <AskPanel questions={questions} onSubmit={resolve} onCancel={() => abort.abort()} />
       ));
-    const approve = (request: PermissionRequest) =>
-      interact<PermissionDecision>('permission', [request.title, request.command ?? request.subject].filter(Boolean).join(': '), (resolve) => (
-        <PermissionPanel request={request} onDecide={resolve} onCancel={() => abort.abort()} />
-      ));
+    const approve = async (request: PermissionRequest, call?: string) => {
+      if (call) dispatch({ type: 'approval', id: call, waiting: true });
+      try {
+        return await interact<PermissionDecision>(
+          'permission',
+          [request.title, request.command ?? request.subject].filter(Boolean).join(': '),
+          (resolve) => <PermissionPanel request={request} onDecide={resolve} onCancel={() => abort.abort()} />,
+        );
+      } finally {
+        if (call) dispatch({ type: 'approval', id: call, waiting: false });
+      }
+    };
     const approvePlan = (modes: AgentMode[]) =>
       interact<PlanDecision>('plan', 'The plan is ready for you to review.', (resolve) => (
         <PlanPanel
@@ -496,7 +504,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     if (!agent.rewind) return notice(`${agent.name} can't rewind.`, 'warning');
     if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
     const points = session.entries
-      .flatMap((entry) => (entry.kind === 'user' && entry.promptId ? [{ entry: entry.id, promptId: entry.promptId, text: entry.text, steered: entry.steered }] : []))
+      // As in Claude Code, a message that joined a running turn is no place to go back to.
+      .flatMap((entry) => (entry.kind === 'user' && entry.promptId && !entry.steered ? [{ entry: entry.id, promptId: entry.promptId, text: entry.text }] : []))
       .reverse();
     if (points.length === 0) return notice('There is nothing to rewind yet.', 'muted');
     panels.open({
@@ -586,15 +595,17 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     }
     // Open panels handle their own esc.
     if (key.escape && busy && !panels.top) return controller.current?.abort();
-    // Esc twice on an empty prompt goes back to an earlier message.
-    if (key.escape && !busy && !panels.top && !draft) {
+    // Esc twice goes back to an earlier message; with something typed, it clears that first, keeping it in the history.
+    if (key.escape && !busy && !panels.top) {
       const now = Date.now();
-      if (now - lastEscape.current < DOUBLE_ESCAPE_MS) {
-        lastEscape.current = 0;
-        return openRewind();
+      if (now - lastEscape.current >= DOUBLE_ESCAPE_MS) {
+        lastEscape.current = now;
+        return;
       }
-      lastEscape.current = now;
-      return;
+      lastEscape.current = 0;
+      if (!draft) return openRewind();
+      setSubmitted((items) => [...items, draft]);
+      return setDraft('');
     }
     // Sends the message after the turn in progress rather than into it; with nothing running, right away.
     if (key.ctrl && input === 'q' && !panels.top) {

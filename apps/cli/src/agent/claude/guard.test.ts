@@ -29,6 +29,40 @@ describe('guardReason', () => {
     expect(guardReason('Edit', { file_path: '../other/a.ts' }, cwd)).toBeDefined();
   });
 
+  it('asks before commands that change files outside the project', () => {
+    for (const command of [
+      'echo hi > ~/notes.txt',
+      'pnpm build >> ../build.log',
+      'cat a | tee -a /etc/hosts',
+      'rm -rf ../other',
+      'cp dist/cli.js /usr/local/bin/cli',
+      'mv src $HOME/backup',
+      "sed -i '' s/a/b/ ~/.zshrc",
+      'cd .. && touch elsewhere.txt',
+      'dd if=image.iso of=/dev/disk2',
+      'chmod 600 ~/.ssh/config',
+    ]) {
+      expect(bash(command), command).toBe('Jinion asks before changing files outside the project.');
+    }
+  });
+
+  it('lets commands through that only read outside the project, or write to it, to scratch space or a stream', () => {
+    for (const command of [
+      'echo hi > notes.txt',
+      'ls > /dev/null 2>&1',
+      'pnpm test &> /tmp/test.log',
+      'cp ~/templates/a.ts src/a.ts',
+      'cat ~/.zshrc | grep PATH',
+      'echo "> ~/notes.txt"',
+      'rm -rf node_modules dist',
+      'rm $TARGET',
+      "sed 's/a/b/' ~/.zshrc",
+      'cd packages && mkdir new',
+    ]) {
+      expect(bash(command), command).toBeUndefined();
+    }
+  });
+
   it('lets changes inside the project and Claude Code’s plans through', () => {
     expect(guardReason('Edit', { file_path: 'src/a.ts' }, cwd)).toBeUndefined();
     expect(guardReason('Write', { file_path: `${cwd}/notes.md` }, cwd)).toBeUndefined();

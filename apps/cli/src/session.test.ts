@@ -36,6 +36,15 @@ describe('reduce', () => {
     expect(session.entries.at(-1)).toMatchObject({ status: 'done', output: ['a.ts'], run: { result: { exitCode: 0 } } });
   });
 
+  it('marks a call that waits for permission, and times it from when it was allowed', () => {
+    const started = events(createSession(200_000), { type: 'tool-start', id: 't1', call: { name: 'bash', input: { command: 'rm a', timeoutMs: 1000 } } });
+    const waiting = reduce(started, { type: 'approval', id: 't1', waiting: true });
+    expect(waiting.entries.at(-1)).toMatchObject({ waiting: true });
+    const allowed = reduce(waiting, { type: 'approval', id: 't1', waiting: false });
+    expect(allowed.entries.at(-1)).not.toHaveProperty('waiting');
+    expect(allowed.entries.at(-1)).toMatchObject({ approvedAt: expect.any(Number) });
+  });
+
   it('replaces consecutive todo updates and keeps the list', () => {
     const todo = (text: string): AgentEvent => ({
       type: 'tool-start',

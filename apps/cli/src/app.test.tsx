@@ -115,12 +115,25 @@ describe('App', () => {
     expect(list).toMatch(/> 1\. hey again +\|\n\| +No file changes since then +\|\n\| +2\. hello/);
 
     await terminal.press(KEYS.enter);
-    await terminal.waitFor('Restore code and conversation');
+    // Without file changes to take back, Claude Code's menu offers the conversation only.
+    const choices = await terminal.waitFor('Never mind');
+    expect(choices).toContain('Restore conversation');
+    expect(choices).not.toContain('Restore code');
     await terminal.press(KEYS.enter);
-    const screen = await terminal.waitFor('Went back to before “hey again”');
+    const screen = await terminal.waitFor('The conversation went back to before “hey again”');
     expect(screen).toContain('> hello');
     expect(screen).not.toContain('> hey again');
     expect(screen).toMatch(/^ hey again$/m);
+  });
+
+  it('clears what is typed with esc twice, keeping it in the history', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('half a thought');
+    await terminal.press(KEYS.escape, KEYS.escape);
+    const cleared = await terminal.waitFor('Ask jinion anything');
+    expect(cleared).not.toContain('Rewind');
+    await terminal.press(KEYS.up);
+    expect(await terminal.waitFor(/^ half a thought$/m)).not.toContain('Ask jinion anything');
   });
 
   it('puts what was queued back in the prompt when the turn is interrupted', async () => {

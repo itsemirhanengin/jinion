@@ -23,6 +23,9 @@ export type Entry =
       startedAt: number;
       endedAt?: number;
       children?: ToolCallEntry[];
+      /** Waiting for the user to allow it, and when they did: a command's time runs from then. */
+      waiting?: boolean;
+      approvedAt?: number;
     };
 
 type ToolEntry = Extract<Entry, { kind: 'tool' }>;
@@ -55,6 +58,8 @@ export type Action =
   | { type: 'submit'; text: string; prompt?: string }
   /** The agent started a turn itself, e.g. to look at a background task that ended. */
   | { type: 'agent-turn' }
+  /** The tool call `id` waits for the user's permission, or got it. */
+  | { type: 'approval'; id: string; waiting: boolean }
   /** A message added to the turn in progress; `id` is what the agent calls it. */
   | { type: 'steer'; text: string; prompt?: string; id?: string }
   /** The conversation went back to before this user entry, which leaves it with everything after it. */
@@ -129,6 +134,10 @@ export function reduce(session: Session, action: Action): Session {
       };
     case 'event':
       return apply(session, action.event);
+    case 'approval':
+      return updateTool(session, action.id, ({ waiting: _, ...entry }) =>
+        action.waiting ? { ...entry, waiting: true } : { ...entry, approvedAt: Date.now() },
+      );
     case 'finish': {
       const cancel = <T extends { status: Status; endedAt?: number }>(call: T): T =>
         call.status === 'running' ? { ...call, status: 'cancelled', endedAt: Date.now() } : call;
