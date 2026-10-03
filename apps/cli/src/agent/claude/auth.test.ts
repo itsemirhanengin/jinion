@@ -1,13 +1,11 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
-import { accountsDir, removeAccount } from './accounts.js';
+import { sandboxEach } from '../../test/sandbox.js';
+import { removeAccount } from './auth.js';
+import { accountsDir } from './paths.js';
 
-/**
- * Stands in for the `claude` command: `auth logout` deletes the login in `CLAUDE_CONFIG_DIR` unless `KEEP_LOGIN` is set,
- * `auth status` reports it, and every call is logged.
- */
+/** Stands in for `claude`: `auth logout` deletes the login unless `KEEP_LOGIN` is set, and every call is logged. */
 const FAKE_CLAUDE = `#!/bin/sh
 echo "$CLAUDE_CONFIG_DIR $*" >> "$CLAUDE_LOG"
 case "$*" in
@@ -16,11 +14,10 @@ case "$*" in
 esac
 `;
 
-let box: Sandbox;
+const box = sandboxEach();
 let path: string | undefined;
 
 beforeEach(() => {
-  box = sandbox();
   const bin = join(box.home, 'bin');
   chmodSync(box.write(join(bin, 'claude'), FAKE_CLAUDE), 0o755);
   path = process.env.PATH;
@@ -32,10 +29,8 @@ afterEach(() => {
   process.env.PATH = path;
   delete process.env.CLAUDE_LOG;
   delete process.env.KEEP_LOGIN;
-  box.restore();
 });
 
-/** An account signed in, sharing the default login's folder of conversations as `signIn` sets it up. */
 function signedIn(name: string) {
   const dir = join(accountsDir(), name);
   const shared = join(box.home, '.claude', 'projects');

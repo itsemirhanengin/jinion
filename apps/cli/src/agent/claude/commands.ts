@@ -1,23 +1,17 @@
 import type { SDKUserMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk';
-import type { AgentCommand, AgentPrompt } from '../types.js';
+import type { AgentCommand, AgentPrompt } from '../agent.js';
 import { labelOf } from './mcp.js';
 
 /** Claude Code lists an MCP prompt as `claude.ai Figma:create_rules (MCP)`, and runs it as `/mcp__claude_ai_Figma__create_rules`. */
 const MCP_PROMPT = /^(.+):([^:]+) \(MCP\)$/;
 
-/** The part of a tool or command name Claude Code makes from a server's name. */
 const normalized = (server: string) => server.replace(/[^a-zA-Z0-9_-]/g, '_');
 
-/** Which comes first when two want the same short name: the project's, the user's, plugins', then MCP prompts. */
 const PRECEDENCE = ['project', 'user', 'plugin', 'mcp'] as const;
 
-/** What Claude Code calls each skill and MCP prompt the user mentions, e.g. `user:design` for `$design`. */
 export type Invocations = Map<string, string>;
 
-/**
- * Claude Code's commands as Jinion's, with what to send Claude Code for each. Each gets its short name, `design` for
- * `user:design` or `nextjs` for `vercel:nextjs`, unless one that comes first already has it.
- */
+/** Each gets its short name, `design` for `user:design`, unless one that comes first already has it. */
 export function toAgentCommands(list: SlashCommand[]) {
   const entries = list
     .filter((command) => !command.builtin)
@@ -54,10 +48,7 @@ export function toAgentCommands(list: SlashCommand[]) {
   return { commands, invocations };
 }
 
-/**
- * A prompt as a message's content for Claude Code: its text with mentions turned into what Claude Code runs, and its
- * images after it, so a slash command at the start of the text still reads as one.
- */
+/** Images go after the text, so a slash command at the start of it still reads as one. */
 export function toClaudeContent(prompt: AgentPrompt, invocations: Invocations): SDKUserMessage['message']['content'] {
   const text = toClaudePrompt(prompt.text, invocations);
   if (!prompt.images?.length) return text;
@@ -70,14 +61,9 @@ export function toClaudeContent(prompt: AgentPrompt, invocations: Invocations): 
   ];
 }
 
-/** `$design` or `$vercel:nextjs`, at the start or after whitespace, without trailing punctuation. */
 const MENTIONED = /(?<=^|\s)\$([\w.:-]*[\w-])/g;
 
-/**
- * Claude Code runs a skill or an MCP prompt only as a slash command at the start of the prompt. A prompt that starts
- * with its only skill goes as that command, `$design brief` as `/user:design brief`, and an MCP prompt moves to the
- * front wherever it is. Other skills stay where the user put them, with a note to load them with the Skill tool.
- */
+/** Claude Code runs a skill or MCP prompt only as a slash command at the start; other skills get a note to load them. */
 export function toClaudePrompt(prompt: string, invocations: Invocations) {
   const mentioned = [...prompt.matchAll(MENTIONED)].flatMap((match) => {
     const target = invocations.get(match[1]!);

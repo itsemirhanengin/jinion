@@ -1,21 +1,16 @@
 import type { Options, Query, query, SDKMessage, SDKUserMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk';
-import { Inbox } from '../agent/claude/inbox.js';
+import { Inbox } from '../lib/inbox.js';
 
 interface Spawned {
   options: Options;
   output: Inbox<SDKMessage>;
 }
 
-/**
- * Stands in for Claude Code: `spawn` replaces the SDK's `query`, the prompts every process is sent queue up for
- * `nextPrompt`, and the test decides what comes back with `reply`, `stderr` and `exit`.
- */
+/** `spawn` replaces the SDK's `query`; the test decides what comes back with `reply`, `stderr` and `exit`. */
 export class FakeClaude {
   readonly processes: Spawned[] = [];
   commands: SlashCommand[] = [];
-  /** The prompts files were rewound to, dry runs left out. */
   readonly rewound: string[] = [];
-  /** The background tasks stopped. */
   readonly stopped: string[] = [];
   private readonly prompts: SDKUserMessage[] = [];
   private readonly waiting: ((prompt: SDKUserMessage) => void)[] = [];
@@ -48,14 +43,13 @@ export class FakeClaude {
     return fake as unknown as Query;
   }) as typeof query;
 
-  /** The process started last. */
   get current() {
     const spawned = this.processes.at(-1);
     if (!spawned) throw new Error('Claude Code was never started.');
     return spawned;
   }
 
-  /** Resolves with the next prompt any process is sent, also one sent before it was asked for. */
+  /** Also one sent before it was asked for. */
   nextPrompt() {
     const sent = this.prompts.shift();
     return sent ? Promise.resolve(sent) : new Promise<SDKUserMessage>((resolve) => this.waiting.push(resolve));
@@ -74,7 +68,8 @@ export class FakeClaude {
   }
 }
 
-/** The smallest messages Claude Code sends, for scripting a conversation. */
+export const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
+
 export const claudeSays = {
   init: (session = 'session-1') => ({ type: 'system', subtype: 'init', session_id: session, model: 'claude-test', permissionMode: 'acceptEdits' }) as unknown as SDKMessage,
   text: (text: string) =>
@@ -93,12 +88,11 @@ export const claudeSays = {
       total_cost_usd: 0.01,
       modelUsage: {},
     }) as unknown as SDKMessage,
-  /** A command `toolu` started went on in the background as task `id`, and how it ended. */
   taskStarted: (id: string, toolu: string, description: string) =>
     ({ type: 'system', subtype: 'task_started', task_id: id, tool_use_id: toolu, description, task_type: 'local_bash', is_backgrounded: true }) as unknown as SDKMessage,
   taskEnded: (id: string, status: 'completed' | 'failed' | 'stopped', summary = '') =>
     ({ type: 'system', subtype: 'task_notification', task_id: id, status, output_file: `/tmp/${id}.output`, summary }) as unknown as SDKMessage,
-  /** The result of a turn Claude Code started itself, e.g. after a background task, which answers no prompt. */
+  /** A turn Claude Code started itself, e.g. after a background task, answers no prompt. */
   ownResult: (text = 'done') =>
     ({
       type: 'result',

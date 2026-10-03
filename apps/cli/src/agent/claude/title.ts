@@ -1,7 +1,7 @@
 import { query } from '@anthropic-ai/claude-agent-sdk';
+import { firstLine, truncate } from '../../lib/text.js';
 import { accountEnv } from './accounts.js';
 
-/** Claude Code's small, fast model, which titles its own sessions too. */
 const MODEL = 'haiku';
 
 const INSTRUCTIONS = `You name conversations between a developer and a coding agent, so the developer can find them again in a list of many.
@@ -10,10 +10,6 @@ Reply with the title only, never an explanation, also when there is little to na
 Name what the conversation as a whole works on: what is being built, fixed, investigated or decided, and where; not just its latest message. A greeting or small talk is not work; when there is nothing else yet, name what the developer asked about, or the greeting itself.
 When a current title is given and it still fits the conversation as a whole, reply with it unchanged. It no longer fits when it names a greeting or small talk and there is work now, or names only a part of work that has grown.`;
 
-/**
- * A title from a one-off request to the small model: no tools, no thinking, nothing saved, under the account in use. It
- * runs beside the conversation's own process, which it doesn't touch.
- */
 export async function claudeTitle({
   digest,
   current,
@@ -56,12 +52,8 @@ export async function claudeTitle({
 /** Longer than a title: the model explained itself instead. */
 const MAX_WORDS = 10;
 
-/**
- * The model's reply as a title: its first line, without quotes, a `Title:` label or a closing period. A reply too long
- * for a title has none.
- */
 export function cleanTitle(reply: string) {
-  const line = reply.trim().split('\n')[0]!.replace(/^title:\s*/i, '').replace(/^["'“”‘’`*]+|["'“”‘’`*.]+$/g, '').trim();
+  const line = firstLine(reply.trim()).replace(/^title:\s*/i, '').replace(/^["'“”‘’`*]+|["'“”‘’`*.]+$/g, '').trim();
   if (!line || line.split(/\s+/).length > MAX_WORDS) return undefined;
-  return line.length > 80 ? `${line.slice(0, 79)}…` : line;
+  return truncate(line, 80);
 }

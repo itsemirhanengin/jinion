@@ -1,16 +1,14 @@
 import { appendFileSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { sandboxEach } from '../../test/sandbox.js';
 import { readHistory } from './history.js';
 
-let box: Sandbox;
+const box = sandboxEach();
 let config: string;
 beforeEach(() => {
-  box = sandbox();
   config = join(box.home, '.claude');
 });
-afterEach(() => box.restore());
 
 /** A response as Claude Code writes it: a line per content block, each with the whole response's usage. */
 function response(id: string, { session = 's1', at = '2026-09-21T10:00:00', model = 'claude-opus-5-5', blocks = ['text'], tokens = 100 } = {}) {

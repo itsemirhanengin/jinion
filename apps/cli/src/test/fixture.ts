@@ -1,14 +1,9 @@
-/**
- * Turns a `--debug` log into a fixture for the replay tests: `pnpm --filter @jinion/cli fixture <log> <name>` writes
- * `src/agent/claude/fixtures/<name>.jsonl`, the messages Claude Code sent, one per line.
- *
- * Fixtures are committed, so paths and names are replaced and the init message keeps only what the events read, not
- * the skills, plugins and servers installed on this machine.
- */
+// `pnpm --filter @jinion/cli fixture <log> <name>` writes `src/agent/claude/fixtures/<name>.jsonl` from a `--debug` log.
+// Fixtures are committed, so paths and names are replaced and the init message drops what is installed on this machine.
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';
 import { join, resolve } from 'node:path';
-import type { DebugRecord } from '../debug.js';
+import type { DebugRecord } from '../lib/debug.js';
 
 const INIT_FIELDS = ['type', 'subtype', 'session_id', 'uuid', 'model', 'permissionMode', 'cwd', 'claude_code_version'];
 
@@ -20,7 +15,6 @@ type Message = Record<string, any>;
 
 const DELTA_TEXT: Record<string, string> = { text_delta: 'text', thinking_delta: 'thinking', input_json_delta: 'partial_json' };
 
-/** Consecutive deltas of one content block as one, which streams the same text in far fewer lines. */
 function mergeDeltas(messages: Message[]) {
   const merged: Message[] = [];
   for (const message of messages) {

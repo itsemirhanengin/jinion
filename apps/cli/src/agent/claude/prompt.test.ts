@@ -1,14 +1,10 @@
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { git, repo } from '../../test/git.js';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
+import { sandboxEach } from '../../test/sandbox.js';
 import { systemPrompt } from './prompt.js';
 
-let box: Sandbox;
-beforeEach(() => {
-  box = sandbox();
-});
-afterEach(() => box.restore());
+const box = sandboxEach();
 
 const gitLine = () => systemPrompt(box.project).split('\n').find((line) => line.startsWith('- Git: '));
 

@@ -44,7 +44,6 @@ function environment(cwd: string) {
   ].join('\n');
 }
 
-/** The project's repository, or, for a folder that holds several, each of them, so git runs in the right one. */
 function gitLine(cwd: string) {
   const repos = findRepos(cwd);
   const [only] = repos;
@@ -63,7 +62,6 @@ function gitBranch(cwd: string) {
   }
 }
 
-/** Jinion loads project instructions itself instead of letting Claude Code read its own settings and memory. */
 function projectInstructions(cwd: string) {
   const sections = INSTRUCTION_FILES.flatMap((name) => {
     const path = join(cwd, name);

@@ -1,18 +1,15 @@
 import { join } from 'node:path';
 import type { CanUseTool, PermissionRuleValue } from '@anthropic-ai/claude-agent-sdk';
-import type { PermissionRequest } from '@jinion/tui';
-import { readJson, writeJson } from '../../json-file.js';
-import { projectDir } from '../../paths.js';
-import { toolTitle } from './events.js';
+import type { PermissionRequest } from '@jinion/tui/chat';
+import { readJson, writeJson } from '../../lib/json-file.js';
+import { projectDir } from '../../lib/paths.js';
 import { GUARD_REASONS } from './guard.js';
+import type { Input } from './input.js';
+import { toolTitle } from './tool-names.js';
 
-type Input = Record<string, unknown>;
 type RequestOptions = Parameters<CanUseTool>[2];
 
-/**
- * What "don't ask again" would allow: the rules Claude Code suggests, such as `Bash(pnpm add *)`. It suggests none
- * where a rule would be unsafe or useless, e.g. for commands caught by an ask rule, and then the choice isn't offered.
- */
+/** Claude Code suggests no rule where one would be unsafe or useless, e.g. under an ask rule; then "don't ask again" isn't offered. */
 export function alwaysRules(options: RequestOptions): PermissionRuleValue[] {
   // Jinion's guard runs before any rule, so a saved rule would never stop it from asking.
   const guarded = options.decisionReason !== undefined && GUARD_REASONS.has(options.decisionReason);
@@ -61,7 +58,6 @@ function defaultTitle(name: string) {
   return `jinion wants to use ${toolTitle(name)}`;
 }
 
-/** "Don't ask again" answers, kept per project as Claude Code permission rules such as `Bash(pnpm add:*)`. */
 export class ProjectPermissions {
   private readonly file: string;
 

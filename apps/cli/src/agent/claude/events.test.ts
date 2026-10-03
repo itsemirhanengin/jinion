@@ -2,13 +2,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { beforeAll, describe, expect, it } from 'vitest';
-import type { AgentEvent } from '../types.js';
+import type { AgentEvent } from '../events.js';
 import { ClaudeEvents } from './events.js';
 
-/**
- * Real conversations with Claude Code, recorded with `--debug` and turned into fixtures with `pnpm fixture`, played
- * through the mapper. The fixtures say `/project` for the project and `/home/user` for the home folder.
- */
+/** Real conversations recorded with `--debug` and made fixtures with `pnpm fixture`; `/project` and `/home/user` stand in for real folders. */
 beforeAll(() => {
   process.env.HOME = '/home/user';
   process.env.JINION_HOME = '/home/user/.jinion';
@@ -22,7 +19,6 @@ function replay(name: string) {
     .flatMap((line) => [...events.map(JSON.parse(line) as SDKMessage)]);
 }
 
-/** One line per event, with streamed text joined and tool ids numbered, so a snapshot reads like the conversation. */
 function transcript(events: AgentEvent[]) {
   const ids = new Map<string, string>();
   const id = (raw: string) => {
@@ -140,7 +136,6 @@ describe('ClaudeEvents replaying recorded conversations', () => {
       'agent completed List files in current directory',
       'shell completed sleep 10; echo slept',
     ]);
-    // Each command's output file, for the tasks panel to show while it runs.
     const running = lists.flatMap((tasks) => tasks.filter((task) => task.kind === 'shell' && task.status === 'running' && !task.foreground));
     for (const title of new Set(running.map((task) => task.title))) {
       expect(running.find((task) => task.title === title && task.output)?.output, title).toMatch(/\/tasks\/\w+\.output$/);

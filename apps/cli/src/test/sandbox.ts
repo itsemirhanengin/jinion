@@ -1,23 +1,18 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { afterEach, beforeEach } from 'vitest';
 
 const VARIABLES = ['HOME', 'JINION_HOME', 'CLAUDE_CONFIG_DIR'] as const;
 
 export interface Sandbox {
-  /** Stands in for `~`: Claude Code's config and `~/.jinion` live under it. */
   home: string;
-  /** An empty project folder. */
   project: string;
-  /** Writes a file, making its folders; JSON for anything that isn't a string or bytes. */
   write(path: string, content: unknown): string;
   restore(): void;
 }
 
-/**
- * A home and a project in a temporary folder, so tests never touch the real `~/.claude` or `~/.jinion`. Node's
- * `homedir()` follows `HOME`, and Jinion's paths follow `JINION_HOME`.
- */
+/** Tests never touch the real `~/.claude` or `~/.jinion`: `homedir()` follows `HOME`, Jinion's paths follow `JINION_HOME`. */
 export function sandbox(): Sandbox {
   const root = mkdtempSync(join(tmpdir(), 'jinion-test-'));
   const saved = Object.fromEntries(VARIABLES.map((name) => [name, process.env[name]]));
@@ -45,4 +40,11 @@ export function sandbox(): Sandbox {
       rmSync(root, { recursive: true, force: true });
     },
   };
+}
+
+export function sandboxEach(): Sandbox {
+  const box = {} as Sandbox;
+  beforeEach(() => void Object.assign(box, sandbox()));
+  afterEach(() => box.restore());
+  return box;
 }

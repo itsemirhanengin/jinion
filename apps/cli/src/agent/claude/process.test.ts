@@ -1,6 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it, vi } from 'vitest';
-import { claudeSays, FakeClaude } from '../../test/fake-claude.js';
+import { claudeSays, FakeClaude, settle } from '../../test/fake-claude.js';
 import { ClaudeProcess } from './process.js';
 
 function start(fake: FakeClaude) {
@@ -23,8 +23,6 @@ const collect = async (turn: AsyncGenerator<SDKMessage>) => {
   for await (const message of turn) messages.push(message);
   return messages;
 };
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 describe('ClaudeProcess', () => {
   it('reads what comes while no turn runs as idle', async () => {

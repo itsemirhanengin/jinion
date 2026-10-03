@@ -2,30 +2,21 @@ import { existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync, symlinkSyn
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import type { SdkPluginConfig } from '@anthropic-ai/claude-agent-sdk';
-import { readJson } from '../../json-file.js';
-import { jinionHome, projectDir } from '../../paths.js';
+import { readJson } from '../../lib/json-file.js';
+import { jinionHome, projectDir } from '../../lib/paths.js';
+import { claudeConfigDir } from './paths.js';
 
-/** The plugins Jinion makes for skills folders; their skills reach Claude as `user:<skill>` and `project:<skill>`. */
 export const SKILL_PLUGINS = ['user', 'project'] as const;
 
-/** `user:design` reads as `design`; plugins' skills keep their plugin, as in `vercel:deploy`. */
 export function skillLabel(name: string) {
   const scope = SKILL_PLUGINS.find((plugin) => name.startsWith(`${plugin}:`));
   return scope ? name.slice(scope.length + 1) : name;
 }
 
-/**
- * Skills of Claude Code's own plugins, which are about Claude Code itself. `disableBundledSkills` turns off the rest
- * of what ships with it.
- */
+/** Skills of Claude Code's own plugins, about Claude Code itself; `disableBundledSkills` turns off the rest. */
 export const CLAUDE_CODE_SKILLS = ['design', 'doctor', 'plugin-authoring'];
 
-const claudeConfigDir = () => process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), '.claude');
-
-/**
- * Claude Code reads no skills folders while its settings are off, so Jinion hands them over as plugins: a plugin
- * folder per scope, with a link to each skill. When two folders have a skill of the same name, the first wins.
- */
+/** Claude Code reads no skills folders while its settings are off, so they go in as plugins. The first folder wins a name. */
 export function skillPlugins(cwd: string): SdkPluginConfig[] {
   const scopes: [(typeof SKILL_PLUGINS)[number], string, string[]][] = [
     ['user', join(jinionHome(), 'plugins', 'user'), [join(claudeConfigDir(), 'skills'), join(homedir(), '.agents', 'skills')]],
@@ -45,7 +36,7 @@ export function skillPlugins(cwd: string): SdkPluginConfig[] {
   });
 }
 
-/** Brings the plugin folder in line with `skills`, touching only links, so two Jinions can do it at once. */
+/** Touches only links, so two Jinions can do it at once. */
 function linkSkills(root: string, name: string, skills: Map<string, string>) {
   const folder = join(root, 'skills');
   mkdirSync(join(root, '.claude-plugin'), { recursive: true });
@@ -66,10 +57,7 @@ function linkSkills(root: string, name: string, skills: Map<string, string>) {
 
 type PluginSettings = { enabledPlugins?: Record<string, boolean> };
 
-/**
- * The plugins the user turned on in Claude Code, for their skills, commands, agents and MCP servers. Their hooks stay
- * off, since they would add context of their own to every conversation.
- */
+/** Their hooks stay off, since they would add context of their own to every conversation. */
 export function claudePlugins(cwd: string): SdkPluginConfig[] {
   const config = claudeConfigDir();
   const enabled: Record<string, boolean> = {};

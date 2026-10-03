@@ -1,8 +1,8 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { accountsDir } from './accounts.js';
-import { guardReason, isPlanFile, readsRepositories } from './guard.js';
+import { guardReason, readsRepositories } from './guard.js';
+import { accountsDir } from './paths.js';
 
 const cwd = '/work/project';
 const bash = (command: string) => guardReason('Bash', { command }, cwd);
@@ -100,15 +100,5 @@ describe('readsRepositories', () => {
       expect(reads(command), command).toBe(false);
     }
     expect(readsRepositories('Write', { command: 'git -C api status' })).toBe(false);
-  });
-});
-
-describe('isPlanFile', () => {
-  it('knows the plans of Claude Code’s own login and of every account', () => {
-    expect(isPlanFile(join(homedir(), '.claude', 'plans', 'a.md'))).toBe(true);
-    expect(isPlanFile(join(accountsDir(), 'work', 'plans', 'a.md'))).toBe(true);
-    expect(isPlanFile(join(accountsDir(), 'work', 'settings.json'))).toBe(false);
-    expect(isPlanFile(join(homedir(), '.claude', 'settings.json'))).toBe(false);
-    expect(isPlanFile('/work/project/plans/a.md')).toBe(false);
   });
 });

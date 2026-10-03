@@ -1,4 +1,3 @@
-/** A queue read with `for await`, which waits for the next item until it is closed. */
 export class Inbox<T> implements AsyncIterable<T> {
   private readonly items: T[] = [];
   private wake?: () => void;

@@ -1,11 +1,24 @@
-import type { McpServerConfig, McpServerStatus } from '@anthropic-ai/claude-agent-sdk';
+import type { McpServerConfig, McpServerStatus, query } from '@anthropic-ai/claude-agent-sdk';
 import type { McpConfig, McpSource, McpTransport } from '../../mcp/config.js';
-import type { McpServerInfo } from '../types.js';
+import type { AgentMcp, McpServerInfo } from '../mcp.js';
 import { MEMORY_SERVER } from './memory.js';
 
 export function toClaudeServer(transport: McpTransport): McpServerConfig {
   if ('command' in transport) return { type: 'stdio', command: transport.command, args: transport.args, env: transport.env };
   return { type: transport.type, url: transport.url, headers: transport.headers };
+}
+
+export function claudeMcp(config: McpConfig, running: () => ReturnType<typeof query>, onChange: () => void): AgentMcp {
+  return {
+    servers: async () => serverInfos(await running().mcpServerStatus(), config),
+    setEnabled: async (changes) => {
+      const servers = config.servers();
+      for (const [name, enabled] of Object.entries(changes)) {
+        config.setEnabled(servers.find((server) => server.name === name) ?? { name }, enabled);
+      }
+      if (Object.keys(changes).length > 0) onChange();
+    },
+  };
 }
 
 const SOURCES: Record<McpSource, string> = { jinion: 'jinion', claude: 'claude code', project: 'project' };
@@ -14,7 +27,6 @@ const SOURCES: Record<McpSource, string> = { jinion: 'jinion', claude: 'claude c
 const CONNECTOR = /^claude\.ai (.+)$/;
 const PLUGIN_SERVER = /^plugin:([^:]+):(.+)$/;
 
-/** `Linear` for `claude.ai Linear`, `vercel` for `plugin:vercel:vercel`. */
 export const labelOf = (name: string) => CONNECTOR.exec(name)?.[1] ?? PLUGIN_SERVER.exec(name)?.[2] ?? name;
 
 function sourceOf(name: string) {
@@ -23,10 +35,7 @@ function sourceOf(name: string) {
   return plugin ? `plugin ${plugin[1]}` : 'claude code';
 }
 
-/**
- * What Claude Code reports, together with the servers that don't run: configured ones that are off, and found ones
- * the user turned off, which Claude Code no longer lists.
- */
+/** Adds the servers that don't run, also found ones the user turned off, which Claude Code no longer lists. */
 export function serverInfos(statuses: McpServerStatus[], config: McpConfig): McpServerInfo[] {
   const configured = new Map(config.servers().map((server) => [server.name, server]));
   const disabled = new Set(config.disabled());

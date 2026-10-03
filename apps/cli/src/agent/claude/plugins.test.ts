@@ -1,14 +1,10 @@
 import { existsSync, readFileSync, readlinkSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
+import { describe, expect, it } from 'vitest';
+import { sandboxEach } from '../../test/sandbox.js';
 import { claudePlugins, skillLabel, skillPlugins } from './plugins.js';
 
-let box: Sandbox;
-beforeEach(() => {
-  box = sandbox();
-});
-afterEach(() => box.restore());
+const box = sandboxEach();
 
 const skill = (folder: string, name: string) =>
   box.write(join(folder, name, 'SKILL.md'), `---\nname: ${name}\ndescription: ${name}\n---\n`).replace(/\/SKILL\.md$/, '');

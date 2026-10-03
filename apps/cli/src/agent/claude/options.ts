@@ -1,74 +1,16 @@
-import type { EffortLevel, Options, PermissionMode } from '@anthropic-ai/claude-agent-sdk';
-import type { ModelSelection } from '@jinion/tui';
+import type { EffortLevel, Options } from '@anthropic-ai/claude-agent-sdk';
+import type { ModelSelection } from '@jinion/tui/chat';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
-import type { AgentMode, AgentResume } from '../types.js';
+import type { AgentMode } from '../agent.js';
 import { accountEnv } from './accounts.js';
 import type { ClaudeApprovals } from './approvals.js';
 import { toClaudeServer } from './mcp.js';
 import { MEMORY_SERVER, memoryServer } from './memory.js';
 import { CLAUDE_CODE_SKILLS, claudePlugins, skillPlugins } from './plugins.js';
+import { ALLOWED, askRules, PERMISSION_MODES, TOOLS } from './policy.js';
+import type { ClaudeResume } from './process.js';
 import { systemPrompt } from './prompt.js';
-
-const TOOLS = [
-  'Read',
-  'Edit',
-  'Write',
-  'Bash',
-  'Glob',
-  'Grep',
-  'Agent',
-  'TaskCreate',
-  'TaskUpdate',
-  'TaskList',
-  'TaskGet',
-  'AskUserQuestion',
-  'WebFetch',
-  'WebSearch',
-  'ExitPlanMode',
-  'Skill',
-  // MCP tools are listed by name only until ToolSearch loads them, so many servers cost little context.
-  'ToolSearch',
-  'ListMcpResourcesTool',
-  'ReadMcpResourceTool',
-];
-
-/** Claude Code's permission mode for each of Jinion's modes. */
-export const PERMISSION_MODES: Record<AgentMode, PermissionMode> = {
-  manual: 'default',
-  edits: 'acceptEdits',
-  plan: 'plan',
-  auto: 'auto',
-};
-
-/** Runs without asking. Edits inside the project are allowed by `acceptEdits`; anything else asks the user. */
-const ALLOWED = [
-  'Bash(git status*)',
-  'Bash(git diff*)',
-  'Bash(git log*)',
-  'Bash(git show*)',
-  'Bash(git branch*)',
-  'Bash(ls*)',
-  'Bash(pwd)',
-  'Bash(pnpm typecheck*)',
-  'Bash(pnpm build*)',
-  'Bash(pnpm test*)',
-  'Bash(pnpm lint*)',
-  'Bash(pnpm run *)',
-  'Bash(npm test*)',
-  'Bash(npm run *)',
-];
-
-/**
- * `acceptEdits` would also run these filesystem commands without asking; ask rules make them ask every time. Auto
- * mode leaves them to its classifier instead, which knows when a removal throws work away.
- */
-const ASK = ['Bash(rm *)', 'Bash(rmdir *)', 'Bash(mv *)', 'Bash(cp *)', 'Bash(sed *)'];
-
-export const askRules = (mode: AgentMode) => (mode === 'edits' ? ASK : []);
-
-/** A conversation to continue, up to `at` after a rewind took the rest away. */
-export type ClaudeResume = AgentResume & { at?: string };
 
 export interface ClaudeSetup {
   cwd: string;
@@ -81,10 +23,6 @@ export interface ClaudeSetup {
   approvals: ClaudeApprovals;
 }
 
-/**
- * How Jinion starts Claude Code: its own system prompt, tools and permissions, the skills and MCP servers it hands
- * over, and none of Claude Code's own settings, CLAUDE.md files, memory or hooks.
- */
 export function claudeOptions({ cwd, selection, mode, account, resume, memory, mcp, approvals }: ClaudeSetup): Options {
   const servers = (mcp?.servers() ?? []).filter((server) => mcp!.isEnabled(server));
   const disabled = mcp?.disabled() ?? [];
@@ -96,7 +34,6 @@ export function claudeOptions({ cwd, selection, mode, account, resume, memory, m
     effort: selection.effort as EffortLevel | undefined,
     resume: resume?.sessionId,
     resumeSessionAt: resume?.at,
-    // Files are backed up before each change, so a rewind can restore them.
     enableFileCheckpointing: true,
     // Not snapshotted, so a resumed conversation sees the notes saved since it began.
     systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, memory), snapshot: false },

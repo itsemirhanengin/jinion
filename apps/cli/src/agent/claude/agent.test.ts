@@ -1,18 +1,17 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { claudeSays, FakeClaude } from '../../test/fake-claude.js';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
-import type { AgentEvent, AgentPrompt, RunContext } from '../types.js';
+import { claudeSays, FakeClaude, settle } from '../../test/fake-claude.js';
+import { sandboxEach } from '../../test/sandbox.js';
+import type { AgentPrompt, RunContext } from '../agent.js';
+import type { AgentEvent } from '../events.js';
 import { McpConfig } from '../../mcp/config.js';
 import { ClaudeAgent } from './agent.js';
 
-let box: Sandbox;
+const box = sandboxEach();
 let fake: FakeClaude;
 let agent: ClaudeAgent;
-/** Claude Code's transcript of the conversation, as rewinding reads it. */
 let transcript: string[];
 
 beforeEach(() => {
-  box = sandbox();
   fake = new FakeClaude();
   transcript = [];
   agent = new ClaudeAgent({
@@ -24,10 +23,7 @@ beforeEach(() => {
   });
 });
 
-afterEach(() => {
-  agent.close();
-  box.restore();
-});
+afterEach(() => agent.close());
 
 const context = (): RunContext => ({
   signal: new AbortController().signal,
@@ -36,7 +32,6 @@ const context = (): RunContext => ({
   approvePlan: async () => ({ approve: false }),
 });
 
-/** Runs a prompt, answering it with `reply` once Claude Code receives it. */
 async function turn(prompt: string | AgentPrompt, reply: (uuid: string) => Parameters<FakeClaude['reply']>) {
   const received = fake.nextPrompt();
   const events: AgentEvent[] = [];
@@ -48,8 +43,6 @@ async function turn(prompt: string | AgentPrompt, reply: (uuid: string) => Param
   await running;
   return { events, sent };
 }
-
-const settle = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 describe('ClaudeAgent', () => {
   it('tells subscribers what comes between turns, and runs mentions by the new commands', async () => {

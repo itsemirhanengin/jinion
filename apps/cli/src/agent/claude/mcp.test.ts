@@ -1,15 +1,11 @@
 import { join } from 'node:path';
 import type { McpServerStatus } from '@anthropic-ai/claude-agent-sdk';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { McpConfig } from '../../mcp/config.js';
-import { sandbox, type Sandbox } from '../../test/sandbox.js';
+import { sandboxEach } from '../../test/sandbox.js';
 import { serverInfos, toClaudeServer } from './mcp.js';
 
-let box: Sandbox;
-beforeEach(() => {
-  box = sandbox();
-});
-afterEach(() => box.restore());
+const box = sandboxEach();
 
 describe('serverInfos', () => {
   it('lists what runs together with what is off, configured ones first', () => {

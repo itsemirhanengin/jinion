@@ -1,7 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync } from 'node:fs';
 
-/** Runs git in `cwd` the same way on any machine: no signing, no user config needed. */
 export function git(cwd: string, ...args: string[]) {
   return execFileSync(
     'git',
@@ -10,7 +9,6 @@ export function git(cwd: string, ...args: string[]) {
   );
 }
 
-/** A repository in `path` with the files committed. */
 export function repo(path: string, write: (path: string) => void) {
   mkdirSync(path, { recursive: true });
   git(path, 'init', '-q');

@@ -1,14 +1,23 @@
-import type { query, SDKControlGetUsageResponse } from '@anthropic-ai/claude-agent-sdk';
-import type { AgentUsage, ContextUsage, LimitWindow, UsageDrivers } from '../types.js';
+import type { query, SDKControlGetUsageResponse, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { AgentUsage, ContextUsage, LimitWindow, UsageDrivers } from '../usage.js';
 
 type Query = ReturnType<typeof query>;
 type Window = { utilization: number | null; resets_at: string | null } | null | undefined;
 type Behaviors = NonNullable<SDKControlGetUsageResponse['behaviors']>['day'];
+type RateLimitInfo = Extract<SDKMessage, { type: 'rate_limit_event' }>['rate_limit_info'];
 
-/**
- * Claude Code's `/usage` data. Its SDK call is marked experimental, so it is reached for in this one place and mapped
- * to Jinion's own shape; a change to it changes this file only.
- */
+const WINDOWS = {
+  five_hour: { short: '5h', long: '5-hour window' },
+  seven_day: { short: '7d', long: 'Week, all models' },
+  seven_day_opus: { short: '7d opus', long: 'Week, Opus' },
+  seven_day_sonnet: { short: '7d sonnet', long: 'Week, Sonnet' },
+} as const;
+
+type WindowId = keyof typeof WINDOWS;
+
+const WINDOW_IDS = Object.keys(WINDOWS) as WindowId[];
+
+/** Its SDK call is marked experimental, so it is reached for in this one place only. */
 export async function claudeUsage(running: Query, drivers: boolean): Promise<AgentUsage> {
   return toAgentUsage(await running.usage_EXPERIMENTAL_MAY_CHANGE_DO_NOT_RELY_ON_THIS_API_YET({ skipBehaviors: !drivers }));
 }
@@ -36,10 +45,7 @@ export function toAgentUsage(response: SDKControlGetUsageResponse): AgentUsage {
     },
     limits: limits
       ? [
-          window('5-hour window', limits.five_hour),
-          window('Week, all models', limits.seven_day),
-          window('Week, Opus', limits.seven_day_opus),
-          window('Week, Sonnet', limits.seven_day_sonnet),
+          ...WINDOW_IDS.map((id) => window(WINDOWS[id].long, limits[id])),
           ...(limits.model_scoped ?? []).map((scoped) => window(`Week, ${scoped.display_name}`, scoped)),
         ].filter((item) => item !== undefined)
       : [],
@@ -53,6 +59,28 @@ export function toAgentUsage(response: SDKControlGetUsageResponse): AgentUsage {
 function window(label: string, value: Window): LimitWindow | undefined {
   if (!value || value.utilization === null) return undefined;
   return { label, used: value.utilization / 100, resetsAt: value.resets_at ? Date.parse(value.resets_at) : undefined };
+}
+
+/** `unifiedWindows` isn't in the SDK types yet. Unlike `/usage`, use is a fraction or percent and resets are in seconds. */
+export function limitWindows(info: RateLimitInfo): LimitWindow[] {
+  const unified = (info as { unifiedWindows?: Record<string, { utilization?: number; resetsAt?: number }> })
+    .unifiedWindows;
+  const entries = unified
+    ? Object.entries(unified)
+    : info.rateLimitType
+      ? [[info.rateLimitType, { utilization: info.utilization, resetsAt: info.resetsAt }] as const]
+      : [];
+  return entries.flatMap(([id, window]) =>
+    typeof window.utilization === 'number'
+      ? [
+          {
+            label: Object.hasOwn(WINDOWS, id) ? WINDOWS[id as WindowId].short : id,
+            used: window.utilization > 1 ? window.utilization / 100 : window.utilization,
+            resetsAt: window.resetsAt === undefined ? undefined : window.resetsAt * 1000,
+          },
+        ]
+      : [],
+  );
 }
 
 const TRAITS: Record<Behaviors['behaviors'][number]['key'], UsageDrivers['traits'][number]['trait']> = {
@@ -81,7 +109,6 @@ function toDrivers(window: Behaviors): UsageDrivers {
 
 type ContextResponse = Awaited<ReturnType<Query['getContextUsage']>>;
 
-/** Claude Code's `/context`: the window it measures against, where it compacts, and what fills it. */
 export function toContextUsage(response: ContextResponse): ContextUsage {
   return {
     used: response.totalTokens,
@@ -91,7 +118,6 @@ export function toContextUsage(response: ContextResponse): ContextUsage {
   };
 }
 
-/** `claude-opus-5-5` reads as `Opus 5.5`, `claude-haiku-4-5-20251001` as `Haiku 4.5`; anything else as it is. */
 export function modelName(id: string) {
   const match = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-\d{8})?$/.exec(id);
   if (!match) return id;

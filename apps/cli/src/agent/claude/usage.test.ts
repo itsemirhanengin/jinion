@@ -1,6 +1,6 @@
 import type { SDKControlGetUsageResponse } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it } from 'vitest';
-import { modelName, toAgentUsage } from './usage.js';
+import { limitWindows, modelName, toAgentUsage } from './usage.js';
 
 const drivers = (pct: number) => ({
   request_count: 913,
@@ -59,6 +59,22 @@ describe('toAgentUsage', () => {
   it('has no limits for a login without a plan, and no drivers until asked for', () => {
     const usage = toAgentUsage({ ...response, rate_limits: null, behaviors: null });
     expect(usage).toMatchObject({ limits: [], extra: undefined, drivers: undefined });
+  });
+});
+
+describe('limitWindows', () => {
+  it('maps every window of a rate limit event, used as a fraction or in percent', () => {
+    const info = { unifiedWindows: { five_hour: { utilization: 0.25, resetsAt: 100 }, seven_day_opus: { utilization: 40 }, other: { utilization: 0.5 }, none: {} } };
+    expect(limitWindows(info as never)).toEqual([
+      { label: '5h', used: 0.25, resetsAt: 100_000 },
+      { label: '7d opus', used: 0.4, resetsAt: undefined },
+      { label: 'other', used: 0.5, resetsAt: undefined },
+    ]);
+  });
+
+  it('takes the window that applies to the request when Claude Code doesn’t list them all', () => {
+    expect(limitWindows({ rateLimitType: 'seven_day', utilization: 0.9, resetsAt: 5 } as never)).toEqual([{ label: '7d', used: 0.9, resetsAt: 5000 }]);
+    expect(limitWindows({} as never)).toEqual([]);
   });
 });
 

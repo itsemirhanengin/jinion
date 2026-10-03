@@ -1,5 +1,6 @@
 import type { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import type { AgentEvent, BackgroundTask } from '../types.js';
+import type { AgentEvent } from '../events.js';
+import type { BackgroundTask } from '../tasks.js';
 
 type System = Extract<SDKMessage, { type: 'system' }>;
 type Message<S extends System['subtype']> = Extract<System, { subtype: S }>;
@@ -12,17 +13,9 @@ const KINDS: Record<string, BackgroundTask['kind']> = { local_bash: 'shell', loc
 /** `Command running in background with ID: … Output is being written to: <file>.` and the like. */
 const OUTPUT_FILE = /Output is being written to: (\S+?\.output)\b/;
 
-/**
- * Claude Code's background tasks: commands and subagents that run on while the conversation goes on. They start,
- * change and end in `task_*` messages; the tool call that started one names its command and output file.
- */
 export class ClaudeTasks {
   private readonly tasks = new Map<string, Tracked>();
 
-  /**
-   * The events a task message maps to. `command` finds the command of the tool call that started a task, which reads
-   * better than Claude Code's description of it.
-   */
   *map(message: System, command: (toolUseId: string) => string | undefined): Generator<AgentEvent> {
     switch (message.subtype) {
       case 'task_started':
@@ -49,12 +42,10 @@ export class ClaudeTasks {
     }
   }
 
-  /** How many background tasks are running. */
   get running() {
     return [...this.tasks.values()].filter((task) => task.background && task.status === 'running').length;
   }
 
-  /** A tool result that says where a task's output goes, as a command sent to the background does. */
   *output(taskId: string, result: string): Generator<AgentEvent> {
     const task = this.tasks.get(taskId);
     const file = OUTPUT_FILE.exec(result)?.[1];
@@ -63,7 +54,6 @@ export class ClaudeTasks {
     yield this.list();
   }
 
-  /** The process ended, and its tasks with it. Returns the event that says so, if any were running. */
   stopAll(): AgentEvent | undefined {
     const running = [...this.tasks.values()].filter((task) => task.background && task.status === 'running');
     for (const task of running) Object.assign(task, { status: 'stopped', endedAt: Date.now() });

@@ -2,7 +2,6 @@ import type { Options, query, SDKMessage } from '@anthropic-ai/claude-agent-sdk'
 import { describe, expect, it } from 'vitest';
 import { claudeTitle, cleanTitle } from './title.js';
 
-/** A one-off process that answers with `reply`, recording what it was asked and whether it was closed. */
 function answering(reply: Partial<SDKMessage>) {
   const asked: { prompt?: string; options?: Options; closed: boolean } = { closed: false };
   const spawn = (({ prompt, options }) => {

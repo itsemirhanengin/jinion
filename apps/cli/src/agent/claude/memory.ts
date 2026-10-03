@@ -2,7 +2,6 @@ import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
 import { MEMORY_SCOPES, MEMORY_TYPES, type Memory, type MemoryStore } from '../../memory/store.js';
 
-/** The MCP server's name; its tools reach Claude as `mcp__jinion__<tool>`. */
 export const MEMORY_SERVER = 'jinion';
 
 export const isMemoryTool = (name: string) => name.startsWith(`mcp__${MEMORY_SERVER}__`);
@@ -12,7 +11,6 @@ const text = (value: string) => ({ content: [{ type: 'text' as const, text: valu
 const show = (memory: Memory) =>
   [`# ${memory.scope}/${memory.id}: ${memory.title}`, `${memory.type}, updated ${memory.updated}`, '', memory.content].join('\n');
 
-/** Jinion's memory as tools, served from inside the Jinion process. */
 export function memoryServer(store: MemoryStore) {
   return createSdkMcpServer({
     name: MEMORY_SERVER,
