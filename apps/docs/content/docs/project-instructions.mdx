@@ -2,3 +2,41 @@
 title: Write project instructions
 description: Give the agent your project's conventions in AGENTS.md or CLAUDE.md.
 ---
+
+The agent reads your project's instructions at the start of every conversation and follows them. Put them in
+`AGENTS.md` or `CLAUDE.md` in the folder you start Jinion in. If both exist, the agent gets both.
+
+## What to write
+
+Write what someone new to the project would need on their first day, and what the code can't tell them:
+
+- how to build, test and lint, and what to run before calling a change done;
+- conventions the code follows, such as naming, folder layout or error handling;
+- libraries to use and ones to avoid;
+- what not to touch, such as generated files.
+
+Keep it short. Every line goes into every conversation.
+
+```md title="AGENTS.md"
+# Conventions
+
+- pnpm, not npm. `pnpm test` runs Vitest; `pnpm typecheck` and `pnpm lint` must pass before a change is done.
+- Route handlers live in `src/routes`, one file per resource. Errors are classes in `src/http/errors.ts`.
+- Use zod for validation. Don't add new HTTP libraries.
+- `src/generated/` is written by `pnpm codegen`; never edit it by hand.
+```
+
+## AGENTS.md or CLAUDE.md
+
+Both work the same. `AGENTS.md` is the name many agents read, so one file serves all of them. If your project already
+has a `CLAUDE.md`, Jinion reads it as it is.
+
+## Instructions vs memory
+
+| Project instructions                 | [Memory](/memory)                               |
+| ------------------------------------ | ----------------------------------------------- |
+| You write them, in the repository    | The agent writes them, on your machine          |
+| Shared with everyone on the project  | Yours alone                                     |
+| Always in full in every conversation | An index; the agent opens a note when it needs it |
+
+Put rules the whole team follows in `AGENTS.md`. Leave your own preferences to memory.

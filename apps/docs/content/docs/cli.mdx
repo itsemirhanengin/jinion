@@ -2,3 +2,57 @@
 title: CLI
 description: Every flag of the jinion command, and the environment variables it reads.
 ---
+
+```sh
+jinion [options]
+```
+
+Run it in the folder you want to work in. Without options, it starts a new conversation with the model and account
+you used last.
+
+## Flags
+
+| Flag                   | Does                                                                           | Example                     |
+| ---------------------- | ------------------------------------------------------------------------------ | --------------------------- |
+| `-c`, `--continue`     | Opens the last conversation in this folder                                     | `jinion -c`                 |
+| `-m`, `--model <model>` | Uses this model for the run: an alias such as `opus` or `sonnet`, or a full id | `jinion -m sonnet`          |
+| `-e`, `--effort <level>` | Uses this effort for the run: `low`, `medium`, `high`, `xhigh` or `max`      | `jinion -e high`            |
+| `--theme <light\|dark>` | Skips detecting the terminal's background                                     | `jinion --theme light`      |
+| `--debug`              | Writes a log of the session to `~/.jinion/logs`; prints its path on exit       | `jinion --debug`            |
+| `--demo`               | Plays a scripted session without a model                                       | `jinion --demo`             |
+| `-v`, `--version`      | Prints the version                                                             | `jinion -v`                 |
+| `-h`, `--help`         | Shows the help                                                                 | `jinion -h`                 |
+
+`--model` and `--effort` apply to one run. To change the default, use [`/model`](/models-and-accounts) in a session.
+
+## Environment variables
+
+| Variable          | Does                                                    | Default       |
+| ----------------- | ------------------------------------------------------- | ------------- |
+| `JINION_MODEL`    | Same as `--model`                                       | Your last `/model` pick, else `opus` |
+| `JINION_EFFORT`   | Same as `--effort`                                      | The model's default |
+| `JINION_THEME`    | Same as `--theme`                                       | Detected      |
+| `JINION_DEBUG`    | `1` does the same as `--debug`                          | Off           |
+| `JINION_HOME`     | Where Jinion keeps its data                             | `~/.jinion`   |
+
+Flags win over environment variables, and both win over the saved choice.
+
+## Examples
+
+Start where you left off yesterday:
+
+```sh
+jinion -c
+```
+
+A quick question with a fast model:
+
+```sh
+jinion -m haiku
+```
+
+Keep data for a separate setup apart, such as a test account:
+
+```sh
+JINION_HOME=~/.jinion-test jinion
+```

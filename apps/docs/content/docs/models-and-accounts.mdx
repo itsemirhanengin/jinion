@@ -2,3 +2,84 @@
 title: Switch models and accounts
 description: Pick the model and how much effort it puts in, and switch between your signed-in accounts.
 ---
+
+## Pick a model
+
+`/model` lists the models your account can use. `up` and `down` pick the model, `left` and `right` its effort, and
+`enter` switches.
+
+```terminal
+{accent|+- Model} {muted|Claude} {accent|---------------------------------------------------------------------------+}
+{accent||} {muted|effort  default   low   medium}   {accent,bold|high}   {muted|xhigh   max}                                      {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Opus 5.5}                                                                    {muted|current} {accent||}
+{accent||}      {muted|Most capable, for complex work}                                                      {accent||}
+{accent||}   2. Sonnet 5                                                                            {accent||}
+{accent||}      {muted|Fast and capable, for everyday work}                                                 {accent||}
+{accent||}   3. Haiku 4.5                                                                           {accent||}
+{accent||}      {muted|Fastest, for quick answers}                                                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} Up/Down {muted|model ·} Left/Right {muted|effort ·} Esc {muted|cancel}                            {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+The new model applies from the next request, and later sessions start with it. Without a choice, Jinion uses Opus at
+the model's default effort.
+
+To switch straight away:
+
+```text
+/model sonnet
+```
+
+## Set the effort
+
+Effort is how hard the model thinks before it answers. More effort is slower and uses more of your plan, and helps
+with hard problems.
+
+```text
+/effort high
+```
+
+`/effort default` leaves it to the model. Not every model has effort levels.
+
+## Choose for one run
+
+Flags and environment variables override the saved choice for one run:
+
+```sh
+jinion --model sonnet --effort low
+```
+
+| Flag             | Variable         |
+| ---------------- | ---------------- |
+| `--model`, `-m`  | `JINION_MODEL`   |
+| `--effort`, `-e` | `JINION_EFFORT`  |
+
+## Switch accounts
+
+If you have more than one Claude login, such as a personal and a work one, `/account` switches between them.
+
+```terminal
+{accent|+- Account} {muted|Claude} {accent|-------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|default}                                                                     {muted|current} {accent||}
+{accent||}      {muted|me@example.com · Max}                                                                {accent||}
+{accent||}   2. work                                                                                {accent||}
+{accent||}      {muted|ACME · Team · me@acme.dev}                                                           {accent||}
+{accent||}   3. Add an account                                                                      {accent||}
+{accent||}      {muted|Signs another login in, in the browser}                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|switch ·} l {muted|sign in again ·} d {muted|remove ·} Up/Down {muted|move ·} Esc {muted|close}                     {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+A conversation in progress carries on under the other account, between turns. `/account work` switches straight away,
+and later sessions start with the account you picked.
+
+The banner and the status line show who you're signed in as: the organization for a team plan, such as
+`ACME · Team`, and the email for a personal one, such as `me@example.com · Max`.
+
+## Add an account
+
+Pick **Add an account** in `/account`, or type `/account add work`. Jinion opens the sign-in in your browser; paste
+the code it shows into the panel. Jinion never sees your password. Your first login is the `default` account.

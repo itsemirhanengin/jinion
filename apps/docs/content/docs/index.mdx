@@ -3,17 +3,113 @@ title: Introduction
 description: Jinion is a coding agent for your terminal. Install it and run your first session in three steps.
 ---
 
+Jinion reads your code, edits files and runs commands, right in your terminal. You describe what you want in plain
+words. Jinion works out the steps, asks when a decision is yours, and shows every change it makes.
+
 ```terminal title="~/code/api"
 {border|+-} {accent,bold|jinion} {muted|v0.1.0} {border|------------------------------------+}
-{border||} {muted|model}    {model|Opus 5.5 · high}   {muted|/model to change}        {border||}
+{border||} {muted|model}    {accent|Opus 5.5 · high}   {muted|/model to change}        {border||}
 {border||} {muted|account}  {accent|me@example.com · Max}   {muted|/account to change} {border||}
-{border||} {muted|cwd}      {directory|~/code/api}                                {border||}
+{border||} {muted|cwd}      {code|~/code/api}                                {border||}
 {border|+----------------------------------------------------+}
 
-
-
-{border|------------------------------------------------------------------------------------}
- {muted|Ask jinion anything · / commands · $ skills · @ files}
-{border|---} {accent|Accept edits}{muted| · shift+tab} {border|-------------------------------------------------------}
- {muted|jinion · [M]} {model|Opus 5.5 · high} {muted|· [D]} {directory|code/api} {muted|· [G]} {code|main} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+{border|--------------------------------------------------------------------------------------------}
+ {accent|A}{muted|sk jinion anything · / commands · $ skills · @ files}
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
 ```
+
+## Get started
+
+<Steps>
+<Step>
+
+### Install Jinion
+
+Jinion needs Node.js 22 or later.
+
+```npm
+npm i -g @jinion/cli
+```
+
+`jinion --version` prints the version you installed.
+
+</Step>
+<Step>
+
+### Sign in to Claude
+
+Jinion works with your Claude account and uses the Claude Code login on your machine. If you haven't signed in yet,
+run `claude`, then `/login`, and follow the browser. You only do this once.
+
+</Step>
+<Step>
+
+### Start a session in your project
+
+```sh
+cd ~/code/api
+jinion
+```
+
+You see the banner with your model, account and folder, and the prompt at the bottom. Jinion is ready.
+
+</Step>
+</Steps>
+
+## Your first task
+
+Type what you want done and press `enter`:
+
+```text
+add rate limiting to the api
+```
+
+Jinion looks through the code first. When a choice is yours to make, it asks instead of guessing:
+
+```terminal
+ {success|[x]} {bold|Glob:} {code|src/middleware/*.ts} {muted|4 files}
+ {border||--} {muted|ts} src/middleware/index.ts
+ {border||--} {muted|ts} src/middleware/cors.ts
+ {border||--} {muted|ts} src/middleware/request-id.ts
+ {border|'--} {muted|ts} src/middleware/error-handler.ts
+
+ {thinking,italic|No limiter exists yet. There is a TODO in the login route and a `TooManyRequests` error}
+ {thinking,italic|already defined in src/http/errors.ts, which I can reuse instead of hand-rolling a 429.}
+
+ {thinking,italic|Middleware are plain (req, res, next) functions composed in src/server.ts, so a limiter}
+ {thinking,italic|fits in as one more entry. The real decision is storage: a Map is enough for one process,}
+ {thinking,italic|but behind a load balancer every instance would count separately. I will ask instead of}
+ {thinking,italic|guessing.}
+
+ {accent|[-] Waiting for your answer…} {muted|0s · esc to interrupt}
+
+{accent|+- Ask} {muted|1/3 · storage} {accent|----------------------------------------------------------------------+}
+{accent||} {bold|Where should the limiter keep its counters?}                                              {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|In-memory}                                                                           {accent||}
+{accent||}      {muted|single process, zero dependencies}                                                   {accent||}
+{accent||}   2. Redis                                                                               {accent||}
+{accent||}      {muted|shared across instances, needs REDIS_URL}                                            {accent||}
+{accent||}   3. In-memory behind a store seam                                                       {accent||}
+{accent||}      {muted|Redis can be added later}                                                            {accent||}
+{accent||}   4. Other (type your own)                                                               {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|cancel}                                        {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Then it edits the files, runs the tests, and fixes what fails. Every edit shows as a diff in the conversation. At the
+end you get a short summary of what changed and how it was checked.
+
+## Learn more
+
+<Cards>
+  <Card title="Prompt the agent" href="/prompting" description="Steer it while it works, mention files, use skills." />
+  <Card title="Choose a permission mode" href="/permission-modes" description="Decide what runs without asking." />
+  <Card title="Review changes" href="/review-changes" description="See every change, turn by turn, with /diff." />
+  <Card title="Manage conversations" href="/conversations" description="Resume, rewind and compact conversations." />
+  <Card title="Use memory" href="/memory" description="Notes the agent keeps between conversations." />
+  <Card title="Commands" href="/commands" description="Every slash command in one table." />
+</Cards>

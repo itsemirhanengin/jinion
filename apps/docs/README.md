@@ -19,8 +19,8 @@ The description shows under the title and in `llms.txt`.
 - **Turkish** goes next to the English page as `memory.tr.mdx`, at `/tr/memory`. A page without one shows the English
   page, so only add the file once the page is translated: an empty one would hide the English.
 - **Screens of Jinion** go in a `terminal` code block, written as the screen shows, with spans marked by the TUI
-  theme's names (`lib/terminal.ts`). Unknown names stay visible on the page. The Markdown version of the page gets the
-  screen without the marks.
+  theme's names (`lib/terminal.ts`). Inside a mark, write `}` as `\}` and `\` as `\\`. Unknown names stay visible on
+  the page. The Markdown version of the page gets the screen without the marks.
 
   ````md
   ```terminal title="~/code/api"

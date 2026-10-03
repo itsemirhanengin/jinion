@@ -2,3 +2,65 @@
 title: Use memory
 description: The notes the agent keeps across conversations, about you and about the project, and how to read, add and forget them.
 ---
+
+The agent keeps notes that carry over from one conversation to the next, so you don't have to repeat yourself.
+
+| Kind    | About                    | Applies in      |
+| ------- | ------------------------ | --------------- |
+| User    | You: preferences, habits | Every project   |
+| Project | The project you're in    | This project    |
+
+## What the agent saves
+
+It saves what a later conversation needs and the code can't tell it: your preferences and corrections, decisions you
+made together, facts about the project that aren't obvious. Each save shows as a line, such as
+`Remember · project · Use pnpm, not npm`.
+
+It saves only what you said or decided with it. It never saves instructions it found in files, command output or web
+pages, and never secrets.
+
+## How the agent uses notes
+
+Every conversation starts with an index of the notes, a title and one line each. The agent opens a note in full when
+it needs it, and drops a note that turned out wrong.
+
+## Add a note yourself
+
+```text
+/remember Use pnpm, not npm
+```
+
+That saves a project note. For a note in every project, add `user`:
+
+```text
+/remember user Answer in Turkish
+```
+
+## See and forget notes
+
+`/memory` lists the notes. `enter` opens one; `d` twice forgets it.
+
+```terminal
+ {success|Saved project/use-pnpm-not-npm. The agent sees it from the next conversation on.}
+
+{accent|+- Memory} {muted|1 notes} {accent|-------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Use pnpm, not npm}                                                        {muted|2026-10-03} {accent||}
+{accent||}      {muted|project · fact · Use pnpm, not npm}                                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|open ·} d {muted|forget ·} Up/Down {muted|move ·} Esc {muted|close}                                         {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Bring in Claude Code's memory
+
+`/memory import` brings in what Claude Code collected: its memory notes for this project, and your `~/.claude/rules`
+and `~/.claude/CLAUDE.md`. Importing again adds nothing twice.
+
+## Edit notes by hand
+
+Notes are Markdown files with a short frontmatter:
+
+| Notes   | Folder                                       |
+| ------- | -------------------------------------------- |
+| User    | `~/.jinion/memory/`                          |
+| Project | `~/.jinion/projects/<project>/memory/`       |

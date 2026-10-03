@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { marks, styleOf } from '@/lib/terminal';
+import { markText, marks, styleOf } from '@/lib/terminal';
 
 /**
  * A screen of Jinion as text, in the TUI's colors. Pages write it as a ```terminal code block, which
@@ -24,7 +24,7 @@ function render(screen: string): ReactNode[] {
     parts.push(
       screen.slice(last, match.index),
       <span key={match.index} style={style}>
-        {text}
+        {markText(text)}
       </span>,
     );
     last = match.index + whole.length;

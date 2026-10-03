@@ -2,3 +2,51 @@
 title: Set up your terminal
 description: Themes, notifications, text selection and image paste in the terminals Jinion supports.
 ---
+
+Jinion works in any modern terminal. A few settings make it work better.
+
+## Light and dark
+
+Jinion detects whether your terminal background is light or dark and picks its colors to match. If it guesses wrong,
+set it yourself:
+
+```sh
+jinion --theme light
+```
+
+Or set `JINION_THEME=light` (or `dark`) in your shell profile to make it stick.
+
+## New lines
+
+`shift+enter` adds a new line in most terminals. If yours sends the message instead, use `alt+enter`, or end the line
+with `\` and press `enter`.
+
+## Select and copy text
+
+Jinion receives mouse events, for scrolling and clicking. To select text, hold `shift` while you drag. In iTerm2, hold
+`option` instead.
+
+## Scroll
+
+The mouse wheel and `pgup` / `pgdn` scroll the conversation. When you scroll up, a **Jump to bottom** row appears;
+click it to follow the conversation again.
+
+## Notifications
+
+Notifications use your terminal's own. Ghostty, iTerm2, kitty, WezTerm, Warp and foot show desktop notifications;
+other terminals ring the bell. See [Get notified](/notifications).
+
+<Callout>
+  Inside tmux or screen, notifications become the bell. Turn on your multiplexer's bell forwarding to see them.
+</Callout>
+
+## Paste images
+
+`ctrl+v` reads an image from the clipboard on macOS. On Linux it needs `wl-paste` (Wayland) or `xclip` (X11):
+
+```sh
+sudo apt install wl-clipboard   # Wayland
+sudo apt install xclip          # X11
+```
+
+Dragging an image file into the terminal works everywhere, since the terminal pastes its path.

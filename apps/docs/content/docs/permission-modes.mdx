@@ -2,3 +2,107 @@
 title: Choose a permission mode
 description: Switch between Manual, Accept edits, Plan and Auto, and answer what the agent asks before it acts.
 ---
+
+The mode decides what the agent may do without asking you. It shows on the rule under the prompt, and each project
+starts in the mode you last left it in.
+
+## The modes
+
+| Mode         | Runs without asking                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| Manual       | Reads and a few safe commands                                                                               |
+| Accept edits | Also file edits in the project. `rm`, `rmdir`, `mv`, `cp` and `sed` still ask. The default in a new project |
+| Plan         | Reads only. The agent works out a plan and asks before it starts                                            |
+| Auto         | Routine work runs; a safety check blocks actions beyond your request, such as force pushes or sending secrets out |
+
+## Switch modes
+
+Press `shift+tab` to step through the modes, or type `/mode` to pick one:
+
+```terminal
+{accent|+- Mode} {muted|Claude} {accent|----------------------------------------------------------------------------+}
+{accent||}   1. {muted|Manual}                                                                              {accent||}
+{accent||}      {muted|Asks before every edit and every command outside a safe list}                        {accent||}
+{accent||} {code|> 2.} {accent,bold|Accept edits}                                                                {muted|current} {accent||}
+{accent||}      {muted|Edits files in the project without asking; asks before risky commands}               {accent||}
+{accent||}   3. {code|Plan}                                                                                {accent||}
+{accent||}      {muted|Reads and plans; changes nothing until you approve the plan}                         {accent||}
+{accent||}   4. {warning|Auto}                                                                                {accent||}
+{accent||}      {muted|A safety classifier lets routine actions run and stops risky ones; commits and}      {accent||}
+{accent||}      {muted|writes outside the project still ask}                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+`/mode plan` switches straight away.
+
+<Callout>
+  Auto needs a model that supports it, such as Opus or Sonnet. With another model the agent runs in Manual, and the
+  rule under the prompt says so. The project keeps Auto for next time.
+</Callout>
+
+## Answer a permission request
+
+When the agent wants to do something the mode doesn't allow, the permission panel takes the prompt's place:
+
+```terminal
+{accent|+- Permission -----------------------------------------------------------------+}
+{accent||} {bold|jinion wants to run a command}                                                {accent||}
+{accent||}   {muted|$} {warning|pnpm} add zod                                                             {accent||}
+{accent||}   {muted|Adds zod to validate the request body.}                                     {accent||}
+{accent||                                                                              |}
+{accent|+------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Yes}                                                                     {accent||}
+{accent||}   2. Yes, and don't ask again for pnpm add:* in this project                 {accent||}
+{accent||}   3. No                                                                      {accent||}
+{accent||}      {muted|Press n to tell jinion what to do instead}                               {accent||}
+{accent|+------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|stop the turn}                     {accent||}
+{accent|+------------------------------------------------------------------------------+}
+```
+
+| Choice                          | What happens                                                             |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| Yes                             | Runs it this once                                                        |
+| Yes, and don't ask again for …  | Saves the rule, such as `pnpm add:*`, for this project                   |
+| No                              | Tells the agent no. Press `n` first to say what it should do instead     |
+| `esc`                           | Stops the turn                                                           |
+
+Rules you save live in the project's `permissions.json`. See [The ~/.jinion folder](/jinion-folder).
+
+## Plan first
+
+In Plan mode the agent reads, thinks and writes a plan without changing anything. When the plan is ready, it shows in
+the conversation and the plan panel asks how to go on:
+
+```terminal
+{accent|+- Plan -----------------------------------------------------------------------------------+}
+{accent||} {bold|Ready to start? The plan is above.}                                                       {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Yes, and use auto mode}                                                              {accent||}
+{accent||}      {muted|A safety classifier lets routine actions run and stops risky ones; commits and}      {accent||}
+{accent||}      {muted|writes outside the project still ask}                                                {accent||}
+{accent||}   2. Yes, and accept edits                                                               {accent||}
+{accent||}      {muted|Edits files in the project without asking; asks before risky commands}               {accent||}
+{accent||}   3. Yes, and approve each edit                                                          {accent||}
+{accent||}      {muted|Asks before every edit and every command outside a safe list}                        {accent||}
+{accent||}   4. No, keep planning                                                                   {accent||}
+{accent||}      {muted|Press n to say what should change}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|stop the turn}                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Pick how freely to carry on, or keep planning and press `n` to say what should change.
+
+## What always asks
+
+In every mode, Jinion asks before:
+
+- a commit;
+- a change to a file outside the project, through the file tools or through commands that write (`>`, `tee`), change
+  (`rm`, `mv`, `chmod`, `sed -i`) or copy (`cp`, `ln`) there.
+
+These requests have no "don't ask again" choice. Temporary folders such as `/tmp` don't count as outside.

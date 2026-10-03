@@ -2,3 +2,100 @@
 title: Manage conversations
 description: Resume an earlier conversation, rewind to before a message, and compact a long one to free context.
 ---
+
+Every conversation is saved after each turn, per project. Nothing is lost when you quit.
+
+## Resume a conversation
+
+`/resume` lists the project's conversations, newest first. Type to filter, then press `enter`. The agent picks up
+where it left off and remembers what was said.
+
+```terminal
+{accent|+- Resume} {muted|4 conversations} {accent|-----------------------------------------------------------------+}
+{accent||} {muted|search} {accent|T}{muted|ype to filter}                                                                    {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>} {code,bold|Fix the flaky checkout e2e test}                                                 {muted|2h ago} {accent||}
+{accent||}     {muted|2 messages · "the checkout e2e test fails every few runs, can you find out why?"}     {accent||}
+{accent||}   Migrate auth to OIDC                                                         {muted|yesterday} {accent||}
+{accent||}     {muted|4 messages · "plan the migration from our session cookies to OIDC"}                   {accent||}
+{accent||}   Explain the billing reconciliation job                                          {muted|3d ago} {accent||}
+{accent||}     {muted|2 messages · "how does the nightly billing reconciliation work?"}                     {accent||}
+{accent||}   Speed up the CI cache                                                           {muted|1w ago} {accent||}
+{accent||}     {muted|2 messages · "CI takes 14 minutes, most of it installing dependencies"}               {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|resume ·} Up/Down {muted|move ·} PgUp/PgDn {muted|page ·} Esc {muted|close}                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+To open the last conversation straight away, start Jinion with `-c`:
+
+```sh
+jinion -c
+```
+
+`/clear` saves the current conversation and starts a new one.
+
+## Rewind to an earlier message
+
+Press `esc` twice, or type `/rewind`, to go back to before a message you sent. The panel lists your messages, newest
+first, with what going back would change in files.
+
+```terminal
+{accent|+- Rewind} {muted|1 message} {accent|-----------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|add rate limiting to the api}                                                        {accent||}
+{accent||}      {muted|No file changes since then}                                                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|pick ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Then pick what to take back:
+
+| Choice                        | What happens                                                                           |
+| ----------------------------- | -------------------------------------------------------------------------------------- |
+| Restore code and conversation | Files and the conversation go back; your message returns to the prompt to edit and send |
+| Restore conversation          | The conversation goes back; files stay as they are                                     |
+| Restore code                  | Files go back; the conversation goes on                                                |
+| Never mind                    | Back to the list                                                                       |
+
+<Callout type="warn">
+  Only changes made through the file tools come back. Changes made by commands, such as a `git checkout`, stay.
+</Callout>
+
+## Compact a long conversation
+
+A long conversation fills the model's context. `/compact` summarizes it so far and carries on from the summary. Name
+what matters most and it is kept above all:
+
+```text
+/compact the API changes
+```
+
+Jinion also compacts on its own as the context fills. When a fifth or less is left, the rule under the prompt says how
+much. After compacting, the conversation marks where, such as `[x] Compacted · 160.2k → 21.4k tokens`, and `ctrl+o`
+shows the summary.
+
+## See what fills the context
+
+`/context` shows the context window as a grid, a square per percent, by what fills it:
+
+```terminal
+{accent|+- Context} {muted|Opus 5.5 · 41.0k of 200.0k tokens · 21%} {accent|----------------------------------------+}
+{accent|| ■ ■ ■} {warning|■ ■ ■ ■ ■ ■ ■}   {accent|■} System prompt       {muted|6.2k tokens · 3%}                             {accent||}
+{accent||} {warning|■ ■} {string|■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Tools               {muted|14.8k tokens · 7%}                            {accent||}
+{accent||} {string|■} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■}   {warning|■} Skills              {muted|1.9k tokens · 0.9%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {string|■} Messages            {muted|18.1k tokens · 9%}                            {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■} Free space          {muted|126.0k tokens · 63%}                          {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {border|■} Autocompact buffer  {muted|33.0k tokens · 17%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■} {border|■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {border|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Compacts on its own at 167.0k tokens (84%); /compact does it now, with a focus if you g…} {accent||}
+{accent||} {muted|Listed by name and loaded when used, so they take no room yet: MCP tools 52.0k}           {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Esc {muted|close}                                                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```

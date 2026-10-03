@@ -2,3 +2,59 @@
 title: Use skills and MCP servers
 description: Bring in your skills and MCP servers, pick them with $, and turn servers on or off with /mcp.
 ---
+
+Skills are instructions for a kind of work, such as a review checklist or a deploy process. MCP servers give the agent
+tools and data from other services, such as Linear or Figma. Jinion brings in both from where you already keep them.
+
+## Where they come from
+
+| Source                                                      | Comes in as                                                         |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| `~/.claude/skills`, `~/.agents/skills`                      | Your skills, such as `$design`                                      |
+| `.claude/skills`, `.agents/skills` in the project           | Project skills; they win over a user skill with the same name       |
+| Plugins you turned on in Claude Code                        | Their skills, commands, agents and MCP servers; their hooks stay off |
+| `~/.jinion/mcp.json`, `~/.claude.json`                      | MCP servers                                                         |
+| The project's `.mcp.json`                                   | MCP servers that stay off until you turn them on                    |
+| Your Claude account                                         | Its claude.ai connectors                                            |
+
+## Use a skill
+
+Type `$` and pick one. A skill can go anywhere in the message, and you can pick several:
+
+```text
+review the open PR $review
+```
+
+A message that starts with a skill runs it, with the rest as its input. The agent also loads a skill on its own when
+one fits the task, and the conversation shows `Skill · design`.
+
+Typing `/design` out of habit puts `$design` back in the prompt.
+
+## Use an MCP prompt
+
+MCP servers can offer prompts, listed under `$` with the server's name. The rest of the message goes in as the
+prompt's input:
+
+```text
+$pr-summary 128
+```
+
+## Turn servers on or off
+
+`/mcp` lists every server with its state (connected, connecting, not signed in, failed, off) and where it comes from.
+The one you're on shows its URL or command, its error and its tools.
+
+| Key     | Does                              |
+| ------- | --------------------------------- |
+| `space` | Turns the server on or off        |
+| `enter` | Saves; applies from the next turn |
+
+<Callout type="warn">
+  Servers in a project's `.mcp.json` stay off until you turn them on, since anyone with commit access can change that
+  file.
+</Callout>
+
+## Tool calls and context
+
+MCP tools are listed to the model by name only, and loaded when used. Many servers cost little context this way. Each
+call asks for permission like any other tool, with "don't ask again" for that tool in the project.

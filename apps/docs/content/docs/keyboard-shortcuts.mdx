@@ -2,3 +2,59 @@
 title: Keyboard shortcuts
 description: Every key Jinion responds to, in the prompt, in panels and in the conversation.
 ---
+
+`/help` shows these in a session too.
+
+## Prompt
+
+| Key                                      | Does                                                    |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `enter`                                  | Sends the message; while the agent works, steers it     |
+| `ctrl+q`                                 | While the agent works, queues the message for after the turn |
+| `shift+enter`, `alt+enter`, trailing `\` | New line                                                |
+| `up` / `down`                            | Goes through the messages you sent                      |
+| `/`                                      | Opens the command list                                  |
+| `$`                                      | Picks a skill or MCP prompt                             |
+| `@`                                      | Mentions a file or folder                               |
+| `ctrl+v`                                 | Attaches the image on the clipboard                     |
+
+## Editing
+
+| Key                  | Does                           |
+| -------------------- | ------------------------------ |
+| `ctrl+a` / `ctrl+e`  | Start or end of the line       |
+| `alt+left` / `right` | Moves by word                  |
+| `ctrl+w`             | Deletes the word before        |
+| `ctrl+u` / `ctrl+k`  | Deletes to the start or end    |
+
+## While the agent works
+
+| Key       | Does                                                         |
+| --------- | ------------------------------------------------------------ |
+| `esc`     | Interrupts the turn                                          |
+| `ctrl+b`  | Sends the running command or subagent to the background      |
+| `ctrl+t`  | Opens the background tasks                                   |
+| `ctrl+o`  | Expands or collapses long output and pasted text             |
+
+## Conversation
+
+| Key                          | Does                                                                 |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `esc` `esc`                  | Rewinds to before an earlier message; with text in the prompt, clears it first |
+| `shift+tab`                  | Switches the permission mode                                         |
+| Mouse wheel, `pgup` / `pgdn` | Scrolls the conversation                                             |
+| `shift` + drag               | Selects text (`option` in iTerm2)                                    |
+| `ctrl+c`                     | Interrupts, closes a panel, clears the prompt, or quits              |
+
+## Panels
+
+Panels such as `/model`, `/resume` or a question share the same keys:
+
+| Key              | Does                                            |
+| ---------------- | ----------------------------------------------- |
+| `up` / `down`    | Moves                                           |
+| `enter`          | Picks                                           |
+| `space`          | Checks an option, where you can pick several    |
+| `n`              | Adds a note to the option you're on             |
+| `left` / `right` | Switches tabs, or the effort in `/model`        |
+| `esc`            | Closes, or cancels the question                 |

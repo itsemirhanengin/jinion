@@ -2,3 +2,63 @@
 title: Customize the status line
 description: "Choose what the line under the prompt shows: model, mode, git, context, plan limits and more."
 ---
+
+The status line sits under the prompt. `/statusline` chooses what it shows, in which order, and on which side.
+
+```terminal
+{accent|+- Status line} {muted|6 of 17 shown} {accent|--------------------------------------------------------------+}
+{accent||} {muted|Checked items show in the status line below, in this order. Changes show as you make}     {accent||}
+{accent||} {muted|them.}                                                                                    {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>  1. [x]} {code,bold|Jinion}       {muted,bold|jinion}                                                       {muted|left} {accent||}
+{accent||}           {muted|The app name}                                                                   {accent||}
+{accent||}    2. {code|[x]} Model        {muted|[M]} {accent|Opus 5.5 · high}                                          {muted|left} {accent||}
+{accent||}           {muted|The model in use · with effort}                                                 {accent||}
+{accent||}    3. {code|[x]} Directory    {muted|[D]} {code|code/api}                                                 {muted|left} {accent||}
+{accent||}           {muted|Where jinion is working · last two folders}                                     {accent||}
+{accent||}    4. {code|[x]} Context      ctx: 22K/200K                                                {muted|left} {accent||}
+{accent||}           {muted|How full the context window is · tokens}                                        {accent||}
+{accent||}    5. {code|[x]} Cost         {cost|$0.08}                                                        {muted|left} {accent||}
+{accent||}           {muted|What the conversation would cost at API prices; a subscription doesn't bill it} {accent||}
+{accent||}    6. {code|[x]} Title        {muted|Add rate limiting to the public API                         right} {accent||}
+{accent||}           {muted|What the conversation is about}                                                 {accent||}
+{accent||}   {muted|… 11 more}                                                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Space {muted|select ·} Shift+Up/Down {muted|move ·} Tab {muted|side ·} Left/Right {muted|style ·} r {muted|reset ·} Enter {muted|save ·} {accent||}
+{accent||}  Esc {muted|cancel}                                                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 22K/200K {muted|·} {cost|$0.08}  {muted|Add rate limiting to…}
+```
+
+| Key                 | Does                                  |
+| ------------------- | ------------------------------------- |
+| `space`             | Shows or hides the segment            |
+| `left` / `right`    | Picks the segment's style             |
+| `tab`               | Moves it to the other side            |
+| `shift+up` / `down` | Moves it up or down the order         |
+| `r`                 | Resets to the default                 |
+| `enter`             | Saves                                 |
+
+The line under the panel previews your changes as you make them.
+
+## Segments
+
+| Segment      | Shows                                                       | Styles                                        |
+| ------------ | ----------------------------------------------------------- | --------------------------------------------- |
+| Jinion       | `jinion`                                                    |                                               |
+| Model        | `[M] Opus 5.5 · high`                                       | with effort, name only                        |
+| Mode         | `Auto`                                                      |                                               |
+| Account      | `[A] work`                                                  |                                               |
+| Directory    | `[D] code/api`                                              | last two folders, full path, folder name      |
+| Git          | `[G] main *3 ↑1`, or `[G] 4 repos *7` in a folder of several | with changes and commits ahead or behind, branch only |
+| Context      | `ctx [====------] 41%`                                      | tokens, percent, meter                        |
+| Plan limits  | `5h 8% · 7d 20%`                                            | 5h and 7d, 5h with reset time, 7d, 5h meter   |
+| Cost         | `$0.12`, at API prices                                      |                                               |
+| Changes      | `+42 -7` lines in this conversation                         |                                               |
+| Tasks        | `tasks 2/5`                                                 |                                               |
+| Title        | What the conversation is about                              |                                               |
+| Duration     | How long the conversation has run                           |                                               |
+| Turns        | How many prompts you sent                                   |                                               |
+| Clock        | The time                                                    |                                               |
+| Agent        | The agent in use                                            |                                               |
+| Version      | Jinion's version                                            |                                               |

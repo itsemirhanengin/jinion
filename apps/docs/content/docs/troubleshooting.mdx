@@ -2,3 +2,89 @@
 title: Troubleshooting
 description: Fixes for common problems, and how to record a debug log with --debug.
 ---
+
+## jinion: command not found
+
+npm installed Jinion in a folder that isn't on your `PATH`. Find the folder:
+
+```sh
+npm prefix -g
+```
+
+Add its `bin` folder to your `PATH` in your shell profile, such as `~/.zshrc`, then open a new terminal:
+
+```sh
+export PATH="$(npm prefix -g)/bin:$PATH"
+```
+
+`jinion --version` should print the version now.
+
+## You aren't signed in to Claude
+
+Jinion uses the Claude login on your machine. Sign in once:
+
+```sh
+claude
+```
+
+Then type `/login`, follow the browser, and start Jinion again.
+
+## The rule under the prompt shows Manual instead of Auto
+
+Auto mode needs a model that supports it, such as Opus or Sonnet. Switch with `/model`; the project keeps Auto, and it
+applies again with a supported model.
+
+## Colors are hard to read
+
+Jinion guessed your terminal's background wrong. Set it yourself:
+
+```sh
+jinion --theme dark
+```
+
+To keep it, add `export JINION_THEME=dark` to your shell profile.
+
+## No notifications show up
+
+- Check that your terminal supports them; see [Get notified](/notifications#terminal-support).
+- Notifications only come while the window isn't focused.
+- Inside tmux or screen, they become the bell.
+- Check that they're on: `/notifications on`.
+
+## Pasting an image does nothing
+
+- On Linux, install `wl-paste` (Wayland) or `xclip` (X11).
+- Outside macOS, images over 3.7 MB are refused. Drag a smaller file in instead.
+
+## shift+enter sends the message
+
+Your terminal sends the same key for `shift+enter` and `enter`. Use `alt+enter`, or end the line with `\`.
+
+## I can't select text
+
+Hold `shift` while you drag. In iTerm2, hold `option`.
+
+## An MCP server shows as failed
+
+Open `/mcp` and go to the server: its error shows below the list. Servers from a project's `.mcp.json` stay off until
+you turn them on there. A claude.ai connector that shows "not signed in" connects in your claude.ai settings.
+
+## Record a debug log
+
+When something goes wrong and you want to report it, run the session again with `--debug`:
+
+```sh
+jinion --debug
+```
+
+Jinion writes what it sends to the model and what comes back to `~/.jinion/logs/<time>.jsonl`, one JSON line per
+record, and prints the path when you quit.
+
+<Callout type="warn">
+  The log holds your prompts, the agent's replies and the code it read. Read it before you share it.
+</Callout>
+
+## Get help
+
+Open an issue on [GitHub](https://github.com/itsemirhanengin/jinion/issues) with what you did, what you expected, and
+what happened. Attach a debug log if you can.

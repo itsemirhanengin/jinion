@@ -2,3 +2,36 @@
 title: Get notified
 description: Get a notification when Jinion waits for you or finishes a long turn while you're in another window.
 ---
+
+While the terminal window isn't focused, Jinion notifies you when:
+
+- it waits for you: a question, a permission request, or a plan to review;
+- a turn of 15 seconds or more ends;
+- a [background task](/background-tasks) ends.
+
+The notification says what it is about:
+
+```text
+jinion · api: Done with “add rate limiting” after 1m 12s.
+```
+
+Nothing pops up while you're watching the window, since the terminal tells Jinion when it gains and loses focus.
+
+## Terminal support
+
+The notification is your terminal's own, so it needs a terminal that supports one:
+
+| Terminal                          | How                       |
+| --------------------------------- | ------------------------- |
+| Ghostty, WezTerm, Warp, foot, rxvt | Desktop notification (OSC 777) |
+| iTerm2                            | Desktop notification (OSC 9)   |
+| kitty                             | Desktop notification (OSC 99)  |
+| Others, and inside tmux or screen | The terminal bell         |
+
+## Turn them off
+
+```text
+/notifications off
+```
+
+`/notifications on` turns them back on, and `/notifications` alone switches. The choice applies in every project.

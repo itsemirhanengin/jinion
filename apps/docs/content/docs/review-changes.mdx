@@ -2,3 +2,78 @@
 title: Review changes
 description: See what the agent changed with /diff, turn by turn, in one repository or a folder of several.
 ---
+
+Every edit the agent makes shows as a diff in the conversation. To look at everything together, type `/diff`.
+
+## See what isn't committed
+
+`/diff` opens full screen. Its Current view lists every file that isn't committed, staged or not, new files included,
+with the lines added and removed. Files the agent changed in this conversation are marked `agent`, so they stand apart
+from your own edits.
+
+```terminal
+{accent|+- Changes} {muted|main · 3 files · +27 -0} {accent|--------------------------------------------------------+}
+{accent||}  {accent,bold|Current}    {muted|add rate limiting to th…}                                                     {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>} {code,bold|src/middleware/rate-limit.test.ts}    {muted|new} {success|+8}                                      {muted|agent} {accent||}
+{accent||}   src/middleware/rate-limit.ts         {muted|new} {success|+17}                                     {muted|agent} {accent||}
+{accent||}   src/server.ts                        {success|+2}                                          {muted|agent} {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Left/Right {muted|turn ·} Enter {muted|open ·} Up/Down {muted|move ·} Esc {muted|close}                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+When nothing is uncommitted, Current shows what your branch adds on top of the default branch.
+
+## Open a file
+
+Press `enter` on a file to see its diff. `up` and `down` scroll, `pgup` and `pgdn` go a page at a time, and `esc` goes
+back to the list.
+
+```terminal
+{accent|+- Diff} {muted|src/middleware/rate-limit.ts} {accent|------------------------------------------------------+}
+{accent||} {success,on-added-bg|+ 1}{border,on-added-bg||}{success,on-added-bg|import type { RequestHandler \} from 'express';}{on-added-bg|                                      } {accent||}
+{accent||} {success,on-added-bg|+ 2}{border,on-added-bg||}{success,on-added-bg|import { TooManyRequests \} from '../http/errors';}{on-added-bg|                                   } {accent||}
+{accent||} {success,on-added-bg|+ 3}{border,on-added-bg||}{success,on-added-bg| }{on-added-bg|                                                                                   } {accent||}
+{accent||} {success,on-added-bg|+ 4}{border,on-added-bg||}{success,on-added-bg|export function rateLimit({ limit = 100, windowMs = 60_000 \} = {\}): RequestHandler {} {accent||}
+{accent||} {success,on-added-bg|+ 5}{border,on-added-bg||}{success,on-added-bg|  const hits = new Map<string, { count: number; start: number \}>();}{on-added-bg|                 } {accent||}
+{accent||} {success,on-added-bg|+ 6}{border,on-added-bg||}{success,on-added-bg|  return (req, _res, next) => {}{on-added-bg|                                                     } {accent||}
+{accent||} {success,on-added-bg|+ 7}{border,on-added-bg||}{success,on-added-bg|    const now = Date.now();}{on-added-bg|                                                         } {accent||}
+{accent||} {success,on-added-bg|+ 8}{border,on-added-bg||}{success,on-added-bg|    const key = req.ip ?? 'unknown';}{on-added-bg|                                                } {accent||}
+{accent||} {success,on-added-bg|+ 9}{border,on-added-bg||}{success,on-added-bg|    const entry = hits.get(key);}{on-added-bg|                                                    } {accent||}
+{accent||} {success,on-added-bg|+10}{border,on-added-bg||}{success,on-added-bg|    if (!entry || now - entry.start >= windowMs) {}{on-added-bg|                                  } {accent||}
+{accent||} {success,on-added-bg|+11}{border,on-added-bg||}{success,on-added-bg|      hits.set(key, { count: 1, start: now \});}{on-added-bg|                                      } {accent||}
+{accent||} {success,on-added-bg|+12}{border,on-added-bg||}{success,on-added-bg|      return next();}{on-added-bg|                                                                } {accent||}
+{accent||} {success,on-added-bg|+13}{border,on-added-bg||}{success,on-added-bg|    \}}{on-added-bg|                                                                               } {accent||}
+{accent||} {success,on-added-bg|+14}{border,on-added-bg||}{success,on-added-bg|    if (++entry.count > limit) return next(new TooManyRequests());}{on-added-bg|                  } {accent||}
+{accent||} {success,on-added-bg|+15}{border,on-added-bg||}{success,on-added-bg|    next();}{on-added-bg|                                                                         } {accent||}
+{accent||} {success,on-added-bg|+16}{border,on-added-bg||}{success,on-added-bg|  \};}{on-added-bg|                                                                                } {accent||}
+{accent||} {success,on-added-bg|+17}{border,on-added-bg||}{success,on-added-bg|\}}{on-added-bg|                                                                                   } {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Up/Down {muted|scroll ·} PgUp/PgDn {muted|page ·} Esc {muted|back}                                               {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Go turn by turn
+
+`left` and `right` step through the turns in which the agent changed files, newest first. Each turn shows only that
+turn's edits, so you can see what a single request did.
+
+<Callout>
+  Turn views come from the agent's own edits. A change made by a command shows only under Current.
+</Callout>
+
+## Several repositories in one folder
+
+You can start Jinion in a folder that holds several repositories, for context across them. Jinion finds the
+repositories up to three folders down, and:
+
+- `/diff` groups the changes under each repository, with its branch;
+- the status line's git segment sums them up, such as `4 repos *7`;
+- the agent runs git in the repository a change belongs to.
+
+## Take a change back
+
+To undo what the agent did, [rewind](/conversations#rewind-to-an-earlier-message) to before the message that caused it.

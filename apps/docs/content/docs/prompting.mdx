@@ -2,3 +2,84 @@
 title: Prompt the agent
 description: Send, steer and queue messages, mention files with @, pick skills with $, and attach pasted text and images.
 ---
+
+## Send a message
+
+Type in the prompt at the bottom and press `enter`. For a new line, press `shift+enter` or `alt+enter`, or end the
+line with `\`. The prompt grows up to 20 lines, then scrolls.
+
+`up` and `down` go through the messages you sent before.
+
+## Steer while it works
+
+The prompt stays open while the agent works. Press `enter` to steer: your message joins the turn, shows marked
+`while working`, and the agent reads it as soon as its current step is done.
+
+```text
+use the existing TooManyRequests error, don't add a new one
+```
+
+To send something after the turn instead, press `ctrl+q`. The message waits above the prompt as `queued: …` and goes
+out on its own once the turn ends. If the turn is interrupted, queued messages come back into the prompt.
+
+`esc` interrupts the turn.
+
+## Mention files with @
+
+Type `@` and part of a name. Jinion completes the project's files and folders, the ones git tracks or could track, so
+ignored files stay out. The agent gets the file's content with your message, so it can work on it right away.
+
+```text
+@src/middleware/rate-limit.ts add a test for the window reset
+```
+
+A folder goes in without a trailing space, so you can keep typing to go inside it.
+
+## Use a skill with $
+
+Type `$` to pick a skill or an MCP prompt. The list is grouped by where each comes from: the project's first, then
+yours, then each plugin's and each MCP server's. It filters as you type.
+
+```terminal
+{border|--------------------------------------------------------------------------------------------}
+ $
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+   {muted|Project}
+ {code|>}   {code,bold|review}               {muted|Review the current changes for bugs and risky patterns}
+   {muted|Yours}
+     commit               {muted|Write a commit message for the staged changes}
+     explain {muted|<path>       Explain how a piece of code works}
+   {muted|github prompts}
+     pr-summary {muted|<number>  Summarize a pull request}
+   {muted|Linear prompts}
+     create-issue         {muted|Turn this conversation into a Linear issue}
+   Tab {muted|complete ·} Enter {muted|insert ·} Esc {muted|dismiss}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+```
+
+A skill can go anywhere in the message, and you can pick several:
+
+```text
+fix the navbar on mobile $make-responsive $design
+```
+
+See [Use skills and MCP servers](/skills-and-mcp).
+
+## Paste text
+
+Text of two lines or more, or 800 characters, goes in as `[Pasted text #1 +42 lines]`. The agent gets all of it.
+`ctrl+o` expands the placeholder; `backspace` removes it whole.
+
+## Attach images
+
+Press `ctrl+v` to attach the image on your clipboard as `[Image #1]`, or drag an image file into the terminal. PNG,
+JPEG, GIF and WebP work.
+
+<Callout>
+  Clipboard images need macOS, or `wl-paste` or `xclip` on Linux. Images over 3.7 MB are scaled down on macOS and
+  refused elsewhere.
+</Callout>
+
+## Commands
+
+Type `/` for Jinion's own commands, such as `/model` or `/diff`. See [Commands](/commands).

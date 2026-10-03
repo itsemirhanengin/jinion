@@ -2,3 +2,82 @@
 title: Run work in the background
 description: Keep dev servers, test runs and subagents going while the conversation goes on, and follow them with ctrl+t.
 ---
+
+Some commands keep running, like a dev server, or take a while, like a full test run. They can go on in the
+background while you and the agent keep working.
+
+## Start something in the background
+
+Ask for it, and the agent starts it in the background:
+
+```text
+start the dev server
+```
+
+A line above the prompt says what runs and for how long:
+
+```terminal
+{on-user| }{accent,on-user,bold|> }{on-user|start the dev server                                                                     }
+
+ {thinking,italic|A dev server keeps running, so it goes in the background and the conversation goes on.}
+
+{border,on-surface-success|+------------------------------------------------------------------------------------------+}
+{border,on-surface-success||}{on-surface-success| }{muted,on-surface-success|$ }{warning,on-surface-success|pnpm}{on-surface-success| dev                                                                               }{border,on-surface-success||}
+{border,on-surface-success|+--- }{on-surface-success|Output }{border,on-surface-success|-------------------------------------------------------------------------------+}
+{border,on-surface-success||}{on-surface-success| }{muted,on-surface-success|[In the background | ctrl+t to see it]}{on-surface-success|                                                   }{border,on-surface-success||}
+{border,on-surface-success|+------------------------------------------------------------------------------------------+}
+
+ The dev server runs in the background on {accent,bold,underline|http://localhost:3000}. {code|ctrl+t} shows its output,
+ and {code|x} there stops it; I keep it running while we work.
+
+ {muted|bg} {accent|[|]} pnpm dev {muted|0s · ctrl+t}
+
+{border|--------------------------------------------------------------------------------------------}
+ {accent|A}{muted|sk jinion anything · / commands · $ skills · @ files}
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 23K/200K {muted|·} {cost|$0.09}   {muted|Start the dev server}
+```
+
+A command the turn is already waiting on can go to the background too: press `ctrl+b` once the line under the prompt
+offers it, after a few seconds. The turn goes on without it.
+
+## Follow and stop tasks
+
+Press `ctrl+t`, or type `/tasks`, to open the tasks panel. It lists every task of the conversation with how it ended,
+and the latest output of the one you're on.
+
+```terminal
+{accent|+- Background tasks} {muted|1 running} {accent|-------------------------------------------------------------+}
+{accent||} {code|> 1.} {accent,bold|[|]} {code,bold|pnpm dev}                                                                     {muted|1s} {accent||}
+{accent||}      {muted|> acme-api@1.4.0 dev}                                                                {accent||}
+{accent||}      {muted|> tsx watch src/server.ts}                                                           {accent||}
+{accent||                                                                                          |}
+{accent||}      {muted|[watch] starting `node src/server.ts`}                                               {accent||}
+{accent||}      {muted|Server listening on http://localhost:3000}                                           {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|output ·} x {muted|stop ·} Up/Down {muted|move ·} Esc {muted|close}                                         {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+| Key     | Does                                        |
+| ------- | ------------------------------------------- |
+| `enter` | Shows the whole output, following its end   |
+| `x`     | Stops the task                              |
+| `esc`   | Closes the panel; tasks keep running        |
+
+## When a task ends
+
+The conversation says so, such as `[!] Background pnpm test · failed after 41s · exit 1`, and the agent looks at the
+result in a turn of its own. If the window isn't focused, you get a [notification](/notifications).
+
+<Callout>
+  Tasks belong to the session. They stop with `/clear`, `/resume`, an account switch, or when you quit. `esc` stops
+  the turn but leaves background tasks running.
+</Callout>
+
+## Subagents
+
+When the agent hands part of the work to a subagent, the subagent's tool calls grow as a tree under
+`Agent · what it is doing`, the latest six in view. When it is done, the tree folds into a line such as
+`6 tool calls · 34s`; `ctrl+o` opens it again. Subagents can run in the background like commands.

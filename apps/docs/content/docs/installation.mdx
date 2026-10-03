@@ -2,3 +2,85 @@
 title: Installation
 description: What Jinion needs, how to install and update it, and which terminals work best.
 ---
+
+## Requirements
+
+| What        | Needed                                                                                    |
+| ----------- | ----------------------------------------------------------------------------------------- |
+| Node.js     | 22 or later                                                                               |
+| System      | macOS or Linux                                                                            |
+| Account     | A Claude account, signed in on this machine with `claude` → `/login`                      |
+| Terminal    | Any modern terminal; see [recommended terminals](#recommended-terminals) for the best fit |
+
+## Install
+
+```npm
+npm i -g @jinion/cli
+```
+
+Check that it worked:
+
+```sh
+jinion --version
+```
+
+It prints the version, such as `0.1.0`. If your shell says `command not found`, see
+[Troubleshooting](/troubleshooting#jinion-command-not-found).
+
+## Sign in
+
+Jinion uses the Claude login on your machine. If you have never signed in, run `claude`, type `/login` and follow the
+browser. Then start Jinion in any project:
+
+```sh
+cd ~/code/my-project
+jinion
+```
+
+The banner shows the account you are signed in with. To use more than one account, see
+[Switch models and accounts](/models-and-accounts#switch-accounts).
+
+## Try it without a model
+
+`jinion --demo` plays a scripted session: questions, edits, test runs and background tasks, without sending anything
+to a model. It is a quick way to look around.
+
+```sh
+jinion --demo
+```
+
+Type `add rate limiting to the api` for the full tour, or `hello` for a short one.
+
+## Update
+
+```npm
+npm i -g @jinion/cli@latest
+```
+
+Restart running sessions to pick up the new version. Your conversations and settings stay.
+
+## Uninstall
+
+```npm
+npm rm -g @jinion/cli
+```
+
+Jinion's data stays in `~/.jinion`. Delete that folder to remove your conversations, memory and settings too. See
+[The ~/.jinion folder](/jinion-folder).
+
+## Recommended terminals
+
+Jinion runs in any terminal that supports colors and the mouse. These also show desktop notifications and report
+focus, so Jinion only notifies you when you're looking elsewhere:
+
+| Terminal | Notifications |
+| -------- | ------------- |
+| Ghostty  | Yes           |
+| iTerm2   | Yes           |
+| kitty    | Yes           |
+| WezTerm  | Yes           |
+| Warp     | Yes           |
+| foot     | Yes           |
+
+Inside tmux or screen, and in other terminals, Jinion rings the bell instead. See
+[Set up your terminal](/terminal-setup).

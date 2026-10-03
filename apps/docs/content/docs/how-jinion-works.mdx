@@ -2,3 +2,45 @@
 title: How Jinion works
 description: "What Jinion puts in front of the model: its system prompt, your project's instructions, memory, modes and tools."
 ---
+
+Each message you send goes to the model together with what Jinion knows about you and your project. The model then
+works in steps: it reads files, runs commands and edits code through Jinion's tools, until the task is done or it
+needs you.
+
+## What the model sees
+
+| Part                 | Where it comes from                                                                                   |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| System prompt        | Written by Jinion: how to work, how to talk to you, which tools to use                                |
+| Environment          | Your folder, its git branch, the date, and the repositories in it                                     |
+| Project instructions | `AGENTS.md` and `CLAUDE.md` in the folder you started Jinion in. See [Write project instructions](/project-instructions) |
+| Memory               | A one-line index of the notes the agent keeps. See [Use memory](/memory)                              |
+| Skills and MCP tools | Listed by name, loaded only when used. See [Use skills and MCP servers](/skills-and-mcp)              |
+| The conversation     | Your messages, the agent's replies, and what the tools returned                                       |
+
+Jinion keeps its own settings. It doesn't read Claude Code's settings files, hooks, memory or `~/.claude/CLAUDE.md`,
+so what you set up for Jinion stays in Jinion. You can bring Claude Code's memory over once with `/memory import`.
+
+## Tools
+
+The agent works through tools, and each call shows as a line in the conversation:
+
+| Tool                 | What it does                                                         |
+| -------------------- | -------------------------------------------------------------------- |
+| Read, Glob, Grep     | Read files and search the project                                    |
+| Edit, Write          | Change files; each change shows as a diff                            |
+| Bash                 | Run commands, in the foreground or [the background](/background-tasks) |
+| Web fetch and search | Read pages and search the web                                        |
+| Agent                | Hand part of the work to a subagent, shown as a live tree            |
+| Ask                  | Ask you a question with options                                      |
+| Todo                 | Keep a task list you can follow                                      |
+| Remember, Recall     | Save and read [memory](/memory) notes                                |
+
+## Who decides what runs
+
+Reads always run. What else runs without asking depends on the [permission mode](/permission-modes) you pick. On top
+of every mode, Jinion itself asks before a commit and before anything changes outside your project.
+
+## Where your data lives
+
+Conversations, memory, settings and logs live in `~/.jinion` on your machine. See [The ~/.jinion folder](/jinion-folder).

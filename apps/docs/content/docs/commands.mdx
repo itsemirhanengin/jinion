@@ -2,3 +2,75 @@
 title: Commands
 description: Every slash command, what it does and its arguments.
 ---
+
+Type `/` in the prompt to see the commands. The list filters as you type. `tab` completes, `enter` runs. A command
+that needs an argument is put in the prompt for you to finish.
+
+```terminal
+{border|--------------------------------------------------------------------------------------------}
+ /
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {code|>} {code,bold|/model} {muted,bold|[model]}                    {muted|Switch the model and its effort}
+   /effort {muted|[level]                   Change how hard the model thinks}
+   /help {muted|[tab]                       Shortcuts, commands, skills and MCP prompts}
+   /resume {muted|[search]                  Pick up a previous conversation}
+   /mode {muted|[mode]                      How freely the agent acts: manual, accept edits, plan…}
+   /account {muted|[name | add <name> | r…  Switch between your logins, sign one in (again) with …}
+   /remember {muted|<note>                  Save a note the agent keeps in later conversations (r…}
+   /memory {muted|[import]                  The notes the agent keeps; memory import brings in Cl…}
+   {muted|… 14 more}
+   Tab {muted|complete ·} Enter {muted|run ·} Esc {muted|dismiss}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+```
+
+`<argument>` is required, `[argument]` optional.
+
+## Conversation
+
+| Command            | Does                                                                            |
+| ------------------ | ------------------------------------------------------------------------------- |
+| `/clear`, `/new`   | Saves this conversation and starts a new one                                     |
+| `/resume [search]` | Lists this project's conversations to pick one up                               |
+| `/rewind`          | Goes back to before an earlier message: code, conversation or both (`esc esc`)  |
+| `/compact [focus]` | Summarizes the conversation so far to free context, keeping `focus` above all   |
+| `/context`         | Shows what fills the context window                                             |
+| `/expand`          | Expands or collapses long output (`ctrl+o`)                                     |
+
+## Working with the agent
+
+| Command                        | Does                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `/model [model]`               | Picks the model and its effort, or switches straight to `model`         |
+| `/effort [level]`              | Picks the effort, or sets it straight away; `default` leaves it to the model |
+| `/mode [mode]`                 | Picks the mode: `manual`, `edits`, `plan` or `auto` (`shift+tab`)       |
+| `/diff`                        | Shows what isn't committed, with the agent's changes marked            |
+| `/tasks`                       | Shows background tasks and their output; `x` stops one (`ctrl+t`)      |
+| `/mcp`                         | Lists MCP servers with their state; `space` turns one on or off         |
+
+## Memory
+
+| Command                    | Does                                                                     |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `/remember [user] <note>`  | Saves a note for this project, or with `user`, for every project         |
+| `/memory [import]`         | Lists the notes to open or forget them; `import` brings in Claude Code's |
+
+## Account and usage
+
+| Command                          | Does                                                     |
+| -------------------------------- | -------------------------------------------------------- |
+| `/account [name \| add <name>]`  | Switches to another login, or signs a new one in         |
+| `/usage`                         | Shows plan limits, this session, and what adds to the limits |
+| `/stats`                         | Shows every day of use as a calendar                     |
+
+## Jinion
+
+| Command                         | Does                                                       |
+| ------------------------------- | ---------------------------------------------------------- |
+| `/help [tab]`                   | Shows shortcuts, commands, skills and MCP prompts          |
+| `/statusline`                   | Chooses what the status line shows                         |
+| `/notifications [on \| off]`    | Turns notifications on or off, in every project            |
+| `/exit`, `/quit`                | Quits                                                      |
+
+## Skills and MCP prompts
+
+Skills and MCP prompts are picked with `$`, not `/`. See [Use skills and MCP servers](/skills-and-mcp).
