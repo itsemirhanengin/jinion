@@ -40,11 +40,52 @@ describe('ClaudeEvents replaying recorded conversations', () => {
   });
 
   it('names skills, tool loading and MCP tools the way the user reads them', () => {
-    const titles = started(replay('skills')).flatMap((call) => (call.name === 'other' ? [`${call.input.title}: ${call.input.detail}`] : []));
+    const events = replay('skills');
+    const calls = started(events);
+    const titles = calls.flatMap((call) => (call.name === 'other' ? [`${call.input.title}: ${call.input.detail}`] : []));
+    const mcp = calls.find((call) => call.name === 'mcp');
 
-    expect(titles).toEqual(
-      expect.arrayContaining(['Skill: explain-math', 'Load tools: context7:resolve-library-id', expect.stringMatching(/^context7:resolve-library-id/)]),
-    );
+    expect(titles).toEqual(expect.arrayContaining(['Skill: explain-math', 'Load tools: context7:resolve-library-id']));
+    expect(mcp?.input).toEqual({ server: 'context7', tool: 'resolve-library-id', arguments: 'libraryName: "React", query: "React library overview"' });
+    expect(events.find((event) => event.type === 'tool-output')).toMatchObject({ lines: expect.arrayContaining(['Available Libraries:']) });
+  });
+
+  it('shows what a fetch received, and the answer it read from the page', () => {
+    const events = call('WebFetch', { url: 'https://example.com', prompt: 'What is the title?' }, 'The title is "Example Domain".', {
+      bytes: 1256,
+      code: 200,
+      codeText: 'OK',
+      result: 'The title is "Example Domain".\n',
+      durationMs: 812,
+      url: 'https://example.com',
+    });
+
+    expect(transcript(events)).toEqual([
+      'start t1 fetch {"url":"https://example.com","prompt":"What is the title?"}',
+      'output t1 ["The title is \\"Example Domain\\"."]',
+      'end t1 ok {"bytes":1256,"code":200,"codeText":"OK"}',
+    ]);
+  });
+
+  it('shows why a fetch failed', () => {
+    const events = call('WebFetch', { url: 'https://example.com/missing', prompt: 'p' }, 'Request failed with status code 404', undefined, true);
+
+    expect(transcript(events).slice(1)).toEqual(['output t1 ["Request failed with status code 404"]', 'end t1 failed {}']);
+  });
+
+  it('lists a web search’s hits across its searches, without the model’s remarks between them', () => {
+    const hit = (title: string) => ({ title, url: `https://${title.toLowerCase()}.dev/guide` });
+
+    const events = call('WebSearch', { query: 'vitest snapshots' }, 'Web search results for query: "vitest snapshots"', {
+      query: 'vitest snapshots',
+      results: [{ tool_use_id: 'srvtoolu_1', content: [hit('Vitest'), hit('Jest')] }, 'Here is what I found.', { tool_use_id: 'srvtoolu_2', content: [hit('Vite')] }],
+      durationSeconds: 3.2,
+      searchCount: 2,
+    });
+
+    expect(events.find((event) => event.type === 'tool-end')).toMatchObject({
+      result: { hits: [hit('Vitest'), hit('Jest'), hit('Vite')], searches: 2, durationMs: 3200 },
+    });
   });
 
   it('puts a subagent’s tool calls under its agent call, without its text', () => {
@@ -136,6 +177,22 @@ function replay(name: string) {
     .split('\n')
     .filter(Boolean)
     .flatMap((line) => [...events.map(JSON.parse(line) as SDKMessage)]);
+}
+
+function call(name: string, input: object, output: string, data?: object, error = false) {
+  const events = new ClaudeEvents('/project');
+
+  const messages = [
+    { type: 'assistant', parent_tool_use_id: null, message: { role: 'assistant', content: [{ type: 'tool_use', id: 'toolu_1', name, input }] } },
+    {
+      type: 'user',
+      parent_tool_use_id: null,
+      message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'toolu_1', content: output, is_error: error }] },
+      tool_use_result: data,
+    },
+  ] as unknown as SDKMessage[];
+
+  return messages.flatMap((message) => [...events.map(message)]);
 }
 
 function transcript(events: AgentEvent[]) {

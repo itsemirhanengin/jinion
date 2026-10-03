@@ -30,6 +30,15 @@ export function callSummary(run: ToolRun): [name: string, detail?: string] {
     case 'memory':
       return [MEMORY_VERBS[run.input.action], run.input.detail];
 
+    case 'fetch':
+      return ['Fetch', run.input.url];
+
+    case 'search':
+      return ['Web Search', run.result ? `${run.input.query} · ${plural(run.result.hits.length, 'result')}` : run.input.query];
+
+    case 'mcp':
+      return [`${run.input.server}:${run.input.tool}`, run.input.arguments];
+
     case 'other':
       return [run.input.title, run.input.detail];
 

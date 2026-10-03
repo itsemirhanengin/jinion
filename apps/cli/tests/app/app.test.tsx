@@ -186,6 +186,33 @@ describe('App', () => {
     expect(expanded).toContain('Read src/server.ts');
   });
 
+  it('shows a web search’s results, what a fetch received and an MCP tool’s result in short, all of each on a click', async () => {
+    start(0, 60);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('look up how apis answer 429');
+    await terminal.press(KEYS.enter);
+    const screen = await terminal.waitFor('A body that names the limit');
+
+    expect(screen).toContain('[x] Web Search: "http 429 rate limit response headers" 7 results - 3s');
+    expect(screen).toContain('|-- 429 Too Many Requests - HTTP | MDN developer.mozilla.org');
+    expect(screen).toContain('[x] Fetch: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429 144.7 KB - 200 OK');
+    expect(screen).toContain('[x] context7:query-docs (MCP) libraryId: "/express-rate-limit/express-rate-limit"');
+    expect(screen).toContain('… +1 line');
+    expect(screen).toContain('… +4 lines');
+    expect(screen).not.toContain('express-rate-limit npmjs.com');
+
+    await terminal.click('+2 results');
+    const results = await terminal.waitFor('express-rate-limit npmjs.com');
+
+    expect(results).toContain('… +4 lines');
+
+    await terminal.press('\x0f');
+    const all = await terminal.waitFor('app.use(limiter);');
+
+    expect(all).toContain('How clients are identified and counted is up to the server.');
+    expect(all).toMatch(/^ +}\);$/m);
+  });
+
   it('plays the tour through its questions, edits and commands', async () => {
     const screen = await playTour();
 

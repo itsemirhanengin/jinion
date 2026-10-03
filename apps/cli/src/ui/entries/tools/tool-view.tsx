@@ -3,8 +3,10 @@ import { AskResult, EditBlock, ShellBlock, TodoBlock, ToolLine } from '@jinion/t
 import type { ToolEntry } from '../../../conversation/entries.js';
 import { AgentView } from './agent-view.js';
 import { MEMORY_VERBS } from './call-summary.js';
+import { McpView } from './mcp-view.js';
 import { GlobView, GrepView, ReadView } from './search.js';
 import { ShellFooter } from './shell-footer.js';
+import { FetchView, SearchView } from './web.js';
 
 export function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
   const theme = useTheme();
@@ -52,6 +54,15 @@ export function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
           <Markdown text={run.input.plan} />
         </Frame>
       );
+
+    case 'fetch':
+      return <FetchView run={run} status={status} output={entry.output} />;
+
+    case 'search':
+      return <SearchView run={run} status={status} />;
+
+    case 'mcp':
+      return <McpView run={run} status={status} output={entry.output} />;
 
     case 'other':
       return (

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { inputSummary, toolQuery, toolTitle } from '../../../src/agent/claude/tool-names.js';
+import { inputSummary, mcpTool, toolArguments, toolQuery, toolTitle } from '../../../src/agent/claude/tool-names.js';
 
 describe('tool names', () => {
   it('names MCP tools by server and tool, without connector and plugin prefixes', () => {
@@ -7,6 +7,14 @@ describe('tool names', () => {
     expect(toolTitle('mcp__claude_ai_Linear__list_issues')).toBe('Linear:list_issues');
     expect(toolTitle('mcp__plugin_vercel_vercel__deploy')).toBe('vercel:deploy');
     expect(toolTitle('WebFetch')).toBe('WebFetch');
+    expect(mcpTool('mcp__claude_ai_Linear__list_issues')).toEqual({ server: 'Linear', tool: 'list_issues' });
+    expect(mcpTool('WebFetch')).toBeUndefined();
+  });
+
+  it('writes an MCP call’s arguments as Claude Code does, on one line', () => {
+    expect(toolArguments({ libraryName: 'React', limit: 3, tags: ['a'] })).toBe('libraryName: "React", limit: 3, tags: ["a"]');
+    expect(toolArguments({ text: 'x'.repeat(200) })).toHaveLength(100);
+    expect(toolArguments({})).toBeUndefined();
   });
 
   it('reads a ToolSearch selection as the tools’ titles', () => {

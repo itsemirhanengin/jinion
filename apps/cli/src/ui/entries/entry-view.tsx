@@ -6,7 +6,9 @@ import { elapsed } from '../../lib/format.js';
 import { Banner } from '../banner.js';
 import { ChangesCard } from './changes-card.js';
 import { Compaction, TaskEnd, UserEntry } from './status-entries.js';
+import { opensFurther } from './tools/result-preview.js';
 import { ToolView } from './tools/tool-view.js';
+import { PREVIEW_HITS } from './tools/web.js';
 
 const DIFF_PREVIEW_LINES = 24;
 
@@ -56,6 +58,11 @@ function expandable(entry: Entry) {
           return parsePatch(entry.run.result?.patch ?? entry.run.input.patch).length > DIFF_PREVIEW_LINES;
         case 'agent':
           return (entry.children?.length ?? 0) > 0;
+        case 'fetch':
+        case 'mcp':
+          return opensFurther(entry.output);
+        case 'search':
+          return (entry.run.result?.hits.length ?? 0) > PREVIEW_HITS;
         default:
           return false;
       }

@@ -1,14 +1,18 @@
-import { firstLine, truncate } from '../../lib/text.js';
+import { clip, firstLine, truncate } from '../../lib/text.js';
 import { type Input, text } from './input.js';
 
-/** `mcp__github__create_issue` reads as `github:create_issue`, without a claude.ai connector's or plugin's prefix. */
-export function toolTitle(name: string) {
+/** `mcp__github__create_issue` is `github` and `create_issue`, without a claude.ai connector's or plugin's prefix. */
+export function mcpTool(name: string) {
   const mcp = /^mcp__(.+?)__(.+)$/.exec(name);
-  if (!mcp) return name;
+  if (!mcp) return undefined;
 
-  const server = mcp[1]!.replace(/^claude_ai_/, '').replace(/^plugin_[^_]+_/, '');
+  return { server: mcp[1]!.replace(/^claude_ai_/, '').replace(/^plugin_[^_]+_/, ''), tool: mcp[2]! };
+}
 
-  return `${server}:${mcp[2]}`;
+export function toolTitle(name: string) {
+  const mcp = mcpTool(name);
+
+  return mcp ? `${mcp.server}:${mcp.tool}` : name;
 }
 
 export function toolQuery(query: string) {
@@ -23,4 +27,11 @@ export function inputSummary(input: Input) {
   const key = SUMMARY_KEYS.find((candidate) => typeof input[candidate] === 'string');
 
   return truncate(firstLine(key ? text(input[key]) : ''), 80) || undefined;
+}
+
+/** As Claude Code shows an MCP call: `libraryName: "React", query: "hooks"`. */
+export function toolArguments(input: Input) {
+  const pairs = Object.entries(input).map(([key, value]) => `${key}: ${JSON.stringify(value)}`);
+
+  return clip(pairs.join(', '), 100) || undefined;
 }

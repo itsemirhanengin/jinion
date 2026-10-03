@@ -1,5 +1,5 @@
 import type { AgentEvent } from '../events.js';
-import type { GrepMatch, ToolCall } from '../tools.js';
+import type { GrepMatch, SearchHit, ToolCall } from '../tools.js';
 import { type Input, isObject, number, text } from './input.js';
 import { MEMORY_SERVER } from './memory.js';
 import { addPatch, type Hunk, hunksToPatch, replacePatch, splitLines } from './patches.js';
@@ -8,7 +8,7 @@ import { skillLabel } from './plugins.js';
 import { type ClaudeQuestion, fromClaudeAnswers, toQuestions } from './questions.js';
 import type { ClaudeTasks } from './tasks.js';
 import { type ClaudeTodos, isTodoTool } from './todos.js';
-import { inputSummary, toolQuery, toolTitle } from './tool-names.js';
+import { inputSummary, mcpTool, toolArguments, toolQuery, toolTitle } from './tool-names.js';
 
 export interface Call {
   name: string;
@@ -76,6 +76,12 @@ export function toCall(name: string, input: Input, { path, plan }: ToolContext):
     case 'ToolSearch':
       return { name: 'other', input: { title: 'Load tools', detail: toolQuery(text(input.query)) } };
 
+    case 'WebFetch':
+      return { name: 'fetch', input: { url: text(input.url), prompt: text(input.prompt) } };
+
+    case 'WebSearch':
+      return { name: 'search', input: { query: text(input.query) } };
+
     case `mcp__${MEMORY_SERVER}__remember`:
       return { name: 'memory', input: { action: 'remember', detail: `${text(input.scope)} · ${text(input.title)}` } };
 
@@ -88,10 +94,14 @@ export function toCall(name: string, input: Input, { path, plan }: ToolContext):
     case `mcp__${MEMORY_SERVER}__forget`:
       return { name: 'memory', input: { action: 'forget', detail: text(input.id) } };
 
-    default:
+    default: {
       if (isTodoTool(name)) return undefined;
 
+      const mcp = mcpTool(name);
+      if (mcp) return { name: 'mcp', input: { ...mcp, arguments: toolArguments(input) } };
+
       return { name: 'other', input: { title: toolTitle(name), detail: inputSummary(input) } };
+    }
   }
 }
 
@@ -115,9 +125,8 @@ export function* toolEnd(id: string, call: Call, { text: output, error, data }: 
 
       const exitCode = error ? Number(/^(?:Error: )?Exit code (\d+)/.exec(output)?.[1] ?? 1) : 0;
       const printed = data ? [text(data.stdout), text(data.stderr)].filter(Boolean).join('\n') : stripExitCode(output);
-      const lines = printed.replace(/\n+$/, '');
 
-      if (lines) yield { type: 'tool-output', id, lines: lines.split('\n') };
+      yield* outputLines(id, printed);
       yield { type: 'tool-end', id, ok, result: { exitCode, wallMs: Date.now() - call.startedAt } };
 
       return;
@@ -152,6 +161,25 @@ export function* toolEnd(id: string, call: Call, { text: output, error, data }: 
       const hunks = Array.isArray(data?.structuredPatch) ? (data.structuredPatch as Hunk[]) : [];
 
       yield { type: 'tool-end', id, ok, result: hunks.length > 0 ? { patch: hunksToPatch(hunks) } : {} };
+
+      return;
+    }
+
+    case 'WebFetch':
+      yield* outputLines(id, data && ok ? text(data.result) : output);
+      yield { type: 'tool-end', id, ok, result: { bytes: number(data?.bytes), code: number(data?.code), codeText: text(data?.codeText) || undefined } };
+
+      return;
+
+    case 'WebSearch': {
+      const seconds = number(data?.durationSeconds);
+
+      yield {
+        type: 'tool-end',
+        id,
+        ok,
+        result: { hits: searchHits(data?.results), searches: number(data?.searchCount), durationMs: seconds === undefined ? undefined : seconds * 1000 },
+      };
 
       return;
     }
@@ -194,6 +222,8 @@ export function* toolEnd(id: string, call: Call, { text: output, error, data }: 
     default:
       if (isTodoTool(call.name)) return;
 
+      if (mcpTool(call.name)) yield* outputLines(id, output);
+
       yield { type: 'tool-end', id, ok, result: {} };
   }
 }
@@ -204,6 +234,23 @@ function lineRange(input: Input) {
   if (offset === undefined) return limit === undefined ? undefined : `1-${limit}`;
 
   return limit === undefined ? `${offset}-` : `${offset}-${offset + limit - 1}`;
+}
+
+function* outputLines(id: string, printed: string): Generator<AgentEvent> {
+  const lines = printed.replace(/\n+$/, '');
+
+  if (lines) yield { type: 'tool-output', id, lines: lines.split('\n') };
+}
+
+/** Claude Code's results mix lists of hits, one per search, with the model's remarks between them. */
+function searchHits(results: unknown): SearchHit[] {
+  if (!Array.isArray(results)) return [];
+
+  return results
+    .flatMap((result) => (isObject(result) && Array.isArray(result.content) ? (result.content as unknown[]) : []))
+    .filter(isObject)
+    .map((hit) => ({ title: text(hit.title), url: text(hit.url) }))
+    .filter((hit) => hit.url);
 }
 
 function stripExitCode(output: string) {

@@ -1,5 +1,6 @@
 import type { TodoGroup } from '@jinion/tui/chat';
 import type { BackgroundTask } from '../agent/tasks.js';
+import type { ToolRun } from '../agent/tools.js';
 import type { Usage } from '../agent/usage.js';
 import type { Session } from '../conversation/session.js';
 
@@ -31,8 +32,23 @@ export function activity(session: Session, panel: string | undefined, tasks: Bac
     const hint = tasks.some((task) => task.foreground && task.status === 'running') ? ' · ctrl+b to run it in the background' : '';
     if (last.run.name === 'agent') return `A subagent is on it: ${last.run.input.description}${hint}`;
 
-    return `Running ${last.run.name === 'other' ? last.run.input.title : last.run.name}${hint}`;
+    return `Running ${runningName(last.run)}${hint}`;
   }
 
   return 'Working';
+}
+
+function runningName(run: ToolRun) {
+  switch (run.name) {
+    case 'other':
+      return run.input.title;
+    case 'mcp':
+      return `${run.input.server}:${run.input.tool}`;
+    case 'fetch':
+      return `fetch: ${run.input.url}`;
+    case 'search':
+      return `web search: ${run.input.query}`;
+    default:
+      return run.name;
+  }
 }

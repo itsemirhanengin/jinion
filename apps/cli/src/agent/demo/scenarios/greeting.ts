@@ -10,7 +10,7 @@ export const greeting: Scenario = {
     yield* script.say(
       [
         "Hey! I'm **Jinion**, a coding agent that lives in your terminal.",
-        'This build runs a scripted demo agent, so nothing touches your files yet. Ask me to `add rate limiting to the api` to watch the whole loop: reading code, asking you a question, editing files, running tests and recovering from a failing one. `start the dev server` or `run the tests in the background` shows background tasks.',
+        'This build runs a scripted demo agent, so nothing touches your files yet. Ask me to `add rate limiting to the api` to watch the whole loop: reading code, asking you a question, editing files, running tests and recovering from a failing one. `start the dev server` or `run the tests in the background` shows background tasks, and `look up how apis answer 429` searches the web.',
         '- `/` lists commands, skills and MCP prompts\n- the mouse wheel or `pgup`/`pgdn` scrolls the conversation\n- a click opens folded output, and `ctrl+o` all of it\n- `esc` interrupts a running turn',
       ].join('\n\n'),
     );

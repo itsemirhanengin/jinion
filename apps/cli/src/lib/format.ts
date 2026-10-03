@@ -13,6 +13,14 @@ export const grouped = (count: number) => Math.round(count).toLocaleString('en-U
 export const plural = (count: number, singular: string, pluralForm = `${singular}s`) =>
   `${grouped(count)} ${count === 1 ? singular : pluralForm}`;
 
+export function bytes(count: number) {
+  if (count < 1024) return `${count} B`;
+
+  const [divisor, unit] = count < 1024 ** 2 ? [1024, 'KB'] : count < 1024 ** 3 ? [1024 ** 2, 'MB'] : [1024 ** 3, 'GB'];
+
+  return `${(count / divisor).toFixed(1)} ${unit}`;
+}
+
 export function percent(part: number, whole = 1) {
   const share = whole > 0 ? (part / whole) * 100 : 0;
 

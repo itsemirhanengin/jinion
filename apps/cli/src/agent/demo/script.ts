@@ -57,11 +57,13 @@ export class Script {
     input: Tools[N]['input'],
     result: Tools[N]['result'],
     durationMs = 600,
+    output: string[] = [],
   ): AsyncGenerator<AgentEvent> {
     const id = this.callId();
 
     yield { type: 'tool-start', id, call: { name, input } as ToolCall };
     await this.wait(durationMs);
+    if (output.length > 0) yield { type: 'tool-output', id, lines: output };
     yield { type: 'tool-end', id, ok: true, result };
   }
 
