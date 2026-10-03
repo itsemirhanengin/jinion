@@ -16,6 +16,7 @@ import { claudeMcp } from './mcp.js';
 import { claudeOptions } from './options.js';
 import { askRules, PERMISSION_MODES } from './policy.js';
 import { type ClaudeResume, ClaudeProcess, errorOf } from './process.js';
+import { followTranscript } from './session-files.js';
 import { claudeTitle } from './title.js';
 import { claudeUsage, toContextUsage } from './usage.js';
 
@@ -325,6 +326,7 @@ export class ClaudeAgent implements Agent {
     const { cwd, resume } = this;
 
     this.resume = undefined;
+    if (resume) followTranscript(resume.sessionId, cwd);
 
     const options = claudeOptions({
       cwd,

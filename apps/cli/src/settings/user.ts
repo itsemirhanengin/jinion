@@ -10,6 +10,7 @@ export interface Settings {
   accounts?: Record<string, string>;
   mcp?: { disabled?: string[] };
   notifications?: boolean;
+  worktrees?: boolean;
 }
 
 const file = () => join(jinionHome(), 'settings.json');
@@ -33,3 +34,5 @@ export const saveStatusLine = (statusLine: StatusItem[]) => update(() => ({ stat
 export const saveMcpSettings = (mcp: Settings['mcp']) => update(() => ({ mcp }));
 
 export const saveNotifications = (notifications: boolean) => update(() => ({ notifications }));
+
+export const saveWorktrees = (worktrees: boolean) => update(() => ({ worktrees }));

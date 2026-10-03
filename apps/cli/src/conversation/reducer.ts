@@ -1,6 +1,7 @@
 import type { Status } from '@jinion/tui';
 import type { NoticeTone } from '@jinion/tui/chat';
 import type { AgentEvent } from '../agent/events.js';
+import type { Worktree } from '../git/worktrees.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
 import { isBackground, lastToolRun, nextId, noticeEntry, type Entry } from './entries.js';
@@ -19,7 +20,8 @@ export type Action =
   | { type: 'finish'; outcome: TurnOutcome; message?: string }
   | { type: 'notice'; text: string; tone?: NoticeTone }
   | { type: 'clear' }
-  | { type: 'load'; session: SavedSession };
+  | { type: 'load'; session: SavedSession }
+  | { type: 'worktree'; worktree?: Worktree };
 
 export type TurnOutcome = 'done' | 'interrupted' | 'failed';
 
@@ -87,6 +89,9 @@ function next(session: Session, action: Action): Session {
 
     case 'load':
       return fromSaved(action.session);
+
+    case 'worktree':
+      return { ...session, worktree: action.worktree };
 
     case 'rewind': {
       const index = session.entries.findIndex((entry) => entry.id === action.entry);

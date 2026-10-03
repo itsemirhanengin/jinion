@@ -9,6 +9,8 @@ export interface Question {
   prompt: string;
   options: QuestionOption[];
   multiple?: boolean;
+  /** `false` leaves out the answer typed in its own words. */
+  other?: boolean;
 }
 
 export interface QuestionAnswer {

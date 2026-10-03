@@ -16,6 +16,8 @@ const LONG_TURN_MS = 15_000;
 export interface TurnHooks {
   apply(event: AgentEvent): void;
   planAccepted(mode: AgentMode): void;
+  /** Before a prompt goes to the agent, e.g. to set up the conversation's worktree. */
+  preparing(): Promise<void>;
   /** After a turn ends, before anything queued is sent. */
   ended(): void;
 }
@@ -40,7 +42,7 @@ export class TurnController {
     const sent = this.attachments.resolve(text);
 
     this.dispatch({ type: 'submit', text, prompt: sent.text === text ? undefined : sent.text });
-    await this.run(quote(text), (turn) => this.context.agent.run(sent, turn));
+    await this.run(quote(text), (turn) => this.afterPreparing(() => this.context.agent.run(sent, turn)));
   }
 
   steer(text: string) {
@@ -86,6 +88,11 @@ export class TurnController {
 
   private dispatch(action: Action) {
     this.context.store.set(dispatchAtom, action);
+  }
+
+  private async *afterPreparing(events: () => AsyncIterable<AgentEvent>) {
+    await this.hooks.preparing();
+    yield* events();
   }
 
   private async run(label: string, events: (turn: RunContext) => AsyncIterable<AgentEvent>) {

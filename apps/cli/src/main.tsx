@@ -10,7 +10,6 @@ import { App } from './app/app.js';
 import { DebugLog } from './lib/debug.js';
 import { McpConfig } from './mcp/config.js';
 import { MemoryStore } from './memory/store.js';
-import { resumeOf } from './conversation/session.js';
 import { loadProjectSettings } from './settings/project.js';
 import { loadSettings } from './settings/user.js';
 import { demoSessions } from './agent/demo/sessions.js';
@@ -84,7 +83,7 @@ else if (saved || effort) await agent.select({ ...(saved ?? agent.selection), ..
 
 const sessions: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
 const initial = values.continue ? sessions.list()[0] : undefined;
-if (initial) agent.reset?.(resumeOf(initial));
+const farewells: string[] = [];
 
 const info = {
   version,
@@ -92,10 +91,11 @@ const info = {
   examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
 };
 
-const instance = await run(<App agent={agent} info={info} sessions={sessions} memory={memory} initial={initial} />, {
+const instance = await run(<App agent={agent} info={info} sessions={sessions} memory={memory} initial={initial} onExit={(message) => farewells.push(message)} />, {
   scheme: theme as ColorScheme | undefined,
 });
 
 await instance.waitUntilExit();
 agent.close?.();
+for (const message of farewells) console.log(message);
 if (debug) console.log(`Debug log: ${debug.path}`);

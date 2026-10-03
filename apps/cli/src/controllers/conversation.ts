@@ -11,6 +11,7 @@ import { draftAtom } from '../state/prompt.js';
 import { dispatchAtom, sessionAtom } from '../state/session.js';
 import { workingAtom } from '../state/turn.js';
 import { BUSY, type Context } from './context.js';
+import type { WorktreeController } from './worktrees.js';
 
 export interface RewindPoint {
   entry: string;
@@ -25,6 +26,7 @@ export class ConversationController {
   constructor(
     private readonly context: Context,
     private readonly sessions: SessionStore,
+    private readonly worktrees: WorktreeController,
   ) {}
 
   get session() {
@@ -42,11 +44,11 @@ export class ConversationController {
   }
 
   newSession() {
-    this.switchTo({ type: 'clear' });
+    return this.switchTo({ type: 'clear' });
   }
 
   resume(saved: SavedSession) {
-    this.switchTo({ type: 'load', session: saved });
+    return this.switchTo({ type: 'load', session: saved });
   }
 
   markPlanAccepted() {
@@ -120,17 +122,24 @@ export class ConversationController {
     );
   }
 
-  private switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
+  private async switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
     const { store, agent, notice } = this.context;
     if (store.get(workingAtom)) return notice(BUSY, 'warning');
+
+    const left = await this.worktrees.leave();
+    if (!left) return;
 
     this.save();
 
     const running = store.get(backgroundTasksAtom).filter((task) => task.status === 'running');
 
-    agent.reset?.(action.type === 'load' ? resumeOf(action.session) : undefined);
     store.set(tasksAtom, []);
     this.dispatch(action);
+
+    const resumed = action.type === 'load' ? action.session : undefined;
+
+    agent.reset?.(resumed && resumeOf(resumed), resumed && this.worktrees.folderOf(resumed));
+    if (left.notice) notice(left.notice.text, left.notice.tone);
 
     if (running.length > 0) {
       notice(`Stopped what ran in the background of the last conversation: ${running.map((task) => firstLine(task.title)).join(', ')}.`);

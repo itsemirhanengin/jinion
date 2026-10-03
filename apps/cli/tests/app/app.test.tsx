@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
@@ -211,6 +212,46 @@ describe('App', () => {
 
     expect(all).toContain('How clients are identified and counted is up to the server.');
     expect(all).toMatch(/^ +}\);$/m);
+  });
+
+  it('works in a worktree of its own once ctrl+g turns them on, removes one nothing changed in, and asks about one with work', async () => {
+    repo(box.project, (path) => box.write(join(path, 'a.ts'), 'a'));
+    const nameOf = (screen: string) => /Working in the worktree ([a-z-]+), on branch worktree-\1/.exec(screen)![1]!;
+    const folder = (name: string) => join(box.home, '.jinion', 'projects', box.project.replace(/[^a-zA-Z0-9]/g, '-'), 'worktrees', name);
+
+    const command = async (text: string) => {
+      await terminal.type(text);
+      await terminal.press(KEYS.enter);
+    };
+
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.press('\x07');
+    await terminal.waitFor('Worktrees are on. This conversation gets its own git worktree with its first message');
+
+    await command('hello');
+    const first = nameOf(await terminal.waitFor(/Working in the worktree[\s\S]*Ask jinion anything/));
+
+    expect(existsSync(join(folder(first), 'a.ts'))).toBe(true);
+
+    await command('/clear');
+    await terminal.waitFor(`Removed the worktree ${first} and its branch, since nothing changed in it.`);
+    expect(existsSync(folder(first))).toBe(false);
+
+    await command('hello');
+    const second = nameOf(await terminal.waitFor(new RegExp(`Working in the worktree (?!${first})[\\s\\S]*Ask jinion anything`)));
+
+    box.write(join(folder(second), 'b.ts'), 'b');
+    await command('/clear');
+    const asked = await terminal.waitFor(`The worktree ${second} has 1 changed file. Keep it?`);
+
+    expect(asked).not.toContain('Other (type your own)');
+
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(`Kept the worktree ${second}. /resume brings its conversation back to it.`);
+    expect(existsSync(join(folder(second), 'b.ts'))).toBe(true);
+
+    await terminal.press('\x07');
+    await terminal.waitFor('Worktrees are off. Conversations work in the project folder.');
   });
 
   it('plays the tour through its questions, edits and commands', async () => {

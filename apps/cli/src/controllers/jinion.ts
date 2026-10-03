@@ -4,7 +4,7 @@ import { createStore } from 'jotai';
 import type { Agent } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { CommandRegistry } from '../commands/registry.js';
-import { fromSaved, createSession, type SavedSession } from '../conversation/session.js';
+import { fromSaved, createSession, resumeOf, type SavedSession } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
 import type { MemoryStore } from '../memory/store.js';
 import { accountAtom, modeAtom, selectionAtom, skillsAtom, tasksAtom } from '../state/agent.js';
@@ -19,6 +19,7 @@ import { ModeController } from './mode.js';
 import { ModelController } from './model.js';
 import { TaskController } from './tasks.js';
 import { TurnController } from './turns.js';
+import { WorktreeController } from './worktrees.js';
 
 export interface JinionOptions {
   agent: Agent;
@@ -26,8 +27,10 @@ export interface JinionOptions {
   sessions: SessionStore;
   memory: MemoryStore;
   commands: CommandRegistry;
-  /** The agent is expected to be continuing it already, e.g. for `--continue`. */
+  /** Continued from the start, e.g. for `--continue`. */
   initial?: SavedSession;
+  /** Printed once the screen is gone, e.g. where a kept worktree is. */
+  onExit?(message: string): void;
 }
 
 export class Jinion {
@@ -45,12 +48,14 @@ export class Jinion {
   readonly modes: ModeController;
   readonly accounts: AccountController;
   readonly tasks: TaskController;
+  readonly worktrees: WorktreeController;
+  private readonly onExit?: (message: string) => void;
 
   constructor(
     options: JinionOptions,
     readonly screen: Screen,
   ) {
-    ({ agent: this.agent, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands } = options);
+    ({ agent: this.agent, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
 
     const context: Context = {
       store: this.store,
@@ -62,7 +67,8 @@ export class Jinion {
     };
 
     this.attachments = new Attachments(context);
-    this.conversation = new ConversationController(context, this.sessions);
+    this.worktrees = new WorktreeController(context);
+    this.conversation = new ConversationController(context, this.sessions, this.worktrees);
     this.models = new ModelController(context);
     this.modes = new ModeController(context);
     this.accounts = new AccountController(context, () => this.refresh());
@@ -70,6 +76,7 @@ export class Jinion {
 
     this.turns = new TurnController(context, this.attachments, {
       apply: (event) => this.apply(event),
+      preparing: () => this.worktrees.prepare(),
       planAccepted: (mode) => {
         this.modes.keep(mode);
         this.conversation.markPlanAccepted();
@@ -83,6 +90,7 @@ export class Jinion {
     this.input = new InputController(context, this, this.commands, this.attachments, this.turns);
 
     this.store.set(sessionAtom, options.initial ? fromSaved(options.initial) : createSession(DEFAULT_CONTEXT_WINDOW));
+    if (options.initial) this.agent.reset?.(resumeOf(options.initial), this.worktrees.folderOf(options.initial));
     this.store.set(selectionAtom, this.agent.selection);
     this.store.set(modeAtom, this.agent.mode);
     this.store.set(accountAtom, this.agent.accounts?.current);
@@ -118,9 +126,12 @@ export class Jinion {
     }
   }
 
-  quit() {
+  async quit() {
+    const kept = await this.worktrees.quit();
+
     this.conversation.save();
     this.screen.exit();
+    if (kept) this.onExit?.(kept);
   }
 
   private apply(event: AgentEvent) {

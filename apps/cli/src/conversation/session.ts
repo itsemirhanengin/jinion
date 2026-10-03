@@ -1,6 +1,7 @@
 import type { TodoGroup } from '@jinion/tui/chat';
 import type { AgentResume } from '../agent/agent.js';
 import type { Usage } from '../agent/usage.js';
+import type { Worktree } from '../git/worktrees.js';
 import { nextId, type Entry, type ToolEntry } from './entries.js';
 
 export interface Session {
@@ -17,6 +18,8 @@ export interface Session {
   turnFrom?: number;
   compacting?: boolean;
   agentSession?: string;
+  /** Where the conversation works, when it has a worktree of its own. */
+  worktree?: Worktree;
 }
 
 export type SavedSession = Omit<Session, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };

@@ -64,7 +64,8 @@ function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps)
   );
 
   const multiple = question.multiple === true;
-  const keys = [...question.options.map((_, index) => String(index)), OTHER];
+  const own = question.other !== false;
+  const keys = [...question.options.map((_, index) => String(index)), ...(own ? [OTHER] : [])];
 
   const finish = (picked: string[], otherText = other) => {
     const options = picked.filter((key) => key !== OTHER).map(Number);
@@ -134,11 +135,15 @@ function QuestionStep({ question, step, onAnswer, onCancel }: QuestionStepProps)
       note: notes[String(index)],
       editor: editing?.key === String(index) ? editor || undefined : undefined,
     })),
-    {
-      key: OTHER,
-      label: other ? `Other: ${other}` : 'Other (type your own)',
-      editor: editing?.key === OTHER ? editor || undefined : undefined,
-    },
+    ...(own
+      ? [
+          {
+            key: OTHER,
+            label: other ? `Other: ${other}` : 'Other (type your own)',
+            editor: editing?.key === OTHER ? editor || undefined : undefined,
+          },
+        ]
+      : []),
   ];
 
   return (

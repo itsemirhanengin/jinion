@@ -35,8 +35,9 @@ const FETCH_AGE = 24 * 60 * 60 * 1000;
 export class WorktreeError extends Error {}
 
 export async function createWorktree(cwd: string): Promise<Worktree> {
-  const [repo, ...others] = findRepos(cwd);
-  if (!repo || repo.path !== '' || others.length > 0) throw new WorktreeError('Worktrees need the project to be in a git repository.');
+  // A project in a repository has just that one, at path ''.
+  const [repo] = findRepos(cwd);
+  if (repo?.path !== '') throw new WorktreeError('Worktrees need the project to be in a git repository.');
 
   const run = (...args: string[]) => git(repo.root, ...args);
   if (!(await run('rev-parse', '--verify', '--quiet', 'HEAD'))) throw new WorktreeError('Worktrees need a repository with at least one commit.');
