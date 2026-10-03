@@ -1,17 +1,15 @@
 import type { ReactNode } from 'react';
-import { findSegment, type StatusData } from './segments.js';
+import type { StatusData } from './segment.js';
+import { findSegment } from './segments/index.js';
 
 export type StatusSide = 'left' | 'right';
 
-/** One shown segment, in the order the line shows them. */
 export interface StatusItem {
   id: string;
   side: StatusSide;
-  /** The segment's first style when left out. */
   style?: string;
 }
 
-/** The line as it looked before it could be customized. */
 export const DEFAULT_STATUS_LINE: StatusItem[] = [
   { id: 'brand', side: 'left' },
   { id: 'model', side: 'left' },
@@ -23,7 +21,6 @@ export const DEFAULT_STATUS_LINE: StatusItem[] = [
 
 export const styleOf = (item: StatusItem) => item.style ?? findSegment(item.id)?.styles?.[0]?.id ?? '';
 
-/** Items whose segment has nothing to show right now are left out. */
 export function renderStatusLine(items: StatusItem[], data: StatusData) {
   const left: ReactNode[] = [];
   const right: ReactNode[] = [];

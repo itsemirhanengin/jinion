@@ -1,42 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Box,
-  fuzzyFilter,
-  Highlight,
-  ListRow,
-  Panel,
-  PromptInput,
-  SelectList,
-  Text,
-  useInput,
-  useListNavigation,
-  usePanel,
-  useTheme,
-  useWindowSize,
-} from '@jinion/tui';
-import { useJinion } from '../context.js';
-import { firstPrompt, type SavedSession } from '../session.js';
+import { Box, fuzzyFilter, Highlight, ListRow, Panel, PromptInput, SelectList, Text, useInput, useListNavigation, usePanel, useTheme, useWindowSize } from '@jinion/tui';
+import { useAtomValue } from 'jotai';
+import { useJinion } from '../app/context.js';
+import { firstPrompt, type SavedSession } from '../conversation/session.js';
+import { ago } from '../lib/format.js';
+import { sessionAtom } from '../state/session.js';
 
-/** Rows the panel itself takes: edges, search, dividers, hints and the `… more` markers. */
 const CHROME_ROWS = 9;
 const ROWS_PER_SESSION = 2;
 
-/** `/resume`: every saved conversation, searchable, full screen. */
 export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   const theme = useTheme();
-  const app = useJinion();
+  const jinion = useJinion();
   const { close } = usePanel();
   const { rows } = useWindowSize();
+  const { id: current } = useAtomValue(sessionAtom);
   const [query, setQuery] = useState(initialQuery.trim());
 
-  const sessions = useMemo(
-    () => app.sessions.list().filter((session) => session.id !== app.sessionId),
-    [app.sessions, app.sessionId],
-  );
-  const matches = useMemo(
-    () => fuzzyFilter(sessions, query, (session) => session.title),
-    [sessions, query],
-  );
+  const sessions = useMemo(() => jinion.sessions.list().filter((session) => session.id !== current), [current]);
+  const matches = useMemo(() => fuzzyFilter(sessions, query, (session) => session.title), [sessions, query]);
   const limit = Math.max(1, Math.floor((rows - CHROME_ROWS) / ROWS_PER_SESSION));
   const [selected, setSelected] = useListNavigation(matches.length, { wrap: false, pageSize: limit });
 
@@ -49,7 +31,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
     const match = matches[selected];
     if (!match) return;
     close();
-    app.actions.resume(match.item);
+    jinion.conversation.resume(match.item);
   };
 
   return (
@@ -90,18 +72,5 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
 
 function describe(session: SavedSession) {
   const messages = session.entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
-  const prompt = firstPrompt(session) ?? '';
-  return `${messages} messages · "${prompt}"`;
-}
-
-function ago(timestamp: number) {
-  const minutes = Math.round((Date.now() - timestamp) / 60_000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.round(hours / 24);
-  if (days === 1) return 'yesterday';
-  if (days < 7) return `${days}d ago`;
-  return `${Math.round(days / 7)}w ago`;
+  return `${messages} messages · "${firstPrompt(session) ?? ''}"`;
 }

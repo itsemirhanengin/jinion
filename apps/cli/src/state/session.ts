@@ -1,0 +1,21 @@
+import { atom } from 'jotai';
+import { atomWithLazy } from 'jotai/utils';
+import { editTurns } from '../conversation/edits.js';
+import { reduce, type Action } from '../conversation/reducer.js';
+import { createSession } from '../conversation/session.js';
+
+export const DEFAULT_CONTEXT_WINDOW = 200_000;
+
+export const sessionAtom = atomWithLazy(() => createSession(DEFAULT_CONTEXT_WINDOW));
+
+export const dispatchAtom = atom(null, (get, set, action: Action) => set(sessionAtom, reduce(get(sessionAtom), action)));
+
+export const entriesAtom = atom((get) => get(sessionAtom).entries);
+
+export const todosAtom = atom((get) => get(sessionAtom).todos);
+
+export const busySinceAtom = atom((get) => get(sessionAtom).busySince);
+
+export const busyAtom = atom((get) => get(busySinceAtom) !== undefined);
+
+export const editTurnsAtom = atom((get) => editTurns(get(entriesAtom)));

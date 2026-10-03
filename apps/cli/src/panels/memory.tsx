@@ -1,17 +1,15 @@
 import { useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Prose, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
-import { useJinion } from '../context.js';
-import { tildify } from '../paths.js';
+import { useJinion } from '../app/context.js';
+import { tildify } from '../lib/paths.js';
 
-/** Lines of a note's content shown when it is opened. */
 const PREVIEW_LINES = 12;
 
-/** `/memory`: the notes the agent keeps. Enter opens one, `d` twice forgets it. */
 export function MemoryPanel() {
-  const app = useJinion();
+  const jinion = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
-  const [notes, setNotes] = useState(() => app.memory.list());
+  const [notes, setNotes] = useState(() => jinion.memory.list());
   const [open, setOpen] = useState<string>();
   const [forgetting, setForgetting] = useState<string>();
   const keys = notes.map((memory) => `${memory.scope}/${memory.id}`);
@@ -26,10 +24,10 @@ export function MemoryPanel() {
   useInput((input) => {
     if (input !== 'd' || !list.focus) return setForgetting(undefined);
     if (forgetting !== list.focus) return setForgetting(list.focus);
-    const memory = app.memory.remove(list.focus);
+    const memory = jinion.memory.remove(list.focus);
     setForgetting(undefined);
-    setNotes(app.memory.list());
-    if (memory) app.actions.notice(`Forgot ${memory.scope}/${memory.id}: ${memory.title}`);
+    setNotes(jinion.memory.list());
+    if (memory) jinion.notice(`Forgot ${memory.scope}/${memory.id}: ${memory.title}`);
   });
 
   const choices: Choice[] = notes.map((memory) => {
@@ -45,7 +43,7 @@ export function MemoryPanel() {
           <Box flexDirection="column" paddingLeft={choiceIndent(list)} marginBottom={1}>
             <Prose>{lines.slice(0, PREVIEW_LINES).join('\n')}</Prose>
             {lines.length > PREVIEW_LINES && <Text color={theme.muted}>… {lines.length - PREVIEW_LINES} more lines</Text>}
-            <Text color={theme.muted}>{tildify(app.memory.path(memory))}</Text>
+            <Text color={theme.muted}>{tildify(jinion.memory.path(memory))}</Text>
           </Box>
         ) : undefined,
     };

@@ -1,22 +1,17 @@
 import type { ReactNode } from 'react';
 import { Box, Frame, Text, useTheme } from '@jinion/tui';
-import { modelLabel, useJinion } from '../context.js';
-import { accountLabel } from '../agent/types.js';
-import { tildify } from '../paths.js';
+import { useAtomValue } from 'jotai';
+import { accountLabel } from '../agent/accounts.js';
+import { useJinion } from '../app/context.js';
+import { tildify } from '../lib/paths.js';
+import { identityAtom, modelLabelAtom } from '../state/agent.js';
 
-/**
- * As wide as its content:
- *
- *     +- jinion v0.1.0 -----------------------------+
- *     | model    Opus 5.5 · xhigh   /model to change |
- *     | account  BUGECE · Team   /account to change  |
- *     | cwd      ~/projects/experiments/coding-agent |
- *     +---------------------------------------------+
- */
 export function Banner() {
   const theme = useTheme();
-  const app = useJinion();
-  const { version, cwd, examples = [] } = app.info;
+  const { agent, info } = useJinion();
+  const model = useAtomValue(modelLabelAtom);
+  const identity = useAtomValue(identityAtom);
+  const { version, cwd, examples = [] } = info;
 
   return (
     <Frame
@@ -32,12 +27,12 @@ export function Banner() {
       }
     >
       <Row label="model" hint="/model to change">
-        <Text color={theme.status.model}>{modelLabel(app.model)}</Text>
+        <Text color={theme.status.model}>{model}</Text>
       </Row>
-      {app.accounts.identity && (
-        <Row label="account" hint={app.accounts.manager && '/account to change'}>
-          <Text color={theme.accent}>{accountLabel(app.accounts.identity)}</Text>
-          {app.accounts.identity.name !== 'default' && <Text color={theme.muted}> ({app.accounts.identity.name})</Text>}
+      {identity && (
+        <Row label="account" hint={agent.accounts && '/account to change'}>
+          <Text color={theme.accent}>{accountLabel(identity)}</Text>
+          {identity.name !== 'default' && <Text color={theme.muted}> ({identity.name})</Text>}
         </Row>
       )}
       <Row label="cwd">
@@ -52,8 +47,7 @@ export function Banner() {
   );
 }
 
-/** A long value wraps under itself, not under the label. */
-function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+function Row({ label, hint, children }: { label: string; hint?: string | false; children: ReactNode }) {
   const theme = useTheme();
   return (
     <Box>

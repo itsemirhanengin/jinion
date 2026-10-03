@@ -1,58 +1,45 @@
 import { useEffect } from 'react';
-import {
-  Box,
-  ListRow,
-  Panel,
-  Prose,
-  SelectList,
-  Tabs,
-  Text,
-  useInput,
-  useListNavigation,
-  usePanel,
-  useTabs,
-  useTheme,
-  type KeyHint,
-} from '@jinion/tui';
-import type { AgentCommand } from '../agent/types.js';
-import { useJinion, type Jinion } from '../context.js';
-import { SHORTCUTS } from '../shortcuts.js';
-import { skillGroup, sortSkills } from '../skills.js';
+import { Box, ListRow, Panel, Prose, SelectList, Tabs, Text, useInput, useListNavigation, usePanel, useTabs, useTheme, type KeyHint } from '@jinion/tui';
+import { useAtomValue } from 'jotai';
+import type { AgentCommand } from '../agent/agent.js';
+import { useJinion } from '../app/context.js';
+import { SHORTCUTS } from '../app/shortcuts.js';
+import { requiresArgument } from '../commands/registry.js';
+import type { Jinion } from '../controllers/jinion.js';
+import { skillGroup, sortSkills } from '../prompt/skills.js';
+import { skillsAtom } from '../state/agent.js';
 
 const SHORTCUT_COLUMNS = 3;
 
-/** A row of a tab: one of Jinion's commands, or a skill or MCP prompt to mention. */
 interface HelpItem {
   label: string;
   hint?: string;
   description: string;
   aside?: string;
-  pick(app: Jinion): void;
+  pick(jinion: Jinion): void;
 }
 
-/** `/help`: a General tab with shortcuts, then Jinion's commands, and the agent's skills and MCP prompts. */
 export function HelpPanel({ topic = '' }: { topic?: string }) {
-  const app = useJinion();
+  const jinion = useJinion();
   const { close } = usePanel();
-  const skills = sortSkills(app.skills.list);
+  const skills = sortSkills(useAtomValue(skillsAtom));
   const mention = (skill: AgentCommand): HelpItem => ({
     label: `$${skill.name}`,
     hint: skill.argumentHint,
     description: skill.description,
     aside: skillGroup(skill),
-    pick: (app) => app.actions.fill(`$${skill.name} `),
+    pick: (app) => app.input.fill(`$${skill.name} `),
   });
   const groups = [
     {
       label: 'Commands',
-      items: app.commands.list().map(
+      items: jinion.commands.list().map(
         (command): HelpItem => ({
           label: `/${command.name}`,
           hint: command.argumentHint,
           description: command.description,
           aside: command.aliases?.map((alias) => `/${alias}`).join(' '),
-          pick: (app) =>
-            command.argumentHint?.startsWith('<') ? app.actions.fill(`/${command.name} `) : command.run(app, ''),
+          pick: (app) => (requiresArgument(command) ? app.input.fill(`/${command.name} `) : command.run(app, '')),
         }),
       ),
     },
@@ -73,7 +60,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
     const item = items[selected];
     if (!key.return || !item) return;
     close();
-    item.pick(app);
+    item.pick(jinion);
   });
 
   const hints: KeyHint[] =
@@ -83,7 +70,6 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
           ['Esc', 'close'],
         ]
       : [
-          // Skills and prompts go into the prompt, to send with a message.
           ['Enter', groups[tab - 1]?.label === 'Commands' ? 'run' : 'insert'],
           ['Up/Down', 'move'],
           ['Left/Right', 'switch tab'],

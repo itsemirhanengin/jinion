@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { ChoiceList, Panel, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
-import { useJinion } from '../context.js';
+import { useAtom, useSetAtom } from 'jotai';
+import { statusItemsAtom, statusPreviewAtom } from '../state/preferences.js';
+import { useStatusData } from '../status/data.js';
 import { DEFAULT_STATUS_LINE, styleOf, type StatusItem, type StatusSide } from '../status/line.js';
-import { findSegment, SEGMENTS } from '../status/segments.js';
+import { findSegment, SEGMENTS } from '../status/segments/index.js';
 
 const VISIBLE = 6;
 const NAME_WIDTH = 13;
 
 type Look = Omit<StatusItem, 'id'>;
 
-/** The shown segments in their order, then the rest in the order `SEGMENTS` lists them. */
 const orderOf = (items: StatusItem[]) => [
   ...items.map((item) => item.id),
   ...SEGMENTS.filter((segment) => !items.some((item) => item.id === segment.id)).map((segment) => segment.id),
@@ -23,36 +24,33 @@ const looksOf = (items: StatusItem[]): Record<string, Look> =>
     }),
   );
 
-/**
- * `/statusline`: every segment, checked when shown. The list's order is the line's order, and the status line
- * below shows the draft as it changes.
- */
 export function StatusLinePanel() {
-  const app = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
-  const [order, setOrder] = useState(() => orderOf(app.status.items));
-  const [looks, setLooks] = useState(() => looksOf(app.status.items));
+  const data = useStatusData();
+  const [saved, save] = useAtom(statusItemsAtom);
+  const preview = useSetAtom(statusPreviewAtom);
+  const [order, setOrder] = useState(() => orderOf(saved));
+  const [looks, setLooks] = useState(() => looksOf(saved));
 
-  const itemsOf = (checked: string[]): StatusItem[] =>
-    order.filter((id) => checked.includes(id)).map((id) => ({ id, ...looks[id]! }));
+  const itemsOf = (checked: string[]): StatusItem[] => order.filter((id) => checked.includes(id)).map((id) => ({ id, ...looks[id]! }));
 
   const list = useChoiceList({
     keys: order,
     mode: 'multiple',
-    initialChecked: app.status.items.map((item) => item.id),
+    initialChecked: saved.map((item) => item.id),
     onCancel: close,
     onSubmit: (checked) => {
-      app.actions.saveStatusLine(itemsOf(checked));
+      save(itemsOf(checked));
       close();
     },
   });
 
   const draft = itemsOf(list.checked);
   const draftKey = JSON.stringify(draft);
-  useEffect(() => app.actions.previewStatusLine(draft), [draftKey]);
+  useEffect(() => preview(draft), [draftKey]);
   // However the panel closes, the line goes back to what is saved.
-  useEffect(() => () => app.actions.previewStatusLine(undefined), []);
+  useEffect(() => () => preview(undefined), []);
 
   useInput((input, key) => {
     const id = list.focus;
@@ -77,9 +75,7 @@ export function StatusLinePanel() {
     if (input === 'r') {
       setOrder(orderOf(DEFAULT_STATUS_LINE));
       setLooks(looksOf(DEFAULT_STATUS_LINE));
-      for (const segment of SEGMENTS) {
-        list.setChecked(segment.id, DEFAULT_STATUS_LINE.some((item) => item.id === segment.id));
-      }
+      for (const segment of SEGMENTS) list.setChecked(segment.id, DEFAULT_STATUS_LINE.some((item) => item.id === segment.id));
     }
   });
 
@@ -87,8 +83,8 @@ export function StatusLinePanel() {
     const segment = findSegment(id)!;
     const look = looks[id]!;
     const shown = list.isChecked(id);
-    const style = segment.styles?.find((candidate) => candidate.id === styleOf({ id, ...look }));
-    const sample = segment.render(app.status.data, styleOf({ id, ...look }));
+    const style = styleOf({ id, ...look });
+    const sample = segment.render(data, style);
     return {
       key: id,
       label: (
@@ -97,7 +93,7 @@ export function StatusLinePanel() {
           <Text dimColor={!shown}>{sample ?? <Text color={theme.muted}>nothing to show yet</Text>}</Text>
         </Text>
       ),
-      description: style ? `${segment.description} · ${style.name}` : segment.description,
+      description: [segment.description, segment.styles?.find((candidate) => candidate.id === style)?.name].filter(Boolean).join(' · '),
       aside: shown ? look.side : undefined,
     };
   });
@@ -106,9 +102,7 @@ export function StatusLinePanel() {
     <Panel
       title="Status line"
       subtitle={`${list.checked.length} of ${SEGMENTS.length} shown`}
-      header={
-        <Text color={theme.muted}>Checked items show in the status line below, in this order. Changes show as you make them.</Text>
-      }
+      header={<Text color={theme.muted}>Checked items show in the status line below, in this order. Changes show as you make them.</Text>}
       hints={[
         ['Space', 'select'],
         ['Shift+Up/Down', 'move'],

@@ -1,14 +1,14 @@
-import { fuzzyFilter, type CompletionSource } from '@jinion/tui';
-import type { Jinion } from '../context.js';
+import { fuzzyFilter } from '@jinion/tui';
+import type { CompletionSource } from '@jinion/tui/chat';
+import type { Jinion } from '../controllers/jinion.js';
 
-/** One of Jinion's own commands. The agent's skills and MCP prompts are mentioned with `$` instead (`skills.ts`). */
 export interface Command {
   name: string;
   description: string;
   aliases?: string[];
   /** `<required>` or `[optional]`; a required argument makes Enter in the palette insert instead of run. */
   argumentHint?: string;
-  run(app: Jinion, args: string): void;
+  run(jinion: Jinion, args: string): void;
 }
 
 export class CommandRegistry {
@@ -28,7 +28,6 @@ export class CommandRegistry {
     return this.commands.find((command) => command.name === name || command.aliases?.includes(name));
   }
 
-  /** Completes `/name` at the start of the prompt, until the first space. */
   completion(): CompletionSource {
     return (value) => {
       if (!value.startsWith('/') || /\s/.test(value)) return undefined;
@@ -44,9 +43,11 @@ export class CommandRegistry {
           hint: item.argumentHint,
           description: item.description,
           insert: `/${item.name} `,
-          submit: item.argumentHint?.startsWith('<') ? false : undefined,
+          submit: requiresArgument(item) ? false : undefined,
         })),
       };
     };
   }
 }
+
+export const requiresArgument = (command: Command) => command.argumentHint?.startsWith('<') === true;

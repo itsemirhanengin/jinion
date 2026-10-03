@@ -1,30 +1,29 @@
 import { useEffect, useState } from 'react';
 import { findRepos, repoState, type Repo, type RepoState } from '../git/repos.js';
 
-/** Every repository the project works in, with its branch and changes. */
 export interface GitStatus {
   repos: (RepoState & { repo: Repo })[];
 }
 
-/**
- * Runs `git status` in the background whenever `refresh` changes, in the project's repository or, for a folder that
- * holds several, in each of them. `undefined` when there is none.
- */
+async function readGitStatus(cwd: string): Promise<GitStatus | undefined> {
+  const found = await Promise.all(
+    findRepos(cwd).map(async (repo) => {
+      const state = await repoState(repo);
+      return state ? [{ ...state, repo }] : [];
+    }),
+  );
+  const repos = found.flat();
+  return repos.length > 0 ? { repos } : undefined;
+}
+
+/** The last status stays shown while it is read again. */
 export function useGitStatus(cwd: string, enabled: boolean, refresh: unknown) {
   const [status, setStatus] = useState<GitStatus>();
 
   useEffect(() => {
     if (!enabled) return;
     let current = true;
-    void Promise.all(
-      findRepos(cwd).map(async (repo) => {
-        const state = await repoState(repo);
-        return state ? [{ ...state, repo }] : [];
-      }),
-    ).then((found) => {
-      const repos = found.flat();
-      if (current) setStatus(repos.length > 0 ? { repos } : undefined);
-    });
+    void readGitStatus(cwd).then((found) => current && setStatus(found));
     return () => {
       current = false;
     };

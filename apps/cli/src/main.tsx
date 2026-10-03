@@ -2,16 +2,19 @@ import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
 import { ClaudeAgent } from './agent/claude/agent.js';
-import { demoCommands, scenarios } from './agent/scenarios.js';
-import { ScriptedAgent } from './agent/scripted.js';
-import type { Agent } from './agent/types.js';
-import { App } from './app.js';
-import { DebugLog } from './debug.js';
+import { demoCommands } from './agent/demo/commands.js';
+import { scenarios } from './agent/demo/scenarios/index.js';
+import { ScriptedAgent } from './agent/demo/agent.js';
+import type { Agent } from './agent/agent.js';
+import { App } from './app/app.js';
+import { DebugLog } from './lib/debug.js';
 import { McpConfig } from './mcp/config.js';
 import { MemoryStore } from './memory/store.js';
-import { resumeOf } from './session.js';
-import { loadProjectSettings, loadSettings } from './settings.js';
-import { demoSessions, FileSessionStore, MemorySessionStore, type SessionStore } from './session-store.js';
+import { resumeOf } from './conversation/session.js';
+import { loadProjectSettings } from './settings/project.js';
+import { loadSettings } from './settings/user.js';
+import { demoSessions } from './agent/demo/sessions.js';
+import { FileSessionStore, MemorySessionStore, type SessionStore } from './conversation/store.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
@@ -60,7 +63,6 @@ if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
 // Package managers run scripts from the package directory; INIT_CWD is where the user invoked them.
 const cwd = process.env.INIT_CWD ?? process.cwd();
 
-// Each project starts in the mode it was last left in, with the account last switched to.
 const { mode } = loadProjectSettings(cwd);
 const account = loadSettings().accounts?.Claude;
 const memory = new MemoryStore(cwd);
