@@ -1,4 +1,5 @@
 import { importClaudeMemory } from '../memory/import.js';
+import { plural } from '../lib/format.js';
 import { truncate } from '../lib/text.js';
 import { MemoryPanel } from '../panels/memory.js';
 import type { Command } from './registry.js';
@@ -39,7 +40,7 @@ export const memory: Command = {
 
     jinion.notice(
       added > 0
-        ? `Imported ${added} notes from Claude Code${note}. The agent sees them from the next conversation on.`
+        ? `Imported ${plural(added, 'note')} from Claude Code${note}. The agent sees them from the next conversation on.`
         : `Nothing new to import from Claude Code${note}.`,
       added > 0 ? 'success' : 'muted',
     );

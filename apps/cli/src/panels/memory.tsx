@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Prose, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useJinion } from '../app/context.js';
+import { plural } from '../lib/format.js';
 import { tildify } from '../lib/paths.js';
 
 const PREVIEW_LINES = 12;
@@ -57,7 +58,7 @@ export function MemoryPanel() {
   return (
     <Panel
       title="Memory"
-      subtitle={`${notes.length} notes`}
+      subtitle={plural(notes.length, 'note')}
       hints={[
         ['Enter', 'open'],
         ['d', 'forget'],

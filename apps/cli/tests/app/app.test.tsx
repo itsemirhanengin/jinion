@@ -628,6 +628,19 @@ describe('App', () => {
     await terminal.waitFor('Ask jinion anything');
   });
 
+  it('counts the notes in /memory', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/remember Use pnpm, not npm');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('The agent sees it from the next conversation on.');
+
+    await terminal.type('/memory');
+    await terminal.press(KEYS.enter);
+    const panel = await terminal.waitFor('Use pnpm, not npm', 5_000);
+
+    expect(panel).toMatch(/Memory.* 1 note /);
+  });
+
   it('warns under the prompt as the context nears auto-compaction', () => {
     const usage = { contextTokens: 100_000, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
 
