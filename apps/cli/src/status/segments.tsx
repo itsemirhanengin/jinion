@@ -98,7 +98,7 @@ export const SEGMENTS: Segment[] = [
   {
     id: 'git',
     name: 'Git',
-    description: 'The branch, with uncommitted files and commits ahead or behind',
+    description: 'The branch, with uncommitted files and commits ahead or behind; for several repositories, how many',
     styles: [
       { id: 'changes', name: 'with changes' },
       { id: 'branch', name: 'branch only' },
@@ -106,9 +106,13 @@ export const SEGMENTS: Segment[] = [
     git: true,
     render: ({ git, theme }, style) => {
       if (!git) return undefined;
+      // A folder of several repositories sums them up; `/diff` tells them apart. A single one in a folder below is named.
+      const [only] = git.repos;
+      const where = git.repos.length > 1 || !only ? `${git.repos.length} repos` : only.repo.path ? `${only.repo.label} ${only.branch}` : only.branch;
+      const sum = (key: 'changed' | 'ahead' | 'behind') => git.repos.reduce((total, repo) => total + repo[key], 0);
       const details =
         style === 'changes'
-          ? [git.changed > 0 && `*${git.changed}`, git.ahead > 0 && `↑${git.ahead}`, git.behind > 0 && `↓${git.behind}`]
+          ? [sum('changed') > 0 && `*${sum('changed')}`, sum('ahead') > 0 && `↑${sum('ahead')}`, sum('behind') > 0 && `↓${sum('behind')}`]
           : [];
       const extra = details.filter(Boolean).join(' ');
       return (
@@ -116,7 +120,7 @@ export const SEGMENTS: Segment[] = [
           name="G"
           value={
             <Text>
-              {git.branch}
+              {where}
               {extra && <Text color={theme.warning}> {extra}</Text>}
             </Text>
           }

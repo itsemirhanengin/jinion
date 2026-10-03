@@ -74,6 +74,8 @@ export interface Jinion {
   skills: { list: AgentCommand[]; mention?: RegExp };
   sessions: SessionStore;
   memory: MemoryStore;
+  /** The files the agent changed in this conversation, subagents included, as absolute paths. */
+  edited: Set<string>;
   /** The conversation on screen. */
   sessionId: string;
 }

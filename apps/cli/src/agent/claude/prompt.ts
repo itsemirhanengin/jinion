@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { findRepos } from '../../git/repos.js';
 import { memorySection } from '../../memory/prompt.js';
 import type { MemoryStore } from '../../memory/store.js';
 
@@ -37,10 +38,20 @@ function environment(cwd: string) {
   return [
     '# Environment',
     `- Working directory: ${cwd}`,
-    `- Git: ${gitBranch(cwd)}`,
+    `- Git: ${gitLine(cwd)}`,
     `- Platform: ${process.platform}`,
     `- Date: ${new Date().toISOString().slice(0, 10)}`,
   ].join('\n');
+}
+
+/** The project's repository, or, for a folder that holds several, each of them, so git runs in the right one. */
+function gitLine(cwd: string) {
+  const repos = findRepos(cwd);
+  const [only] = repos;
+  if (!only) return 'not a git repository';
+  if (only.path === '') return gitBranch(only.root);
+  const list = repos.map((repo) => `${repo.path}/ (${gitBranch(repo.root)})`).join(', ');
+  return `this folder isn't a repository, but these folders in it are: ${list}. Run git in the repository a change belongs to, e.g. \`git -C ${only.path} status\`.`;
 }
 
 function gitBranch(cwd: string) {

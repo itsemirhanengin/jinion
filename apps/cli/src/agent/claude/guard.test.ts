@@ -2,7 +2,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { accountsDir } from './accounts.js';
-import { guardReason, isPlanFile } from './guard.js';
+import { guardReason, isPlanFile, readsRepositories } from './guard.js';
 
 const cwd = '/work/project';
 const bash = (command: string) => guardReason('Bash', { command }, cwd);
@@ -35,6 +35,37 @@ describe('guardReason', () => {
     expect(guardReason('Write', { file_path: join(homedir(), '.claude', 'plans', 'plan.md') }, cwd)).toBeUndefined();
     expect(guardReason('Write', { file_path: join(accountsDir(), 'work', 'plans', 'plan.md') }, cwd)).toBeUndefined();
     expect(guardReason('Read', { file_path: '/etc/hosts' }, cwd)).toBeUndefined();
+  });
+});
+
+describe('readsRepositories', () => {
+  const reads = (command: string) => readsRepositories('Bash', { command });
+
+  it('takes git reading repositories in folders with -C, one or several', () => {
+    for (const command of [
+      'git -C api status',
+      'git -C api branch --show-current && git -C "web app" branch -vv; git -C libs/shared log --oneline -5',
+      'git -C web diff HEAD -- src/a.ts',
+      'git -C web show',
+      'git -C web branch',
+    ]) {
+      expect(reads(command), command).toBe(true);
+    }
+  });
+
+  it('leaves anything else to be asked', () => {
+    for (const command of [
+      'git -C api push origin status',
+      'git -C api branch -D main',
+      'git -C api status && rm -rf api',
+      'git -C api log > log.txt',
+      'git -C api log | head',
+      'git -C api commit -m status',
+      'git status',
+    ]) {
+      expect(reads(command), command).toBe(false);
+    }
+    expect(readsRepositories('Write', { command: 'git -C api status' })).toBe(false);
   });
 });
 

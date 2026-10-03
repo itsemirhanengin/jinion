@@ -1,3 +1,4 @@
+import { resolve } from 'node:path';
 import { useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import {
   AskPanel,
@@ -109,6 +110,11 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const [skills, setSkills] = useState<AgentCommand[]>([]);
   const reloadCommands = () => void agent.commands().then(setSkills, () => {});
   const mention = useMemo(() => skillMention(skills), [skills]);
+  // For `/diff`, which marks the files the agent changed in this conversation.
+  const edited = useMemo(() => {
+    const calls = session.entries.flatMap((entry) => (entry.kind === 'tool' ? [entry, ...(entry.children ?? [])] : []));
+    return new Set(calls.flatMap((call) => (call.run.name === 'edit' ? [resolve(info.cwd, call.run.input.path)] : [])));
+  }, [session.entries, info.cwd]);
   // Listed again after each turn, which may have added or removed files.
   const files = useProjectFiles(info.cwd, session.busySince === undefined);
   const completions = useMemo(
@@ -470,6 +476,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     skills: { list: skills, mention },
     sessions,
     memory,
+    edited,
     sessionId: session.id,
   };
 

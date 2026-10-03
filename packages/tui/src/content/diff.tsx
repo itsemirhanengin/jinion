@@ -86,6 +86,8 @@ export interface DiffProps {
   patch: string;
   /** Lines shown while collapsed. */
   maxLines?: number;
+  /** Only these lines, one row each, cut at the edge: for a view that scrolls through a long diff. */
+  window?: { start: number; rows: number };
 }
 
 /**
@@ -95,11 +97,15 @@ export interface DiffProps {
  *     |-13|removed
  *     |+13|added
  */
-export function Diff({ patch, maxLines = 24 }: DiffProps) {
+export function Diff({ patch, maxLines = 24, window }: DiffProps) {
   const theme = useTheme();
   const { expanded } = useView();
   const lines = useMemo(() => parsePatch(patch), [patch]);
-  const visible = expanded ? lines : lines.slice(0, maxLines);
+  const visible = window
+    ? lines.slice(window.start, window.start + window.rows)
+    : expanded
+      ? lines
+      : lines.slice(0, maxLines);
   const numberWidth = String(Math.max(0, ...lines.map((line) => line.newNumber ?? line.oldNumber ?? 0))).length;
 
   return (
@@ -131,7 +137,7 @@ export function Diff({ patch, maxLines = 24 }: DiffProps) {
               <Text color={theme.border}>|</Text>
             </Box>
             <Box flexShrink={1}>
-              <Text color={style.color}>
+              <Text color={style.color} wrap={window ? 'truncate-end' : 'wrap'}>
                 {line.text.slice(0, from)}
                 <Text backgroundColor={style.highlight}>{line.text.slice(from, to)}</Text>
                 {line.text.slice(to) || (line.text ? '' : ' ')}
@@ -140,7 +146,7 @@ export function Diff({ patch, maxLines = 24 }: DiffProps) {
           </Box>
         );
       })}
-      {visible.length < lines.length && <ExpandHint>{`(${lines.length - visible.length} more lines)`}</ExpandHint>}
+      {!window && visible.length < lines.length && <ExpandHint>{`(${lines.length - visible.length} more lines)`}</ExpandHint>}
     </Box>
   );
 }

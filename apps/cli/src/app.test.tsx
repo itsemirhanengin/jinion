@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
 import { demoCommands, scenarios } from './agent/scenarios.js';
@@ -5,6 +6,7 @@ import { ScriptedAgent } from './agent/scripted.js';
 import { App } from './app.js';
 import { MemoryStore } from './memory/store.js';
 import { MemorySessionStore } from './session-store.js';
+import { repo } from './test/git.js';
 import { sandbox, type Sandbox } from './test/sandbox.js';
 
 /** The whole app in an emulated terminal, with the demo agent playing its scenarios without pauses. */
@@ -152,18 +154,68 @@ describe('App', () => {
   });
 
   it('plays the tour through its questions, edits and commands', async () => {
-    await terminal.waitFor('Ask jinion anything');
-    await terminal.type('add rate limiting to the api');
-    await terminal.press(KEYS.enter);
-    await terminal.waitFor('Where should the limiter keep its counters?');
-    await terminal.press(KEYS.enter);
-    await terminal.waitFor('Which routes should be limited?');
-    await terminal.press(KEYS.enter);
-    await terminal.waitFor('Which checks should run');
-    await terminal.press(' ', KEYS.enter);
-    // The prompt comes back when the turn is over.
-    const screen = await terminal.waitFor(/One thing left open[\s\S]*Ask jinion anything/, 10_000);
+    const screen = await playTour();
     expect(screen).toContain('src/middleware/rate-limit.ts');
     expect(screen).not.toContain('Interrupted');
   });
+
+  it('shows the changes in each repository of a folder that holds several, and a file’s diff on enter', async () => {
+    repo(join(box.project, 'api'), (path) => box.write(join(path, 'server.ts'), 'listen(3000)\n'));
+    repo(join(box.project, 'web'), (path) => box.write(join(path, 'index.html'), '<h1>hi</h1>\n'));
+    repo(join(box.project, 'docs'), (path) => box.write(join(path, 'index.md'), '# docs\n'));
+    box.write(join(box.project, 'api', 'server.ts'), 'listen(8080)\n');
+    box.write(join(box.project, 'web', 'app.css'), 'h1 {}\nbody {}\n');
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/diff');
+    await terminal.press(KEYS.enter);
+
+    const list = await terminal.waitFor('app.css');
+    expect(list).toContain('3 repositories · 2 files · +3 -1');
+    expect(list).toMatch(/^\| api main +\|$/m);
+    expect(list).toMatch(/^\| > +server\.ts +\+1 -1 +\|$/m);
+    expect(list).toMatch(/^\| web main +\|$/m);
+    expect(list).toMatch(/^\| +app\.css +new \+2 +\|$/m);
+    expect(list).toMatch(/^\| No changes in docs\. +\|$/m);
+
+    await terminal.press(KEYS.enter);
+    const diff = await terminal.waitFor('listen(8080)');
+    expect(diff).toContain('api/server.ts');
+    expect(diff).toContain('listen(3000)');
+    await terminal.press(KEYS.escape);
+    await terminal.waitFor('3 repositories');
+    await terminal.press(KEYS.escape);
+    await terminal.waitFor('Ask jinion anything');
+  });
+
+  it('marks the files the agent changed in the diff', async () => {
+    repo(box.project, (path) => {
+      box.write(join(path, 'src', 'server.ts'), 'app.listen()\n');
+      box.write(join(path, 'README.md'), '# api\n');
+    });
+    await playTour();
+    // The demo agent doesn't write, so the test changes what it says it did, and a file it didn't touch.
+    box.write(join(box.project, 'src', 'server.ts'), 'app.use(limit)\napp.listen()\n');
+    box.write(join(box.project, 'README.md'), '# api, rate limited\n');
+    await terminal.type('/diff');
+    await terminal.press(KEYS.enter);
+
+    const list = await terminal.waitFor('2 files');
+    expect(list).toMatch(/^\| > README\.md +\+1 -1 +\|$/m);
+    expect(list).toMatch(/^\| {3}src\/server\.ts +\+1 +agent \|$/m);
+  });
 });
+
+/** Plays the demo's tour to the end, answering its questions with the first choice. */
+async function playTour() {
+  await terminal.waitFor('Ask jinion anything');
+  await terminal.type('add rate limiting to the api');
+  await terminal.press(KEYS.enter);
+  await terminal.waitFor('Where should the limiter keep its counters?');
+  await terminal.press(KEYS.enter);
+  await terminal.waitFor('Which routes should be limited?');
+  await terminal.press(KEYS.enter);
+  await terminal.waitFor('Which checks should run');
+  await terminal.press(' ', KEYS.enter);
+  // The prompt comes back when the turn is over.
+  return terminal.waitFor(/One thing left open[\s\S]*Ask jinion anything/, 10_000);
+}

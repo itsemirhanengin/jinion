@@ -109,7 +109,7 @@ Switching happens between turns, and a conversation in progress carries on under
 | Mode | `Auto`, also always under the prompt | |
 | Account | `[A] work` | |
 | Directory | `[D] experiments/coding-agent` | last two folders, full path, folder name |
-| Git | `[G] main *3 ↑1` | with uncommitted files and commits ahead/behind, branch only |
+| Git | `[G] main *3 ↑1`; `[G] 4 repos *7` in a folder that holds several | with uncommitted files and commits ahead/behind, branch only |
 | Context | `ctx [====------] 41%` | tokens, percent, meter |
 | Plan limits | `5h 8% · 7d 20%` | 5h and 7d, 5h with reset time, 7d, 5h meter |
 | Cost | `$0.12`, at API prices | |
@@ -134,7 +134,7 @@ In every mode, Jinion itself asks before a commit and before a file outside the 
 
 ### Permissions
 
-File edits inside the project, read-only tools, web fetch and search, and a few commands (`git status/diff/log/show/branch`, `ls`, `pnpm`/`npm` scripts) run without asking in Accept edits. Anything that needs asking opens the permission panel in place of the prompt:
+File edits inside the project, read-only tools, web fetch and search, and a few commands (`git status/diff/log/show/branch`, also as `git -C <folder> …` in a folder of several repositories, `ls`, `pnpm`/`npm` scripts) run without asking in Accept edits. Anything that needs asking opens the permission panel in place of the prompt:
 
 | Choice | Does |
 | --- | --- |
@@ -185,6 +185,14 @@ The prompt stays open while the agent works. A message sent then steers the turn
 
 When the agent hands part of the work to a subagent, its tool calls grow as a tree under `Agent · what it is doing`, one line each, the latest six in view; the line under the prompt says what the subagent is on. Once it is done, the tree folds into `6 tool calls · 34s`, and `ctrl+o` opens it again.
 
+`/diff` shows what changed since the last commit, staged or not, new files included, with `+`/`-` lines per file. Files the agent changed in this conversation, subagents included, are marked `agent`, so they stand apart from your own edits. `enter` opens a file's diff, scrolled with `up`/`down` and `pgup`/`pgdn`, and `esc` goes back to the list.
+
+Jinion also works in a folder that isn't a repository but holds several, such as a parent folder of four repositories opened for the context across them. It finds the repositories up to three folders down (skipping `node_modules`, build output and hidden folders), and:
+
+- `/diff` groups the changes under each repository with its branch;
+- the status line's Git segment sums them up, as `4 repos *7`;
+- the system prompt lists the repositories and their branches, and tells the agent to run git in the one a change belongs to (`git -C api status`).
+
 When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 
 | Command | Does |
@@ -199,6 +207,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
 | `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
+| `/diff` | Full screen list of what changed since the last commit, in every repository here, with the agent's changes marked; `enter` opens a file's diff |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
@@ -220,6 +229,7 @@ The demo agent also offers skills (`$review`, `$commit`, `$explain <path>`) and 
 - `commands/` holds the `CommandRegistry` of Jinion's own commands, which live in `builtin.tsx`. The registry also provides the palette's completion source and the help tab, so a new command shows up everywhere at once.
 - `skills.ts` completes and highlights the agent's skills and MCP prompts (`Agent.commands()`) as `$` mentions; the agent turns the mentions into what its backend runs.
 - `panels/` holds the panels commands open (`HelpPanel` at the bottom, `ResumePanel` full screen), built from `@jinion/tui`'s `Panel`.
+- `git/repos.ts` finds the repositories a project works in (its own, or those in its folders) and reads their state and changes, for `/diff`, the status line and the system prompt.
 - `session.ts` reduces events into conversation entries; `session-store.ts` defines `SessionStore`. `FileSessionStore` keeps each conversation as a JSON file, together with the agent's own session id that `Agent.reset(resume)` takes to continue it. The demo uses an in-memory store with sample conversations.
 - `ui/entry.tsx` maps entries to `@jinion/tui` components. `shortcuts.ts` is the list `/help` shows.
 

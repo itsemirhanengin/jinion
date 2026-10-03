@@ -2,7 +2,7 @@ import type { CanUseTool, HookCallback } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionDecision } from '@jinion/tui';
 import type { AgentMode, PlanDecision, RunContext } from '../types.js';
 import { toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
-import { guardReason } from './guard.js';
+import { guardReason, readsRepositories } from './guard.js';
 import { isMemoryTool } from './memory.js';
 import { PERMISSION_MODES } from './options.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
@@ -54,7 +54,7 @@ export class ClaudeApprovals {
   };
 
   readonly canUseTool: CanUseTool = async (name, input, options) => {
-    if (UNASKED.has(name) || this.allowedTools.has(name)) return { behavior: 'allow', updatedInput: input };
+    if (UNASKED.has(name) || this.allowedTools.has(name) || readsRepositories(name, input)) return { behavior: 'allow', updatedInput: input };
     const turn = this.options.turn();
     if (!turn) return { behavior: 'deny', message: 'Nobody is there to approve this right now.' };
 

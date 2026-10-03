@@ -2,6 +2,7 @@ import type { Jinion } from '../context.js';
 import { HelpPanel } from '../panels/help.js';
 import { importClaudeMemory } from '../memory/import.js';
 import { AccountPicker } from '../panels/account.js';
+import { DiffPanel } from '../panels/diff.js';
 import { McpPanel } from '../panels/mcp.js';
 import { MemoryPanel } from '../panels/memory.js';
 import { ModePicker } from '../panels/mode.js';
@@ -143,6 +144,11 @@ export const builtinCommands: Command[] = [
       if (!mcp) return app.actions.notice(`${app.model.agent} has no MCP servers.`, 'warning');
       app.panels.open({ id: 'mcp', placement: 'bottom', element: <McpPanel mcp={mcp} /> });
     },
+  },
+  {
+    name: 'diff',
+    description: 'What changed since the last commit, in every repository here, with the agent’s changes marked',
+    run: (app) => app.panels.open({ id: 'diff', placement: 'fullscreen', element: <DiffPanel /> }),
   },
   {
     name: 'rewind',

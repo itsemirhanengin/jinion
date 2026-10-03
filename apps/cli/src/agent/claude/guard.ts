@@ -43,6 +43,21 @@ export function guardReason(tool: string, input: Input, cwd: string) {
   return RULES.find((rule) => rule.matches(tool, input, cwd))?.reason;
 }
 
+/**
+ * `git -C <folder>` running one of the read-only commands the allow rules let through without `-C`. In a folder that
+ * holds several repositories the agent runs git like that, and a rule can't say it safely: `*` spans spaces, so
+ * `git -C * status*` would also match `git -C api push origin status`.
+ */
+const READ_ONLY_GIT =
+  /^git\s+-C\s+(?:"[^"]*"|'[^']*'|\S+)\s+(?:(?:status|diff|log|show)(?:\s|$)|branch(?:\s+(?:--show-current|--list|-[arv]+|-vv))*\s*$)/;
+
+/** Whether a shell line only reads repositories with `git -C`, without redirecting output to a file. */
+export function readsRepositories(tool: string, input: Input) {
+  if (tool !== 'Bash' || typeof input.command !== 'string' || /[<>]/.test(input.command)) return false;
+  const parts = commands(input.command);
+  return parts.length > 0 && parts.every((command) => READ_ONLY_GIT.test(command));
+}
+
 /** The simple commands in a shell line, with leading `VAR=value` assignments and `sudo` dropped. */
 function commands(line: unknown) {
   if (typeof line !== 'string') return [];
