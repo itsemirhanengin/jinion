@@ -61,8 +61,6 @@ history. Optional parts of the interface stay optional, so the UI already copes 
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
-- **The `/stats` calendar test depends on the day.** `tests/app/app.test.tsx` expects a fixed number of squares in the
-  Monday row, which changes with the weekday the test runs on; it needs a fixed date.
 - **Messages that name Claude Code.** `agent/claude/auth.ts` (removing an account), `agent/claude/agent.ts` (restoring
   files) and `panels/usage/section.tsx` (the summary days come from) show "Claude Code" on screen. Removing an account
   is also worded differently in `/account remove` and in the panel.

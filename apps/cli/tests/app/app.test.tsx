@@ -39,6 +39,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
   terminal.unmount();
   box.restore();
 });
@@ -531,6 +532,9 @@ describe('App', () => {
   });
 
   it('shows the plan’s limits and what adds to them in /usage, and the days of use as a calendar on tab', async () => {
+    // The calendar's rows end on today, so how many squares Monday has depends on the weekday.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 3, 12));
     start(0, 44);
     await terminal.waitFor('Ask jinion anything');
     await terminal.type('/usage');
