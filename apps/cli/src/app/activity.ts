@@ -3,8 +3,10 @@ import type { BackgroundTask } from '../agent/tasks.js';
 import type { ToolRun } from '../agent/tools.js';
 import type { Usage } from '../agent/usage.js';
 import type { Session } from '../conversation/session.js';
+import { clip } from '../lib/text.js';
 
 const CONTEXT_WARNING = 0.2;
+const COMMAND_LENGTH = 60;
 
 export const hasWorkLeft = (todos: TodoGroup[]) => todos.some((group) => group.items.some((item) => item.status !== 'done'));
 
@@ -40,6 +42,8 @@ export function activity(session: Session, panel: string | undefined, tasks: Bac
 
 function runningName(run: ToolRun) {
   switch (run.name) {
+    case 'bash':
+      return clip(run.input.command, COMMAND_LENGTH);
     case 'other':
       return run.input.title;
     case 'mcp':
