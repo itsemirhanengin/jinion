@@ -5,6 +5,8 @@ import xterm from '@xterm/headless';
 import { Root } from '../runtime/context.js';
 import { DRAWING } from '../runtime/drawing.js';
 import { createInput, type MouseListener } from '../runtime/input.js';
+import { tapStream } from '../runtime/screen.js';
+import { SelectionLayer } from '../runtime/selection.js';
 import { createTerminalControl } from '../runtime/terminal.js';
 import { darkTheme, type Theme } from '../theme/themes.js';
 
@@ -49,6 +51,15 @@ export interface TestTerminal {
    * a terminal with mouse reporting on does.
    */
   click(text: string, at?: number): Promise<void>;
+  /**
+   * Drags with the left button from the first place that shows `from` to the first that shows `to`, on their cells
+   * `fromAt` and `toAt` characters in, and lets go there.
+   */
+  drag(from: string, to: string, fromAt?: number, toAt?: number): Promise<void>;
+  /** Clicks the first place that shows `text` `times` times in a row, as a double or triple click. */
+  multiClick(text: string, times: number, at?: number): Promise<void>;
+  /** What the app put on the clipboard so far, through OSC 52, oldest first. */
+  clipboard(): string[];
   /** Moves the pointer onto the first place that shows `text`, with no button held. */
   hover(text: string, at?: number): Promise<void>;
   /** The background color of the first place that shows `text`, as `#rrggbb`, or `undefined` for the default. */
@@ -92,8 +103,15 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
   }) as unknown as NodeJS.ReadStream;
   const mouse = new Set<MouseListener>();
   // Notifications go out as OSC 777, as in Ghostty, and the emulator keeps them.
-  const terminalControl = createTerminalControl((data) => stdout.write(data), 'osc777');
+  // What is drawn goes through a screen, as in `run()`; the clipboard is the terminal's, through OSC 52.
+  const shown = tapStream(stdout);
+  const terminalControl = createTerminalControl((data) => stdout.write(data), 'osc777', 'osc52');
   const notifications: string[] = [];
+  const clipboard: string[] = [];
+  terminal.parser.registerOscHandler(52, (data) => {
+    clipboard.push(Buffer.from(data.slice(data.indexOf(';') + 1), 'base64').toString());
+    return true;
+  });
   let pointer = 'default';
   terminal.parser.registerOscHandler(22, (data) => {
     pointer = data;
@@ -114,7 +132,7 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
 
   const instance = render(
     <Root theme={theme} mouse={mouse} terminal={terminalControl.control}>
-      {node}
+      <SelectionLayer screen={shown}>{node}</SelectionLayer>
     </Root>,
     { stdout, stdin: input.stdin, interactive: true, patchConsole: false, ...DRAWING },
   );
@@ -180,6 +198,18 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
       const cell = await cellOf(text, at);
       await send(`\x1b[<0;${cell}M\x1b[<0;${cell}m`);
     },
+    drag: async (from, to, fromAt = 0, toAt = 0) => {
+      const start = await cellOf(from, fromAt);
+      const end = await cellOf(to, toAt);
+      await send(`\x1b[<0;${start}M`);
+      await send(`\x1b[<32;${end}M`);
+      await send(`\x1b[<0;${end}m`);
+    },
+    multiClick: async (text, times, at = 0) => {
+      const cell = await cellOf(text, at);
+      for (let click = 0; click < times; click++) await send(`\x1b[<0;${cell}M\x1b[<0;${cell}m`);
+    },
+    clipboard: () => [...clipboard],
     hover: async (text, at = 0) => send(`\x1b[<35;${await cellOf(text, at)}M`),
     backgroundOf: async (text, at = 0) => {
       await drawn();

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Box, Text, type Key } from 'ink';
-import { useTheme } from '../runtime/context.js';
+import { useTheme, useToast } from '../runtime/context.js';
 import { Highlight } from '../primitives/highlight.js';
 import { KeyHints } from '../primitives/panel.js';
 import { Rule } from '../primitives/rule.js';
@@ -76,6 +76,7 @@ export function Composer({
   ...input
 }: ComposerProps) {
   const theme = useTheme();
+  const toast = useToast();
   const { value, onChange, onSubmit } = input;
   const patterns = mentions.map((pattern) => pattern?.source ?? '').join('\n');
   const highlight = useMemo(() => anyOf([MENTION, ...mentions]), [patterns]);
@@ -126,7 +127,10 @@ export function Composer({
 
   return (
     <Box flexDirection="column">
-      <Rule title={hidden.above > 0 ? <Text color={theme.muted}>↑ {lines(hidden.above)} above</Text> : undefined} />
+      <Rule
+        title={hidden.above > 0 ? <Text color={theme.muted}>↑ {lines(hidden.above)} above</Text> : undefined}
+        aside={toast.text && <Text color={theme.success}>{toast.text}</Text>}
+      />
       <PromptInput
         {...input}
         onKeyDown={onKeyDown}

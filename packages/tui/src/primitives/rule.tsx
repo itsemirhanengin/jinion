@@ -5,12 +5,14 @@ import { Fill } from './fill.js';
 
 export interface RuleProps {
   title?: ReactNode;
+  /** On the right: `--- title ------ aside ---`. */
+  aside?: ReactNode;
   char?: string;
   color?: string;
 }
 
-/** A full-width dashed line: `------` or `--- title ------`. */
-export function Rule({ title, char = '-', color }: RuleProps) {
+/** A full-width dashed line: `------`, `--- title ------`, or with an aside on the right, `------ aside ---`. */
+export function Rule({ title, aside, char = '-', color }: RuleProps) {
   const theme = useTheme();
   const lineColor = color ?? theme.border;
 
@@ -24,6 +26,13 @@ export function Rule({ title, char = '-', color }: RuleProps) {
         </>
       )}
       <Fill char={char} color={lineColor} />
+      {aside !== undefined && (
+        <>
+          <Text> </Text>
+          <Text>{aside}</Text>
+          <Text color={lineColor}> {char.repeat(3)}</Text>
+        </>
+      )}
     </Box>
   );
 }

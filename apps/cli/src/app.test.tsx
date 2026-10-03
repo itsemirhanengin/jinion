@@ -225,6 +225,38 @@ describe('App', () => {
     await terminal.waitFor('“add rate limiting to the api” · 4 files · +63 -4');
   });
 
+  it('selects text with the mouse, copies it on release with a note over the prompt, and copies again on ctrl+c', async () => {
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/the mouse wheel[\s\S]*Ask jinion anything/);
+
+    await terminal.drag('the mouse wheel', 'the mouse wheel', 4, 14);
+    expect(terminal.clipboard()).toEqual(['mouse wheel']);
+    const copied = await terminal.waitFor('copied 11 chars to clipboard');
+    // At the top right of the prompt.
+    expect(copied).toMatch(/^-+ copied 11 chars to clipboard ---$/m);
+    expect(await terminal.backgroundOf('mouse wheel')).toBe(darkTheme.selectionBackground);
+    expect(await terminal.backgroundOf('the mouse wheel')).not.toBe(darkTheme.selectionBackground);
+
+    // ctrl+c copies rather than quitting, and lets go of the selection.
+    await terminal.press(KEYS.ctrlC);
+    expect(terminal.clipboard()).toEqual(['mouse wheel', 'mouse wheel']);
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(await terminal.backgroundOf('mouse wheel')).not.toBe(darkTheme.selectionBackground);
+    expect(await terminal.screen()).toContain('Ask jinion anything');
+
+    // A double click takes a word, a triple click the line.
+    await terminal.multiClick('commands, skills', 2, 2);
+    expect(terminal.clipboard().at(-1)).toBe('commands');
+    await terminal.multiClick('scrolls the conversation', 3);
+    expect(terminal.clipboard().at(-1)).toBe('- the mouse wheel or pgup/pgdn scrolls the conversation');
+
+    // Typing lets go of it.
+    await terminal.type('x');
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    expect(await terminal.backgroundOf('scrolls the conversation')).not.toBe(darkTheme.selectionBackground);
+  });
+
   it('keeps the task list above the prompt while it has work left, and not once it is all done', () => {
     const list = (...statuses: TodoStatus[]) => [{ title: 'Tasks', items: statuses.map((status, index) => ({ text: `task ${index}`, status })) }];
     expect(hasWorkLeft(list('done', 'active', 'pending'))).toBe(true);

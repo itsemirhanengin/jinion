@@ -5,6 +5,8 @@ import { Root } from './context.js';
 import { detectBackground } from './detect-scheme.js';
 import { createInput, DISABLE_FOCUS, DISABLE_MOUSE, ENABLE_FOCUS, ENABLE_MOUSE, type MouseListener } from './input.js';
 import { DRAWING } from './drawing.js';
+import { tapStream } from './screen.js';
+import { SelectionLayer } from './selection.js';
 import { createTerminalControl, pointerSequence } from './terminal.js';
 
 export interface RunOptions {
@@ -34,6 +36,8 @@ export async function run(node: ReactNode, options: RunOptions = {}): Promise<In
   const { stdout } = process;
   const interactive = Boolean(stdout.isTTY && process.stdin.isTTY);
   const mouse = new Set<MouseListener>();
+  // What is drawn goes through a screen that reads it, for selecting text with the mouse.
+  const screen = interactive ? tapStream(stdout) : undefined;
   const terminal = createTerminalControl((data) => interactive && stdout.write(data));
   const input = interactive
     ? createInput(
@@ -47,7 +51,7 @@ export async function run(node: ReactNode, options: RunOptions = {}): Promise<In
 
   const instance = render(
     <Root theme={theme} mouse={mouse} terminal={terminal.control}>
-      {node}
+      <SelectionLayer screen={screen}>{node}</SelectionLayer>
     </Root>,
     {
       stdin: input?.stdin,

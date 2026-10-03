@@ -23,8 +23,15 @@ with `\` and press `enter`.
 
 ## Select and copy text
 
-Jinion receives mouse events, for scrolling and clicking. To select text, hold `shift` while you drag. In iTerm2, hold
-`option` instead.
+Drag to select text. When you let go, it is copied, and `copied 27 chars to clipboard` shows at the top right of the
+prompt. Double-click selects a word, with a file path or a URL as one word; triple-click selects a line. With text
+selected, `ctrl+c` copies it again rather than stopping the agent. Typing, clicking or scrolling lets go of it.
+
+On your own machine the text goes through the system's clipboard tool: `pbcopy` on macOS, `wl-copy`, `xclip` or `xsel`
+on Linux. Over SSH it goes through your terminal (OSC 52). iTerm2 lets it through once you turn on Settings → General
+→ Selection → Applications in terminal may access clipboard. Inside tmux it also goes to tmux's paste buffer.
+
+For your terminal's own selection, hold `shift` while you drag: `option` in iTerm2, `fn` in Terminal.app.
 
 ## Scroll
 

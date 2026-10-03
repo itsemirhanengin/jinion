@@ -68,30 +68,21 @@ answers, when to use which tool and how to run them in parallel, the git commit 
 references, security, and what to do when a hook or a check blocks a call. Go through it section by section, keep what
 applies to Jinion in Jinion's own words, and check the change on a few real tasks rather than by reading the prompt.
 
-### 3. Selecting text
-
-Jinion turns on mouse reports (`ENABLE_MOUSE` in `packages/tui/src/runtime/input.ts`) for the wheel, clicks and
-hovering, and with them on, the terminal no longer selects text by itself. Draw the selection in Jinion instead: drag to
-select, highlight the cells in the theme's `selection` color, and copy when the button is let go, through OSC 52 so it
-also works over SSH. Then show `copied 27 chars to clipboard` at the top right of the prompt for a moment. A drag
-already comes in as `move` events with the button held, and `useClick` takes a press and release on different cells as
-one rather than a click. Look at how Claude Code's fullscreen mode selects and copies before designing it.
-
-### 4. Richer tool views
+### 3. Richer tool views
 
 WebFetch, WebSearch and MCP tool calls show as a single line today (`other` in `apps/cli/src/agent/claude/events.ts`,
 drawn by `ToolView` in `apps/cli/src/ui/entry.tsx`). Claude Code shows what came back: a fetch's URL, size and status, a
 search's result titles, an MCP tool's result in short. Give them their own tool kinds in `agent/types.ts`, map their
 results in `events.ts`, and draw a short preview that `ctrl+o` expands, like command output.
 
-### 5. Worktrees
+### 4. Worktrees
 
 Each task in its own git worktree, so several conversations can work on one repository at once without stepping on
 each other. Claude Code has this (worktree sessions, `EnterWorktree`); look up how it creates, names and cleans them up
 before designing Jinion's. Touches where Claude Code is started (`agent/claude/options.ts`, its `cwd`), the session
 store, `/diff` and the status line, which should say which worktree a conversation is in.
 
-### 6. A Codex adapter
+### 5. A Codex adapter
 
 A second `Agent` (`apps/cli/src/agent/types.ts`) proves the interface holds. `agent/claude/` is the reference: models
 with effort levels, modes, the event stream in and between turns, steering, background tasks, compaction, usage and
@@ -117,7 +108,7 @@ for it rather than build it early. What it takes:
 - **Tabs.** Several conversations, editors and shells open at once, each in its own tab, with a tab bar and shortcuts
   to move between them. Today the app is one conversation on the whole screen, with panels on top of it.
 - **More than one project.** Each tab belongs to a project folder, with its own session store, `/diff`, git state and
-  instruction files. Worktrees (item 5) are the first step: several conversations on one repository.
+  instruction files. Worktrees (item 4) are the first step: several conversations on one repository.
 - **An editor.** Open a file from the conversation, from `/diff` or from a file tree, move around it, change it and save
   it, with syntax colors from the theme. The prompt's editor (`packages/tui/src/chat/prompt-input.tsx`) and `/diff`'s
   file view are the pieces closest to it today.
@@ -140,4 +131,5 @@ Tests, lint, CI and `--debug`; the agent split into process, approvals and event
 steering and the queue, rewind; the subagent tree, `/diff` across folders of repositories, notifications; background
 tasks; `/usage` and `/stats`; the guard for commands that write outside the project; `/compact` and `/context`;
 `/diff`'s turn views; thinking and command output that fold once done, and open one at a time on a click, lit up under
-the pointer; the card of what a turn changed, each file opening its diff. `git log` has the details.
+the pointer; the card of what a turn changed, each file opening its diff; selecting text with the mouse, copied on
+release. `git log` has the details.

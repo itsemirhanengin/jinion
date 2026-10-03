@@ -171,7 +171,9 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 | `@` | Mentions a file or folder of the project, completed as you type; Claude Code reads it into the conversation, so the agent can work on it without opening it first |
 | `ctrl+c` | Interrupt, close a panel, clear the prompt, or quit |
 | mouse wheel, `pgup` / `pgdn` | Scroll the conversation; click `Jump to bottom` to follow again |
-| `shift` + drag | Select text (`option` in iTerm2), since the app receives mouse events |
+| drag | Select text; it is copied when you let go, and `copied 27 chars to clipboard` shows over the prompt. Double-click selects a word (a path or a URL as one), triple-click a line |
+| `ctrl+c` | With text selected, copy it again rather than interrupt or quit |
+| `shift` + drag | Your terminal's own selection (`option` in iTerm2, `fn` in Terminal.app) |
 
 `@` completes the project's files and folders: what git tracks or could track, so ignored files stay out, with names that match ranking first. A folder goes in without a space, so typing on lists what's inside.
 

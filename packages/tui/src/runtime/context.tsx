@@ -19,6 +19,17 @@ const ThemeContext = createContext<Theme>(darkTheme);
 const WidthContext = createContext<number>(80);
 const ViewContext = createContext<View>({ expanded: false, toggleExpanded: () => {}, items: new Map(), setItem: () => {} });
 const MouseContext = createContext<Set<MouseListener>>(new Set());
+
+interface Toast {
+  /** A short note for a moment, e.g. `copied 27 chars to clipboard`, shown at the top right of the prompt. */
+  text?: string;
+  show(text: string): void;
+}
+
+const ToastContext = createContext<Toast>({ show: () => {} });
+
+/** How long a toast stays. */
+const TOAST_MS = 2500;
 /** Outside `run()` nothing reaches a terminal. */
 const NO_TERMINAL = createTerminalControl(() => {}, 'bell').control;
 const TerminalContext = createContext<TerminalControl>(NO_TERMINAL);
@@ -32,6 +43,8 @@ export const useTerminal = () => useContext(TerminalContext);
 export const useContentWidth = () => useContext(WidthContext);
 
 export const useView = () => useContext(ViewContext);
+
+export const useToast = () => useContext(ToastContext);
 
 /** Gives what is inside `id` its own `expanded`: as set for it when it was opened or closed on its own, else ctrl+o's. */
 export function ViewItem({ id, children }: { id: string; children: ReactNode }) {
@@ -80,6 +93,15 @@ export function Root({ theme, mouse, terminal, children }: RootProps) {
   const setItem = useCallback((id: string, value: boolean) => setItems((current) => new Map(current).set(id, value)), []);
   const view = useMemo(() => ({ expanded, toggleExpanded, items, setItem }), [expanded, toggleExpanded, items, setItem]);
   const listeners = useMemo(() => mouse ?? new Set<MouseListener>(), [mouse]);
+  const [toastText, setToastText] = useState<string>();
+  const toastTimer = useRef<NodeJS.Timeout>(undefined);
+  const showToast = useCallback((text: string) => {
+    clearTimeout(toastTimer.current);
+    setToastText(text);
+    toastTimer.current = setTimeout(() => setToastText(undefined), TOAST_MS);
+  }, []);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+  const toast = useMemo(() => ({ text: toastText, show: showToast }), [toastText, showToast]);
 
   return (
     <ThemeContext.Provider value={theme}>
@@ -87,11 +109,13 @@ export function Root({ theme, mouse, terminal, children }: RootProps) {
         <ViewContext.Provider value={view}>
           <MouseContext.Provider value={listeners}>
             <TerminalContext.Provider value={terminal ?? NO_TERMINAL}>
-              <PanelsProvider>
-                <Box flexDirection="column" width={columns} height={rows}>
-                  {children}
-                </Box>
-              </PanelsProvider>
+              <ToastContext.Provider value={toast}>
+                <PanelsProvider>
+                  <Box flexDirection="column" width={columns} height={rows}>
+                    {children}
+                  </Box>
+                </PanelsProvider>
+              </ToastContext.Provider>
             </TerminalContext.Provider>
           </MouseContext.Provider>
         </ViewContext.Provider>

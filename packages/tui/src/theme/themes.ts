@@ -16,6 +16,8 @@ export interface Theme {
   thinking: string;
   /** Highlighted row in lists, menus and question options. */
   selection: string;
+  /** Behind selected text, which keeps its own colors on it. */
+  selectionBackground: string;
   /** The terminal's own background as `#rrggbb`, when it said what it is; shades such as hovering are worked out from it. */
   background?: string;
   surface: Record<Tone, string> & { user: string };
@@ -56,6 +58,7 @@ export const darkTheme: Theme = {
   link: '#61afef',
   thinking: '#8a909a',
   selection: '#56b6c2',
+  selectionBackground: '#264f78',
   surface: {
     neutral: '#1f2228',
     pending: '#1d2230',
@@ -99,6 +102,7 @@ export const lightTheme: Theme = {
   link: '#3b7dd8',
   thinking: '#6e737c',
   selection: '#2b8a8a',
+  selectionBackground: '#add6ff',
   surface: {
     neutral: '#e9e9ef',
     pending: '#e4e8f3',

@@ -1,3 +1,5 @@
+import { copyToClipboard, type ClipboardMethod } from './clipboard.js';
+
 /** How a terminal shows a desktop notification: one of three escape sequences, or only its bell. */
 export type NotificationMethod = 'osc777' | 'osc9' | 'osc99' | 'bell';
 
@@ -13,6 +15,8 @@ export interface TerminalControl {
    * know the sequence, leave it as it is.
    */
   pointer(shape: PointerShape): void;
+  /** Puts text on the clipboard; whether it got there. */
+  copy(text: string): Promise<boolean>;
 }
 
 export type PointerShape = 'default' | 'pointer';
@@ -49,7 +53,11 @@ export function notificationSequence(method: NotificationMethod, title: string, 
 }
 
 /** A control that writes with `write` and learns about focus through `setFocused`. */
-export function createTerminalControl(write: (data: string) => void, method = notificationMethod()) {
+export function createTerminalControl(
+  write: (data: string) => void,
+  method = notificationMethod(),
+  clipboard: ClipboardMethod = 'system',
+) {
   let focused = true;
   let shape: PointerShape = 'default';
   const control: TerminalControl = {
@@ -61,6 +69,7 @@ export function createTerminalControl(write: (data: string) => void, method = no
       shape = next;
       write(pointerSequence(next));
     },
+    copy: (text) => copyToClipboard(text, write, { method: clipboard }),
   };
   return {
     control,

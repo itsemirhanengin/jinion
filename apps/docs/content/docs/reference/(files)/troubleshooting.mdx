@@ -62,7 +62,14 @@ Your terminal sends the same key for `shift+enter` and `enter`. Use `alt+enter`,
 
 ## I can't select text
 
-Hold `shift` while you drag. In iTerm2, hold `option`.
+Drag to select; Jinion copies the text when you let go. If the wheel and clicks do nothing either, your terminal isn't
+sending mouse events: in iTerm2, turn on Settings → Profiles → Terminal → Enable mouse reporting.
+
+## Selected text doesn't reach the clipboard
+
+Over SSH, Jinion copies through your terminal (OSC 52). In iTerm2, turn on Settings → General → Selection →
+Applications in terminal may access clipboard. On Linux, install `wl-copy`, `xclip` or `xsel`. For your terminal's own
+selection, hold `shift` while you drag (`option` in iTerm2).
 
 ## An MCP server shows as failed
 

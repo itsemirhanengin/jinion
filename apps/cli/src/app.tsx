@@ -17,6 +17,7 @@ import {
   usePanels,
   useTerminal,
   useTheme,
+  useSelection,
   useView,
   PastedImages,
   PastedTexts,
@@ -106,6 +107,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const theme = useTheme();
   const { exit } = useApp();
   const { toggleExpanded } = useView();
+  const textSelection = useSelection();
   const panels = usePanels();
   const [session, dispatch] = useReducer(reduce, initial, (saved) => (saved ? fromSaved(saved) : createSession(200_000)));
   const [draft, setDraft] = useState('');
@@ -722,6 +724,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       return enqueue(text);
     }
     if (key.ctrl && input === 'c') {
+      // With text selected, as in Claude Code, ctrl+c copies it rather than stopping anything.
+      if (textSelection.copy()) return;
       if (busy) return controller.current?.abort();
       if (panels.top) return panels.close();
       if (draft) return setDraft('');
