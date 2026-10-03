@@ -53,11 +53,14 @@ import {
   type ModelState,
 } from './context.js';
 import {
+  conversationDigest,
   createSession,
   editTurns,
   fromSaved,
+  promptCount,
   reduce,
   resumeOf,
+  titleDue,
   toSaved,
   type Action,
   type SavedSession,
@@ -243,9 +246,39 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     if (saved) sessions.save(saved);
   };
 
-  // Saved after every turn, so quitting or a crash loses at most the turn in progress.
+  // Saved after every turn, so quitting or a crash loses at most the turn in progress, and once it has a new title.
   useEffect(() => {
     if (!busy) save();
+  }, [busy, session.titled]);
+
+  const naming = useRef(false);
+  const planAccepted = useRef(false);
+  /**
+   * A small model names the conversation from what it is about, for finding it in /resume. `fresh` asks for a new name;
+   * otherwise the current one stays while it still fits.
+   */
+  const nameConversation = async (fresh: boolean) => {
+    const titleFor = agent.titleFor?.bind(agent);
+    if (!titleFor || naming.current) return undefined;
+    const { id, entries, title, titled } = session;
+    naming.current = true;
+    try {
+      const named = await titleFor(conversationDigest(entries), fresh || !titled ? undefined : title);
+      if (named) dispatch({ type: 'retitle', session: id, title: named, by: 'agent', turns: promptCount(entries) });
+      return named;
+    } finally {
+      naming.current = false;
+    }
+  };
+
+  // Named after the first turn, and again as the conversation moves on, or after a plan is accepted, as in Claude Code.
+  // A name the user gave stays. When naming fails, the first message stays the title and the next turn tries again.
+  useEffect(() => {
+    if (busy) return;
+    const accepted = planAccepted.current;
+    planAccepted.current = false;
+    if (session.titled?.by === 'user') return;
+    if (accepted || titleDue(session)) nameConversation(accepted).catch(() => {});
   }, [busy]);
 
   const quit = () => {
@@ -448,6 +481,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
             // The agent switches itself; the project remembers the pick.
             showMode(next);
             saveProjectSettings(info.cwd, { mode: next });
+            planAccepted.current = true;
             resolve({ approve: true, mode: next });
           }}
           onCancel={() => abort.abort()}
@@ -559,6 +593,22 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       saveStatusLine(items);
     },
     rewind: openRewind,
+    rename: (name) => {
+      if (name) {
+        dispatch({ type: 'retitle', session: session.id, title: name, by: 'user', turns: promptCount(session.entries) });
+        return notice(`Renamed the conversation to “${name}”.`, 'success');
+      }
+      if (!agent.titleFor) return notice(`${agent.name} can't name conversations. Type /rename and a name.`, 'warning');
+      if (promptCount(session.entries) === 0) return notice('There is nothing to name yet.', 'muted');
+      nameConversation(true).then(
+        (named) =>
+          named
+            ? notice(`Named the conversation “${named}”. It is named again as it moves on.`, 'success')
+            : notice('Couldn’t name the conversation. Type /rename and a name.', 'warning'),
+        (error: unknown) =>
+          notice(`Couldn't name the conversation: ${error instanceof Error ? error.message : error}`, 'error'),
+      );
+    },
     openTasks,
     compact: (focus) => {
       const compactWith = agent.compact?.bind(agent);

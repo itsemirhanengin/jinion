@@ -99,6 +99,7 @@ export class ScriptedAgent implements Agent {
   readonly modes: AgentMode[] = ['edits'];
   private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
   private readonly tasks: DemoTasks;
+  private titled?: string;
 
   constructor(
     private readonly scenarios: Scenario[],
@@ -113,13 +114,18 @@ export class ScriptedAgent implements Agent {
     return this.agentCommands;
   }
 
+  /** The title of the scenario played last, as a small model would name the conversation it moved on to. */
+  async titleFor() {
+    return this.titled;
+  }
+
   async *run({ text: prompt }: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
     const scenario = this.scenarios.find((candidate) => candidate.match?.test(prompt)) ??
       this.scenarios.find((candidate) => !candidate.match);
     if (!scenario) throw new Error('No scenario matches this prompt.');
 
+    this.titled = typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt);
     yield { type: 'sent', id: `prompt_${++promptSequence}` };
-    yield { type: 'title', title: typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt) };
     yield* scenario.play(this.script(context), prompt);
   }
 

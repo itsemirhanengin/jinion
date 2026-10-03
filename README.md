@@ -59,6 +59,8 @@ In the demo, try `hello`, or `add rate limiting to the api` for the full tour.
 
 Every conversation is saved after each turn, per project, and `/resume` lists them. `jinion -c` (`--continue`) opens the last one. Resuming continues the Claude Code session too, so the agent remembers it.
 
+A conversation is titled after what it is about, so you can find it in `/resume`: after the first turn, Haiku names it from your messages, without thinking and in a request of its own beside the conversation. It names it again as the conversation moves on (each time the messages double, after twenty minutes with new ones, and once a plan is accepted), keeping the title while it still fits. `/rename <name>` gives it a name of yours, which stays; `/rename` alone has it named from what it is about now, and again as it moves on.
+
 Jinion keeps its data in `~/.jinion` (or `$JINION_HOME`): `settings.json` for the last model and account picked per agent, the status line and the MCP servers turned off, `limits.json` for the plan limits last seen per account, `mcp.json` for MCP servers of its own, `accounts/` for the extra logins, `memory/` for user notes, `plugins/` for the skills it hands to Claude Code, and one folder per project with `memory/`, `sessions/*.json`, `permissions.json` and `settings.json` (its mode and the `.mcp.json` servers turned on).
 
 ### Memory
@@ -223,6 +225,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/diff` | Full screen list of what isn't committed, in every repository here, with the agent's changes marked; `left`/`right` for each turn's edits, `enter` opens a file's diff |
+| `/rename [name]` | Names the conversation, to find it in `/resume`; without a name, Haiku names it from what it is about |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
 | `/tasks` | What runs in the background, its output, and `x` to stop it, as `ctrl+t` does |
 | `/compact [focus]` | Summarizes the conversation so far to free context, keeping what `focus` says above all |

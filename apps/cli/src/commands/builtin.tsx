@@ -179,6 +179,12 @@ export const builtinCommands: Command[] = [
     run: (app) => app.actions.openTasks(),
   },
   {
+    name: 'rename',
+    description: 'Name this conversation, to find it in /resume; without a name, jinion names it from what it is about',
+    argumentHint: '[name]',
+    run: (app, args) => app.actions.rename(args.trim() || undefined),
+  },
+  {
     name: 'rewind',
     description: 'Go back to before an earlier message: code, conversation or both (esc esc)',
     run: (app) => app.actions.rewind(),

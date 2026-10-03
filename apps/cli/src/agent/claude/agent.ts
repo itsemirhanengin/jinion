@@ -25,6 +25,7 @@ import { serverInfos } from './mcp.js';
 import { askRules, claudeOptions, PERMISSION_MODES, type ClaudeResume } from './options.js';
 import { readHistory } from './history.js';
 import { ClaudeProcess, errorOf } from './process.js';
+import { claudeTitle } from './title.js';
 import { claudeUsage, toContextUsage } from './usage.js';
 
 export interface ClaudeAgentOptions {
@@ -252,6 +253,10 @@ export class ClaudeAgent implements Agent {
     const claude = this.running();
     this.turn = context;
     return this.follow(claude, context, claude.send(focus ? `/compact ${focus}` : '/compact'));
+  }
+
+  titleFor(digest: string, current?: string) {
+    return claudeTitle({ digest, current, cwd: this.options.cwd, account: this.account, spawn: this.options.spawn });
   }
 
   async context() {

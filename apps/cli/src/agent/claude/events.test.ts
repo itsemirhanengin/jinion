@@ -64,9 +64,6 @@ function transcript(events: AgentEvent[]) {
       case 'mode':
         if (`mode ${event.mode}` !== last) lines.push(`mode ${event.mode}`);
         break;
-      case 'title':
-        lines.push(`title ${event.title}`);
-        break;
       case 'tasks':
         lines.push(
           `tasks ${event.tasks.map((task) => `${task.kind}${task.foreground ? ' foreground' : ''} ${task.status} ${JSON.stringify(task.title)}`).join(', ')}`,

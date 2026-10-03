@@ -48,6 +48,11 @@ export interface Session {
   todos: TodoGroup[];
   usage: Usage;
   title?: string;
+  /**
+   * When the title was last chosen, by the agent from the conversation or by the user, who then keeps it; `turns` is
+   * how many prompts the conversation had then.
+   */
+  titled?: { by: 'agent' | 'user'; turns: number; at: number };
   busySince?: number;
   /** The agent is summarizing the conversation. */
   compacting?: boolean;
@@ -66,6 +71,8 @@ export type Action =
   | { type: 'approval'; id: string; waiting: boolean }
   /** A message added to the turn in progress; `id` is what the agent calls it. */
   | { type: 'steer'; text: string; prompt?: string; id?: string }
+  /** A new title for the conversation `session`, which may have been switched away from meanwhile. */
+  | { type: 'retitle'; session: string; title: string; by: 'agent' | 'user'; turns: number }
   /** The conversation went back to before this user entry, which leaves it with everything after it. */
   | { type: 'rewind'; entry: string }
   | { type: 'event'; event: AgentEvent }
@@ -128,6 +135,9 @@ export function reduce(session: Session, action: Action): Session {
       };
     case 'agent-turn':
       return { ...session, busySince: Date.now() };
+    case 'retitle':
+      if (action.session !== session.id) return session;
+      return { ...session, title: action.title, titled: { by: action.by, turns: action.turns, at: Date.now() } };
     case 'steer':
       return {
         ...session,
@@ -220,8 +230,6 @@ function apply(session: Session, event: AgentEvent): Session {
     }
     case 'usage':
       return { ...session, usage: event.usage };
-    case 'title':
-      return { ...session, title: event.title };
     case 'session':
       return { ...session, agentSession: event.id };
     case 'sent': {
@@ -249,6 +257,49 @@ function apply(session: Session, event: AgentEvent): Session {
       // Kept by the app: they belong to the account or the agent's process and outlive the conversation on screen.
       return session;
   }
+}
+
+/** The prompts the user sent, not counting messages that joined a running turn. */
+export const promptCount = (entries: Entry[]) => entries.filter((entry) => entry.kind === 'user' && !entry.steered).length;
+
+/** How long a title lasts, at most, while the conversation goes on. */
+const RETITLE_AFTER_MS = 20 * 60_000;
+
+/**
+ * Whether the conversation is due for a new title: after its first prompt, then each time its prompts double, since a
+ * conversation settles on what it is about as it goes, or after a while with new prompts. A title the user chose stays.
+ */
+export function titleDue(session: Pick<Session, 'entries' | 'titled'>, now = Date.now()) {
+  const turns = promptCount(session.entries);
+  const { titled } = session;
+  if (turns === 0 || titled?.by === 'user') return false;
+  if (!titled) return true;
+  return turns >= titled.turns * 2 || (turns > titled.turns && now - titled.at >= RETITLE_AFTER_MS);
+}
+
+const clip = (text: string, length: number) => {
+  const line = text.replace(/\s+/g, ' ').trim();
+  return line.length > length ? `${line.slice(0, length - 1)}…` : line;
+};
+
+/**
+ * What a small model needs to name the conversation: how it began, where it is now and what changed, in a few thousand
+ * characters at most.
+ */
+export function conversationDigest(entries: Entry[]) {
+  const prompts = entries.flatMap((entry) => (entry.kind === 'user' ? [entry.prompt ?? entry.text] : []));
+  const reply = entries.findLast((entry) => entry.kind === 'text');
+  const plan = entries.findLast((entry) => entry.kind === 'tool' && entry.run.name === 'plan');
+  const changed = [...new Set(editTurns(entries).flatMap((turn) => turn.edits.map((change) => change.path)))];
+  return [
+    prompts[0] && `First message: ${clip(prompts[0], 400)}`,
+    ...prompts.slice(Math.max(1, prompts.length - 5)).map((prompt) => `Later message: ${clip(prompt, 300)}`),
+    plan?.kind === 'tool' && plan.run.name === 'plan' && `Plan: ${clip(plan.run.input.plan, 400)}`,
+    changed.length > 0 && `Files changed: ${changed.slice(0, 10).join(', ')}`,
+    reply?.kind === 'text' && `Agent's latest reply: ${clip(reply.text, 500)}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 /** The files the agent changed in a turn, from its edits rather than from git, for `/diff`'s turn views. */

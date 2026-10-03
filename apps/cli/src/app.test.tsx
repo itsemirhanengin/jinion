@@ -224,8 +224,8 @@ describe('App', () => {
     expect(turn).toMatch(/^\| > src\/middleware\/rate-limit\.ts +new \+\d+ -1 +\|$/m);
     expect(turn).toMatch(/^\| {3}src\/server\.ts +\+\d+ -\d+ +\|$/m);
     await terminal.press(KEYS.enter);
-    const diff = await terminal.waitFor('+- Diff src/middleware/rate-limit.ts');
-    expect(diff).toContain('Middleware');
+    // The header shows before the diff is read.
+    await terminal.waitFor(/Diff src\/middleware\/rate-limit\.ts[\s\S]*Middleware/);
     await terminal.press(KEYS.escape);
     await terminal.press(KEYS.left);
     await terminal.waitFor(/Changes .*There is no git repository|There is no git repository here/);
@@ -342,6 +342,37 @@ describe('App', () => {
     await terminal.press('\x0f');
     const summary = await terminal.waitFor('Kept in focus: the API changes.');
     expect(summary).not.toContain('ctrl+o for the summary');
+  });
+
+  it('names the conversation after what it is about as it moves on, and keeps a name given with /rename', async () => {
+    const statusLine = (screen: string) => screen.trimEnd().split('\n').at(-1)!;
+    const send = async (text: string) => {
+      await terminal.type(text);
+      await terminal.press(KEYS.enter);
+      await terminal.waitFor(new RegExp(`> ${text}[\\s\\S]*Ask jinion anything`));
+    };
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/rename');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('There is nothing to name yet.');
+
+    await send('hello');
+    expect(statusLine(await terminal.waitFor(/Say hello\s*$/))).toContain('Say hello');
+    await send('start the dev server');
+    await terminal.waitFor(/Start the dev server\s*$/);
+
+    await terminal.type('/rename Release prep');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Renamed the conversation to “Release prep”.');
+    // The fourth message would have it named again, but the user's name stays.
+    await send('hello');
+    await send('hey');
+    expect(statusLine(await terminal.screen())).toContain('Release prep');
+
+    await terminal.type('/rename');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Named the conversation “Say hello”. It is named again as it moves on.');
+    expect(statusLine(await terminal.screen())).toContain('Say hello');
   });
 
   it('shows what fills the context in /context, a square per percent', async () => {

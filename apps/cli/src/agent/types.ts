@@ -109,7 +109,6 @@ export type AgentEvent =
   | { type: 'tool-output'; id: string; lines: string[] }
   | { type: 'tool-end'; id: string; ok: boolean; result?: ToolResult; parent?: string }
   | { type: 'usage'; usage: Usage }
-  | { type: 'title'; title: string }
   /** The backend's own id for the conversation, which `Agent.reset` takes to continue it. */
   | { type: 'session'; id: string }
   /** How much of the user's plan is used up. Belongs to the account, not to the conversation. */
@@ -294,6 +293,11 @@ export interface Agent {
    * turn goes on without them. Resolves `false` when there was nothing to send.
    */
   background?(): Promise<boolean>;
+  /**
+   * A short title for the conversation `digest` describes, from a small, fast model, for finding it again in `/resume`.
+   * `current` stays when it still fits, so a title only changes when the conversation moved on.
+   */
+  titleFor?(digest: string, current?: string): Promise<string | undefined>;
   /** Summarizes the conversation so far to free context, keeping what `focus` says above all; its events follow. */
   compact?(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent>;
   /** What fills the context window, by kind. */

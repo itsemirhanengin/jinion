@@ -61,6 +61,8 @@ export interface AppActions {
   saveStatusLine(items: StatusItem[]): void;
   /** Opens the rewind panel, to go back to before an earlier message. */
   rewind(): void;
+  /** Names the conversation `name`, which stays; without one, the agent names it now and again as it moves on. */
+  rename(name?: string): void;
   /** Summarizes the conversation to free context, keeping what `focus` says above all. */
   compact(focus?: string): void;
   /** Opens the panel of background tasks. */

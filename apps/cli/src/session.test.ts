@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentEvent } from './agent/types.js';
-import { createSession, editTurns, reduce, type Entry, type Session } from './session.js';
+import { conversationDigest, createSession, editTurns, reduce, titleDue, type Entry, type Session } from './session.js';
 
 const events = (session: Session, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
@@ -135,5 +135,62 @@ describe('reduce', () => {
     expect(session.busySince).toBeUndefined();
     session = reduce(session, { type: 'finish', outcome: 'failed', message: 'Rate limited' });
     expect(session.entries.at(-1)).toMatchObject({ kind: 'notice', text: 'Rate limited', tone: 'error' });
+  });
+});
+
+describe('titles', () => {
+  const sent = (...prompts: string[]) =>
+    prompts.reduce((session, text) => reduce(reduce(session, { type: 'submit', text }), { type: 'finish', outcome: 'done' }), createSession(200_000));
+  const titled = (session: Session, by: 'agent' | 'user', title = 'Fix the build') =>
+    reduce(session, { type: 'retitle', session: session.id, title, by, turns: session.entries.filter((entry) => entry.kind === 'user').length });
+
+  it('names a conversation after its first message, again when its messages double or after a while, never over the user’s name', () => {
+    expect(titleDue(createSession(200_000))).toBe(false);
+    const first = sent('hello');
+    expect(titleDue(first)).toBe(true);
+
+    const named = titled(first, 'agent');
+    expect(titleDue(named)).toBe(false);
+    const second = reduce(reduce(named, { type: 'submit', text: 'fix the build' }), { type: 'finish', outcome: 'done' });
+    expect(titleDue(second)).toBe(true);
+
+    const atTwo = titled(second, 'agent');
+    const third = reduce(atTwo, { type: 'submit', text: 'and the docs' });
+    expect(titleDue(third)).toBe(false);
+    expect(titleDue(third, Date.now() + 20 * 60_000)).toBe(true);
+    expect(titleDue(atTwo, Date.now() + 20 * 60_000)).toBe(false);
+
+    expect(titleDue(titled(first, 'user'), Date.now() + 60 * 60_000)).toBe(false);
+  });
+
+  it('takes a title only for the conversation it was asked for, keeping who gave it', () => {
+    const session = sent('hello');
+    expect(reduce(session, { type: 'retitle', session: 'another', title: 'Other', by: 'agent', turns: 1 })).toBe(session);
+    const named = titled(session, 'user', 'Release prep');
+    expect(named.title).toBe('Release prep');
+    expect(named.titled).toMatchObject({ by: 'user', turns: 1 });
+  });
+
+  it('describes the conversation by its first and latest messages, the plan, the files changed and the last reply', () => {
+    let session = sent('hello', ...Array.from({ length: 6 }, (_, index) => `step ${index + 1}`));
+    session = events(
+      session,
+      { type: 'tool-start', id: 'p1', call: { name: 'plan', input: { plan: 'Add a limiter\nto the API' } } },
+      { type: 'tool-end', id: 'p1', ok: true, result: {} },
+      { type: 'tool-start', id: 'e1', call: { name: 'edit', input: { path: 'src/api.ts', patch: '@@ -1 +1 @@\n-a\n+b' } } },
+      { type: 'tool-end', id: 'e1', ok: true, result: {} },
+      { type: 'text', delta: 'Added   the limiter.' },
+    );
+    expect(conversationDigest(session.entries).split('\n')).toEqual([
+      'First message: hello',
+      'Later message: step 2',
+      'Later message: step 3',
+      'Later message: step 4',
+      'Later message: step 5',
+      'Later message: step 6',
+      'Plan: Add a limiter to the API',
+      'Files changed: src/api.ts',
+      "Agent's latest reply: Added the limiter.",
+    ]);
   });
 });
