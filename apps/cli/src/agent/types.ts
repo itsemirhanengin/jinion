@@ -71,7 +71,9 @@ export type AgentEvent =
   /** How much of the user's plan is used up. Belongs to the account, not to the conversation. */
   | { type: 'limits'; windows: LimitWindow[] }
   /** The mode the agent is really in, e.g. after a plan was approved or when a mode isn't available. */
-  | { type: 'mode'; mode: AgentMode };
+  | { type: 'mode'; mode: AgentMode }
+  /** The skills and MCP prompts changed, e.g. as servers connect. */
+  | { type: 'commands'; commands: AgentCommand[] };
 
 /** One usage window of the user's plan, such as the 5-hour limit. */
 export interface LimitWindow {
@@ -124,10 +126,15 @@ export interface Agent {
   readonly accounts?: AgentAccounts;
   /** The MCP servers the agent connects to. Backends without MCP leave it out. */
   readonly mcp?: AgentMcp;
-  /** Skills and MCP prompts, which can change as servers connect, so the app asks again after each turn. */
+  /** Skills and MCP prompts. Later changes come as `commands` events. */
   commands(): Promise<AgentCommand[]>;
   /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
+  /**
+   * Events that come while no turn runs: the commands or plan limits changing, or a turn the backend starts itself.
+   * Returns a function that stops listening. Backends that only speak when spoken to leave it out.
+   */
+  subscribe?(listener: (event: AgentEvent) => void): () => void;
   /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
   reset?(resume?: AgentResume): void;
   close?(): void;

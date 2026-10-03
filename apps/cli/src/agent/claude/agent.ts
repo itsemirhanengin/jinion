@@ -1,15 +1,8 @@
-import { randomUUID } from 'node:crypto';
-import {
-  query,
-  type CanUseTool,
-  type EffortLevel,
-  type HookCallback,
-  type PermissionMode,
-  type Query,
-  type SDKMessage,
-  type SDKUserMessage,
-} from '@anthropic-ai/claude-agent-sdk';
-import type { ModelOption, ModelSelection, PermissionDecision } from '@jinion/tui';
+import type { EffortLevel, query, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
+import type { ModelOption, ModelSelection } from '@jinion/tui';
+import type { DebugLog } from '../../debug.js';
+import type { McpConfig } from '../../mcp/config.js';
+import type { MemoryStore } from '../../memory/store.js';
 import type {
   Agent,
   AgentAccount,
@@ -19,85 +12,15 @@ import type {
   AgentMcp,
   AgentMode,
   AgentResume,
-  PlanDecision,
   RunContext,
   SignInOptions,
 } from '../types.js';
-import { accountEnv, accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
-import { ClaudeEvents, toClaudeAnswers, toQuestions, type ClaudeQuestion } from './events.js';
-import { guardReason } from './guard.js';
+import { accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
+import { ClaudeApprovals } from './approvals.js';
 import { toAgentCommands, toClaudePrompt, type Invocations } from './commands.js';
-import { serverInfos, toClaudeServer } from './mcp.js';
-import { isMemoryTool, MEMORY_SERVER, memoryServer } from './memory.js';
-import type { DebugLog } from '../../debug.js';
-import type { McpConfig } from '../../mcp/config.js';
-import type { MemoryStore } from '../../memory/store.js';
-import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
-import { CLAUDE_CODE_SKILLS, claudePlugins, skillPlugins } from './plugins.js';
-import { systemPrompt } from './prompt.js';
-
-const TOOLS = [
-  'Read',
-  'Edit',
-  'Write',
-  'Bash',
-  'Glob',
-  'Grep',
-  'Agent',
-  'TaskCreate',
-  'TaskUpdate',
-  'TaskList',
-  'TaskGet',
-  'AskUserQuestion',
-  'WebFetch',
-  'WebSearch',
-  'ExitPlanMode',
-  'Skill',
-  // MCP tools are listed by name only until ToolSearch loads them, so many servers cost little context.
-  'ToolSearch',
-  'ListMcpResourcesTool',
-  'ReadMcpResourceTool',
-];
-
-/** Claude Code's permission mode for each of Jinion's modes. */
-export const PERMISSION_MODES: Record<AgentMode, PermissionMode> = {
-  manual: 'default',
-  edits: 'acceptEdits',
-  plan: 'plan',
-  auto: 'auto',
-};
-
-/** Runs without asking. Edits inside the project are allowed by `acceptEdits`; anything else asks the user. */
-const ALLOWED = [
-  'Bash(git status*)',
-  'Bash(git diff*)',
-  'Bash(git log*)',
-  'Bash(git show*)',
-  'Bash(git branch*)',
-  'Bash(ls*)',
-  'Bash(pwd)',
-  'Bash(pnpm typecheck*)',
-  'Bash(pnpm build*)',
-  'Bash(pnpm test*)',
-  'Bash(pnpm lint*)',
-  'Bash(pnpm run *)',
-  'Bash(npm test*)',
-  'Bash(npm run *)',
-];
-
-/**
- * `acceptEdits` would also run these filesystem commands without asking; ask rules make them ask every time. Auto
- * mode leaves them to its classifier instead, which knows when a removal throws work away.
- */
-const ASK = ['Bash(rm *)', 'Bash(rmdir *)', 'Bash(mv *)', 'Bash(cp *)', 'Bash(sed *)'];
-
-const askRules = (mode: AgentMode) => (mode === 'edits' ? ASK : []);
-
-/**
- * Tools that never ask: they only read, or load skills and tools the user installed. They are allowed in
- * `canUseTool`, since bare allow rules would bypass it.
- */
-const UNASKED = new Set(['WebFetch', 'WebSearch', 'Skill', 'ToolSearch', 'ListMcpResourcesTool', 'ReadMcpResourceTool']);
+import { serverInfos } from './mcp.js';
+import { askRules, claudeOptions, PERMISSION_MODES } from './options.js';
+import { ClaudeProcess, errorOf } from './process.js';
 
 export interface ClaudeAgentOptions {
   cwd: string;
@@ -113,13 +36,8 @@ export interface ClaudeAgentOptions {
   mcp?: McpConfig;
   /** Records what goes to Claude Code and what comes back, for `--debug`. */
   debug?: DebugLog;
-}
-
-interface Conversation {
-  query: Query;
-  input: Inbox<SDKUserMessage>;
-  output: AsyncIterator<SDKMessage>;
-  events: ClaudeEvents;
+  /** Starts Claude Code: the SDK's `query`, or a stand-in in tests. */
+  spawn?: typeof query;
 }
 
 /** Drives Claude Code headless, with Jinion's system prompt and project instructions instead of Claude Code's own. */
@@ -132,27 +50,32 @@ export class ClaudeAgent implements Agent {
   private account: string;
   private modelList?: Promise<ModelOption[]>;
   private accountInfo?: Promise<AgentAccount>;
-  private conversation?: Conversation;
+  private claude?: ClaudeProcess;
   /** The conversation the next process continues. */
   private resume?: AgentResume;
   private turn?: RunContext;
   /** The MCP servers changed; Claude Code only reads them when it starts, so the next turn starts a new process. */
   private stale = false;
   private invocations: Invocations = new Map();
-  private stderr = '';
-  private readonly permissions: ProjectPermissions;
-  /** Whole tools the user allowed. They are checked here, since bare allow rules would bypass `canUseTool`. */
-  private readonly allowedTools = new Set<string>();
+  private readonly approvals: ClaudeApprovals;
+  private readonly listeners = new Set<(event: AgentEvent) => void>();
 
   constructor(private readonly options: ClaudeAgentOptions) {
     this.current = options.selection ?? { model: 'opus' };
     this.currentMode = options.mode ?? 'edits';
     this.account = options.account && accountNames().includes(options.account) ? options.account : DEFAULT_ACCOUNT;
-    this.permissions = new ProjectPermissions(options.cwd);
+    this.approvals = new ClaudeApprovals({
+      cwd: options.cwd,
+      turn: () => this.turn,
+      onPlanApproved: async (mode) => {
+        this.currentMode = mode;
+        await this.claude?.query.applyFlagSettings({ permissions: { ask: askRules(mode) } });
+      },
+    });
     const config = options.mcp;
     if (config) {
       this.mcp = {
-        servers: async () => serverInfos(await this.process().query.mcpServerStatus(), config),
+        servers: async () => serverInfos(await this.running().query.mcpServerStatus(), config),
         setEnabled: async (changes) => {
           const servers = config.servers();
           for (const [name, enabled] of Object.entries(changes)) {
@@ -185,11 +108,16 @@ export class ClaudeAgent implements Agent {
     },
   }))(this);
 
+  subscribe(listener: (event: AgentEvent) => void) {
+    this.listeners.add(listener);
+    return () => void this.listeners.delete(listener);
+  }
+
   /** Asks the running Claude Code who it is signed in as; the process it starts takes the next prompt. */
   private activeAccount() {
     const name = this.account;
     this.accountInfo ??= (async () => {
-      const info = await this.process().query.accountInfo();
+      const info = await this.running().query.accountInfo();
       return {
         name,
         signedIn: info.email !== undefined,
@@ -214,32 +142,16 @@ export class ClaudeAgent implements Agent {
     this.restart();
   }
 
-  /** The running Claude Code, started when there is none or when it runs with MCP servers that changed since. */
-  private process() {
-    if (this.stale && !this.turn) {
-      this.stale = false;
-      this.restart();
-    }
-    this.conversation ??= this.start();
-    return this.conversation;
-  }
-
-  /** Ends the process; the next one continues the same conversation. */
-  private restart() {
-    const events = this.conversation?.events;
-    this.reset(events?.sessionId ? { sessionId: events.sessionId, cost: events.cost } : this.resume);
-  }
-
   /** Asks Claude Code, which also knows the skills, commands and prompts of plugins and MCP servers. */
   async commands(): Promise<AgentCommand[]> {
-    const { commands, invocations } = toAgentCommands(await this.process().query.supportedCommands());
+    const { commands, invocations } = toAgentCommands(await this.running().query.supportedCommands());
     this.invocations = invocations;
     return commands;
   }
 
   async setMode(mode: AgentMode) {
     this.currentMode = mode;
-    const running = this.conversation?.query;
+    const running = this.claude?.query;
     if (!running) return;
     await running.setPermissionMode(PERMISSION_MODES[mode]);
     await running.applyFlagSettings({ permissions: { ask: askRules(mode) } });
@@ -248,7 +160,7 @@ export class ClaudeAgent implements Agent {
   /** Asks Claude Code, which knows what the account can use. The process it starts takes the next prompt. */
   models() {
     this.modelList ??= (async () => {
-      const models = await this.process().query.supportedModels();
+      const models = await this.running().query.supportedModels();
       return models.map((model) => ({
         id: model.value,
         name: model.displayName,
@@ -265,7 +177,7 @@ export class ClaudeAgent implements Agent {
   async select(selection: ModelSelection) {
     const previous = this.current;
     this.current = selection;
-    const running = this.conversation?.query;
+    const running = this.claude?.query;
     if (!running) return;
     if (selection.model !== previous.model) await running.setModel(selection.model);
     if (selection.effort !== previous.effort) {
@@ -274,43 +186,21 @@ export class ClaudeAgent implements Agent {
   }
 
   async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
-    const conversation = this.process();
+    const claude = this.running();
     this.turn = context;
-    const interrupt = () => void conversation.query.interrupt().catch(() => {});
+    const interrupt = () => void claude.query.interrupt().catch(() => {});
     context.signal.addEventListener('abort', interrupt, { once: true });
-
-    const { debug } = this.options;
     try {
-      const uuid = randomUUID();
-      const content = toClaudePrompt(prompt, this.invocations);
-      debug?.write('prompt', { uuid, content });
-      conversation.input.push({
-        type: 'user',
-        uuid,
-        message: { role: 'user', content },
-        parent_tool_use_id: null,
-        origin: { kind: 'human' },
-      });
-
-      while (true) {
-        const next = await conversation.output.next();
-        if (next.done) throw new Error(this.exitMessage());
-        const message = next.value;
-        debug?.write('message', message);
-        yield* conversation.events.map(message);
-        if (message.type !== 'result' || !answers(message, uuid)) continue;
-
-        context.signal.throwIfAborted();
-        if (message.is_error) throw new TurnFailed(errorOf(message));
-        return;
+      let last: SDKMessage | undefined;
+      for await (const message of claude.send(toClaudePrompt(prompt, this.invocations))) {
+        last = message;
+        yield* this.eventsOf(claude, message);
       }
+      context.signal.throwIfAborted();
+      if (last?.type === 'result' && last.is_error) throw new Error(errorOf(last));
     } catch (error) {
-      debug?.write('error', { message: error instanceof Error ? error.message : String(error), aborted: context.signal.aborted });
-      // A process that died can't take another turn; the next prompt continues the conversation in a new one.
-      if (!context.signal.aborted && !(error instanceof TurnFailed)) {
-        const { sessionId, cost } = conversation.events;
-        this.reset(sessionId ? { sessionId, cost } : undefined);
-      }
+      const message = error instanceof Error ? error.message : String(error);
+      this.options.debug?.write('error', { message, aborted: context.signal.aborted });
       throw error;
     } finally {
       context.signal.removeEventListener('abort', interrupt);
@@ -320,219 +210,88 @@ export class ClaudeAgent implements Agent {
 
   reset(resume?: AgentResume) {
     this.resume = resume;
-    if (!this.conversation) return;
-    this.conversation.input.close();
-    this.conversation.query.close();
-    this.conversation = undefined;
+    const claude = this.claude;
+    this.claude = undefined;
+    claude?.close();
   }
 
   close() {
     this.reset();
   }
 
-  private start(): Conversation {
-    const { cwd } = this.options;
-    const { model, effort } = this.current;
-    const mode = this.currentMode;
+  /** The running Claude Code, started when there is none or when it runs with MCP servers that changed since. */
+  private running() {
+    if (this.stale && !this.turn) {
+      this.stale = false;
+      this.restart();
+    }
+    this.claude ??= this.start();
+    return this.claude;
+  }
+
+  /** Ends the process; the next one continues the same conversation. */
+  private restart() {
+    this.reset(this.claude ? this.resumeOf(this.claude) : this.resume);
+  }
+
+  private resumeOf(claude: ClaudeProcess): AgentResume | undefined {
+    const { sessionId, cost } = claude.events;
+    return sessionId ? { sessionId, cost } : this.resume;
+  }
+
+  private start() {
+    const { cwd, memory, mcp, debug, spawn } = this.options;
     const resume = this.resume;
     this.resume = undefined;
-    // Forced colors would put escape codes into command output the model reads.
-    const { FORCE_COLOR: _, ...env } = process.env;
-    const input = new Inbox<SDKUserMessage>();
-    this.stderr = '';
-    const saved = this.permissions.list();
-    for (const rule of saved) if (!rule.includes('(')) this.allowedTools.add(rule);
-    const { memory, mcp, debug } = this.options;
-    const servers = (mcp?.servers() ?? []).filter((server) => mcp!.isEnabled(server));
-    const disabled = mcp?.disabled() ?? [];
-    const plugins = [...skillPlugins(cwd), ...claudePlugins(cwd)];
+    const options = claudeOptions({
+      cwd,
+      selection: this.current,
+      mode: this.currentMode,
+      account: this.account,
+      resume,
+      memory,
+      mcp,
+      approvals: this.approvals,
+    });
     debug?.write('start', {
       cwd,
-      model,
-      effort,
-      mode,
+      model: options.model,
+      effort: options.effort,
+      mode: this.currentMode,
       account: this.account,
       resume: resume?.sessionId,
-      servers: servers.map((server) => server.name),
-      disabled,
-      plugins: plugins.map((plugin) => plugin.path),
+      servers: Object.keys(options.mcpServers ?? {}),
+      disabled: mcp?.disabled() ?? [],
+      plugins: options.plugins?.map((plugin) => plugin.path),
     });
-    const conversation = query({
-      prompt: input,
-      options: {
-        cwd,
-        model,
-        effort: effort as EffortLevel | undefined,
-        resume: resume?.sessionId,
-        // Not snapshotted, so a resumed conversation sees the notes saved since it began.
-        systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, memory), snapshot: false },
-        // Claude Code's own settings, CLAUDE.md files and memory stay out. Jinion passes the MCP servers configured in
-        // files itself; Claude Code adds the account's claude.ai connectors and the plugins' servers.
-        settingSources: [],
-        mcpServers: {
-          ...Object.fromEntries(servers.map((server) => [server.name, toClaudeServer(server.transport)])),
-          ...(memory && { [MEMORY_SERVER]: memoryServer(memory) }),
-        },
-        // Turns off, by name, the servers Claude Code finds itself. Only an admin's policy could turn them back on.
-        managedSettings: disabled.length > 0 ? { deniedMcpServers: disabled.map((serverName) => ({ serverName })) } : undefined,
-        plugins,
-        settings: {
-          // Plugins' hooks would add context of their own to every conversation. Jinion's hooks below still run.
-          disableAllHooks: true,
-          disableBundledSkills: true,
-          skillOverrides: Object.fromEntries(CLAUDE_CODE_SKILLS.map((name) => [name, 'off' as const])),
-          permissions: { ask: askRules(mode) },
-        },
-        tools: TOOLS,
-        allowedTools: [...ALLOWED, ...saved.filter((rule) => rule.includes('('))],
-        permissionMode: PERMISSION_MODES[mode],
-        canUseTool: this.canUseTool,
-        hooks: { PreToolUse: [{ hooks: [this.guard] }] },
-        includePartialMessages: true,
-        // Background tasks finish after the turn and start turns of their own, which Jinion can't follow yet.
-        env: { ...env, ...accountEnv(this.account), CLAUDE_CODE_DISABLE_BACKGROUND_TASKS: '1' },
-        stderr: (data) => {
-          this.stderr = (this.stderr + data).slice(-2000);
-          debug?.write('stderr', data);
-        },
+    const claude: ClaudeProcess = new ClaudeProcess({
+      options,
+      cwd,
+      resume,
+      debug,
+      spawn,
+      onIdle: (message) => {
+        if (claude !== this.claude) return;
+        for (const event of this.eventsOf(claude, message)) for (const listener of this.listeners) listener(event);
+      },
+      // A process that died can't take another turn; the next prompt continues the conversation in a new one.
+      onExit: () => {
+        if (claude === this.claude) this.reset(this.resumeOf(claude));
       },
     });
     // Claude Code omits thinking text by default; Jinion shows a summary of it.
-    conversation.setMaxThinkingTokens(null, 'summarized').catch(() => {});
-    return {
-      query: conversation,
-      input,
-      output: conversation[Symbol.asyncIterator](),
-      events: new ClaudeEvents(cwd, resume?.cost),
-    };
+    claude.query.setMaxThinkingTokens(null, 'summarized').catch(() => {});
+    return claude;
   }
 
-  /** Runs before Claude Code's own checks, so what Jinion always asks about is asked in every mode. */
-  private readonly guard: HookCallback = async (input) => {
-    if (input.hook_event_name !== 'PreToolUse') return {};
-    // Jinion's own memory tools run without asking, and an allow rule for them would print a warning over the UI.
-    if (isMemoryTool(input.tool_name)) {
-      return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion memory' } };
+  /** The events a message maps to; a new list of commands also changes what `$` mentions run. */
+  private *eventsOf(claude: ClaudeProcess, message: SDKMessage): Generator<AgentEvent> {
+    if (message.type === 'system' && message.subtype === 'commands_changed') {
+      const { commands, invocations } = toAgentCommands(message.commands);
+      this.invocations = invocations;
+      yield { type: 'commands', commands };
+      return;
     }
-    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Record<string, unknown>, this.options.cwd);
-    if (!reason) return {};
-    return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };
-  };
-
-  private readonly canUseTool: CanUseTool = async (name, input, options) => {
-    if (UNASKED.has(name) || this.allowedTools.has(name)) return { behavior: 'allow', updatedInput: input };
-    const turn = this.turn;
-    if (!turn) return { behavior: 'deny', message: 'Nobody is there to approve this right now.' };
-
-    if (name === 'AskUserQuestion') {
-      const questions = (input.questions ?? []) as ClaudeQuestion[];
-      try {
-        const answers = await turn.ask(toQuestions(questions));
-        return { behavior: 'allow', updatedInput: { ...input, ...toClaudeAnswers(questions, answers) } };
-      } catch {
-        return { behavior: 'deny', message: 'The user dismissed the question.', interrupt: true };
-      }
-    }
-
-    if (name === 'ExitPlanMode') {
-      // Approval moves the session to the mode the user picked; "keep planning" sends the note back to the model.
-      let decision: PlanDecision;
-      try {
-        decision = await turn.approvePlan(['auto', 'edits', 'manual']);
-      } catch {
-        return { behavior: 'deny', message: 'The user stopped the turn.', interrupt: true };
-      }
-      if (!decision.approve) {
-        return { behavior: 'deny', message: `The user wants to keep planning${decision.note ? `: ${decision.note}` : '.'}` };
-      }
-      this.currentMode = decision.mode;
-      await this.conversation?.query.applyFlagSettings({ permissions: { ask: askRules(decision.mode) } });
-      return {
-        behavior: 'allow',
-        updatedInput: input,
-        updatedPermissions: [{ type: 'setMode', mode: PERMISSION_MODES[decision.mode], destination: 'session' }],
-      };
-    }
-
-    const rules = alwaysRules(options);
-    let decision: PermissionDecision;
-    try {
-      decision = await turn.approve(toPermissionRequest(name, input, options, rules));
-    } catch {
-      return { behavior: 'deny', message: 'The user stopped the turn.', interrupt: true };
-    }
-
-    if (!decision.allow) {
-      return {
-        behavior: 'deny',
-        message: decision.note
-          ? `The user said no: ${decision.note}`
-          : "The user said no. Don't try to get around it; ask what to do instead if it's still needed.",
-        decisionClassification: 'user_reject',
-      };
-    }
-    if (!decision.always || rules.length === 0) {
-      return { behavior: 'allow', updatedInput: input, decisionClassification: 'user_temporary' };
-    }
-
-    // Jinion keeps "don't ask again" itself; Claude Code only remembers it for this conversation.
-    this.permissions.add(rules.map(formatRule));
-    for (const rule of rules) if (!rule.ruleContent) this.allowedTools.add(rule.toolName);
-    return {
-      behavior: 'allow',
-      updatedInput: input,
-      updatedPermissions: (options.suggestions ?? []).map((update) => ({ ...update, destination: 'session' as const })),
-      decisionClassification: 'user_permanent',
-    };
-  };
-
-  private exitMessage() {
-    const detail = this.stderr.trim().split('\n').slice(-5).join('\n');
-    return detail ? `Claude Code exited:\n${detail}` : 'Claude Code exited unexpectedly.';
-  }
-}
-
-/** Claude Code reported an error for the turn, e.g. a rate limit; the process can still take the next one. */
-class TurnFailed extends Error {}
-
-/** Whether `result` ends the turn started by the prompt with this uuid. */
-function answers(result: Extract<SDKMessage, { type: 'result' }>, uuid: string) {
-  const ids = result.user_message_uuids ?? (result.user_message_uuid ? [result.user_message_uuid] : undefined);
-  return !ids || ids.includes(uuid);
-}
-
-function errorOf(result: Extract<SDKMessage, { type: 'result' }>) {
-  if (result.subtype === 'success') return result.result || 'Claude Code reported an error.';
-  return result.errors.join('\n') || `Claude Code stopped: ${result.subtype}.`;
-}
-
-
-/** A queue of prompts that Claude Code reads for as long as the conversation lasts. */
-class Inbox<T> implements AsyncIterable<T> {
-  private readonly items: T[] = [];
-  private wake?: () => void;
-  private closed = false;
-
-  push(item: T) {
-    this.items.push(item);
-    this.wake?.();
-  }
-
-  close() {
-    this.closed = true;
-    this.wake?.();
-  }
-
-  async *[Symbol.asyncIterator]() {
-    while (true) {
-      const item = this.items.shift();
-      if (item !== undefined) {
-        yield item;
-        continue;
-      }
-      if (this.closed) return;
-      await new Promise<void>((resolve) => (this.wake = resolve));
-      this.wake = undefined;
-    }
+    yield* claude.events.map(message);
   }
 }

@@ -25,7 +25,7 @@ import {
   type Question,
   type QuestionAnswer,
 } from '@jinion/tui';
-import type { Agent, AgentAccount, AgentCommand, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
+import type { Agent, AgentAccount, AgentCommand, AgentEvent, AgentMode, LimitWindow, PlanDecision } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { CommandRegistry } from './commands/registry.js';
 import {
@@ -114,10 +114,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     agent.models().then(setModels, () => setModels([]));
     agent.accounts?.active().then(setIdentity, () => setIdentity(undefined));
   }, [agent, account]);
-  // MCP servers connect in the background and can bring prompts, so the commands are asked for after each turn too.
-  useEffect(() => {
-    if (!busy) reloadCommands();
-  }, [agent, account, busy]);
+  // Changes after that, e.g. as MCP servers connect, come as `commands` events.
+  useEffect(reloadCommands, [agent, account]);
   const model: ModelState = {
     agent: agent.name,
     selection,
@@ -170,6 +168,19 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       return next;
     });
   };
+
+  /** What an event does, whether it comes in a turn or between turns. */
+  const apply = (event: AgentEvent) => {
+    if (event.type === 'limits') recordLimits(event.windows);
+    if (event.type === 'mode') showMode(event.mode);
+    if (event.type === 'commands') setSkills(event.commands);
+    dispatch({ type: 'event', event });
+  };
+  const latestApply = useRef(apply);
+  latestApply.current = apply;
+  // Between turns the agent still has news: commands that change as servers connect, limits that come after a turn.
+  useEffect(() => agent.subscribe?.((event) => latestApply.current(event)), [agent]);
+
   const shownItems = statusPreview ?? statusItems;
   const shownSegments = shownItems.map((item) => findSegment(item.id));
   const git = useGitStatus(info.cwd, shownSegments.some((segment) => segment?.git), busy);
@@ -284,9 +295,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
     try {
       for await (const event of agent.run(full, { signal: abort.signal, ask, approve, approvePlan })) {
-        if (event.type === 'limits') recordLimits(event.windows);
-        if (event.type === 'mode') showMode(event.mode);
-        dispatch({ type: 'event', event });
+        apply(event);
       }
       dispatch({ type: 'finish', outcome: 'done' });
     } catch (error) {
