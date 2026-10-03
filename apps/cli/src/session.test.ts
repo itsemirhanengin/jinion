@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentEvent } from './agent/types.js';
-import { conversationDigest, createSession, editTurns, reduce, titleDue, type Entry, type Session } from './session.js';
+import { conversationDigest, createSession, editTurns, inRunningTurn, reduce, titleDue, type Entry, type Session } from './session.js';
 
 const events = (session: Session, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
@@ -24,6 +24,30 @@ describe('reduce', () => {
       { type: 'text', delta: 'Done' },
     );
     expect(session.entries.slice(-3).map((entry) => ('text' in entry ? entry.text : ''))).toEqual(['Hello there', 'hmm', 'Done']);
+  });
+
+  it('times thinking from its first text until something follows it, or until the turn ends', () => {
+    const turn = reduce(createSession(200_000), { type: 'submit', text: 'go' });
+    const thinking = events(turn, { type: 'thinking', delta: 'hmm' }, { type: 'thinking', delta: ' and more' });
+    expect(thinking.entries.at(-1)).toMatchObject({ kind: 'thinking', text: 'hmm and more', startedAt: expect.any(Number) });
+    expect(thinking.entries.at(-1)).not.toHaveProperty('endedAt');
+
+    const followed = events(thinking, { type: 'tool-start', id: 't1', call: { name: 'bash', input: { command: 'ls', timeoutMs: 1000 } } });
+    expect(followed.entries.at(-2)).toMatchObject({ kind: 'thinking', endedAt: expect.any(Number) });
+
+    const ended = reduce(thinking, { type: 'finish', outcome: 'done' });
+    expect(ended.entries.at(-1)).toMatchObject({ kind: 'thinking', endedAt: expect.any(Number) });
+  });
+
+  it('tells the entries of the turn still running from earlier ones, which fold', () => {
+    const bash = (id: string): AgentEvent => ({ type: 'tool-start', id, call: { name: 'bash', input: { command: 'ls', timeoutMs: 1000 } } });
+    const first = reduce(events(reduce(createSession(200_000), { type: 'submit', text: 'one' }), bash('t1')), { type: 'finish', outcome: 'done' });
+    const earlier = first.entries.length - 1;
+    expect(inRunningTurn(first, earlier)).toBe(false);
+
+    const second = events(reduce(first, { type: 'submit', text: 'two' }), bash('t2'));
+    expect(inRunningTurn(second, second.entries.length - 1)).toBe(true);
+    expect(inRunningTurn(second, earlier)).toBe(false);
   });
 
   it('runs tools from start to end, with their output', () => {

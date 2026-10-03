@@ -58,6 +58,7 @@ import {
   createSession,
   editTurns,
   fromSaved,
+  inRunningTurn,
   promptCount,
   reduce,
   resumeOf,
@@ -739,8 +740,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
         content={
           <ConversationContext.Provider value={conversation}>
             <ScrollView key={session.id}>
-              {session.entries.map((entry) => (
-                <EntryView key={entry.id} entry={entry} />
+              {session.entries.map((entry, index) => (
+                <EntryView key={entry.id} entry={entry} live={inRunningTurn(session, index)} />
               ))}
             </ScrollView>
           </ConversationContext.Provider>

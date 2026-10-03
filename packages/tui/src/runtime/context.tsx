@@ -6,13 +6,18 @@ import { PanelsProvider } from './panels.js';
 import { createTerminalControl, type TerminalControl } from './terminal.js';
 
 interface View {
+  /** Whether long output is shown in full: everywhere after ctrl+o, or in one item opened on its own. */
   expanded: boolean;
+  /** ctrl+o: opens or closes everything, and forgets the items opened or closed on their own. */
   toggleExpanded(): void;
+  /** Items opened or closed on their own, by id. Kept here rather than in the items, which unmount out of view. */
+  items: ReadonlyMap<string, boolean>;
+  setItem(id: string, expanded: boolean): void;
 }
 
 const ThemeContext = createContext<Theme>(darkTheme);
 const WidthContext = createContext<number>(80);
-const ViewContext = createContext<View>({ expanded: false, toggleExpanded: () => {} });
+const ViewContext = createContext<View>({ expanded: false, toggleExpanded: () => {}, items: new Map(), setItem: () => {} });
 const MouseContext = createContext<Set<MouseListener>>(new Set());
 /** Outside `run()` nothing reaches a terminal. */
 const NO_TERMINAL = createTerminalControl(() => {}, 'bell').control;
@@ -27,6 +32,14 @@ export const useTerminal = () => useContext(TerminalContext);
 export const useContentWidth = () => useContext(WidthContext);
 
 export const useView = () => useContext(ViewContext);
+
+/** Gives what is inside `id` its own `expanded`: as set for it when it was opened or closed on its own, else ctrl+o's. */
+export function ViewItem({ id, children }: { id: string; children: ReactNode }) {
+  const view = useView();
+  const own = view.items.get(id);
+  const scoped = useMemo(() => (own === undefined ? view : { ...view, expanded: own }), [view, own]);
+  return <ViewContext.Provider value={scoped}>{children}</ViewContext.Provider>;
+}
 
 export function useMouse(handler: MouseListener, { isActive = true }: { isActive?: boolean } = {}) {
   const listeners = useContext(MouseContext);
@@ -59,8 +72,13 @@ export interface RootProps {
 export function Root({ theme, mouse, terminal, children }: RootProps) {
   const { columns, rows } = useWindowSize();
   const [expanded, setExpanded] = useState(false);
-  const toggleExpanded = useCallback(() => setExpanded((value) => !value), []);
-  const view = useMemo(() => ({ expanded, toggleExpanded }), [expanded, toggleExpanded]);
+  const [items, setItems] = useState<ReadonlyMap<string, boolean>>(new Map());
+  const toggleExpanded = useCallback(() => {
+    setExpanded((value) => !value);
+    setItems(new Map());
+  }, []);
+  const setItem = useCallback((id: string, value: boolean) => setItems((current) => new Map(current).set(id, value)), []);
+  const view = useMemo(() => ({ expanded, toggleExpanded, items, setItem }), [expanded, toggleExpanded, items, setItem]);
   const listeners = useMemo(() => mouse ?? new Set<MouseListener>(), [mouse]);
 
   return (

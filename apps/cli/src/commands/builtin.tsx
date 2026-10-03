@@ -226,7 +226,7 @@ export const builtinCommands: Command[] = [
   },
   {
     name: 'expand',
-    description: 'Expand or collapse long output (ctrl+o)',
+    description: 'Expand or collapse all long output (ctrl+o)',
     run: (app) => app.actions.toggleExpanded(),
   },
   {

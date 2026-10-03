@@ -44,6 +44,17 @@ export interface TestTerminal {
    * cell `at` characters into it when given.
    */
   colorOf(text: string, at?: number): Promise<string | undefined>;
+  /**
+   * Clicks the first place that shows `text`, on its cell `at` characters in: the left button down and up, reported as
+   * a terminal with mouse reporting on does.
+   */
+  click(text: string, at?: number): Promise<void>;
+  /** Moves the pointer onto the first place that shows `text`, with no button held. */
+  hover(text: string, at?: number): Promise<void>;
+  /** The background color of the first place that shows `text`, as `#rrggbb`, or `undefined` for the default. */
+  backgroundOf(text: string, at?: number): Promise<string | undefined>;
+  /** The mouse pointer's shape the app asked for last, `default` until it asks. */
+  pointer(): string;
   /** Reports the window gaining or losing focus, as a terminal does. */
   focus(focused: boolean): Promise<void>;
   /** The desktop notifications shown so far, as `title: body`. */
@@ -83,6 +94,11 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
   // Notifications go out as OSC 777, as in Ghostty, and the emulator keeps them.
   const terminalControl = createTerminalControl((data) => stdout.write(data), 'osc777');
   const notifications: string[] = [];
+  let pointer = 'default';
+  terminal.parser.registerOscHandler(22, (data) => {
+    pointer = data;
+    return true;
+  });
   terminal.parser.registerOscHandler(777, (data) => {
     const [, title, ...body] = data.split(';');
     notifications.push(`${title}: ${body.join(';')}`);
@@ -120,6 +136,15 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
     await pause(data === KEYS.escape ? 150 : 20);
   };
 
+  /** Where `text` first shows, as an SGR mouse report has it: column and row, counted from 1. */
+  const cellOf = async (text: string, at: number) => {
+    await drawn();
+    const shown = lines();
+    const y = shown.findIndex((line) => line.includes(text));
+    if (y === -1) throw new Error(`The screen doesn't show ${text} to point at. It shows:\n${shown.join('\n')}`);
+    return `${shown[y]!.indexOf(text) + at + 1};${y + 1}`;
+  };
+
   return {
     screen,
     type: async (text) => {
@@ -151,6 +176,25 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
       }
       return undefined;
     },
+    click: async (text, at = 0) => {
+      const cell = await cellOf(text, at);
+      await send(`\x1b[<0;${cell}M\x1b[<0;${cell}m`);
+    },
+    hover: async (text, at = 0) => send(`\x1b[<35;${await cellOf(text, at)}M`),
+    backgroundOf: async (text, at = 0) => {
+      await drawn();
+      const buffer = terminal.buffer.active;
+      for (let y = 0; y < rows; y++) {
+        const line = buffer.getLine(buffer.viewportY + y);
+        const x = line?.translateToString(true).indexOf(text) ?? -1;
+        const cell = x >= 0 ? line?.getCell(x + at) : undefined;
+        if (!cell) continue;
+        if (cell.isBgDefault()) return undefined;
+        return `#${cell.getBgColor().toString(16).padStart(6, '0')}`;
+      }
+      return undefined;
+    },
+    pointer: () => pointer,
     focus: (focused) => send(focused ? '\x1b[I' : '\x1b[O'),
     notifications: () => [...notifications],
     scribble: (data) => new Promise<void>((resolve) => terminal.write(data, resolve)),

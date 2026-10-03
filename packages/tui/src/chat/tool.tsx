@@ -5,7 +5,7 @@ import { Frame, FrameDivider } from '../primitives/frame.js';
 import { StatusMark, type Status } from '../primitives/spinner.js';
 import { Tree, type TreeNode } from '../primitives/tree.js';
 import { countChanges, Diff, parsePatch } from '../content/diff.js';
-import { OutputLines } from '../content/output.js';
+import { ExpandHint, OutputLines } from '../content/output.js';
 import { ShellCommand } from '../content/shell.js';
 import type { Tone } from '../theme/themes.js';
 
@@ -49,9 +49,11 @@ export interface ShellBlockProps {
   /** Shown under the output, e.g. `[Wall: 1.2s | Timeout: 120s]`. */
   footer?: ReactNode;
   tail?: number;
+  /** The output down to how many lines it has, as once the turn that ran the command is over. */
+  folded?: boolean;
 }
 
-export function ShellBlock({ command, output, status, footer, tail }: ShellBlockProps) {
+export function ShellBlock({ command, output, status, footer, tail, folded }: ShellBlockProps) {
   const theme = useTheme();
   const hasOutput = output.length > 0 || footer !== undefined;
 
@@ -59,7 +61,12 @@ export function ShellBlock({ command, output, status, footer, tail }: ShellBlock
     <Frame tone={toneOf(status)}>
       <ShellCommand command={command} />
       {hasOutput && <FrameDivider title="Output" />}
-      {output.length > 0 && <OutputLines lines={output} tail={tail} />}
+      {output.length > 0 &&
+        (folded ? (
+          <ExpandHint>{`+${output.length} ${output.length === 1 ? 'line' : 'lines'}`}</ExpandHint>
+        ) : (
+          <OutputLines lines={output} tail={tail} />
+        ))}
       {footer !== undefined && <Text color={status === 'error' ? theme.error : theme.muted}>{footer}</Text>}
     </Frame>
   );

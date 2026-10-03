@@ -16,6 +16,8 @@ export interface Theme {
   thinking: string;
   /** Highlighted row in lists, menus and question options. */
   selection: string;
+  /** The terminal's own background as `#rrggbb`, when it said what it is; shades such as hovering are worked out from it. */
+  background?: string;
   surface: Record<Tone, string> & { user: string };
   diff: {
     added: string;
@@ -131,3 +133,29 @@ export const themes: Record<ColorScheme, Theme> = {
   dark: darkTheme,
   light: lightTheme,
 };
+
+/** What a terminal's background most likely is when it doesn't say. */
+const DEFAULT_BACKGROUND: Record<ColorScheme, string> = { dark: '#1e1e1e', light: '#ffffff' };
+
+/** How far hovering moves a color: a plain background a little, a tinted surface only a touch, so it keeps its color. */
+const HOVER_PLAIN = 0.04;
+const HOVER_TINTED = 0.04;
+
+/**
+ * `color` (`#rrggbb`) moved `amount` of the way, from 0 to 1, to black on a light background or to white on a dark
+ * one: a shade that stands out from it without changing its hue.
+ */
+export function shade(theme: Pick<Theme, 'scheme'>, color: string, amount: number) {
+  const target = theme.scheme === 'light' ? 0 : 255;
+  const channels = [1, 3, 5].map((at) => Number.parseInt(color.slice(at, at + 2), 16));
+  return `#${channels.map((channel) => Math.round(channel + (target - channel) * amount).toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * The background of something under the pointer that a click does something with: `background`, the color it has, a
+ * touch darker or lighter, or, with none, the terminal's own a little.
+ */
+export function hoverColor(theme: Theme, background?: string) {
+  if (background) return shade(theme, background, HOVER_TINTED);
+  return shade(theme, theme.background ?? DEFAULT_BACKGROUND[theme.scheme], HOVER_PLAIN);
+}

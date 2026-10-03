@@ -8,7 +8,8 @@ export type Entry =
    * into a turn in progress. `promptId` is what the agent calls the message, for going back to before it.
    */
   | { id: string; kind: 'user'; text: string; prompt?: string; steered?: boolean; promptId?: string }
-  | { id: string; kind: 'thinking'; text: string }
+  /** From the first of its text to when anything else followed it or the turn ended; older sessions have neither. */
+  | { id: string; kind: 'thinking'; text: string; startedAt?: number; endedAt?: number }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
   /** The conversation was compacted to free context: how much it had and has, and what the agent carries on from. */
@@ -54,6 +55,8 @@ export interface Session {
    */
   titled?: { by: 'agent' | 'user'; turns: number; at: number };
   busySince?: number;
+  /** Where the turn in progress begins in `entries`: what comes from there on stays open until it ends. */
+  turnFrom?: number;
   /** The agent is summarizing the conversation. */
   compacting?: boolean;
   /** The agent's own id for this conversation, used to continue it after `/resume`. */
@@ -61,7 +64,7 @@ export interface Session {
 }
 
 /** What a session store keeps of a conversation. */
-export type SavedSession = Omit<Session, 'busySince' | 'compacting' | 'title'> & { title: string; updatedAt: number };
+export type SavedSession = Omit<Session, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };
 
 export type Action =
   | { type: 'submit'; text: string; prompt?: string }
@@ -108,7 +111,7 @@ export const firstPrompt = (session: Pick<Session, 'entries'>) =>
 export function toSaved(session: Session): SavedSession | undefined {
   const prompt = firstPrompt(session);
   if (prompt === undefined) return undefined;
-  const { busySince: _, compacting: __, title, ...rest } = session;
+  const { busySince: _, turnFrom: __, compacting: ___, title, ...rest } = session;
   return { ...rest, title: title ?? prompt, updatedAt: Date.now() };
 }
 
@@ -124,6 +127,20 @@ export const resumeOf = (saved: SavedSession): AgentResume | undefined =>
 const notice = (text: string, tone: NoticeTone): Entry => ({ id: nextId(), kind: 'notice', text, tone });
 
 export function reduce(session: Session, action: Action): Session {
+  return endThinking(session, next(session, action));
+}
+
+/** Thinking is over once anything follows it, or the turn ends. */
+function endThinking(before: Session, after: Session): Session {
+  const open = before.entries.at(-1);
+  if (open?.kind !== 'thinking' || open.endedAt !== undefined) return after;
+  const index = after.entries.findIndex((entry) => entry.id === open.id);
+  if (index === -1 || (index === after.entries.length - 1 && after.busySince !== undefined)) return after;
+  const entries = after.entries.map((entry, at) => (at === index ? { ...entry, endedAt: Date.now() } : entry));
+  return { ...after, entries };
+}
+
+function next(session: Session, action: Action): Session {
   switch (action.type) {
     case 'submit':
       return {
@@ -132,9 +149,10 @@ export function reduce(session: Session, action: Action): Session {
         // A first title from what the user typed, until the agent names the conversation.
         title: session.title ?? titleOf(action.text),
         busySince: Date.now(),
+        turnFrom: session.entries.length,
       };
     case 'agent-turn':
-      return { ...session, busySince: Date.now() };
+      return { ...session, busySince: Date.now(), turnFrom: session.entries.length };
     case 'retitle':
       if (action.session !== session.id) return session;
       return { ...session, title: action.title, titled: { by: action.by, turns: action.turns, at: Date.now() } };
@@ -163,7 +181,7 @@ export function reduce(session: Session, action: Action): Session {
       );
       if (action.outcome === 'interrupted') entries.push(notice('Interrupted. Tell jinion what to do instead.', 'warning'));
       if (action.outcome === 'failed') entries.push(notice(action.message ?? 'Something went wrong.', 'error'));
-      return { ...session, entries, busySince: undefined, compacting: undefined };
+      return { ...session, entries, busySince: undefined, turnFrom: undefined, compacting: undefined };
     }
     case 'notice':
       return { ...session, entries: [...session.entries, notice(action.text, action.tone ?? 'muted')] };
@@ -187,11 +205,13 @@ function apply(session: Session, event: AgentEvent): Session {
     case 'thinking':
     case 'text': {
       const last = session.entries.at(-1);
-      const entries =
-        last?.kind === event.type
-          ? [...session.entries.slice(0, -1), { ...last, text: last.text + event.delta }]
-          : [...session.entries, { id: nextId(), kind: event.type, text: event.delta.trimStart() }];
-      return { ...session, entries };
+      if (last?.kind === event.type) {
+        return { ...session, entries: [...session.entries.slice(0, -1), { ...last, text: last.text + event.delta }] };
+      }
+      const text = event.delta.trimStart();
+      const entry: Entry =
+        event.type === 'thinking' ? { id: nextId(), kind: 'thinking', text, startedAt: Date.now() } : { id: nextId(), kind: 'text', text };
+      return { ...session, entries: [...session.entries, entry] };
     }
     case 'tool-start': {
       if (event.parent) {
@@ -258,6 +278,10 @@ function apply(session: Session, event: AgentEvent): Session {
       return session;
   }
 }
+
+/** Whether the entry at `index` came in the turn still running, which keeps a command's output open until it ends. */
+export const inRunningTurn = (session: Pick<Session, 'busySince' | 'turnFrom'>, index: number) =>
+  session.busySince !== undefined && index >= (session.turnFrom ?? 0);
 
 /** The prompts the user sent, not counting messages that joined a running turn. */
 export const promptCount = (entries: Entry[]) => entries.filter((entry) => entry.kind === 'user' && !entry.steered).length;

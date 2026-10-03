@@ -1,7 +1,8 @@
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { Inset, useTheme } from '../runtime/context.js';
-import type { Tone } from '../theme/themes.js';
+import { hoverColor, type Tone } from '../theme/themes.js';
+import { useHovered } from './expandable.js';
 import { Fill } from './fill.js';
 
 const SIDES = {
@@ -20,7 +21,10 @@ export const FRAME_INSET = 4;
 
 export interface FrameProps {
   title?: ReactNode;
-  /** Tints the whole frame with the matching surface color. Plain frames keep the terminal background. */
+  /**
+   * Tints the whole frame with the matching surface color. Plain frames keep the terminal background. Either way the
+   * frame lights up while the pointer is over the expandable item it is in.
+   */
   tone?: Tone | 'plain';
   borderColor?: string;
   /** Dashes between the corner and a title: 3 gives `+--- title`, 1 gives `+- title`. */
@@ -54,7 +58,9 @@ export function FrameDivider(_props: FrameDividerProps) {
  */
 export function Frame({ title, tone = 'plain', borderColor, lead = 3, grow = false, fit = false, children }: FrameProps) {
   const theme = useTheme();
-  const background = tone === 'plain' ? undefined : theme.surface[tone];
+  const hovered = useHovered();
+  const tint = tone === 'plain' ? undefined : theme.surface[tone];
+  const background = hovered ? hoverColor(theme, tint) : tint;
   const color = borderColor ?? theme.border;
 
   const sections: { title?: ReactNode; body: ReactNode[]; grow: boolean }[] = [{ title, body: [], grow }];

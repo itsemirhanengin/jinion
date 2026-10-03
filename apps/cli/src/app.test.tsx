@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
-import type { TodoStatus } from '@jinion/tui';
+import { darkTheme, hoverColor, type TodoStatus } from '@jinion/tui';
 import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
 import type { AgentAccount, AgentAccounts } from './agent/types.js';
@@ -153,7 +153,7 @@ describe('App', () => {
     expect(screen).not.toContain('queued:');
   });
 
-  it('sums up a finished subagent, and shows its calls on ctrl+o', async () => {
+  it('sums up a finished subagent, and shows its calls on a click', async () => {
     // Tall enough to keep the subagent in view above the question that follows it.
     start(0, 80);
     await terminal.waitFor('Ask jinion anything');
@@ -161,9 +161,9 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     const screen = await terminal.waitFor('Where should the limiter keep its counters?');
     expect(screen).toContain('[x] Agent · Map how a request reaches a route');
-    expect(screen).toMatch(/3 tool calls · [\d.]+s · ctrl\+o to expand/);
+    expect(screen).toMatch(/3 tool calls · [\d.]+s$/m);
 
-    await terminal.press('\x0f');
+    await terminal.click('3 tool calls');
     const expanded = await terminal.waitFor('Grep app.use · 2 matches');
     expect(expanded).toContain('Glob src/**/*.ts · 41 files');
     expect(expanded).toContain('Read src/server.ts');
@@ -173,6 +173,36 @@ describe('App', () => {
     const screen = await playTour();
     expect(screen).toContain('src/middleware/rate-limit.ts');
     expect(screen).not.toContain('Interrupted');
+  });
+
+  it('folds thinking and command output once the turn is over, and opens one at a time on a click', async () => {
+    start(0, 80);
+    const screen = await playTour();
+    expect(screen).toMatch(/^ Thought for \d+s$/m);
+    expect(screen).toMatch(/^\| … \+15 lines +\|$/m);
+    expect(screen).toMatch(/^\| … \+7 lines +\|$/m);
+    expect(screen).not.toContain('Test Files  8 passed (8)');
+
+    // What a click opens lights up under the pointer.
+    await terminal.hover('+15 lines');
+    await terminal.waitFor('+15 lines');
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    // A touch lighter than the green of a command that went through, rather than another color.
+    expect(await terminal.backgroundOf('+15 lines')).toBe(hoverColor(darkTheme, darkTheme.surface.success));
+    expect(await terminal.backgroundOf('+7 lines')).toBe(darkTheme.surface.success);
+
+    await terminal.click('+15 lines');
+    const opened = await terminal.waitFor('Test Files  8 passed (8)');
+    expect(opened).toMatch(/^\| … \+7 lines +\|$/m);
+    await terminal.click('Test Files  8 passed (8)');
+    await terminal.waitFor(/^\| … \+15 lines +\|$/m);
+
+    await terminal.click('Thought for');
+    await terminal.waitFor('The reset test fails at the boundary.');
+
+    await terminal.press('\x0f');
+    const all = await terminal.waitFor('Test Files  8 passed (8)');
+    expect(all).toContain('Tests  3 passed (3)');
   });
 
   it('keeps the task list above the prompt while it has work left, and not once it is all done', () => {
@@ -327,7 +357,7 @@ describe('App', () => {
     await terminal.waitFor('Ask jinion anything');
   });
 
-  it('compacts the conversation with /compact, marking where, with the summary on ctrl+o', async () => {
+  it('compacts the conversation with /compact, marking where, with the summary on a click', async () => {
     await terminal.waitFor('Ask jinion anything');
     await terminal.type('/compact');
     await terminal.press(KEYS.enter);
@@ -338,11 +368,10 @@ describe('App', () => {
 
     await terminal.type('/compact the API changes');
     await terminal.press(KEYS.enter);
-    const marked = await terminal.waitFor(/\[x\] Compacted · [\d.k]+ → [\d.k]+ tokens · ctrl\+o for the summary/);
+    const marked = await terminal.waitFor(/\[x\] Compacted · [\d.k]+ → [\d.k]+ tokens$/m);
     expect(marked).not.toContain('> /compact');
-    await terminal.press('\x0f');
-    const summary = await terminal.waitFor('Kept in focus: the API changes.');
-    expect(summary).not.toContain('ctrl+o for the summary');
+    await terminal.click('Compacted');
+    await terminal.waitFor('Kept in focus: the API changes.');
   });
 
   it('names the conversation after what it is about as it moves on, and keeps a name given with /rename', async () => {

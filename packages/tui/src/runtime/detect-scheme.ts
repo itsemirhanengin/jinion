@@ -11,17 +11,23 @@ const DEVICE_ATTRIBUTES_QUERY = '\x1b[c';
 const BACKGROUND_REPLY = /\]11;rgba?:([0-9a-f]+)\/([0-9a-f]+)\/([0-9a-f]+)/i;
 const DEVICE_ATTRIBUTES_REPLY = /\x1b\[\?[\d;]*c/;
 
+export interface TerminalBackground {
+  scheme: ColorScheme;
+  /** The background color as `#rrggbb`, when the terminal said what it is. */
+  color?: string;
+}
+
 /**
- * Detects whether the terminal has a light or dark background.
+ * Detects the terminal's background: whether it is light or dark, and its color.
  *
  * Asks the terminal for its background color (OSC 11), followed by a device
  * attributes query that every terminal answers. Terminals reply in order, so
  * the second reply arriving first means OSC 11 is unsupported and we can stop
- * waiting. Falls back to `COLORFGBG`, then to dark.
+ * waiting. Falls back to `COLORFGBG`, then to dark, without a color.
  */
-export async function detectColorScheme(options: DetectOptions = {}): Promise<ColorScheme> {
+export async function detectBackground(options: DetectOptions = {}): Promise<TerminalBackground> {
   const { stdin = process.stdin, stdout = process.stdout, timeout = 200 } = options;
-  const fallback = schemeFromColorFgBg(process.env.COLORFGBG) ?? 'dark';
+  const fallback = { scheme: schemeFromColorFgBg(process.env.COLORFGBG) ?? 'dark' } as const;
 
   if (!stdin.isTTY || !stdout.isTTY) return fallback;
 
@@ -31,7 +37,13 @@ export async function detectColorScheme(options: DetectOptions = {}): Promise<Co
 
   const [r, g, b] = match.slice(1, 4).map(normalizeChannel) as [number, number, number];
   const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.5 ? 'light' : 'dark';
+  const hex = (channel: number) => Math.round(channel * 255).toString(16).padStart(2, '0');
+  return { scheme: luminance > 0.5 ? 'light' : 'dark', color: `#${hex(r)}${hex(g)}${hex(b)}` };
+}
+
+/** Whether the terminal has a light or dark background. */
+export async function detectColorScheme(options: DetectOptions = {}): Promise<ColorScheme> {
+  return (await detectBackground(options)).scheme;
 }
 
 function queryTerminal(stdin: NodeJS.ReadStream, stdout: NodeJS.WriteStream, timeout: number) {

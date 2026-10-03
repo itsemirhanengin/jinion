@@ -1,14 +1,13 @@
 import { Box, Text } from 'ink';
+import { useHovered } from '../primitives/expandable.js';
 import { useTheme, useView } from '../runtime/context.js';
 import { printable } from '../utils/printable.js';
 
+/** What a click would show, e.g. `… +12 lines`: muted, and standing out while the pointer is over its item. */
 export function ExpandHint({ children }: { children: string }) {
   const theme = useTheme();
-  return (
-    <Text color={theme.muted}>
-      … {children} <Text color={theme.accent}>(ctrl+o to expand)</Text>
-    </Text>
-  );
+  const hovered = useHovered();
+  return <Text color={hovered ? undefined : theme.muted}>… {children}</Text>;
 }
 
 export interface OutputLinesProps {
@@ -26,7 +25,7 @@ export function OutputLines({ lines, tail = 10, color }: OutputLinesProps) {
   return (
     <Box flexDirection="column">
       {hidden > 0 && (
-        <ExpandHint>{`(${hidden} earlier lines, showing ${lines.length - hidden} of ${lines.length})`}</ExpandHint>
+        <ExpandHint>{`+${hidden} earlier ${hidden === 1 ? 'line' : 'lines'}`}</ExpandHint>
       )}
       {lines.slice(hidden).map((line, index) => (
         <Text key={index} color={color}>

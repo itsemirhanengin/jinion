@@ -13,17 +13,20 @@ export {
 } from 'ink';
 export type { BoxProps, Instance, Key, TextProps } from 'ink';
 
-export { darkTheme, lightTheme, themes } from './theme/themes.js';
+export { darkTheme, hoverColor, lightTheme, shade, themes } from './theme/themes.js';
 export type { ColorScheme, Theme, Tone } from './theme/themes.js';
 
 export { run } from './runtime/run.js';
 export type { RunOptions } from './runtime/run.js';
-export { detectColorScheme } from './runtime/detect-scheme.js';
-export { Inset, Root, useContentWidth, useMouse, useTerminal, useTheme, useView } from './runtime/context.js';
+export { detectBackground, detectColorScheme } from './runtime/detect-scheme.js';
+export type { TerminalBackground } from './runtime/detect-scheme.js';
+export { Inset, Root, useContentWidth, useMouse, useTerminal, useTheme, useView, ViewItem } from './runtime/context.js';
+export { screenRect, useClick } from './runtime/click.js';
+export type { ClickOptions, Rect } from './runtime/click.js';
 export type { RootProps } from './runtime/context.js';
 export type { FocusListener, MouseEvent, MouseListener } from './runtime/input.js';
 export { notificationMethod } from './runtime/terminal.js';
-export type { NotificationMethod, TerminalControl } from './runtime/terminal.js';
+export type { NotificationMethod, PointerShape, TerminalControl } from './runtime/terminal.js';
 export { Shell, usePanel, usePanels } from './runtime/panels.js';
 export type { PanelPlacement, Panels, PanelSpec, ShellProps } from './runtime/panels.js';
 
@@ -42,7 +45,9 @@ export { Tree, TreeRow } from './primitives/tree.js';
 export type { TreeNode, TreeProps } from './primitives/tree.js';
 export { Spinner, StatusMark } from './primitives/spinner.js';
 export type { Status } from './primitives/spinner.js';
-export { ScrollView } from './primitives/scroll-view.js';
+export { ScrollView, useHoveredItem, useScrollArea } from './primitives/scroll-view.js';
+export { Expandable, useHovered } from './primitives/expandable.js';
+export type { ExpandableProps } from './primitives/expandable.js';
 export type { ScrollViewProps } from './primitives/scroll-view.js';
 export { KeyHints, Panel } from './primitives/panel.js';
 export type { KeyHint, PanelProps } from './primitives/panel.js';
@@ -82,7 +87,7 @@ export type { OutputLinesProps } from './content/output.js';
 export { ShellCommand, tokenizeShell } from './content/shell.js';
 
 export { Notice, Thinking, UserMessage } from './chat/message.js';
-export type { UserMessageProps } from './chat/message.js';
+export type { ThinkingProps, UserMessageProps } from './chat/message.js';
 export type { NoticeTone } from './chat/message.js';
 export { EditBlock, ShellBlock, ToolLine, toneOf } from './chat/tool.js';
 export type { EditBlockProps, ShellBlockProps, ToolLineProps } from './chat/tool.js';

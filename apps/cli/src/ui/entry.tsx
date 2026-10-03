@@ -3,9 +3,11 @@ import {
   AskResult,
   Box,
   EditBlock,
+  Expandable,
   Frame,
   Markdown,
   Notice,
+  parsePatch,
   printable,
   ShellBlock,
   StatusMark,
@@ -16,6 +18,7 @@ import {
   toneOf,
   UserMessage,
   useAnimation,
+  useHovered,
   useTheme,
   useView,
   type TreeNode,
@@ -30,13 +33,25 @@ type ToolEntry = Extract<Entry, { kind: 'tool' }>;
 
 const MAX_TREE_ITEMS = 6;
 
+/** Lines of a diff shown before a click shows the rest, as `Diff` does by default. */
+const DIFF_PREVIEW_LINES = 24;
+
 /** A subagent's latest calls shown while it works; earlier ones are counted. */
 const LIVE_CALLS = 6;
 
 const MEMORY_VERBS = { remember: 'Remember', recall: 'Recall', forget: 'Forget' } as const;
 
-/** Entries are immutable, so unchanged ones skip re-rendering while the newest one streams. */
-export const EntryView = memo(function EntryView({ entry }: { entry: Entry }) {
+export interface EntryViewProps {
+  entry: Entry;
+  /** The entry came in the turn still running: a command's output stays open until the turn ends. */
+  live?: boolean;
+}
+
+/**
+ * Entries are immutable, so unchanged ones skip re-rendering while the newest one streams. Those with more to show than
+ * they do open and close on a click, each on its own.
+ */
+export const EntryView = memo(function EntryView({ entry, live = false }: EntryViewProps) {
   // A pending question lives in the AskPanel at the bottom until it is answered.
   if (entry.kind === 'tool' && entry.run.name === 'ask' && entry.status === 'running') return null;
 
@@ -45,22 +60,65 @@ export const EntryView = memo(function EntryView({ entry }: { entry: Entry }) {
     entry.kind === 'user' ||
     (entry.kind === 'tool' && ['bash', 'edit', 'todo', 'ask', 'plan'].includes(entry.run.name));
 
+  const body = <EntryBody entry={entry} live={live} />;
   return (
     <Box flexDirection="column" marginTop={1} paddingX={fullWidth ? 0 : 1}>
-      <EntryBody entry={entry} />
+      {expandable(entry) ? (
+        <Expandable id={entry.id} fit={fitsText(entry)}>
+          {body}
+        </Expandable>
+      ) : (
+        body
+      )}
     </Box>
   );
 });
 
-function EntryBody({ entry }: { entry: Entry }) {
+/**
+ * Entries a click shows more of: thinking, a command's output, a diff longer than its preview, a subagent's calls, a
+ * pasted prompt in full, a summary. Only these light up under the pointer.
+ */
+function expandable(entry: Entry) {
+  switch (entry.kind) {
+    case 'thinking':
+      return true;
+    case 'tool':
+      switch (entry.run.name) {
+        case 'bash':
+          return entry.output.length > 0;
+        case 'edit':
+          return parsePatch(entry.run.result?.patch ?? entry.run.input.patch).length > DIFF_PREVIEW_LINES;
+        case 'agent':
+          return (entry.children?.length ?? 0) > 0;
+        default:
+          return false;
+      }
+    case 'user':
+      return entry.prompt !== undefined;
+    case 'compaction':
+      return entry.summary !== undefined;
+    default:
+      return false;
+  }
+}
+
+/** Entries drawn as lines of text light up as far as their text goes; frames and messages keep their full width. */
+const fitsText = (entry: Entry) =>
+  entry.kind === 'thinking' || entry.kind === 'compaction' || (entry.kind === 'tool' && entry.run.name === 'agent');
+
+function EntryBody({ entry, live }: { entry: Entry; live: boolean }) {
   const { expanded } = useView();
   switch (entry.kind) {
     case 'banner':
       return <Banner />;
     case 'user':
       return <UserEntry text={expanded && entry.prompt ? entry.prompt : entry.text} steered={entry.steered} />;
-    case 'thinking':
-      return <Thinking text={entry.text} />;
+    case 'thinking': {
+      // Shown as it comes, then down to one line once the agent moved on, as in Claude Code.
+      const folded = !expanded && (entry.endedAt !== undefined || !live);
+      const took = entry.startedAt !== undefined && entry.endedAt !== undefined ? thoughtFor(entry.endedAt - entry.startedAt) : undefined;
+      return <Thinking text={entry.text} folded={folded} took={took} />;
+    }
     case 'text':
       return <Markdown text={entry.text} />;
     case 'notice':
@@ -70,14 +128,15 @@ function EntryBody({ entry }: { entry: Entry }) {
     case 'compaction':
       return <Compaction entry={entry} />;
     case 'tool':
-      return <ToolView entry={entry} />;
+      return <ToolView entry={entry} live={live} />;
   }
 }
 
-/** Where the conversation was summarized: how much it held before and after; the summary on ctrl+o. */
+/** Where the conversation was summarized: how much it held before and after; the summary on a click. */
 function Compaction({ entry }: { entry: Extract<Entry, { kind: 'compaction' }> }) {
   const theme = useTheme();
   const { expanded } = useView();
+  const hovered = useHovered();
   const tokens = `${compact(entry.before)}${entry.after !== undefined ? ` → ${compact(entry.after)}` : ''} tokens`;
   return (
     <Box flexDirection="column">
@@ -85,11 +144,10 @@ function Compaction({ entry }: { entry: Extract<Entry, { kind: 'compaction' }> }
         status="done"
         name="Compacted"
         detail={
-          <Text color={theme.muted}>
+          <Text color={hovered ? undefined : theme.muted}>
             {'· '}
             {tokens}
             {entry.trigger === 'auto' && ' · on its own, as the context filled'}
-            {entry.summary && !expanded && ' · ctrl+o for the summary'}
           </Text>
         }
       />
@@ -133,8 +191,9 @@ function UserEntry({ text, steered }: { text: string; steered?: boolean }) {
   return <UserMessage text={text} mentions={[mention]} aside={steered ? 'while working' : undefined} />;
 }
 
-function ToolView({ entry }: { entry: ToolEntry }) {
+function ToolView({ entry, live }: { entry: ToolEntry; live: boolean }) {
   const theme = useTheme();
+  const { expanded } = useView();
   const { run, status } = entry;
 
   switch (run.name) {
@@ -218,6 +277,8 @@ function ToolView({ entry }: { entry: ToolEntry }) {
           output={entry.output}
           status={status}
           footer={<ShellFooter entry={entry} />}
+          // Open to follow while the turn runs, down to its line count once it is over.
+          folded={!live && !expanded && status !== 'running'}
         />
       );
     case 'edit':
@@ -264,11 +325,12 @@ function ToolView({ entry }: { entry: ToolEntry }) {
 
 /**
  * A subagent: its tool calls as a tree while it works, the latest few in view; once it is done, how many it made and
- * how long it took, with the whole tree on ctrl+o.
+ * how long it took, with the whole tree on a click.
  */
 function AgentView({ entry }: { entry: ToolEntry }) {
   const theme = useTheme();
   const { expanded } = useView();
+  const hovered = useHovered();
   const { tasks } = useConversation();
   if (entry.run.name !== 'agent') return null;
   // Sent to the background, it works on after its call ended, as its task says.
@@ -283,8 +345,7 @@ function AgentView({ entry }: { entry: ToolEntry }) {
     if (shown.length < calls.length) tree.unshift({ label: <Text color={theme.muted}>… {calls.length - shown.length} earlier</Text> });
   } else {
     const took = formatSeconds((task?.endedAt ?? entry.endedAt ?? Date.now()) - entry.startedAt);
-    const hint = calls.length > 0 ? ' · ctrl+o to expand' : '';
-    tree = [{ label: <Text color={theme.muted}>{`${plural(calls.length, 'tool call')} · ${took}${hint}`}</Text> }];
+    tree = [{ label: <Text color={hovered ? undefined : theme.muted}>{`${plural(calls.length, 'tool call')} · ${took}`}</Text> }];
   }
   return (
     <ToolLine
@@ -386,6 +447,12 @@ const plural = (count: number, singular: string, pluralForm = `${singular}s`) =>
   `${count} ${count === 1 ? singular : pluralForm}`;
 
 const extension = (path: string) => (path.includes('.') ? path.slice(path.lastIndexOf('.') + 1) : '-');
+
+/** `Thought for 12s` or `Thought for 2m 5s`, in whole seconds as Claude Code says it. */
+function thoughtFor(ms: number) {
+  const total = Math.max(1, Math.round(ms / 1000));
+  return total < 60 ? `${total}s` : `${Math.floor(total / 60)}m ${total % 60}s`;
+}
 
 function formatSeconds(ms: number) {
   const seconds = ms / 1000;

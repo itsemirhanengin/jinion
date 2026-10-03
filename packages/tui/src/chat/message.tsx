@@ -1,5 +1,7 @@
 import { Box, Text } from 'ink';
+import { useHovered } from '../primitives/expandable.js';
 import { useTheme } from '../runtime/context.js';
+import { hoverColor } from '../theme/themes.js';
 import { Prose } from '../primitives/prose.js';
 import { anyOf, MENTION } from './mentions.js';
 import { PASTED_IMAGE } from './pasted-images.js';
@@ -20,6 +22,7 @@ export interface UserMessageProps {
  */
 export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
+  const hovered = useHovered();
   const text = printable(raw);
   const marks = [
     ...[...text.matchAll(anyOf([PASTED_TEXT, PASTED_IMAGE])!)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
@@ -34,7 +37,7 @@ export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProp
   }
   parts.push({ text: text.slice(at) });
   return (
-    <Box backgroundColor={theme.surface.user} paddingX={1}>
+    <Box backgroundColor={hovered ? hoverColor(theme, theme.surface.user) : theme.surface.user} paddingX={1}>
       <Box flexShrink={0}>
         <Text bold color={theme.accent}>
           {'> '}
@@ -62,8 +65,24 @@ export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProp
   );
 }
 
-export function Thinking({ text }: { text: string }) {
+export interface ThinkingProps {
+  text: string;
+  /** Down to one line, as Claude Code shows thinking once the agent has moved on. */
+  folded?: boolean;
+  /** How long the agent thought, e.g. `12s`, said on the folded line. */
+  took?: string;
+}
+
+export function Thinking({ text, folded, took }: ThinkingProps) {
   const theme = useTheme();
+  const hovered = useHovered();
+  if (folded) {
+    return (
+      <Text italic color={hovered ? undefined : theme.thinking}>
+        {took ? `Thought for ${took}` : 'Thought'}
+      </Text>
+    );
+  }
   return (
     <Prose italic color={theme.thinking}>
       {printable(text).trim()}

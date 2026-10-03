@@ -8,7 +8,17 @@ export interface TerminalControl {
   method: NotificationMethod;
   /** Shows a desktop notification, or rings the bell in a terminal without them. */
   notify(title: string, body: string): void;
+  /**
+   * The mouse pointer's shape over the window: a hand over something to click. Terminals that can't change it, or don't
+   * know the sequence, leave it as it is.
+   */
+  pointer(shape: PointerShape): void;
 }
+
+export type PointerShape = 'default' | 'pointer';
+
+/** OSC 22, as xterm, kitty, foot and Ghostty read it. */
+export const pointerSequence = (shape: PointerShape) => `\x1b]22;${shape}\x07`;
 
 /** The terminal's own escape sequence where it has one, from what it says it is. */
 export function notificationMethod(env: NodeJS.ProcessEnv = process.env): NotificationMethod {
@@ -41,10 +51,16 @@ export function notificationSequence(method: NotificationMethod, title: string, 
 /** A control that writes with `write` and learns about focus through `setFocused`. */
 export function createTerminalControl(write: (data: string) => void, method = notificationMethod()) {
   let focused = true;
+  let shape: PointerShape = 'default';
   const control: TerminalControl = {
     focused: () => focused,
     method,
     notify: (title, body) => write(notificationSequence(method, title, body)),
+    pointer: (next) => {
+      if (next === shape) return;
+      shape = next;
+      write(pointerSequence(next));
+    },
   };
   return {
     control,

@@ -148,7 +148,7 @@ export function Diff({ patch, maxLines = 24, window }: DiffProps) {
           </Box>
         );
       })}
-      {!window && visible.length < lines.length && <ExpandHint>{`(${lines.length - visible.length} more lines)`}</ExpandHint>}
+      {!window && visible.length < lines.length && <ExpandHint>{`+${lines.length - visible.length} more ${lines.length - visible.length === 1 ? 'line' : 'lines'}`}</ExpandHint>}
     </Box>
   );
 }

@@ -3,14 +3,16 @@ import { StringDecoder } from 'node:string_decoder';
 
 export type MouseEvent =
   | { type: 'wheel'; direction: 'up' | 'down'; x: number; y: number }
-  | { type: 'press' | 'release'; button: number; x: number; y: number };
+  | { type: 'press' | 'release'; button: number; x: number; y: number }
+  /** The pointer moved: with no button held, `button` is `undefined`; with one held, it is a drag. */
+  | { type: 'move'; button: number | undefined; x: number; y: number };
 
 export type MouseListener = (event: MouseEvent) => void;
 export type FocusListener = (focused: boolean) => void;
 
-/** Button presses and the wheel, reported with SGR coordinates. */
-export const ENABLE_MOUSE = '\x1b[?1000h\x1b[?1006h';
-export const DISABLE_MOUSE = '\x1b[?1000l\x1b[?1006l';
+/** Button presses, the wheel and every move of the pointer, for hovering, reported with SGR coordinates. */
+export const ENABLE_MOUSE = '\x1b[?1000h\x1b[?1003h\x1b[?1006h';
+export const DISABLE_MOUSE = '\x1b[?1003l\x1b[?1000l\x1b[?1006l';
 
 /** The terminal sends `\x1b[I` when its window gains focus and `\x1b[O` when it loses it. */
 export const ENABLE_FOCUS = '\x1b[?1004h';
@@ -22,9 +24,15 @@ const PARTIAL_MOUSE_SEQUENCE = /\x1b\[<[\d;]*$/;
 const WHEEL = 64;
 const MOTION = 32;
 
+/** A move reports this as its button when none is held. */
+const NO_BUTTON = 3;
+
 function parseMouse(code: number, column: number, row: number, final: string): MouseEvent | undefined {
-  if (code & MOTION) return undefined;
   const position = { x: column - 1, y: row - 1 };
+  if (code & MOTION) {
+    if (code & WHEEL) return undefined;
+    return { type: 'move', button: (code & 3) === NO_BUTTON ? undefined : code & 3, ...position };
+  }
   if (code & WHEEL) return { type: 'wheel', direction: (code & 1) === 0 ? 'up' : 'down', ...position };
   return { type: final === 'M' ? 'press' : 'release', button: code & 3, ...position };
 }
