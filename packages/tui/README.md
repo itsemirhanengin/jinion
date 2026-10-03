@@ -153,8 +153,9 @@ Charts
 | `useDayCursor` | a day picked in a `Heatmap` with the arrows, left/right a week and up/down a day |
 | `dayKey`, `parseDay`, `addDays`, `heatLevels` | local `2026-09-21` day keys and the quartile levels the heatmap shades by |
 | `BarList` | rows of `label [=====-----] text` lined up, for shares of a whole |
+| `Waffle`, `waffleCells` | a whole as a grid of squares filled part by part, e.g. a square per percent of a context window, with an optional legend; every part with anything gets a square |
 
-The heatmap's `■` is the one character beyond ASCII: a day needs a square. Its shades come from the theme's `heat`.
+The `■` of the heatmap and the waffle is the one character beyond ASCII: a day, or a percent, needs a square. Its shades come from the theme's `heat`.
 
 Content
 

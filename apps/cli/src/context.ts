@@ -8,6 +8,7 @@ import type {
   AgentMode,
   AgentUsage,
   BackgroundTask,
+  ContextUsage,
   UsageHistory,
 } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
@@ -60,6 +61,8 @@ export interface AppActions {
   saveStatusLine(items: StatusItem[]): void;
   /** Opens the rewind panel, to go back to before an earlier message. */
   rewind(): void;
+  /** Summarizes the conversation to free context, keeping what `focus` says above all. */
+  compact(focus?: string): void;
   /** Opens the panel of background tasks. */
   openTasks(): void;
   /** Stops a background task; it shows as stopped once the agent says so. */
@@ -86,6 +89,7 @@ export interface Jinion {
   usage: {
     current?(options?: { drivers?: boolean }): Promise<AgentUsage>;
     history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
+    context?(): Promise<ContextUsage>;
   };
   actions: AppActions;
   panels: Panels;

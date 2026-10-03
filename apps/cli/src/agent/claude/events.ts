@@ -39,6 +39,10 @@ export interface ClaudeQuestion {
 
 const TASK_TOOLS = new Set(['TaskCreate', 'TaskUpdate', 'TaskList', 'TaskGet']);
 
+/** How Claude Code opens the summary it carries on from after a compaction, and what it tells the model after it. */
+const SUMMARY_PREAMBLE = /^This session is being continued from a previous conversation[^\n]*\n+(?:Summary:\n)?/;
+const SUMMARY_INSTRUCTIONS = /\n+(?:If you need specific details from before compaction|Continue the conversation from where it left off)[\s\S]*$/;
+
 /** What Claude Code says about background tasks, unlike the task tools above, which keep the todo list. */
 const TASK_MESSAGES = new Set(['task_started', 'task_updated', 'task_progress', 'task_notification']);
 
@@ -63,6 +67,8 @@ export class ClaudeEvents {
   private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
   private model?: string;
   private session?: string;
+  /** A compaction whose summary may come in the next message. */
+  private compacted?: Extract<AgentEvent, { type: 'compaction'; state: 'done' }>;
   /** The plan Claude Code wrote last in plan mode. */
   private planFile?: string;
   private planText?: string;
@@ -78,12 +84,24 @@ export class ClaudeEvents {
     return this.usage.cost;
   }
 
+  /** Where Claude Code compacts on its own, as a usage event when that changed. */
+  compactAt(tokens: number | undefined): AgentEvent | undefined {
+    if (this.usage.compactAt === tokens) return undefined;
+    this.usage.compactAt = tokens;
+    return { type: 'usage', usage: { ...this.usage } };
+  }
+
   /** Claude Code's session id, once the process reported it. */
   get sessionId() {
     return this.session;
   }
 
   *map(message: SDKMessage): Generator<AgentEvent> {
+    // A compaction ends with its summary, the first user message after its boundary; anything else said in the
+    // conversation means there is none. Bookkeeping such as a command's lifecycle can come in between.
+    const summary = message.type === 'user' && typeof message.message.content === 'string' && !isReplay(message);
+    const said = message.type === 'assistant' || message.type === 'user' || message.type === 'result' || message.type === 'stream_event';
+    if (this.compacted && said && !summary) yield* this.compactionDone();
     for (const event of this.events(message)) {
       this.last = event.type;
       yield event;
@@ -93,6 +111,10 @@ export class ClaudeEvents {
   private *events(message: SDKMessage): Generator<AgentEvent> {
     switch (message.type) {
       case 'system': {
+        if (message.subtype === 'status' || message.subtype === 'compact_boundary') {
+          yield* this.compaction(message);
+          return;
+        }
         if (TASK_MESSAGES.has(message.subtype)) {
           yield* this.tasks.map(message, (id) => {
             const call = this.calls.get(id);
@@ -229,7 +251,10 @@ export class ClaudeEvents {
 
   private *toolResults(message: SDKUserMessage): Generator<AgentEvent> {
     const { content } = message.message;
-    if (typeof content === 'string') return;
+    if (typeof content === 'string') {
+      if (this.compacted && !isReplay(message)) yield* this.compactionDone(content);
+      return;
+    }
     const results = content.filter((block) => block.type === 'tool_result');
     for (const block of results) {
       const call = this.calls.get(block.tool_use_id);
@@ -329,6 +354,28 @@ export class ClaudeEvents {
     const items = [...this.todoItems.values()].map((item) => ({ ...item }));
     yield { type: 'tool-start', id, call: { name: 'todo', input: { groups: [{ title: 'Tasks', items }] } } };
     yield { type: 'tool-end', id, ok: true, result: {} };
+  }
+
+  private *compaction(message: Extract<SDKMessage, { type: 'system'; subtype: 'status' | 'compact_boundary' }>): Generator<AgentEvent> {
+    if (message.subtype === 'compact_boundary') {
+      const { trigger, pre_tokens: before, post_tokens: after } = message.compact_metadata;
+      this.compacted = { type: 'compaction', state: 'done', trigger, before, after };
+      return;
+    }
+    if (message.status === 'compacting') yield { type: 'compaction', state: 'running' };
+    if (message.compact_result === 'failed') {
+      yield { type: 'compaction', state: 'failed', error: message.compact_error || 'Claude Code could not compact the conversation.' };
+    }
+  }
+
+  private *compactionDone(summary?: string): Generator<AgentEvent> {
+    const done = this.compacted!;
+    this.compacted = undefined;
+    yield { ...done, summary: summary?.replace(SUMMARY_PREAMBLE, '').replace(SUMMARY_INSTRUCTIONS, '').trim() || undefined };
+    if (done.after !== undefined) {
+      this.usage.contextTokens = done.after;
+      yield { type: 'usage', usage: { ...this.usage } };
+    }
   }
 
   private *result(message: SDKResultMessage): Generator<AgentEvent> {
@@ -528,6 +575,9 @@ function summary(input: Input) {
   const line = value.split('\n')[0] ?? '';
   return line.length > 80 ? `${line.slice(0, 79)}…` : line || undefined;
 }
+
+/** Claude Code echoes some messages back, e.g. a command's output, which nobody new said. */
+const isReplay = (message: object) => 'isReplay' in message && message.isReplay === true;
 
 const isObject = (value: unknown): value is Input => typeof value === 'object' && value !== null && !Array.isArray(value);
 const text = (value: unknown) => (typeof value === 'string' ? value : value === undefined || value === null ? '' : String(value));

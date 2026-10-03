@@ -39,6 +39,7 @@ import type {
   PlanDecision,
   RewindScope,
   RunContext,
+  Usage,
 } from './agent/types.js';
 import { builtinCommands } from './commands/builtin.js';
 import { CommandRegistry } from './commands/registry.js';
@@ -556,6 +557,14 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     },
     rewind: openRewind,
     openTasks,
+    compact: (focus) => {
+      const compactWith = agent.compact?.bind(agent);
+      if (!compactWith) return notice(`${agent.name} can't compact the conversation.`, 'warning');
+      if (working()) return notice('Finish or interrupt the current turn first (esc).', 'warning');
+      if (!session.entries.some((entry) => entry.kind === 'user')) return notice('There is nothing to compact yet.', 'muted');
+      dispatch({ type: 'agent-turn' });
+      void runTurn('the compaction', (context) => compactWith(focus, context));
+    },
     stopTask,
     setNotifications: (on) => {
       setNotifications(on);
@@ -573,7 +582,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     status: { items: statusItems, data: statusData },
     accounts: { manager: agent.accounts, current: account, identity, seen: seenLimits },
     mcp: agent.mcp,
-    usage: { current: agent.usage?.bind(agent), history: agent.history?.bind(agent) },
+    usage: { current: agent.usage?.bind(agent), history: agent.history?.bind(agent), context: agent.context?.bind(agent) },
     actions,
     panels,
     commands,
@@ -623,6 +632,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       return quit();
     }
   });
+
+  const contextLeft = contextWarning(session.usage);
 
   const showTodos =
     session.todos.length > 0 && (busy || session.todos.some((group) => group.items.some((item) => item.status !== 'done')));
@@ -680,11 +691,21 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
                   : 'Type to queue · esc to interrupt'
             }
             footer={
-              agent.modes.length > 1 && (
-                <Text>
-                  <Text color={modeColor(theme, mode)}>{MODES[mode].name}</Text>
-                  <Text color={theme.muted}> · shift+tab</Text>
-                </Text>
+              (agent.modes.length > 1 || contextLeft !== undefined) && (
+              <Text>
+                {agent.modes.length > 1 && (
+                  <>
+                    <Text color={modeColor(theme, mode)}>{MODES[mode].name}</Text>
+                    <Text color={theme.muted}> · shift+tab</Text>
+                  </>
+                )}
+                {contextLeft !== undefined && (
+                  <Text color={contextLeft < 0.1 ? theme.error : theme.warning}>
+                    {agent.modes.length > 1 && <Text color={theme.muted}> · </Text>}
+                    {`${Math.max(0, Math.round(contextLeft * 100))}% context left until auto-compact · /compact`}
+                  </Text>
+                )}
+              </Text>
               )
             }
           />
@@ -699,6 +720,16 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
 
 /** Two presses of esc this close together open the rewind panel. */
 const DOUBLE_ESCAPE_MS = 600;
+
+/** How much context is left before auto-compaction when the warning under the prompt shows. */
+const CONTEXT_WARNING = 0.2;
+
+/** As in Claude Code, the share of context left until auto-compaction, once it draws near. */
+export function contextWarning({ contextTokens, compactAt }: Usage) {
+  if (!compactAt) return undefined;
+  const left = 1 - contextTokens / compactAt;
+  return left <= CONTEXT_WARNING ? left : undefined;
+}
 
 /** A turn this long notifies when it ends, should the user have gone to another window meanwhile. */
 const LONG_TURN_MS = 15_000;
@@ -719,6 +750,7 @@ const PLAN_CHOICES: Record<AgentMode, string> = {
 
 function activity(session: Session, panel: string | undefined, tasks: BackgroundTask[]) {
   if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
+  if (session.compacting) return 'Compacting the conversation';
   const last = session.entries.at(-1);
   if (last?.kind === 'thinking') return 'Thinking';
   if (last?.kind === 'text') return 'Writing';

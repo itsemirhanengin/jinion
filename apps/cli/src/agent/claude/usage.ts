@@ -1,5 +1,5 @@
 import type { query, SDKControlGetUsageResponse } from '@anthropic-ai/claude-agent-sdk';
-import type { AgentUsage, LimitWindow, UsageDrivers } from '../types.js';
+import type { AgentUsage, ContextUsage, LimitWindow, UsageDrivers } from '../types.js';
 
 type Query = ReturnType<typeof query>;
 type Window = { utilization: number | null; resets_at: string | null } | null | undefined;
@@ -76,6 +76,18 @@ function toDrivers(window: Behaviors): UsageDrivers {
       ...sources('plugin', window.plugins),
       ...sources('mcp', window.mcp_servers),
     ].sort((a, b) => b.share - a.share),
+  };
+}
+
+type ContextResponse = Awaited<ReturnType<Query['getContextUsage']>>;
+
+/** Claude Code's `/context`: the window it measures against, where it compacts, and what fills it. */
+export function toContextUsage(response: ContextResponse): ContextUsage {
+  return {
+    used: response.totalTokens,
+    window: response.rawMaxTokens,
+    compactAt: response.isAutoCompactEnabled ? response.autoCompactThreshold : undefined,
+    categories: response.categories.map(({ name, tokens, kind }) => ({ name, tokens, kind })),
   };
 }
 

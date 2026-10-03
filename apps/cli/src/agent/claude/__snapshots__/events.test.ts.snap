@@ -131,6 +131,76 @@ slept
 ]
 `;
 
+exports[`ClaudeEvents replaying recorded conversations > maps the compact conversation as before 1`] = `
+[
+  "mode edits",
+  "session",
+  "usage 14654/200000 $0.0000",
+  "thinking: The user wants",
+  "limits 5h, 7d",
+  "thinking:  me to read a file called math.ts and explain what it does in one line. Let me read the file first.",
+  "start t1 read {"files":[{"path":"math.ts"}]}",
+  "end t1 ok {}",
+  "usage 22973/200000 $0.0000",
+  "thinking: The file math.ts contains a single export:
+\`\`\`typescript
+export const add = (a: number, b: number) => a + b;
+\`\`\`
+
+So it's a simple utility function that adds two numbers. The user asked me to tell them in one line what it does.",
+  "text: Exports a simple function that adds two numbers together.",
+  "usage 22973/200000 $0.0496",
+  "mode edits",
+  "session",
+  "usage 23106/200000 $0.0496",
+  "thinking: The user wants me to add a subtract function below the add function in math.ts. I need to use the Edit tool to add this. 
+
+I need to:
+1. Read the file first (I already did this)
+2. Use Edit to add a new line with a subtract function
+
+The current file has:
+\`\`\`
+export const add = (a: number, b: number) => a + b;
+
+\`\`\`
+
+I should add a subtract function that follows the same pattern:
+\`\`\`
+export const sub = (a: number, b: number) => a - b;
+\`\`\`
+
+Let me use the Edit tool to add this after the add function.",
+  "start t2 edit {"path":"math.ts","patch":"@@ -1,1 +1,2 @@\\n-export const add = (a: number, b: number) => a + b;\\n+export const add = (a: number, b: number) => a + b;\\n+export const sub = (a: number, b: number) => a - b;"}",
+  "end t2 ok {"patch":"@@ -1,1 +1,2 @@\\n export const add = (a: number, b: number) => a + b;\\n+export const sub = (a: number, b: number) => a - b;"}",
+  "usage 23605/200000 $0.0496",
+  "thinking: Good, the edit was successful. I've added the subtract function below the add function. The file now contains both functions.",
+  "text: Done. Added \`sub\` function that subtracts two numbers.",
+  "usage 23605/200000 $0.0575",
+  "compaction running",
+  "mode edits",
+  "session",
+  "compaction manual 23669 -> 7440: 1. Primary Request and Intent:",
+  "usage 7440/200000 $0.0575",
+  "usage 7440/200000 $0.0665",
+  "mode edits",
+  "session",
+  "usage 21204/200000 $0.0665",
+  "thinking: The user is asking me to check what functions are currently in math.ts. I just read the file in the system-reminder, which showed:
+
+\`\`\`
+export const add = (a: number, b: number) => a + b;
+export const sub = (a: number, b: number) => a - b;
+\`\`\`
+
+So math.ts has two functions: \`add\` and \`sub\`.
+
+The user is asking for a one-line answer about what functions are in math.ts.",
+  "text: math.ts has two functions: \`add\` (sums two numbers) and \`sub\` (subtracts two numbers).",
+  "usage 21204/200000 $0.0895",
+]
+`;
+
 exports[`ClaudeEvents replaying recorded conversations > maps the interrupt conversation as before 1`] = `
 [
   "limits 5h, 7d",
@@ -170,7 +240,6 @@ exports[`ClaudeEvents replaying recorded conversations > maps the plan conversat
   "usage 30212/200000 $0.0000",
   "text: Small, self-contained change, so I'm writing the plan directly.",
   "start t5 plan {"plan":"# Plan: add \`div\` to math.ts\\n\\n## Context\\n\`math.ts\` exports \`add\`, \`sub\` and \`mul\` (plain functions, \`(a: number, b: number)\`, no return type annotations). Add a matching \`div\` that throws on division by zero instead of returning \`Infinity\`/\`NaN\`.\\n\\n## Change\\nAppend to \`math.ts\`, following the existing style:\\n\\n\`\`\`ts\\nexport function div(a: number, b: number) {\\n  if (b === 0) {\\n    throw new Error(\\"Division by zero\\");\\n  }\\n  return a / b;\\n}\\n\`\`\`\\n\\n- \`b === 0\` also catches \`-0\`.\\n- Plain \`Error\` with a clear message; no custom error class (none exists in the project).\\n\\n## Verification\\nThe project has no tests, \`package.json\` or tsconfig. Check with a one-off run, for example \`npx tsx -e 'import {div} from \\"./math\\"; console.log(div(6,3)); try{div(1,0)}catch(e){console.log(e.message)}'\`.\\nExpected output: \`2\`, then \`Division by zero\`.\\n"}",
-  "mode edits",
   "end t5 ok {}",
   "usage 27078/200000 $0.0000",
   "text: Plan approved. Adding the \`div\` function now.",

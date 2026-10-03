@@ -25,7 +25,7 @@ import { serverInfos } from './mcp.js';
 import { askRules, claudeOptions, PERMISSION_MODES, type ClaudeResume } from './options.js';
 import { readHistory } from './history.js';
 import { ClaudeProcess, errorOf } from './process.js';
-import { claudeUsage } from './usage.js';
+import { claudeUsage, toContextUsage } from './usage.js';
 
 export interface ClaudeAgentOptions {
   cwd: string;
@@ -247,6 +247,17 @@ export class ClaudeAgent implements Agent {
     return this.claude ? this.claude.query.backgroundTasks() : false;
   }
 
+  /** Claude Code's own `/compact`, sent as a prompt; the turn is its compaction. */
+  compact(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent> {
+    const claude = this.running();
+    this.turn = context;
+    return this.follow(claude, context, claude.send(focus ? `/compact ${focus}` : '/compact'));
+  }
+
+  async context() {
+    return toContextUsage(await this.running().query.getContextUsage({ detail: 'full' }));
+  }
+
   usage({ drivers = false } = {}) {
     return claudeUsage(this.running().query, drivers);
   }
@@ -274,6 +285,22 @@ export class ClaudeAgent implements Agent {
     } finally {
       context.signal.removeEventListener('abort', interrupt);
       this.turn = undefined;
+      void this.readCompactAt(claude);
+    }
+  }
+
+  /**
+   * Where Claude Code compacts on its own, which depends on the model, for the warning as the context fills. Its own
+   * estimate answers without asking the model.
+   */
+  private async readCompactAt(claude: ClaudeProcess) {
+    try {
+      const { compactAt } = toContextUsage(await claude.query.getContextUsage({ detail: 'summary' }));
+      if (claude !== this.claude) return;
+      const usage = claude.events.compactAt(compactAt);
+      if (usage) this.emit(usage);
+    } catch {
+      // A process that just ended, or a Claude Code without it: the warning only comes later.
     }
   }
 

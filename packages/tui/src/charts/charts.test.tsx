@@ -4,6 +4,7 @@ import { renderTerminal, type TestTerminal } from '../testing/index.js';
 import { darkTheme } from '../theme/themes.js';
 import { BarList } from './bar-list.js';
 import { addDays, dayKey, Heatmap, heatLevels } from './heatmap.js';
+import { Waffle, waffleCells } from './waffle.js';
 
 let terminal: TestTerminal | undefined;
 afterEach(() => terminal?.unmount());
@@ -60,6 +61,33 @@ describe('Heatmap', () => {
     expect(heatLevels([1, 2, 3, 4, 100])(100)).toBe(4);
     expect(heatLevels([1, 2, 3, 4, 100])(1)).toBe(1);
     expect(heatLevels([1, 2, 3, 4, 100])(0)).toBe(0);
+  });
+});
+
+describe('Waffle', () => {
+  it('shares the squares out in proportion, at least one for anything there, all of them used', () => {
+    expect(waffleCells([50, 30, 20], 10)).toEqual([5, 3, 2]);
+    expect(waffleCells([1, 9_000, 999], 100)).toEqual([1, 90, 9]);
+    expect(waffleCells([0, 0], 4)).toEqual([0, 0]);
+    expect(waffleCells([1, 0, 3], 4).reduce((a, b) => a + b)).toBe(4);
+  });
+
+  it('fills the grid part by part, with the legend beside it', async () => {
+    terminal = renderTerminal(
+      <Waffle
+        columns={4}
+        rows={2}
+        legend
+        parts={[
+          { label: 'Messages', value: 3, color: darkTheme.accent, text: '3 tokens' },
+          { label: 'Free space', value: 5, color: darkTheme.heat[0] },
+        ]}
+      />,
+      { columns: 40, rows: 3, theme: darkTheme },
+    );
+    expect(await lines(terminal.screen())).toEqual(['■ ■ ■ ■   ■ Messages    3 tokens', '■ ■ ■ ■   ■ Free space']);
+    expect(await terminal.colorOf('■ ■ ■ ■   ■ Messages', 4)).toBe(darkTheme.accent);
+    expect(await terminal.colorOf('■ ■ ■ ■   ■ Messages', 6)).toBe(darkTheme.heat[0]);
   });
 });
 

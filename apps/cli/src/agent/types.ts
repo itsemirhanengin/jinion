@@ -83,6 +83,22 @@ export interface Usage {
   contextTokens: number;
   contextWindow: number;
   cost: number;
+  /** How full the context gets before the agent compacts it on its own, when it does. */
+  compactAt?: number;
+}
+
+/** What fills the context window, by kind, for `/context`. */
+export interface ContextUsage {
+  used: number;
+  /** The window measured against, which can be smaller than the model's, e.g. a compaction policy's. */
+  window: number;
+  /** Where the agent compacts on its own, when it does. */
+  compactAt?: number;
+  /**
+   * In the agent's own order. `free` is room left, `buffer` what compaction keeps in reserve, and `deferred` what is
+   * listed but only loads when used, e.g. MCP tools, which takes no room.
+   */
+  categories: { name: string; tokens: number; kind: 'used' | 'free' | 'buffer' | 'deferred' }[];
 }
 
 export type AgentEvent =
@@ -112,7 +128,14 @@ export type AgentEvent =
    * Between turns: the agent started a turn of its own, e.g. to look at a background task that ended. `Agent.join`
    * follows it the way `run` follows a prompt.
    */
-  | { type: 'turn-start'; reason?: string };
+  | { type: 'turn-start'; reason?: string }
+  /**
+   * The conversation is being summarized to free context, asked for with `/compact` or on the agent's own as the
+   * context fills; `before` and `after` are its tokens, `summary` what the agent carries on from.
+   */
+  | { type: 'compaction'; state: 'running' }
+  | { type: 'compaction'; state: 'done'; trigger: 'manual' | 'auto'; before: number; after?: number; summary?: string }
+  | { type: 'compaction'; state: 'failed'; error: string };
 
 /** The tokens a model took in and gave back. */
 export interface ModelTokens {
@@ -271,6 +294,10 @@ export interface Agent {
    * turn goes on without them. Resolves `false` when there was nothing to send.
    */
   background?(): Promise<boolean>;
+  /** Summarizes the conversation so far to free context, keeping what `focus` says above all; its events follow. */
+  compact?(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent>;
+  /** What fills the context window, by kind. */
+  context?(): Promise<ContextUsage>;
   /** The session's cost, the plan's limits and, with `drivers`, what adds to them, which takes longer to find. */
   usage?(options?: { drivers?: boolean }): Promise<AgentUsage>;
   /** Every day of use on this machine, from the backend's own records; `progress` hears how far reading them got. */

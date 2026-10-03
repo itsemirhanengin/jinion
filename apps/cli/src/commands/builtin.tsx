@@ -4,6 +4,7 @@ import { importClaudeMemory } from '../memory/import.js';
 import { AccountPicker } from '../panels/account.js';
 import { DiffPanel } from '../panels/diff.js';
 import { UsagePanel } from '../panels/usage.js';
+import { ContextPanel } from '../panels/context.js';
 import { McpPanel } from '../panels/mcp.js';
 import { MemoryPanel } from '../panels/memory.js';
 import { ModePicker } from '../panels/mode.js';
@@ -150,6 +151,17 @@ export const builtinCommands: Command[] = [
     name: 'diff',
     description: 'What changed since the last commit, in every repository here, with the agent’s changes marked',
     run: (app) => app.panels.open({ id: 'diff', placement: 'fullscreen', element: <DiffPanel /> }),
+  },
+  {
+    name: 'compact',
+    description: 'Summarize the conversation so far to free context, keeping what you say above all',
+    argumentHint: '[focus]',
+    run: (app, args) => app.actions.compact(args.trim() || undefined),
+  },
+  {
+    name: 'context',
+    description: 'What fills the context window, and when the agent compacts on its own',
+    run: (app) => app.panels.open({ id: 'context', placement: 'bottom', element: <ContextPanel /> }),
   },
   {
     name: 'usage',

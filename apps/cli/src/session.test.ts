@@ -45,6 +45,16 @@ describe('reduce', () => {
     expect(allowed.entries.at(-1)).toMatchObject({ approvedAt: expect.any(Number) });
   });
 
+  it('marks the conversation compacting, then where it was compacted, or why it couldn’t be', () => {
+    const running = events(createSession(200_000), { type: 'compaction', state: 'running' });
+    expect(running.compacting).toBe(true);
+    const done = events(running, { type: 'compaction', state: 'done', trigger: 'auto', before: 160_000, after: 20_000, summary: 'So far' });
+    expect(done.compacting).toBeUndefined();
+    expect(done.entries.at(-1)).toMatchObject({ kind: 'compaction', trigger: 'auto', before: 160_000, after: 20_000, summary: 'So far' });
+    const failed = events(running, { type: 'compaction', state: 'failed', error: 'Not enough messages' });
+    expect(failed.entries.at(-1)).toMatchObject({ kind: 'notice', tone: 'error', text: "Couldn't compact the conversation: Not enough messages" });
+  });
+
   it('replaces consecutive todo updates and keeps the list', () => {
     const todo = (text: string): AgentEvent => ({
       type: 'tool-start',

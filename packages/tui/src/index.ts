@@ -62,6 +62,8 @@ export type { Stat, StatGridProps } from './primitives/stat-grid.js';
 export { addDays, dayKey, Heatmap, heatLevels, parseDay, useDayCursor } from './charts/heatmap.js';
 export type { HeatmapProps } from './charts/heatmap.js';
 export { BarList } from './charts/bar-list.js';
+export { Waffle, waffleCells } from './charts/waffle.js';
+export type { WaffleProps, WafflePart } from './charts/waffle.js';
 export type { Bar, BarListProps } from './charts/bar-list.js';
 export type { OptionRowProps } from './primitives/option-row.js';
 export type { ListNavigationOptions, ListRowProps, SelectListProps } from './primitives/select-list.js';

@@ -20,6 +20,7 @@ import {
   type TreeNode,
 } from '@jinion/tui';
 import type { FileRef, ToolRun } from '../agent/types.js';
+import { compact } from '../usage/format.js';
 import { useJinion } from '../context.js';
 import type { Entry, ToolCallEntry } from '../session.js';
 import { Banner } from './banner.js';
@@ -65,9 +66,39 @@ function EntryBody({ entry }: { entry: Entry }) {
       return <Notice text={entry.text} tone={entry.tone} />;
     case 'task':
       return <TaskEnd entry={entry} />;
+    case 'compaction':
+      return <Compaction entry={entry} />;
     case 'tool':
       return <ToolView entry={entry} />;
   }
+}
+
+/** Where the conversation was summarized: how much it held before and after; the summary on ctrl+o. */
+function Compaction({ entry }: { entry: Extract<Entry, { kind: 'compaction' }> }) {
+  const theme = useTheme();
+  const { expanded } = useView();
+  const tokens = `${compact(entry.before)}${entry.after !== undefined ? ` → ${compact(entry.after)}` : ''} tokens`;
+  return (
+    <Box flexDirection="column">
+      <ToolLine
+        status="done"
+        name="Compacted"
+        detail={
+          <Text color={theme.muted}>
+            {'· '}
+            {tokens}
+            {entry.trigger === 'auto' && ' · on its own, as the context filled'}
+            {entry.summary && !expanded && ' · ctrl+o for the summary'}
+          </Text>
+        }
+      />
+      {expanded && entry.summary && (
+        <Box marginTop={1} paddingLeft={4}>
+          <Markdown text={entry.summary} />
+        </Box>
+      )}
+    </Box>
+  );
 }
 
 const TASK_MARKS = { running: 'running', completed: 'done', failed: 'error', stopped: 'cancelled' } as const;

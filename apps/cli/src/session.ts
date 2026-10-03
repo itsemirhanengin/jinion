@@ -11,6 +11,8 @@ export type Entry =
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
+  /** The conversation was compacted to free context: how much it had and has, and what the agent carries on from. */
+  | { id: string; kind: 'compaction'; trigger: 'manual' | 'auto'; before: number; after?: number; summary?: string }
   /** A background task that ended, with what the agent said about it. */
   | { id: string; kind: 'task'; task: BackgroundTask; summary?: string }
   /** `children` are the tool calls of the subagent an `agent` call runs. */
@@ -47,12 +49,14 @@ export interface Session {
   usage: Usage;
   title?: string;
   busySince?: number;
+  /** The agent is summarizing the conversation. */
+  compacting?: boolean;
   /** The agent's own id for this conversation, used to continue it after `/resume`. */
   agentSession?: string;
 }
 
 /** What a session store keeps of a conversation. */
-export type SavedSession = Omit<Session, 'busySince' | 'title'> & { title: string; updatedAt: number };
+export type SavedSession = Omit<Session, 'busySince' | 'compacting' | 'title'> & { title: string; updatedAt: number };
 
 export type Action =
   | { type: 'submit'; text: string; prompt?: string }
@@ -97,7 +101,7 @@ export const firstPrompt = (session: Pick<Session, 'entries'>) =>
 export function toSaved(session: Session): SavedSession | undefined {
   const prompt = firstPrompt(session);
   if (prompt === undefined) return undefined;
-  const { busySince: _, title, ...rest } = session;
+  const { busySince: _, compacting: __, title, ...rest } = session;
   return { ...rest, title: title ?? prompt, updatedAt: Date.now() };
 }
 
@@ -149,7 +153,7 @@ export function reduce(session: Session, action: Action): Session {
       );
       if (action.outcome === 'interrupted') entries.push(notice('Interrupted. Tell jinion what to do instead.', 'warning'));
       if (action.outcome === 'failed') entries.push(notice(action.message ?? 'Something went wrong.', 'error'));
-      return { ...session, entries, busySince: undefined };
+      return { ...session, entries, busySince: undefined, compacting: undefined };
     }
     case 'notice':
       return { ...session, entries: [...session.entries, notice(action.text, action.tone ?? 'muted')] };
@@ -226,6 +230,14 @@ function apply(session: Session, event: AgentEvent): Session {
       if (index === -1) return session;
       const entries = session.entries.map((entry, at) => (at === index ? { ...entry, promptId: event.id } : entry));
       return { ...session, entries };
+    }
+    case 'compaction': {
+      if (event.state === 'running') return { ...session, compacting: true };
+      if (event.state === 'failed') {
+        return { ...session, compacting: undefined, entries: [...session.entries, notice(`Couldn't compact the conversation: ${event.error}`, 'error')] };
+      }
+      const { trigger, before, after, summary } = event;
+      return { ...session, compacting: undefined, entries: [...session.entries, { id: nextId(), kind: 'compaction', trigger, before, after, summary }] };
     }
     case 'task-end':
       return { ...session, entries: [...session.entries, { id: nextId(), kind: 'task', task: event.task, summary: event.summary }] };

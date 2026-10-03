@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
 import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
-import { App } from './app.js';
+import { App, contextWarning } from './app.js';
 import { MemoryStore } from './memory/store.js';
 import { MemorySessionStore } from './session-store.js';
 import { repo } from './test/git.js';
@@ -280,6 +280,43 @@ describe('App', () => {
     await terminal.waitFor(/Active days +\d of [1-7]\b/);
     await terminal.press(KEYS.escape);
     await terminal.waitFor('Ask jinion anything');
+  });
+
+  it('compacts the conversation with /compact, marking where, with the summary on ctrl+o', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/compact');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('There is nothing to compact yet.');
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/> hello[\s\S]*Ask jinion anything/);
+
+    await terminal.type('/compact the API changes');
+    await terminal.press(KEYS.enter);
+    const marked = await terminal.waitFor(/\[x\] Compacted · [\d.k]+ → [\d.k]+ tokens · ctrl\+o for the summary/);
+    expect(marked).not.toContain('> /compact');
+    await terminal.press('\x0f');
+    const summary = await terminal.waitFor('Kept in focus: the API changes.');
+    expect(summary).not.toContain('ctrl+o for the summary');
+  });
+
+  it('shows what fills the context in /context, a square per percent', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/context');
+    await terminal.press(KEYS.enter);
+    const panel = await terminal.waitFor('Autocompact buffer');
+    expect(panel).toMatch(/^\| (■ ){9}■ +■ System prompt +2\.1k tokens · 1% +\|$/m);
+    expect(panel).toContain('Compacts on its own at 167.0k tokens (84%)');
+    expect(panel).toContain('loaded when used, so they take no room yet: MCP tools 31.2k');
+    await terminal.press(KEYS.escape);
+    await terminal.waitFor('Ask jinion anything');
+  });
+
+  it('warns under the prompt as the context nears auto-compaction', () => {
+    const usage = { contextTokens: 100_000, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
+    expect(contextWarning(usage)).toBeUndefined();
+    expect(contextWarning({ ...usage, contextTokens: 150_300 })).toBeCloseTo(0.1);
+    expect(contextWarning({ ...usage, compactAt: undefined, contextTokens: 199_000 })).toBeUndefined();
   });
 
   it('notifies when it waits for an answer in a window that isn’t focused, and not while it is', async () => {

@@ -9,6 +9,7 @@ import type {
   AgentMode,
   AgentPrompt,
   BackgroundTask,
+  ContextUsage,
   RunContext,
   ToolCall,
   ToolName,
@@ -96,7 +97,7 @@ export class ScriptedAgent implements Agent {
   /** The scenarios play the same in any mode, so there is only one. */
   readonly mode: AgentMode = 'edits';
   readonly modes: AgentMode[] = ['edits'];
-  private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
+  private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
   private readonly tasks: DemoTasks;
 
   constructor(
@@ -135,6 +136,42 @@ export class ScriptedAgent implements Agent {
 
   async stopTask(id: string) {
     this.tasks.stop(id);
+  }
+
+  /** Pretends to summarize the conversation into a third of its tokens. */
+  async *compact(focus: string | undefined, context: RunContext): AsyncGenerator<AgentEvent> {
+    const script = this.script(context);
+    yield { type: 'compaction', state: 'running' };
+    yield* script.pause(800);
+    const before = this.totals.contextTokens;
+    this.totals.contextTokens = Math.round(before / 3);
+    const summary = [
+      '1. Primary request: add rate limiting to the public API.',
+      `2. Kept in focus: ${focus ?? 'the open work and the decisions behind it'}.`,
+      '3. Files: src/middleware/rate-limit.ts, src/server.ts.',
+    ].join('\n');
+    yield { type: 'compaction', state: 'done', trigger: 'manual', before, after: this.totals.contextTokens, summary };
+    yield { type: 'usage', usage: { ...this.totals } };
+  }
+
+  async context(): Promise<ContextUsage> {
+    const { contextTokens: used, contextWindow: window, compactAt } = this.totals;
+    const system = 12_400;
+    const messages = Math.max(0, used - system);
+    return {
+      used: Math.max(used, system),
+      window,
+      compactAt,
+      categories: [
+        { name: 'System prompt', tokens: 2_100, kind: 'used' },
+        { name: 'System tools', tokens: 8_300, kind: 'used' },
+        { name: 'Skills', tokens: 2_000, kind: 'used' },
+        { name: 'Messages', tokens: messages, kind: 'used' },
+        { name: 'MCP tools (deferred)', tokens: 31_200, kind: 'deferred' },
+        { name: 'Free space', tokens: (compactAt ?? window) - system - messages, kind: 'free' },
+        { name: 'Autocompact buffer', tokens: window - (compactAt ?? window), kind: 'buffer' },
+      ],
+    };
   }
 
   async usage({ drivers = false } = {}) {

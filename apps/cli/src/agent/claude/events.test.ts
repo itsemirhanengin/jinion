@@ -75,6 +75,13 @@ function transcript(events: AgentEvent[]) {
       case 'task-end':
         lines.push(`task-end ${JSON.stringify(event.task.title)} ${event.task.status}: ${event.summary}`);
         break;
+      case 'compaction':
+        lines.push(
+          event.state === 'done'
+            ? `compaction ${event.trigger} ${event.before} -> ${event.after}: ${event.summary?.split('\n')[0]}`
+            : `compaction ${event.state}`,
+        );
+        break;
     }
   }
   return lines;
@@ -84,7 +91,7 @@ const started = (events: AgentEvent[]) =>
   events.flatMap((event) => (event.type === 'tool-start' ? [event.call] : []));
 
 describe('ClaudeEvents replaying recorded conversations', () => {
-  for (const name of ['tools', 'plan', 'skills', 'interrupt', 'subagent', 'background']) {
+  for (const name of ['tools', 'plan', 'skills', 'interrupt', 'subagent', 'background', 'compact']) {
     it(`maps the ${name} conversation as before`, () => {
       expect(transcript(replay(name))).toMatchSnapshot();
     });
@@ -148,6 +155,37 @@ describe('ClaudeEvents replaying recorded conversations', () => {
     expect(ends.filter((result) => result && 'background' in result)).toHaveLength(5);
     const summaries = events.flatMap((event) => (event.type === 'task-end' ? [`${event.task.status}: ${event.summary}`] : []));
     expect(summaries).toContain('failed: Background command "sleep 2; echo boom >&2; exit 3" failed with exit code 3');
+  });
+
+  it('follows /compact from running to its summary, and takes the context down to what is left', () => {
+    const events = replay('compact');
+    const compaction = events.filter((event) => event.type === 'compaction');
+    expect(compaction.map((event) => event.state)).toEqual(['running', 'done']);
+    expect(compaction[1]).toMatchObject({ trigger: 'manual', before: 23669, after: 7440, summary: expect.stringMatching(/^1\. Primary Request and Intent:/) });
+    const after = events.slice(events.indexOf(compaction[1]!));
+    expect(after.find((event) => event.type === 'usage')).toMatchObject({ usage: { contextTokens: 7440 } });
+    // Claude Code's echo of the command isn't taken for anything.
+    expect(events.some((event) => event.type === 'text' && event.delta.includes('Compacted'))).toBe(false);
+  });
+
+  it('keeps waiting for a compaction’s summary past bookkeeping that comes in between', () => {
+    const events = new ClaudeEvents('/project');
+    const messages = [
+      { type: 'system', subtype: 'compact_boundary', compact_metadata: { trigger: 'auto', pre_tokens: 160_000, post_tokens: 20_000 } },
+      { type: 'command_lifecycle', command_uuid: 'c1', state: 'completed' },
+      { type: 'system', subtype: 'status', status: null },
+      {
+        type: 'user',
+        parent_tool_use_id: null,
+        message: {
+          role: 'user',
+          content:
+            'This session is being continued from a previous conversation.\n\nSummary:\nWhat was done.\n\nIf you need specific details from before compaction, read the transcript.\nContinue the conversation from where it left off.',
+        },
+      },
+    ] as unknown as SDKMessage[];
+    const done = messages.flatMap((message) => [...events.map(message)]).find((event) => event.type === 'compaction');
+    expect(done).toMatchObject({ state: 'done', trigger: 'auto', before: 160_000, after: 20_000, summary: 'What was done.' });
   });
 
   it('ends an interrupted turn without a result of its own and carries on with the next', () => {
