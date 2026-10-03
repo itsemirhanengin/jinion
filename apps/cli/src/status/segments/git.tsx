@@ -40,3 +40,10 @@ export const git: Segment = {
     );
   },
 };
+
+export const worktree: Segment = {
+  id: 'worktree',
+  name: 'Worktree',
+  description: 'The git worktree the conversation works in, when it has one (ctrl+g)',
+  render: ({ session, theme }) => session.worktree && <Tag name="W" value={session.worktree.name} color={theme.code} />,
+};

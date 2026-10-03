@@ -1,11 +1,11 @@
 import { resolve } from 'node:path';
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
-import { useJinion } from '../../app/context.js';
 import { branchBase, fileDiff, findRepos, repoChanges, repoState, type FileChange, type Repo } from '../../git/repos.js';
 import { plural } from '../../lib/format.js';
 import { editTurnsAtom } from '../../state/session.js';
 import { useAsync } from '../../ui/use-async.js';
+import { useWorkdir } from '../../ui/use-workdir.js';
 import { totals, type ChangeRow, type View } from './views.js';
 
 interface RepoView {
@@ -17,15 +17,12 @@ interface RepoView {
 }
 
 export function useCurrentView(): View {
-  const { info } = useJinion();
+  const cwd = useWorkdir();
   const turns = useAtomValue(editTurnsAtom);
 
-  const edited = useMemo(
-    () => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(info.cwd, change.path)))),
-    [turns, info.cwd],
-  );
+  const edited = useMemo(() => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(cwd, change.path)))), [turns, cwd]);
 
-  const read = useAsync(() => Promise.all(findRepos(info.cwd).map(readRepo)), []);
+  const read = useAsync(() => Promise.all(findRepos(cwd).map(readRepo)), []);
 
   if (read.state !== 'done') return { label: 'Current', empty: 'Looking for changes…' };
 

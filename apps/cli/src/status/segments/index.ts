@@ -1,6 +1,6 @@
 import type { Segment } from '../segment.js';
 import { changes, duration, tasks, time, title, turns } from './conversation.js';
-import { git } from './git.js';
+import { git, worktree } from './git.js';
 import { account, agent, brand, directory, mode, model, version } from './identity.js';
 import { context, cost, limits } from './usage.js';
 
@@ -11,6 +11,7 @@ export const SEGMENTS: Segment[] = [
   account,
   mode,
   directory,
+  worktree,
   git,
   context,
   limits,

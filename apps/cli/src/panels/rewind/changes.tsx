@@ -1,14 +1,14 @@
 import { relative } from 'node:path';
 import { Box, Text, useTheme } from '@jinion/tui';
 import type { FileChanges } from '../../agent/agent.js';
-import { useJinion } from '../../app/context.js';
 import { plural } from '../../lib/format.js';
 import { useAsync } from '../../ui/use-async.js';
+import { useWorkdir } from '../../ui/use-workdir.js';
 
 const FILES_SHOWN = 3;
 
 export function Changes({ changes, indent }: { changes: Promise<FileChanges | undefined>; indent: number }) {
-  const { info } = useJinion();
+  const cwd = useWorkdir();
   const theme = useTheme();
 
   const known = useAsync(() => changes, [changes]);
@@ -22,7 +22,7 @@ export function Changes({ changes, indent }: { changes: Promise<FileChanges | un
   }
 
   const { files, insertions, deletions } = known.value;
-  const names = files.slice(0, FILES_SHOWN).map((file) => relative(info.cwd, file) || file);
+  const names = files.slice(0, FILES_SHOWN).map((file) => relative(cwd, file) || file);
   const more = files.length - names.length;
 
   return (

@@ -7,16 +7,15 @@ import { gitStatusAtom, useNow, useStatusData } from '../status/data.js';
 import { useGitStatus } from '../status/git.js';
 import { renderStatusLine } from '../status/line.js';
 import { findSegment } from '../status/segments/index.js';
-import { useJinion } from './context.js';
+import { useWorkdir } from '../ui/use-workdir.js';
 
 export function StatusLine() {
-  const { info } = useJinion();
   const items = useAtomValue(shownStatusItemsAtom);
   const busy = useAtomValue(busyAtom);
   const setGit = useSetAtom(gitStatusAtom);
 
   const segments = items.map((item) => findSegment(item.id));
-  const git = useGitStatus(info.cwd, segments.some((segment) => segment?.git), busy);
+  const git = useGitStatus(useWorkdir(), segments.some((segment) => segment?.git), busy);
 
   useEffect(() => setGit(git), [git]);
 

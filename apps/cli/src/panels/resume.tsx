@@ -76,5 +76,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
 function describe(session: SavedSession) {
   const messages = session.entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
 
-  return `${messages} messages · "${firstPrompt(session) ?? ''}"`;
+  const worktree = session.worktree ? `worktree ${session.worktree.name} · ` : '';
+
+  return `${worktree}${messages} messages · "${firstPrompt(session) ?? ''}"`;
 }

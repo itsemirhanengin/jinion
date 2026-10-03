@@ -8,6 +8,8 @@ export const DEFAULT_CONTEXT_WINDOW = 200_000;
 
 export const sessionAtom = atomWithLazy(() => createSession(DEFAULT_CONTEXT_WINDOW));
 
+export const worktreeAtom = atom((get) => get(sessionAtom).worktree);
+
 export const dispatchAtom = atom(null, (get, set, action: Action) => set(sessionAtom, reduce(get(sessionAtom), action)));
 
 export const entriesAtom = atom((get) => get(sessionAtom).entries);

@@ -254,6 +254,57 @@ describe('App', () => {
     await terminal.waitFor('Worktrees are off. Conversations work in the project folder.');
   });
 
+  it('goes back into a conversation’s worktree on /resume, and on in the project folder once the worktree is gone', async () => {
+    repo(box.project, (path) => box.write(join(path, 'a.ts'), 'a'));
+    const reset = vi.spyOn(ScriptedAgent.prototype, 'reset');
+    const lastFolder = () => (reset.mock.lastCall as unknown[] | undefined)?.[1];
+
+    start(0, 50);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/worktree on');
+    await terminal.press(KEYS.enter);
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+
+    const screen = await terminal.waitFor(/Working in the worktree[\s\S]*Ask jinion anything/);
+    const name = /Working in the worktree ([a-z-]+),/.exec(screen)![1]!;
+    const folder = join(box.home, '.jinion', 'projects', box.project.replace(/[^a-zA-Z0-9]/g, '-'), 'worktrees', name);
+
+    expect(screen.trimEnd().split('\n').at(-1)).toContain(`[W] ${name}`);
+    expect(screen).toMatch(new RegExp(`worktree +${name} on worktree-${name}`));
+    expect(reset).toHaveBeenLastCalledWith(undefined, folder);
+
+    box.write(join(folder, 'b.ts'), 'b');
+    await terminal.type('/worktree off');
+    await terminal.press(KEYS.enter);
+    await terminal.type('/clear');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Keep it?');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(`Kept the worktree ${name}.`);
+
+    await terminal.type('/resume');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(`worktree ${name} · `);
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/\[W\] [a-z-]+/);
+    expect(lastFolder()).toBe(folder);
+
+    await terminal.type('/clear');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Keep it?');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(`Kept the worktree ${name}.`);
+    git(box.project, 'worktree', 'remove', '--force', folder);
+    await terminal.type('/resume');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('2 messages');
+    await terminal.press(KEYS.enter);
+    // The message wraps where the temporary folder's path ends.
+    await terminal.waitFor(/no longer exists\.\s+The\s+conversation\s+continues\s+in\s+the\s+project\s+folder\./);
+    expect(lastFolder()).toBeUndefined();
+  });
+
   it('plays the tour through its questions, edits and commands', async () => {
     const screen = await playTour();
 

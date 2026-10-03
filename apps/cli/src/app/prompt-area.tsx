@@ -11,6 +11,7 @@ import { busyAtom, sessionAtom } from '../state/session.js';
 import { modeColor } from '../ui/modes.js';
 import { contextWarning } from './activity.js';
 import { useJinion } from './context.js';
+import { useWorkdir } from '../ui/use-workdir.js';
 
 const contextLeftAtom = atom((get) => contextWarning(get(sessionAtom).usage));
 
@@ -22,7 +23,7 @@ export function PromptArea() {
   const skills = useAtomValue(skillsAtom);
   const mention = useAtomValue(mentionAtom);
   const contextLeft = useAtomValue(contextLeftAtom);
-  const files = useProjectFiles(jinion.info.cwd, !busy);
+  const files = useProjectFiles(useWorkdir(), !busy);
 
   const footer = jinion.agent.modes.length > 1 || contextLeft !== undefined;
 

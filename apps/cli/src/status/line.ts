@@ -14,6 +14,7 @@ export const DEFAULT_STATUS_LINE: StatusItem[] = [
   { id: 'brand', side: 'left' },
   { id: 'model', side: 'left' },
   { id: 'directory', side: 'left' },
+  { id: 'worktree', side: 'left' },
   { id: 'context', side: 'left' },
   { id: 'cost', side: 'left' },
   { id: 'title', side: 'right' },

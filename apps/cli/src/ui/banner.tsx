@@ -5,12 +5,14 @@ import { accountLabel } from '../agent/accounts.js';
 import { useJinion } from '../app/context.js';
 import { tildify } from '../lib/paths.js';
 import { identityAtom, modelLabelAtom } from '../state/agent.js';
+import { worktreeAtom } from '../state/session.js';
 
 export function Banner() {
   const theme = useTheme();
   const { agent, info } = useJinion();
   const model = useAtomValue(modelLabelAtom);
   const identity = useAtomValue(identityAtom);
+  const worktree = useAtomValue(worktreeAtom);
 
   const { version, cwd, examples = [] } = info;
 
@@ -39,6 +41,12 @@ export function Banner() {
       <Row label="cwd">
         <Text color={theme.status.directory}>{tildify(cwd)}</Text>
       </Row>
+      {worktree && (
+        <Row label="worktree">
+          <Text color={theme.code}>{worktree.name}</Text>
+          <Text color={theme.muted}> on {worktree.branch}</Text>
+        </Row>
+      )}
       {examples.length > 0 && (
         <Row label="try">
           <Text color={theme.code}>{examples.join(', ')}</Text>
