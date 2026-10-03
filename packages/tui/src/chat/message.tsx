@@ -2,6 +2,7 @@ import { Box, Text } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { Prose } from '../primitives/prose.js';
 import { anyOf, MENTION } from './mentions.js';
+import { PASTED_IMAGE } from './pasted-images.js';
 import { PASTED_TEXT } from './pasted-texts.js';
 
 export interface UserMessageProps {
@@ -19,7 +20,7 @@ export interface UserMessageProps {
 export function UserMessage({ text, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
   const marks = [
-    ...[...text.matchAll(PASTED_TEXT)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
+    ...[...text.matchAll(anyOf([PASTED_TEXT, PASTED_IMAGE])!)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
     ...[...text.matchAll(anyOf([MENTION, ...mentions])!)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
   ].sort((a, b) => a.index - b.index);
   const parts: { text: string; color?: string }[] = [];

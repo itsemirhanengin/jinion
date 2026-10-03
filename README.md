@@ -151,6 +151,7 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 | --- | --- |
 | `enter` | Send; while the agent works, steer it: the message joins the turn and the agent reads it at its next step |
 | `ctrl+q` | While the agent works, queue the message to send once the turn is done |
+| `ctrl+v` | Attach the image on the clipboard as `[Image #1]`; dragging an image file into the terminal does the same |
 | `shift+enter`, `alt+enter`, trailing `\` | New line |
 | `up` / `down` | Prompt history |
 | `esc` | Interrupt the running turn |
@@ -166,6 +167,8 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 `@` completes the project's files and folders: what git tracks or could track, so ignored files stay out, with names that match ranking first. A folder goes in without a space, so typing on lists what's inside.
 
 The prompt grows to 20 lines, then scrolls inside, with the rules above and below saying how many lines are out of view. A paste placeholder acts as one character: the cursor steps over it and backspace removes it whole.
+
+Images go into the prompt as placeholders like long pastes, and the agent gets them after the text, in the order the placeholders come: from the clipboard with `ctrl+v` (macOS, or Linux with `wl-paste` or `xclip`), or as files, since a terminal pastes a dragged file's path (PNG, JPEG, GIF and WebP). Images over 3.7 MB are scaled down with macOS's `sips` before they go out; elsewhere they are refused.
 
 The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
 

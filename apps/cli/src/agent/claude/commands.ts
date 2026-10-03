@@ -1,5 +1,5 @@
-import type { SlashCommand } from '@anthropic-ai/claude-agent-sdk';
-import type { AgentCommand } from '../types.js';
+import type { SDKUserMessage, SlashCommand } from '@anthropic-ai/claude-agent-sdk';
+import type { AgentCommand, AgentPrompt } from '../types.js';
 import { labelOf } from './mcp.js';
 
 /** Claude Code lists an MCP prompt as `claude.ai Figma:create_rules (MCP)`, and runs it as `/mcp__claude_ai_Figma__create_rules`. */
@@ -52,6 +52,22 @@ export function toAgentCommands(list: SlashCommand[]) {
     });
   }
   return { commands, invocations };
+}
+
+/**
+ * A prompt as a message's content for Claude Code: its text with mentions turned into what Claude Code runs, and its
+ * images after it, so a slash command at the start of the text still reads as one.
+ */
+export function toClaudeContent(prompt: AgentPrompt, invocations: Invocations): SDKUserMessage['message']['content'] {
+  const text = toClaudePrompt(prompt.text, invocations);
+  if (!prompt.images?.length) return text;
+  return [
+    { type: 'text', text },
+    ...prompt.images.map((image) => ({
+      type: 'image' as const,
+      source: { type: 'base64' as const, media_type: image.mediaType as 'image/png', data: image.data },
+    })),
+  ];
 }
 
 /** `$design` or `$vercel:nextjs`, at the start or after whitespace, without trailing punctuation. */

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { claudeSays, FakeClaude } from '../../test/fake-claude.js';
 import { sandbox, type Sandbox } from '../../test/sandbox.js';
-import type { AgentEvent, RunContext } from '../types.js';
+import type { AgentEvent, AgentPrompt, RunContext } from '../types.js';
 import { ClaudeAgent } from './agent.js';
 
 let box: Sandbox;
@@ -27,11 +27,11 @@ const context = (): RunContext => ({
 });
 
 /** Runs a prompt, answering it with `reply` once Claude Code receives it. */
-async function turn(prompt: string, reply: (uuid: string) => Parameters<FakeClaude['reply']>) {
+async function turn(prompt: string | AgentPrompt, reply: (uuid: string) => Parameters<FakeClaude['reply']>) {
   const received = fake.nextPrompt();
   const events: AgentEvent[] = [];
   const running = (async () => {
-    for await (const event of agent.run(prompt, context())) events.push(event);
+    for await (const event of agent.run(typeof prompt === 'string' ? { text: prompt } : prompt, context())) events.push(event);
   })();
   const sent = await received;
   fake.reply(...reply(sent.uuid!));
@@ -60,16 +60,25 @@ describe('ClaudeAgent', () => {
     await expect(turn('again', (uuid) => [claudeSays.result(uuid, 'Rate limited')])).rejects.toThrow('Rate limited');
   });
 
+  it('sends images after the text, which keeps a skill at the start working', async () => {
+    const image = { mediaType: 'image/png', data: 'aGk=' };
+    const { sent } = await turn({ text: 'what is wrong in [Image #1]?', images: [image] }, (uuid) => [claudeSays.result(uuid)]);
+    expect(sent.message.content).toEqual([
+      { type: 'text', text: 'what is wrong in [Image #1]?' },
+      { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'aGk=' } },
+    ]);
+  });
+
   it('steers messages into a turn in progress, and only then', async () => {
-    expect(agent.steer('too early')).toBe(false);
+    expect(agent.steer({ text: 'too early' })).toBe(false);
     const first = fake.nextPrompt();
     const events: AgentEvent[] = [];
     const running = (async () => {
-      for await (const event of agent.run('fix the tests', context())) events.push(event);
+      for await (const event of agent.run({ text: 'fix the tests' }, context())) events.push(event);
     })();
     const { uuid } = await first;
     const second = fake.nextPrompt();
-    expect(agent.steer('also the docs')).toBe(true);
+    expect(agent.steer({ text: 'also the docs' })).toBe(true);
     const steered = await second;
     expect(steered).toMatchObject({ priority: 'next', message: { content: 'also the docs' } });
     fake.reply(claudeSays.text('Both done'), { ...claudeSays.result(uuid!), user_message_uuids: [uuid!, steered.uuid!] } as never);

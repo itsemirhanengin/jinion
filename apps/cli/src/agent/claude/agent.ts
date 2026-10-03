@@ -11,13 +11,14 @@ import type {
   AgentEvent,
   AgentMcp,
   AgentMode,
+  AgentPrompt,
   AgentResume,
   RunContext,
   SignInOptions,
 } from '../types.js';
 import { accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
 import { ClaudeApprovals } from './approvals.js';
-import { toAgentCommands, toClaudePrompt, type Invocations } from './commands.js';
+import { toAgentCommands, toClaudeContent, type Invocations } from './commands.js';
 import { serverInfos } from './mcp.js';
 import { askRules, claudeOptions, PERMISSION_MODES } from './options.js';
 import { ClaudeProcess, errorOf } from './process.js';
@@ -113,8 +114,8 @@ export class ClaudeAgent implements Agent {
     return () => void this.listeners.delete(listener);
   }
 
-  steer(text: string) {
-    return this.turn !== undefined && (this.claude?.steer(toClaudePrompt(text, this.invocations)) ?? false);
+  steer(prompt: AgentPrompt) {
+    return this.turn !== undefined && (this.claude?.steer(toClaudeContent(prompt, this.invocations)) ?? false);
   }
 
   /** Asks the running Claude Code who it is signed in as; the process it starts takes the next prompt. */
@@ -189,14 +190,14 @@ export class ClaudeAgent implements Agent {
     }
   }
 
-  async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
+  async *run(prompt: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
     const claude = this.running();
     this.turn = context;
     const interrupt = () => claude.interrupt();
     context.signal.addEventListener('abort', interrupt, { once: true });
     try {
       let last: SDKMessage | undefined;
-      for await (const message of claude.send(toClaudePrompt(prompt, this.invocations))) {
+      for await (const message of claude.send(toClaudeContent(prompt, this.invocations))) {
         last = message;
         yield* this.eventsOf(claude, message);
       }

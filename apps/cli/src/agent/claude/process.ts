@@ -7,6 +7,17 @@ import { Inbox } from './inbox.js';
 
 type Result = Extract<SDKMessage, { type: 'result' }>;
 
+/** A prompt's text, or its text and images. */
+export type Content = SDKUserMessage['message']['content'];
+
+/** Images in the debug log say how big they were rather than holding them. */
+const loggable = (content: Content) =>
+  typeof content === 'string'
+    ? content
+    : content.map((block) =>
+        block.type === 'image' && block.source.type === 'base64' ? { type: 'image', bytes: block.source.data.length } : block,
+      );
+
 export interface ClaudeProcessOptions {
   /** Claude Code's options, without the prompt and stderr, which the process takes care of. */
   options: Options;
@@ -56,7 +67,7 @@ export class ClaudeProcess {
    * Sends a prompt, then yields what Claude Code sends until the results that answer it and the messages steered into
    * the turn, which come last. Fails when the process exits first.
    */
-  async *send(content: string): AsyncGenerator<SDKMessage> {
+  async *send(content: Content): AsyncGenerator<SDKMessage> {
     if (this.exited) throw this.exited;
     if (this.turn) throw new Error('Claude Code is still answering the previous prompt.');
     const turn = { waiting: new Set<string>(), messages: new Inbox<SDKMessage | Error>() };
@@ -77,7 +88,7 @@ export class ClaudeProcess {
    * Adds a message to the turn in progress. Claude Code reads it as soon as the current tool calls finish, or answers
    * it in a turn of its own right after, which still belongs to this one. False when no turn runs to take it.
    */
-  steer(content: string) {
+  steer(content: Content) {
     if (!this.turn || this.exited) return false;
     this.push(content, this.turn, 'next');
     return true;
@@ -94,10 +105,10 @@ export class ClaudeProcess {
     this.query.close();
   }
 
-  private push(content: string, turn: NonNullable<ClaudeProcess['turn']>, priority?: 'next') {
+  private push(content: Content, turn: NonNullable<ClaudeProcess['turn']>, priority?: 'next') {
     const uuid = randomUUID();
     turn.waiting.add(uuid);
-    this.options.debug?.write('prompt', { uuid, content, priority });
+    this.options.debug?.write('prompt', { uuid, content: loggable(content), priority });
     this.input.push({
       type: 'user',
       uuid,

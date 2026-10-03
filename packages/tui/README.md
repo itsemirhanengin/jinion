@@ -165,7 +165,8 @@ Chat
 | `PermissionPanel` | asks before the agent runs something: yes, yes and don't ask again, no with a note |
 | `ModelPanel` | the agent's models with their effort levels: up/down for the model, left/right for the effort |
 | `AskResult` | the answered questions as they stay in the conversation |
-| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, `pastes` turns long pastes into placeholders, and `mentions` highlights more than `@path`, e.g. skills |
+| `Composer` | the prompt between dashed rules, with completions; the rules show lines scrolled out of view, `footer` goes on the lower rule, `pastes` turns long pastes into placeholders, `mentions` highlights more than `@path`, e.g. skills, `onPaste` can turn a paste into something else first, and `onPasteKey` inserts what ctrl+v brings, e.g. an image placeholder |
+| `PastedImages`, `PASTED_IMAGE` | images in the prompt as `[Image #1]` placeholders, which act as one character like pastes, and the images a text refers to |
 | `PromptInput` | the bare multiline editor with history and readline shortcuts, also used inside panels; wraps to the width it gets, scrolls past `maxRows` (20), treats `atoms` as single characters, and colors `highlight` spans |
 | `MENTION`, `mention` | the `@path` pattern prompts and user messages highlight, and how a path is written as one |
 | `namedMention`, `anyOf` | a pattern for known names after a sigil, such as `$design`, so `$HOME` stays plain; and one pattern out of several |

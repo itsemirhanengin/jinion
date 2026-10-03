@@ -97,6 +97,19 @@ export interface RunContext {
 
 export type PlanDecision = { approve: true; mode: AgentMode } | { approve: false; note?: string };
 
+/** What the user sends: text, which refers to its images as `[Image #1]`, and the images in that order. */
+export interface AgentPrompt {
+  text: string;
+  images?: AgentImage[];
+}
+
+export interface AgentImage {
+  /** e.g. `image/png`. */
+  mediaType: string;
+  /** Base64. */
+  data: string;
+}
+
 /** A skill or an MCP server's prompt, which the user mentions as `$name` anywhere in a prompt. */
 export interface AgentCommand {
   /** Unique, e.g. `design`, or `vercel:nextjs` when another skill already has the short name. */
@@ -129,12 +142,12 @@ export interface Agent {
   /** Skills and MCP prompts. Later changes come as `commands` events. */
   commands(): Promise<AgentCommand[]>;
   /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
-  run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
+  run(prompt: AgentPrompt, context: RunContext): AsyncIterable<AgentEvent>;
   /**
    * Adds a message to the turn in progress, which the agent reads at its next step; its events come through that
    * turn's `run`. False when no turn runs to take it. Backends that can't leave it out, and messages wait instead.
    */
-  steer?(text: string): boolean;
+  steer?(prompt: AgentPrompt): boolean;
   /**
    * Events that come while no turn runs: the commands or plan limits changing, or a turn the backend starts itself.
    * Returns a function that stops listening. Backends that only speak when spoken to leave it out.

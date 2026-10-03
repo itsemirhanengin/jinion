@@ -16,6 +16,7 @@ import {
   usePanels,
   useTheme,
   useView,
+  PastedImages,
   PastedTexts,
   type ModelOption,
   type ModelSelection,
@@ -64,6 +65,7 @@ import { DEFAULT_STATUS_LINE, knownItems, renderStatusLine, type StatusItem } fr
 import { findSegment, type StatusData } from './status/segments.js';
 import { EntryView } from './ui/entry.js';
 import { fileCompletion, useProjectFiles } from './files.js';
+import { clipboardImage, imageFromPaste } from './images.js';
 import { skillCompletion, skillMention } from './skills.js';
 
 export interface AppProps {
@@ -85,6 +87,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const [draft, setDraft] = useState('');
   // Long pastes sit in the prompt as placeholders; they expand when sent, also when recalled from history.
   const pastes = useMemo(() => new PastedTexts(), []);
+  // So do images, from the clipboard (ctrl+v) or dragged in as files.
+  const images = useMemo(() => new PastedImages(), []);
   const [submitted, setSubmitted] = useState<string[]>([]);
   const controller = useRef<AbortController>(undefined);
   const busy = session.busySince !== undefined;
@@ -234,6 +238,28 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     dispatch(action);
   };
 
+  /** A pasted path of an image file, e.g. one dragged into the terminal, goes in as the image. */
+  const pasteImage = (text: string) => {
+    try {
+      const image = imageFromPaste(text);
+      return image && images.add(image);
+    } catch (error) {
+      notice(error instanceof Error ? error.message : String(error), 'warning');
+      return undefined;
+    }
+  };
+
+  const pasteClipboardImage = async () => {
+    try {
+      const image = await clipboardImage();
+      if (image) return images.add(image);
+      notice('There is no image on the clipboard. Text pastes with your terminal’s paste, e.g. cmd+v.', 'muted');
+    } catch (error) {
+      notice(error instanceof Error ? error.message : String(error), 'warning');
+    }
+    return undefined;
+  };
+
   // Messages that wait for the turn in progress, sent one after another once it is done.
   const [queued, setQueued] = useState<string[]>([]);
   const queue = useRef<string[]>([]);
@@ -246,8 +272,9 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   /** A message typed while the agent works goes into its turn, or waits for it when the agent can't take it. */
   const steer = (text: string) => {
     const full = pastes.expand(text);
-    if (agent.steer?.(full)) dispatch({ type: 'steer', text, prompt: full === text ? undefined : full });
-    else enqueue(text);
+    if (agent.steer?.({ text: full, images: images.in(text) })) {
+      dispatch({ type: 'steer', text, prompt: full === text ? undefined : full });
+    } else enqueue(text);
   };
 
   useEffect(() => {
@@ -317,7 +344,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
       ));
 
     try {
-      for await (const event of agent.run(full, { signal: abort.signal, ask, approve, approvePlan })) {
+      const sent = { text: full, images: images.in(text) };
+      for await (const event of agent.run(sent, { signal: abort.signal, ask, approve, approvePlan })) {
         apply(event);
       }
       dispatch({ type: 'finish', outcome: 'done' });
@@ -454,6 +482,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
         prompt={
           <Composer
             pastes={pastes}
+            onPaste={pasteImage}
+            onPasteKey={pasteClipboardImage}
             value={draft}
             onChange={setDraft}
             onSubmit={actions.submit}

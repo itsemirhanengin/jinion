@@ -9,7 +9,7 @@ export interface Sandbox {
   home: string;
   /** An empty project folder. */
   project: string;
-  /** Writes a file, making its folders; JSON for anything that isn't a string. */
+  /** Writes a file, making its folders; JSON for anything that isn't a string or bytes. */
   write(path: string, content: unknown): string;
   restore(): void;
 }
@@ -34,7 +34,7 @@ export function sandbox(): Sandbox {
     project,
     write(path, content) {
       mkdirSync(dirname(path), { recursive: true });
-      writeFileSync(path, typeof content === 'string' ? content : JSON.stringify(content));
+      writeFileSync(path, typeof content === 'string' || Buffer.isBuffer(content) ? content : JSON.stringify(content));
       return path;
     },
     restore() {

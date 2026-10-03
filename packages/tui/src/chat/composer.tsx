@@ -6,6 +6,7 @@ import { KeyHints } from '../primitives/panel.js';
 import { Rule } from '../primitives/rule.js';
 import { ListRow, SelectList, stepIndex } from '../primitives/select-list.js';
 import { anyOf, MENTION } from './mentions.js';
+import { PASTED_IMAGE } from './pasted-images.js';
 import { PASTED_TEXT, type PastedTexts } from './pasted-texts.js';
 import { PromptInput, type HiddenRows, type PromptInputProps } from './prompt-input.js';
 
@@ -50,14 +51,30 @@ export interface ComposerProps
   footer?: ReactNode;
   /** Highlighted like @-mentions, e.g. skills from `namedMention('$', names)`. */
   mentions?: (RegExp | undefined)[];
+  /** Turns pasted text into something else first, e.g. a dropped image's path into its placeholder; `undefined` keeps it. */
+  onPaste?(text: string): string | undefined;
+  /** ctrl+v: what to insert at the cursor, e.g. a placeholder for the image on the clipboard. */
+  onPasteKey?(): Promise<string | undefined>;
 }
+
+/** Long pastes and images, which the cursor steps over and backspace removes whole. */
+const PLACEHOLDERS = anyOf([PASTED_TEXT, PASTED_IMAGE])!;
 
 /**
  * The prompt between dashed rules, with a completion list under it while a
  * source has suggestions. Up/down move, Tab inserts, Enter accepts, Esc dismisses.
  * When the prompt scrolls, the rules say how many lines are out of view.
  */
-export function Composer({ completions = [], limit = 8, pastes, footer, mentions = [], ...input }: ComposerProps) {
+export function Composer({
+  completions = [],
+  limit = 8,
+  pastes,
+  footer,
+  mentions = [],
+  onPaste,
+  onPasteKey,
+  ...input
+}: ComposerProps) {
   const theme = useTheme();
   const { value, onChange, onSubmit } = input;
   const patterns = mentions.map((pattern) => pattern?.source ?? '').join('\n');
@@ -89,7 +106,13 @@ export function Composer({ completions = [], limit = 8, pastes, footer, mentions
     else onChange(next);
   };
 
-  const onKeyDown = (_: string, key: Key) => {
+  const onKeyDown = (input: string, key: Key) => {
+    if (key.ctrl && input === 'v' && onPasteKey) {
+      void onPasteKey().then((text) => {
+        if (text) onChange(value.slice(0, cursor) + text + value.slice(cursor));
+      });
+      return true;
+    }
     if (!open || !completion) return false;
     const count = completion.items.length;
     if (key.upArrow) setIndex(stepIndex(selected, -1, count));
@@ -109,8 +132,8 @@ export function Composer({ completions = [], limit = 8, pastes, footer, mentions
         onKeyDown={onKeyDown}
         onCursorChange={setCursor}
         onScroll={setHidden}
-        onPaste={pastes && ((text) => pastes.add(text))}
-        atoms={pastes && PASTED_TEXT}
+        onPaste={(text) => onPaste?.(text) ?? pastes?.add(text) ?? text}
+        atoms={PLACEHOLDERS}
         highlight={highlight}
       />
       <Rule

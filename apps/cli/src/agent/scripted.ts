@@ -1,5 +1,16 @@
 import type { ModelOption, ModelSelection, Question, QuestionAnswer } from '@jinion/tui';
-import type { Agent, AgentCommand, AgentEvent, AgentMode, RunContext, ToolCall, ToolName, Tools, Usage } from './types.js';
+import type {
+  Agent,
+  AgentCommand,
+  AgentEvent,
+  AgentMode,
+  AgentPrompt,
+  RunContext,
+  ToolCall,
+  ToolName,
+  Tools,
+  Usage,
+} from './types.js';
 
 export interface Scenario {
   title: string | ((prompt: string) => string);
@@ -28,7 +39,7 @@ export class ScriptedAgent implements Agent {
     return this.agentCommands;
   }
 
-  async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
+  async *run({ text: prompt }: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
     const scenario = this.scenarios.find((candidate) => candidate.match?.test(prompt)) ??
       this.scenarios.find((candidate) => !candidate.match);
     if (!scenario) throw new Error('No scenario matches this prompt.');
