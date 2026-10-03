@@ -50,11 +50,10 @@ the search engine Fumadocs ships stems English alone. Turkish needs a stemmer pa
 
 ### 1. A fuller system prompt
 
-`BASE` in `apps/cli/src/agent/claude/prompt.ts` is about twenty lines: how to work, tools, communication, then the
-environment, the project's instruction files and memory. Claude Code's own prompt covers much more: tone and length of
-answers, when to use which tool and how to run them in parallel, the git commit and pull request steps, code
-references, security, and what to do when a hook or a check blocks a call. Go through it section by section, keep what
-applies to Jinion in Jinion's own words, and check the change on a few real tasks rather than by reading the prompt.
+`BASE` in `apps/cli/src/agent/claude/prompt.ts` now follows Claude Code's prompt section by section, in Jinion's words:
+how to work, acting with care, tools and parallel calls, git commits and pull requests, and how to talk to the user.
+Left out on purpose: hooks (Jinion doesn't run the user's) and Claude Code's own commands. Still to do: watch it on a
+few real tasks and tighten what the model doesn't follow.
 
 ### 2. Worktrees
 
