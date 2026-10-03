@@ -87,10 +87,15 @@ What the checker can't judge, keep by hand:
 
 ## Tests
 
+- Tests live in each package's `tests/` folder, mirroring `src/`: the tests of `src/agent/claude/events.ts` are in
+  `tests/agent/claude/events.test.ts`, with their fixtures and snapshots beside them. Shared helpers (`sandbox`,
+  `FakeClaude`, `git`) are in `tests/support/`. Nothing in `src/` imports from `tests/`. `@jinion/tui/testing` stays in
+  `src/testing`, since it is a public entry of the package.
 - Vitest. Run with `NODE_ENV=development` if your shell sets it to production, or `@jinion/tui/testing` won't resolve.
-- Screens: `renderTerminal` from `@jinion/tui/testing`, against the demo agent (`app/app.test.tsx`). Tests read the
+- Screens: `renderTerminal` from `@jinion/tui/testing`, against the demo agent (`tests/app/app.test.tsx`). Tests read the
   screen as the user would; keep its text stable or update them on purpose.
-- Claude Code's messages: recorded fixtures in `agent/claude/fixtures` (`pnpm fixture` turns a `--debug` log into one)
+- Claude Code's messages: recorded fixtures in `tests/agent/claude/fixtures` (`pnpm fixture`, in `scripts/fixture.ts`,
+  turns a `--debug` log into one)
   and `FakeClaude` for the process.
 - Before calling something done: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then a real check through
   the installed `jinion`, which runs `apps/cli/dist`.
