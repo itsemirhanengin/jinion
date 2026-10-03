@@ -7,9 +7,9 @@ look where that helps.
 Before calling anything done: `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `pnpm build` and a real check through
 the installed `jinion` command, which runs `apps/cli/dist`, not `pnpm dev`.
 
-## Docs (in progress)
+## Docs
 
-`apps/docs` is the documentation site, Fumadocs on Next.js, deployed as docs.jinion.co with the pages at the root
+`apps/docs` is the documentation site, Fumadocs on Next.js, live at docs.jinion.co with the pages at the root
 (`pnpm dev:docs`). What was decided before writing it, after looking at how Claude Code, Codex, Cursor, OpenCode, Amp
 and Gemini CLI document themselves:
 
@@ -26,24 +26,22 @@ and Gemini CLI document themselves:
   the theme and can be searched; later they can come from the app itself through `@jinion/tui/testing`.
 - **Developer docs** (the TUI framework, architecture, backends, tests) come after the user docs, in their own tab.
 
-Steps:
+Every English page is written and checked against the code, and the README points at the docs.
+`tests/commands/builtin.test.ts` and `tests/app/shortcuts.test.ts` in `apps/cli` fail when a command or shortcut is
+missing from the reference pages. What is left:
 
-1. **The skeleton** (done): English and Turkish, the sidebar with every page's title and description, the `terminal`
-   code block for screens, Jinion's look. `apps/docs/README.md` says how pages are written.
-2. **Reference**: CLI flags and environment variables, commands, keyboard shortcuts, the `~/.jinion` folder,
-   troubleshooting. Most of it moves over from the README.
-3. **Get started**: the introduction with a first session in three steps, installation, how Jinion works.
-4. **Guides**: the Use Jinion and Customize pages.
-5. **Wrap up**: shorten the README to point at the docs, deploy to docs.jinion.co.
+- **The Turkish pages.** Search matches whole Turkish words only (`bellek` doesn't find `belleği`), since the search
+  engine Fumadocs ships stems English alone; Turkish needs a stemmer passed to `createFromSource` in
+  `app/api/search/route.ts`.
+- **Screens that refresh themselves.** The screens in the pages were captured from the demo app in the test terminal,
+  with each cell's color turned into the theme's name; that capture could become a script to run when the TUI changes.
+- **Developer docs**, in their own tab.
 
-Steps 2 to 4 are done: every page was checked against the code, and `tests/commands/builtin.test.ts` and
-`tests/app/shortcuts.test.ts` in `apps/cli` fail when a command or shortcut is missing from the reference pages.
-The screens in the pages were captured from the demo app in the test terminal, with each cell's color turned into the
-theme's name; that capture could become a script that refreshes them when the TUI changes.
+## Going public
 
-Known before the Turkish pages come: search matches whole Turkish words only (`bellek` doesn't find `belleği`), since
-the search engine Fumadocs ships stems English alone. Turkish needs a stemmer passed to `createFromSource` in
-`app/api/search/route.ts`.
+The repository is private, and `@jinion/cli` isn't on npm yet, so the docs' install command and their links to GitHub
+fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, publish from
+`apps/cli` with `npm publish --access public`, since scoped packages are private by default.
 
 ## Next
 
@@ -63,6 +61,15 @@ history. Optional parts of the interface stay optional, so the UI already copes 
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
+- **The `/stats` calendar test depends on the day.** `tests/app/app.test.tsx` expects a fixed number of squares in the
+  Monday row, which changes with the weekday the test runs on; it needs a fixed date.
+- **Messages that name Claude Code.** `agent/claude/auth.ts` (removing an account), `agent/claude/agent.ts` (restoring
+  files) and `panels/usage/section.tsx` (the summary days come from) show "Claude Code" on screen. Removing an account
+  is also worded differently in `/account remove` and in the panel.
+- **Small things on screen.** The memory panel says "1 notes" (`panels/memory.tsx`); `/help` calls `shift+drag` "select
+  text", though a plain drag selects and `shift` gives the terminal's own selection (`app/shortcuts.ts`); the `ctrl+b`
+  offer names the tool, `Running bash`, rather than the command (`app/activity.ts`); in `/usage`, a trait with a long
+  explanation wraps its meter onto two lines at about 92 columns (`packages/tui/src/charts/bar-list.tsx`).
 
 ## Later: a system prompt sized to the request
 
@@ -106,6 +113,8 @@ for it rather than build it early. What it takes:
 - **The usage call** behind `/usage` is marked experimental in the SDK; only `agent/claude/usage.ts` touches it.
 - **The system prompt** (`BASE` in `agent/claude/prompt.ts`) was written after Claude Code's; what the model doesn't
   follow is noted while Jinion is used and tightened in one go.
+- **Railway deploys** come from `.railway/railway.ts`, which can't hold watch patterns, so every push to `main`
+  rebuilds the docs and the website. Changes to the file take effect with `railway config apply`, run by hand.
 
 ## Done
 
@@ -116,4 +125,5 @@ tasks; `/usage` and `/stats`; the guard for commands that write outside the proj
 the pointer; the card of what a turn changed, each file opening its diff; selecting text with the mouse, copied on
 release; web fetches, searches and MCP calls shown with what came back; a git worktree per conversation, opt-in with
 `ctrl+g`; a fuller system prompt after Claude Code's; the codebase restructured into controllers over a jotai store,
-with its conventions in `AGENTS.md`. `git log` has the details.
+with its conventions in `AGENTS.md`; the docs at docs.jinion.co and the page at jinion.co, on Railway; signing in with
+the `claude` that comes with the SDK, so Jinion needs no Claude Code installed. `git log` has the details.
