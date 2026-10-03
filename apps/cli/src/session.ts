@@ -3,8 +3,11 @@ import type { AgentEvent, AgentResume, ToolRun, Usage } from './agent/types.js';
 
 export type Entry =
   | { id: string; kind: 'banner' }
-  /** `prompt` is what the agent got, when pasted text made it longer than what is shown. */
-  | { id: string; kind: 'user'; text: string; prompt?: string }
+  /**
+   * `prompt` is what the agent got, when pasted text made it longer than what is shown. `steered` messages were sent
+   * into a turn in progress.
+   */
+  | { id: string; kind: 'user'; text: string; prompt?: string; steered?: boolean }
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
@@ -29,6 +32,8 @@ export type SavedSession = Omit<Session, 'busySince' | 'title'> & { title: strin
 
 export type Action =
   | { type: 'submit'; text: string; prompt?: string }
+  /** A message added to the turn in progress. */
+  | { type: 'steer'; text: string; prompt?: string }
   | { type: 'event'; event: AgentEvent }
   | { type: 'finish'; outcome: 'done' | 'interrupted' | 'failed'; message?: string }
   | { type: 'notice'; text: string; tone?: NoticeTone }
@@ -86,6 +91,11 @@ export function reduce(session: Session, action: Action): Session {
         // A first title from what the user typed, until the agent names the conversation.
         title: session.title ?? titleOf(action.text),
         busySince: Date.now(),
+      };
+    case 'steer':
+      return {
+        ...session,
+        entries: [...session.entries, { id: nextId(), kind: 'user', text: action.text, prompt: action.prompt, steered: true }],
       };
     case 'event':
       return apply(session, action.event);

@@ -52,7 +52,7 @@ function EntryBody({ entry }: { entry: Entry }) {
     case 'banner':
       return <Banner />;
     case 'user':
-      return <UserEntry text={expanded && entry.prompt ? entry.prompt : entry.text} />;
+      return <UserEntry text={expanded && entry.prompt ? entry.prompt : entry.text} steered={entry.steered} />;
     case 'thinking':
       return <Thinking text={entry.text} />;
     case 'text':
@@ -65,9 +65,9 @@ function EntryBody({ entry }: { entry: Entry }) {
 }
 
 /** Skills show highlighted, as they were in the prompt. */
-function UserEntry({ text }: { text: string }) {
+function UserEntry({ text, steered }: { text: string; steered?: boolean }) {
   const { skills } = useJinion();
-  return <UserMessage text={text} mentions={[skills.mention]} />;
+  return <UserMessage text={text} mentions={[skills.mention]} aside={steered ? 'while working' : undefined} />;
 }
 
 function ToolView({ entry }: { entry: ToolEntry }) {

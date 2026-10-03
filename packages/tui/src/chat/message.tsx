@@ -4,11 +4,19 @@ import { Prose } from '../primitives/prose.js';
 import { anyOf, MENTION } from './mentions.js';
 import { PASTED_TEXT } from './pasted-texts.js';
 
+export interface UserMessageProps {
+  text: string;
+  /** Highlighted like @-mentions, e.g. skills. */
+  mentions?: (RegExp | undefined)[];
+  /** Muted, on the right, e.g. how the message was sent. */
+  aside?: string;
+}
+
 /**
  * The user's prompt. Paste placeholders and @-mentions are highlighted as they were in the prompt, and so is what
- * `mentions` matches, e.g. skills.
+ * `mentions` matches.
  */
-export function UserMessage({ text, mentions = [] }: { text: string; mentions?: (RegExp | undefined)[] }) {
+export function UserMessage({ text, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
   const marks = [
     ...[...text.matchAll(PASTED_TEXT)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
@@ -29,7 +37,7 @@ export function UserMessage({ text, mentions = [] }: { text: string; mentions?: 
           {'> '}
         </Text>
       </Box>
-      <Box flexShrink={1}>
+      <Box flexShrink={1} flexGrow={1}>
         <Prose>
           {parts.map((part, index) =>
             part.color ? (
@@ -42,6 +50,11 @@ export function UserMessage({ text, mentions = [] }: { text: string; mentions?: 
           )}
         </Prose>
       </Box>
+      {aside && (
+        <Box flexShrink={0} marginLeft={2}>
+          <Text color={theme.muted}>{aside}</Text>
+        </Box>
+      )}
     </Box>
   );
 }

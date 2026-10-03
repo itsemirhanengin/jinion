@@ -113,6 +113,10 @@ export class ClaudeAgent implements Agent {
     return () => void this.listeners.delete(listener);
   }
 
+  steer(text: string) {
+    return this.turn !== undefined && (this.claude?.steer(toClaudePrompt(text, this.invocations)) ?? false);
+  }
+
   /** Asks the running Claude Code who it is signed in as; the process it starts takes the next prompt. */
   private activeAccount() {
     const name = this.account;
@@ -188,7 +192,7 @@ export class ClaudeAgent implements Agent {
   async *run(prompt: string, context: RunContext): AsyncGenerator<AgentEvent> {
     const claude = this.running();
     this.turn = context;
-    const interrupt = () => void claude.query.interrupt().catch(() => {});
+    const interrupt = () => claude.interrupt();
     context.signal.addEventListener('abort', interrupt, { once: true });
     try {
       let last: SDKMessage | undefined;

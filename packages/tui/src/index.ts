@@ -70,6 +70,7 @@ export type { OutputLinesProps } from './content/output.js';
 export { ShellCommand, tokenizeShell } from './content/shell.js';
 
 export { Notice, Thinking, UserMessage } from './chat/message.js';
+export type { UserMessageProps } from './chat/message.js';
 export type { NoticeTone } from './chat/message.js';
 export { EditBlock, ShellBlock, ToolLine, toneOf } from './chat/tool.js';
 export type { EditBlockProps, ShellBlockProps, ToolLineProps } from './chat/tool.js';

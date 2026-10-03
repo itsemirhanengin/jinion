@@ -234,6 +234,29 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     dispatch(action);
   };
 
+  // Messages that wait for the turn in progress, sent one after another once it is done.
+  const [queued, setQueued] = useState<string[]>([]);
+  const queue = useRef<string[]>([]);
+  const setQueue = (items: string[]) => {
+    queue.current = items;
+    setQueued(items);
+  };
+  const enqueue = (text: string) => setQueue([...queue.current, text]);
+
+  /** A message typed while the agent works goes into its turn, or waits for it when the agent can't take it. */
+  const steer = (text: string) => {
+    const full = pastes.expand(text);
+    if (agent.steer?.(full)) dispatch({ type: 'steer', text, prompt: full === text ? undefined : full });
+    else enqueue(text);
+  };
+
+  useEffect(() => {
+    if (busy || queue.current.length === 0) return;
+    const [next, ...rest] = queue.current;
+    setQueue(rest);
+    void prompt(next!);
+  }, [busy]);
+
   const prompt = async (text: string) => {
     if (busy) return notice('jinion is still working. Press esc to interrupt it first.', 'warning');
     const abort = new AbortController();
@@ -242,7 +265,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     dispatch({ type: 'submit', text, prompt: full === text ? undefined : full });
 
     // Parallel tool calls can ask at the same time, so their panels open one after another.
-    let queue = Promise.resolve();
+    let panelsInLine = Promise.resolve();
     const interact = <T,>(id: string, render: (resolve: (value: T) => void) => ReactNode) => {
       const open = () =>
         new Promise<T>((resolve, reject) => {
@@ -261,8 +284,8 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
             { once: true },
           );
         });
-      const result = queue.then(open);
-      queue = result.then(
+      const result = panelsInLine.then(open);
+      panelsInLine = result.then(
         () => {},
         () => {},
       );
@@ -301,6 +324,12 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     } catch (error) {
       if (abort.signal.aborted) dispatch({ type: 'finish', outcome: 'interrupted' });
       else dispatch({ type: 'finish', outcome: 'failed', message: error instanceof Error ? error.message : String(error) });
+      // What waited for a turn that didn't finish comes back into the prompt, for the user to send or drop.
+      const waiting = queue.current;
+      if (waiting.length > 0) {
+        setQueue([]);
+        setDraft((current) => [...waiting, current].filter(Boolean).join('\n'));
+      }
     } finally {
       controller.current = undefined;
       panels.close('ask');
@@ -312,10 +341,10 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     submit: (value) => {
       const text = value.trim();
       const isCommand = text.startsWith('/');
-      if (!text || (busy && !isCommand)) return;
+      if (!text) return;
       setDraft('');
       setSubmitted((items) => [...items, text]);
-      if (!isCommand) return void prompt(text);
+      if (!isCommand) return busy ? steer(text) : void prompt(text);
 
       const [name = '', ...args] = text.slice(1).split(/\s+/);
       const command = commands.find(name);
@@ -369,6 +398,15 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     }
     // Open panels handle their own esc.
     if (key.escape && busy && !panels.top) return controller.current?.abort();
+    // Sends the message after the turn in progress rather than into it; with nothing running, right away.
+    if (key.ctrl && input === 'q' && !panels.top) {
+      const text = draft.trim();
+      if (!text) return;
+      if (!busy) return actions.submit(text);
+      setDraft('');
+      setSubmitted((items) => [...items, text]);
+      return enqueue(text);
+    }
     if (key.ctrl && input === 'c') {
       if (busy) return controller.current?.abort();
       if (panels.top) return panels.close();
@@ -402,6 +440,15 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
                 <TodoPanel groups={session.todos} />
               </Box>
             )}
+            {queued.length > 0 && (
+              <Box marginTop={1} flexDirection="column" paddingX={1}>
+                {queued.map((text, index) => (
+                  <Text key={index} color={theme.muted} wrap="truncate-end">
+                    queued: {text}
+                  </Text>
+                ))}
+              </Box>
+            )}
           </>
         }
         prompt={
@@ -413,7 +460,13 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
             history={submitted}
             completions={completions}
             mentions={[mention]}
-            placeholder={busy ? 'jinion is working… esc to interrupt' : 'Ask jinion anything · / commands · $ skills · @ files'}
+            placeholder={
+              !busy
+                ? 'Ask jinion anything · / commands · $ skills · @ files'
+                : agent.steer
+                  ? 'Type to steer · ctrl+q to queue · esc to interrupt'
+                  : 'Type to queue · esc to interrupt'
+            }
             footer={
               agent.modes.length > 1 && (
                 <Text>

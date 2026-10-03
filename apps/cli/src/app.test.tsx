@@ -11,17 +11,23 @@ import { sandbox, type Sandbox } from './test/sandbox.js';
 let box: Sandbox;
 let terminal: TestTerminal;
 
-beforeEach(() => {
-  box = sandbox();
+/** `pace` 1 plays the demo as slowly as a real agent works, for tests that type while it does. */
+function start(pace: number) {
+  terminal?.unmount();
   terminal = renderTerminal(
     <App
-      agent={new ScriptedAgent(scenarios, demoCommands, 0)}
+      agent={new ScriptedAgent(scenarios, demoCommands, pace)}
       info={{ version: '0.0.0', cwd: box.project, examples: ['hello'] }}
       sessions={new MemorySessionStore()}
       memory={new MemoryStore(box.project)}
     />,
     { columns: 120, rows: 40 },
   );
+}
+
+beforeEach(() => {
+  box = sandbox();
+  start(0);
 });
 
 afterEach(() => {
@@ -77,6 +83,35 @@ describe('App', () => {
     await terminal.press(KEYS.escape, KEYS.enter);
     const screen = await terminal.waitFor('Skills go after $ now');
     expect(screen).toMatch(/^ \$review the diff$/m);
+  });
+
+  it('sends what is typed while the agent works after its turn, when the agent can’t take it into the turn', async () => {
+    start(1);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Type to queue');
+    // The demo greets back for this one too, so the second turn ends quickly.
+    await terminal.type('hey again');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('queued: hey again');
+    const screen = await terminal.waitFor(/> hey again[\s\S]*Ask jinion anything/, 15_000);
+    expect(screen).not.toContain('queued:');
+  });
+
+  it('puts what was queued back in the prompt when the turn is interrupted', async () => {
+    start(1);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Type to queue');
+    await terminal.type('run the linter after');
+    await terminal.press('\x11');
+    await terminal.waitFor('queued: run the linter after');
+    await terminal.press(KEYS.escape);
+    const screen = await terminal.waitFor('Interrupted');
+    expect(screen).toMatch(/^ run the linter after$/m);
+    expect(screen).not.toContain('queued:');
   });
 
   it('plays the tour through its questions, edits and commands', async () => {

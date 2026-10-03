@@ -31,7 +31,8 @@ export class ClaudeProcess {
   /** Maps this conversation's messages; it keeps their session id, cost and tool calls. */
   readonly events: ClaudeEvents;
   private readonly input = new Inbox<SDKUserMessage>();
-  private turn?: { uuid: string; messages: Inbox<SDKMessage | Error> };
+  /** The prompts the turn in progress still has to answer, and where what it sends goes. */
+  private turn?: { waiting: Set<string>; messages: Inbox<SDKMessage | Error>; interrupted?: boolean };
   private exited?: Error;
   private stderr = '';
 
@@ -52,16 +53,15 @@ export class ClaudeProcess {
   }
 
   /**
-   * Sends a prompt, then yields what Claude Code sends until the result that answers it, which comes last. Fails when
-   * the process exits first.
+   * Sends a prompt, then yields what Claude Code sends until the results that answer it and the messages steered into
+   * the turn, which come last. Fails when the process exits first.
    */
   async *send(content: string): AsyncGenerator<SDKMessage> {
     if (this.exited) throw this.exited;
     if (this.turn) throw new Error('Claude Code is still answering the previous prompt.');
-    const turn = { uuid: randomUUID(), messages: new Inbox<SDKMessage | Error>() };
+    const turn = { waiting: new Set<string>(), messages: new Inbox<SDKMessage | Error>() };
     this.turn = turn;
-    this.options.debug?.write('prompt', { uuid: turn.uuid, content });
-    this.input.push({ type: 'user', uuid: turn.uuid, message: { role: 'user', content }, parent_tool_use_id: null, origin: { kind: 'human' } });
+    this.push(content, turn);
     try {
       for await (const item of turn.messages) {
         if (item instanceof Error) throw item;
@@ -73,9 +73,39 @@ export class ClaudeProcess {
     }
   }
 
+  /**
+   * Adds a message to the turn in progress. Claude Code reads it as soon as the current tool calls finish, or answers
+   * it in a turn of its own right after, which still belongs to this one. False when no turn runs to take it.
+   */
+  steer(content: string) {
+    if (!this.turn || this.exited) return false;
+    this.push(content, this.turn, 'next');
+    return true;
+  }
+
+  /** Stops the turn in progress; it ends with the next result, whatever was steered into it. */
+  interrupt() {
+    if (this.turn) this.turn.interrupted = true;
+    this.query.interrupt().catch(() => {});
+  }
+
   close() {
     this.input.close();
     this.query.close();
+  }
+
+  private push(content: string, turn: NonNullable<ClaudeProcess['turn']>, priority?: 'next') {
+    const uuid = randomUUID();
+    turn.waiting.add(uuid);
+    this.options.debug?.write('prompt', { uuid, content, priority });
+    this.input.push({
+      type: 'user',
+      uuid,
+      message: { role: 'user', content },
+      parent_tool_use_id: null,
+      origin: { kind: 'human' },
+      ...(priority && { priority }),
+    });
   }
 
   private async read() {
@@ -88,8 +118,8 @@ export class ClaudeProcess {
           continue;
         }
         turn.messages.push(message);
-        // The turn ends here rather than where it is read, so what comes right after its result is idle.
-        if (message.type === 'result' && answers(message, turn.uuid)) {
+        // The turn ends here rather than where it is read, so what comes right after its last result is idle.
+        if (message.type === 'result' && (answered(message, turn.waiting) || turn.interrupted)) {
           this.turn = undefined;
           turn.messages.close();
         }
@@ -105,10 +135,13 @@ export class ClaudeProcess {
   }
 }
 
-/** Whether `result` ends the turn started by the prompt with this uuid. */
-function answers(result: Result, uuid: string) {
+/** Takes the prompts `result` answers off `waiting`, and says whether none are left. */
+function answered(result: Result, waiting: Set<string>) {
   const ids = result.user_message_uuids ?? (result.user_message_uuid ? [result.user_message_uuid] : undefined);
-  return !ids || ids.includes(uuid);
+  // A result that doesn't say which prompts it answers ends the turn, as before Claude Code reported them.
+  if (!ids) waiting.clear();
+  for (const id of ids ?? []) waiting.delete(id);
+  return waiting.size === 0;
 }
 
 /** Why Claude Code failed a turn, e.g. a rate limit; the process can still take the next one. */

@@ -149,7 +149,8 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 
 | Key | Action |
 | --- | --- |
-| `enter` | Send |
+| `enter` | Send; while the agent works, steer it: the message joins the turn and the agent reads it at its next step |
+| `ctrl+q` | While the agent works, queue the message to send once the turn is done |
 | `shift+enter`, `alt+enter`, trailing `\` | New line |
 | `up` / `down` | Prompt history |
 | `esc` | Interrupt the running turn |
@@ -165,6 +166,8 @@ Claude Code's own settings, CLAUDE.md files, memory and hooks are not loaded. Ji
 `@` completes the project's files and folders: what git tracks or could track, so ignored files stay out, with names that match ranking first. A folder goes in without a space, so typing on lists what's inside.
 
 The prompt grows to 20 lines, then scrolls inside, with the rules above and below saying how many lines are out of view. A paste placeholder acts as one character: the cursor steps over it and backspace removes it whole.
+
+The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
 
 When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 

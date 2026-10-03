@@ -131,6 +131,11 @@ export interface Agent {
   /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
   run(prompt: string, context: RunContext): AsyncIterable<AgentEvent>;
   /**
+   * Adds a message to the turn in progress, which the agent reads at its next step; its events come through that
+   * turn's `run`. False when no turn runs to take it. Backends that can't leave it out, and messages wait instead.
+   */
+  steer?(text: string): boolean;
+  /**
    * Events that come while no turn runs: the commands or plan limits changing, or a turn the backend starts itself.
    * Returns a function that stops listening. Backends that only speak when spoken to leave it out.
    */

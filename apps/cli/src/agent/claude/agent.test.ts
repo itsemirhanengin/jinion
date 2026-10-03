@@ -60,6 +60,23 @@ describe('ClaudeAgent', () => {
     await expect(turn('again', (uuid) => [claudeSays.result(uuid, 'Rate limited')])).rejects.toThrow('Rate limited');
   });
 
+  it('steers messages into a turn in progress, and only then', async () => {
+    expect(agent.steer('too early')).toBe(false);
+    const first = fake.nextPrompt();
+    const events: AgentEvent[] = [];
+    const running = (async () => {
+      for await (const event of agent.run('fix the tests', context())) events.push(event);
+    })();
+    const { uuid } = await first;
+    const second = fake.nextPrompt();
+    expect(agent.steer('also the docs')).toBe(true);
+    const steered = await second;
+    expect(steered).toMatchObject({ priority: 'next', message: { content: 'also the docs' } });
+    fake.reply(claudeSays.text('Both done'), { ...claudeSays.result(uuid!), user_message_uuids: [uuid!, steered.uuid!] } as never);
+    await running;
+    expect(events).toContainEqual({ type: 'text', delta: 'Both done' });
+  });
+
   it('continues the conversation in a new process after Claude Code exits on its own', async () => {
     await turn('hello', (uuid) => [claudeSays.init('session-7'), claudeSays.result(uuid)]);
     fake.exit();
