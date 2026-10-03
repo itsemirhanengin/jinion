@@ -1,6 +1,15 @@
 import { createContext, useContext } from 'react';
 import type { ModelOption, ModelSelection, NoticeTone, NotificationMethod, Panels } from '@jinion/tui';
-import type { AgentAccount, AgentAccounts, AgentCommand, AgentMcp, AgentMode, BackgroundTask } from './agent/types.js';
+import type {
+  AgentAccount,
+  AgentAccounts,
+  AgentCommand,
+  AgentMcp,
+  AgentMode,
+  AgentUsage,
+  BackgroundTask,
+  UsageHistory,
+} from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
 import type { SavedSession } from './session.js';
 import type { MemoryStore } from './memory/store.js';
@@ -73,6 +82,11 @@ export interface Jinion {
   accounts: { manager?: AgentAccounts; current?: string; identity?: AgentAccount; seen: SeenLimits };
   /** The agent's MCP servers, if it has any. */
   mcp?: AgentMcp;
+  /** What the agent reports of its usage, for `/usage`; agents that report none leave these out. */
+  usage: {
+    current?(options?: { drivers?: boolean }): Promise<AgentUsage>;
+    history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
+  };
   actions: AppActions;
   panels: Panels;
   commands: CommandRegistry;

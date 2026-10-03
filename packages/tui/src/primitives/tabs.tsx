@@ -3,15 +3,22 @@ import { Text, useInput } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import { stepIndex } from './select-list.js';
 
+export interface TabsOptions {
+  isActive?: boolean;
+  initial?: number;
+  /** Off for tabs whose content takes left/right itself, e.g. to move a cursor; tab and shift+tab still switch. */
+  arrows?: boolean;
+}
+
 /** Left/right and tab/shift+tab switch between `count` tabs. */
-export function useTabs(count: number, { isActive = true, initial = 0 }: { isActive?: boolean; initial?: number } = {}) {
+export function useTabs(count: number, { isActive = true, initial = 0, arrows = true }: TabsOptions = {}) {
   const [index, setIndex] = useState(initial);
   const current = Math.min(index, Math.max(0, count - 1));
 
   useInput(
     (_, key) => {
-      if (key.rightArrow || (key.tab && !key.shift)) setIndex(stepIndex(current, 1, count));
-      else if (key.leftArrow || (key.tab && key.shift)) setIndex(stepIndex(current, -1, count));
+      if ((arrows && key.rightArrow) || (key.tab && !key.shift)) setIndex(stepIndex(current, 1, count));
+      else if ((arrows && key.leftArrow) || (key.tab && key.shift)) setIndex(stepIndex(current, -1, count));
     },
     { isActive: isActive && count > 1 },
   );

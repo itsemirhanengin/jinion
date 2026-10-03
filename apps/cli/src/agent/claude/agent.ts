@@ -23,7 +23,9 @@ import { ClaudeApprovals } from './approvals.js';
 import { toAgentCommands, toClaudeContent, type Invocations } from './commands.js';
 import { serverInfos } from './mcp.js';
 import { askRules, claudeOptions, PERMISSION_MODES, type ClaudeResume } from './options.js';
+import { readHistory } from './history.js';
 import { ClaudeProcess, errorOf } from './process.js';
+import { claudeUsage } from './usage.js';
 
 export interface ClaudeAgentOptions {
   cwd: string;
@@ -243,6 +245,14 @@ export class ClaudeAgent implements Agent {
 
   async background() {
     return this.claude ? this.claude.query.backgroundTasks() : false;
+  }
+
+  usage({ drivers = false } = {}) {
+    return claudeUsage(this.running().query, drivers);
+  }
+
+  history(progress?: (done: number, total: number) => void) {
+    return readHistory(progress);
   }
 
   /** The events of a turn's messages; esc interrupts it, and a result that is an error fails it. */

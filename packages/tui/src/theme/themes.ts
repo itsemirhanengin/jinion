@@ -37,6 +37,8 @@ export interface Theme {
     directory: string;
     cost: string;
   };
+  /** Heatmap shades: a day with nothing, then four levels from the least to the most. */
+  heat: [string, string, string, string, string];
 }
 
 export const darkTheme: Theme = {
@@ -79,6 +81,7 @@ export const darkTheme: Theme = {
     directory: '#56b6c2',
     cost: '#c678dd',
   },
+  heat: ['#3a3f47', '#0e4429', '#006d32', '#26a641', '#39d353'],
 };
 
 export const lightTheme: Theme = {
@@ -121,6 +124,7 @@ export const lightTheme: Theme = {
     directory: '#2b8a8a',
     cost: '#9a4fc4',
   },
+  heat: ['#d8dbe0', '#9be9a8', '#40c463', '#30a14e', '#216e39'],
 };
 
 export const themes: Record<ColorScheme, Theme> = {

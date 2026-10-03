@@ -239,6 +239,36 @@ describe('App', () => {
     expect(terminal.notifications()).toContain('jinion · project: Background command failed: pnpm vitest run');
   });
 
+  it('shows the plan’s limits and what adds to them in /usage, and the days of use as a calendar on tab', async () => {
+    start(0, 44);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/usage');
+    await terminal.press(KEYS.enter);
+    const usage = await terminal.waitFor('Most used: Explore subagent 5%');
+    expect(usage).toMatch(/^\| 5-hour window +\[=+-+\] +43% resets /m);
+    expect(usage).toMatch(/^\| Subagent-heavy +\[=+\] +98% each subagent makes requests of its own/m);
+    expect(usage).toContain('This session $1.42');
+
+    await terminal.press('w');
+    await terminal.waitFor('last 7 days');
+    await terminal.press(KEYS.tab);
+    const stats = await terminal.waitFor('Favorite model');
+    expect(stats).toMatch(/^\| Mon (■ ){52}■ +\|$/m);
+    expect(stats).toMatch(/^\| Favorite model +Opus 5\.5 +Tokens +[\d.]+[MB] +\|$/m);
+    expect(stats).toMatch(/^\| Opus 5\.5 +\[=+-+\] +60\.0% /m);
+    expect(stats).toContain('(today)');
+
+    // A week back, then the last 30 days and the last 7 counted.
+    await terminal.press(KEYS.left);
+    await terminal.waitFor(/^\| (?!.*today)\w{3} \d+ · /m);
+    await terminal.press('r');
+    await terminal.waitFor(/Active days +\d+ of [1-3]\d\b/);
+    await terminal.press('r');
+    await terminal.waitFor(/Active days +\d of [1-7]\b/);
+    await terminal.press(KEYS.escape);
+    await terminal.waitFor('Ask jinion anything');
+  });
+
   it('notifies when it waits for an answer in a window that isn’t focused, and not while it is', async () => {
     await terminal.waitFor('Ask jinion anything');
     await terminal.focus(false);

@@ -564,6 +564,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     status: { items: statusItems, data: statusData },
     accounts: { manager: agent.accounts, current: account, identity, seen: seenLimits },
     mcp: agent.mcp,
+    usage: { current: agent.usage?.bind(agent), history: agent.history?.bind(agent) },
     actions,
     panels,
     commands,

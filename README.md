@@ -189,6 +189,10 @@ Commands that keep running, like a dev server or a long test run, and subagents 
 
 When a task ends, the conversation says so (`[!] Background pnpm test · failed after 41s · exit 1`), and the agent looks at it in a turn of its own, the way Claude Code does: it shows as working, panels ask as in any turn, `esc` stops it, and messages typed meanwhile wait for it. A task that ends while the window isn't focused notifies. Tasks belong to the Claude Code process, so they stop with `/clear`, `/resume`, an account switch or quitting; MCP changes wait to restart Claude Code until none runs.
 
+`/usage` shows where the plan's limits stand, the 5-hour window and the week, per model where the plan has one, with when each resets; this session's cost and tokens by model; and what adds to the limits over the last day or week (`d`/`w`), from this machine's conversations: traits such as subagent-heavy or long-context sessions, and the skills, subagents and MCP servers that used the most. `tab` switches to the stats: a calendar of every day of use, a square per day shaded by how many responses it had, like GitHub's contribution graph; the arrows pick a day to see its numbers, and `r` switches between all time, the last 30 days and the last 7 for the sessions, active days, streaks, busiest day, longest session and each model's share of the tokens.
+
+The stats come from Claude Code's transcripts on this machine, every login's, so they cover Claude Code used outside Jinion too. Each response counts once (Claude Code writes a line per block of a response), subagents included. What was read is kept in `~/.jinion/usage/claude.json`, so a later look only reads what was added, and days stay after Claude Code deletes their transcripts a month on. Days no transcript has come from Claude Code's own summary (`stats-cache.json`), scaled to how it compares with the transcripts on the days both cover, since it counts messages and tokens its own way; their tokens show as a total.
+
 When the agent hands part of the work to a subagent, its tool calls grow as a tree under `Agent · what it is doing`, one line each, the latest six in view; the line under the prompt says what the subagent is on. Once it is done, the tree folds into `6 tool calls · 34s`, and `ctrl+o` opens it again.
 
 `/diff` shows what changed since the last commit, staged or not, new files included, with `+`/`-` lines per file. Files the agent changed in this conversation, subagents included, are marked `agent`, so they stand apart from your own edits. `enter` opens a file's diff, scrolled with `up`/`down` and `pgup`/`pgdn`, and `esc` goes back to the list.
@@ -218,6 +222,8 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/diff` | Full screen list of what changed since the last commit, in every repository here, with the agent's changes marked; `enter` opens a file's diff |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
 | `/tasks` | What runs in the background, its output, and `x` to stop it, as `ctrl+t` does |
+| `/usage` | Full screen: the plan's limits, this session, and what adds to the limits; `tab` for the stats |
+| `/stats` | The same panel on its stats: every day of use as a calendar, with streaks and models |
 | `/notifications [on \| off]` | Turns notifications on or off, for every project; without an argument, switches them |
 | `/statusline` | Chooses what the status line shows: space shows or hides, left/right picks a style, tab switches sides, shift+up/down moves, `r` resets; the line below previews it, enter saves |
 | `/expand` | Same as `ctrl+o` |
@@ -239,6 +245,7 @@ The demo agent also offers skills (`$review`, `$commit`, `$explain <path>`) and 
 - `commands/` holds the `CommandRegistry` of Jinion's own commands, which live in `builtin.tsx`. The registry also provides the palette's completion source and the help tab, so a new command shows up everywhere at once.
 - `skills.ts` completes and highlights the agent's skills and MCP prompts (`Agent.commands()`) as `$` mentions; the agent turns the mentions into what its backend runs.
 - `panels/` holds the panels commands open (`HelpPanel` at the bottom, `ResumePanel` full screen), built from `@jinion/tui`'s `Panel`.
+- `usage/` turns the agent's history into the stats `/usage` shows (`stats.ts`) and formats its figures; `agent/claude/usage.ts` maps Claude Code's experimental usage call, and `agent/claude/history.ts` reads its transcripts.
 - `git/repos.ts` finds the repositories a project works in (its own, or those in its folders) and reads their state and changes, for `/diff`, the status line and the system prompt.
 - `session.ts` reduces events into conversation entries; `session-store.ts` defines `SessionStore`. `FileSessionStore` keeps each conversation as a JSON file, together with the agent's own session id that `Agent.reset(resume)` takes to continue it. The demo uses an in-memory store with sample conversations.
 - `ui/entry.tsx` maps entries to `@jinion/tui` components. `shortcuts.ts` is the list `/help` shows.

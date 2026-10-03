@@ -36,8 +36,11 @@ export interface TestTerminal {
   press(...keys: string[]): Promise<void>;
   /** Resolves with the screen once it shows `text`; fails with the screen after `timeout` ms. */
   waitFor(text: string | RegExp, timeout?: number): Promise<string>;
-  /** The foreground color of the first cell that shows `text`, as `#rrggbb`, or `undefined` for the default. */
-  colorOf(text: string): Promise<string | undefined>;
+  /**
+   * The foreground color of the first place that shows `text`, as `#rrggbb`, or `undefined` for the default; of the
+   * cell `at` characters into it when given.
+   */
+  colorOf(text: string, at?: number): Promise<string | undefined>;
   /** Reports the window gaining or losing focus, as a terminal does. */
   focus(focused: boolean): Promise<void>;
   /** The desktop notifications shown so far, as `title: body`. */
@@ -127,13 +130,13 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
       }
       throw new Error(`The screen never showed ${String(text)}. It shows:\n${shown}`);
     },
-    colorOf: async (text) => {
+    colorOf: async (text, at = 0) => {
       await drawn();
       const buffer = terminal.buffer.active;
       for (let y = 0; y < rows; y++) {
         const line = buffer.getLine(buffer.viewportY + y);
         const x = line?.translateToString(true).indexOf(text) ?? -1;
-        const cell = x >= 0 ? line?.getCell(x) : undefined;
+        const cell = x >= 0 ? line?.getCell(x + at) : undefined;
         if (!cell) continue;
         if (cell.isFgDefault()) return undefined;
         return `#${cell.getFgColor().toString(16).padStart(6, '0')}`;

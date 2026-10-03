@@ -120,7 +120,7 @@ expect(await terminal.colorOf('$design')).toBe(darkTheme.code);
 terminal.unmount();
 ```
 
-`type` sends one character at a time, as a person would. `focus(false)` reports the window losing focus, and `notifications()` lists what was notified, as `title: body`. Colors need `FORCE_COLOR=3` in the test environment, since tests don't run in a TTY. The entry is only exported under the `development` condition, so it never ships in the build.
+`type` sends one character at a time, as a person would. `focus(false)` reports the window losing focus, and `notifications()` lists what was notified, as `title: body`. `colorOf(text, at)` reads the color `at` characters into a match, e.g. one square of a heatmap row. Colors need `FORCE_COLOR=3` in the test environment, since tests don't run in a TTY. The entry is only exported under the `development` condition, so it never ships in the build.
 
 ## Components
 
@@ -135,7 +135,8 @@ Primitives
 | `OptionRow`, `NoteLine` | a numbered option with its description, a `[x]` box when several can be picked, a muted `aside` such as `current`, and a note |
 | `useChoiceList`, `ChoiceList` | the single and multiple choice lists every picking panel is built on |
 | `Meter` | `[======----]`, colored by how full it is |
-| `Tabs` | a tab bar with the active tab as a filled chip |
+| `StatGrid` | figures as `label  value` pairs in columns, each column's labels lined up |
+| `Tabs`, `useTabs` | a tab bar with the active tab as a filled chip; `useTabs` switches with tab and shift+tab, and left/right unless `arrows` is off for content that takes them |
 | `Highlight` | text with matched characters emphasized |
 | `Frame`, `FrameDivider` | `+--- title ---+` boxes with sections, an optional tinted `tone`, `borderColor` and title `lead`; `fit` makes the box as wide as its content |
 | `Rule` | full-width `------`, optionally titled |
@@ -143,6 +144,17 @@ Primitives
 | `Tree`, `TreeRow` | `\|--` / `'--` trees |
 | `Spinner`, `StatusMark` | `[ ]`, `[/]` (animated), `[x]`, `[!]`, `[-]` |
 | `Prose` | text that wraps without leaving a space at the start of continuation lines |
+
+Charts
+
+| Component | Renders |
+| --- | --- |
+| `Heatmap` | a calendar of days as GitHub's contribution graph: a column per week, a square per day shaded by the quartile it falls in, months over the weeks they start in, as many weeks as fit, and `selected` marks a day in the accent color |
+| `useDayCursor` | a day picked in a `Heatmap` with the arrows, left/right a week and up/down a day |
+| `dayKey`, `parseDay`, `addDays`, `heatLevels` | local `2026-09-21` day keys and the quartile levels the heatmap shades by |
+| `BarList` | rows of `label [=====-----] text` lined up, for shares of a whole |
+
+The heatmap's `■` is the one character beyond ASCII: a day needs a square. Its shades come from the theme's `heat`.
 
 Content
 

@@ -114,6 +114,65 @@ export type AgentEvent =
    */
   | { type: 'turn-start'; reason?: string };
 
+/** The tokens a model took in and gave back. */
+export interface ModelTokens {
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  /** Tokens known only as a total, e.g. from a summary of days whose records are gone. */
+  summarized?: number;
+}
+
+/** What `/usage` shows of the present: the session so far, the plan's limits, and what adds to them. */
+export interface AgentUsage {
+  /** Since the agent started on this conversation. */
+  session?: {
+    cost: number;
+    /** Time spent waiting for the model, and since the session began. */
+    apiMs: number;
+    wallMs: number;
+    linesAdded: number;
+    linesRemoved: number;
+    models: (ModelTokens & { name: string; cost: number })[];
+  };
+  /** The plan's windows, e.g. the 5-hour one and the week; empty when the account has no plan limits. */
+  limits: LimitWindow[];
+  /** Extra usage the plan allows past its limits. */
+  extra?: { used: number; limit?: number; currency?: string };
+  /** What adds to the limits over the last day and week, from this machine's conversations. */
+  drivers?: { day: UsageDrivers; week: UsageDrivers };
+}
+
+export interface UsageDrivers {
+  requests: number;
+  sessions: number;
+  /** Traits of the usage, which overlap: each share is of the whole, so they don't add up to 100. */
+  traits: { trait: 'cache-misses' | 'long-context' | 'subagents' | 'parallel' | 'scheduled'; share: number }[];
+  /** The skills, subagents, plugins and MCP servers that used the most, as shares of the whole. */
+  sources: { kind: 'skill' | 'agent' | 'plugin' | 'mcp'; name: string; share: number }[];
+}
+
+/** Every day the agent was used on this machine, for `/usage`'s stats. */
+export interface UsageHistory {
+  /** In date order. */
+  days: DayUsage[];
+  /** Each conversation's first and last activity, for the longest one. */
+  sessions: { id: string; start: number; end: number }[];
+}
+
+export interface DayUsage {
+  /** The local date, `2026-09-21`. */
+  date: string;
+  /** Model responses. */
+  messages: number;
+  /** Conversations active that day. */
+  sessions: number;
+  toolCalls: number;
+  /** By model name, e.g. `Opus 5.5`. */
+  models: Record<string, ModelTokens>;
+}
+
 /** One usage window of the user's plan, such as the 5-hour limit. */
 export interface LimitWindow {
   /** Short, e.g. `5h` or `7d`. */
@@ -209,6 +268,10 @@ export interface Agent {
    * turn goes on without them. Resolves `false` when there was nothing to send.
    */
   background?(): Promise<boolean>;
+  /** The session's cost, the plan's limits and, with `drivers`, what adds to them, which takes longer to find. */
+  usage?(options?: { drivers?: boolean }): Promise<AgentUsage>;
+  /** Every day of use on this machine, from the backend's own records; `progress` hears how far reading them got. */
+  history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
   /** Ends the conversation. The next prompt starts a new one, or continues `resume` when it is given. */
   reset?(resume?: AgentResume): void;
   close?(): void;

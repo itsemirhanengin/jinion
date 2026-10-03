@@ -57,9 +57,16 @@ export type {
 } from './primitives/choice-list.js';
 export { Meter } from './primitives/meter.js';
 export type { MeterProps } from './primitives/meter.js';
+export { StatGrid } from './primitives/stat-grid.js';
+export type { Stat, StatGridProps } from './primitives/stat-grid.js';
+export { addDays, dayKey, Heatmap, heatLevels, parseDay, useDayCursor } from './charts/heatmap.js';
+export type { HeatmapProps } from './charts/heatmap.js';
+export { BarList } from './charts/bar-list.js';
+export type { Bar, BarListProps } from './charts/bar-list.js';
 export type { OptionRowProps } from './primitives/option-row.js';
 export type { ListNavigationOptions, ListRowProps, SelectListProps } from './primitives/select-list.js';
 export { Tabs, useTabs } from './primitives/tabs.js';
+export type { TabsOptions } from './primitives/tabs.js';
 export { Highlight } from './primitives/highlight.js';
 export type { HighlightProps } from './primitives/highlight.js';
 

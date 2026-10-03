@@ -16,6 +16,7 @@ import type {
   Tools,
   Usage,
 } from './types.js';
+import { demoHistory, demoUsage } from './demo-usage.js';
 
 /** What the agent says on its own once a background task ended, in a turn it starts itself. */
 export type Followup = (script: Script, task: BackgroundTask) => AsyncGenerator<AgentEvent, void>;
@@ -95,7 +96,7 @@ export class ScriptedAgent implements Agent {
   /** The scenarios play the same in any mode, so there is only one. */
   readonly mode: AgentMode = 'edits';
   readonly modes: AgentMode[] = ['edits'];
-  private readonly usage: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
+  private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0 };
   private readonly tasks: DemoTasks;
 
   constructor(
@@ -136,8 +137,16 @@ export class ScriptedAgent implements Agent {
     this.tasks.stop(id);
   }
 
+  async usage({ drivers = false } = {}) {
+    return demoUsage(drivers);
+  }
+
+  async history() {
+    return demoHistory();
+  }
+
   private script(context: RunContext) {
-    return new Script(context, this.usage, this.pace, this.tasks);
+    return new Script(context, this.totals, this.pace, this.tasks);
   }
 
   /** The demo changes no real files, so there is never anything to restore. */
@@ -149,7 +158,7 @@ export class ScriptedAgent implements Agent {
   async rewind() {}
 
   reset() {
-    Object.assign(this.usage, { contextTokens: 0, cost: 0 });
+    Object.assign(this.totals, { contextTokens: 0, cost: 0 });
   }
 
   async models(): Promise<ModelOption[]> {

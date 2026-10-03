@@ -3,6 +3,7 @@ import { HelpPanel } from '../panels/help.js';
 import { importClaudeMemory } from '../memory/import.js';
 import { AccountPicker } from '../panels/account.js';
 import { DiffPanel } from '../panels/diff.js';
+import { UsagePanel } from '../panels/usage.js';
 import { McpPanel } from '../panels/mcp.js';
 import { MemoryPanel } from '../panels/memory.js';
 import { ModePicker } from '../panels/mode.js';
@@ -149,6 +150,16 @@ export const builtinCommands: Command[] = [
     name: 'diff',
     description: 'What changed since the last commit, in every repository here, with the agent’s changes marked',
     run: (app) => app.panels.open({ id: 'diff', placement: 'fullscreen', element: <DiffPanel /> }),
+  },
+  {
+    name: 'usage',
+    description: 'Plan limits, this session, and what adds to the limits',
+    run: (app) => app.panels.open({ id: 'usage', placement: 'fullscreen', element: <UsagePanel tab="usage" /> }),
+  },
+  {
+    name: 'stats',
+    description: 'Every day of use on this machine as a calendar, with streaks and models',
+    run: (app) => app.panels.open({ id: 'usage', placement: 'fullscreen', element: <UsagePanel tab="stats" /> }),
   },
   {
     name: 'tasks',
