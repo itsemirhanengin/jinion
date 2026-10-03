@@ -48,19 +48,7 @@ the search engine Fumadocs ships stems English alone. Turkish needs a stemmer pa
 
 ## Next
 
-### 1. The repository's own conventions in AGENTS.md
-
-Jinion now works on itself, and it reads the project's `AGENTS.md` and `CLAUDE.md` into its system prompt
-(`apps/cli/src/agent/claude/prompt.ts`). Today `AGENTS.md` only has Turborepo's managed block, so the conventions live
-in no file. Worth writing down, outside the managed block:
-
-- Plain ASCII drawing (`+`, `-`, `|`, `|--`); `■` only for heatmap and waffle squares.
-- Comment and naming style: comments say why, in full sentences; names read as English.
-- Tests: Vitest, the `@jinion/tui/testing` terminal for screens, recorded fixtures (`pnpm fixture`) for Claude Code's
-  messages, `FakeClaude` for the process; a real check through the built `jinion` at the end.
-- Match Claude Code's behavior for features it has; commits as a subject line and `- ` bullets, no trailers.
-
-### 2. A fuller system prompt
+### 1. A fuller system prompt
 
 `BASE` in `apps/cli/src/agent/claude/prompt.ts` is about twenty lines: how to work, tools, communication, then the
 environment, the project's instruction files and memory. Claude Code's own prompt covers much more: tone and length of
@@ -68,30 +56,30 @@ answers, when to use which tool and how to run them in parallel, the git commit 
 references, security, and what to do when a hook or a check blocks a call. Go through it section by section, keep what
 applies to Jinion in Jinion's own words, and check the change on a few real tasks rather than by reading the prompt.
 
-### 3. Richer tool views
+### 2. Richer tool views
 
-WebFetch, WebSearch and MCP tool calls show as a single line today (`other` in `apps/cli/src/agent/claude/events.ts`,
-drawn by `ToolView` in `apps/cli/src/ui/entry.tsx`). Claude Code shows what came back: a fetch's URL, size and status, a
-search's result titles, an MCP tool's result in short. Give them their own tool kinds in `agent/types.ts`, map their
-results in `events.ts`, and draw a short preview that `ctrl+o` expands, like command output.
+WebFetch, WebSearch and MCP tool calls show as a single line today (`other` in `apps/cli/src/agent/claude/tool-calls.ts`,
+drawn by `ToolView` in `apps/cli/src/ui/entries/tools/tool-view.tsx`). Claude Code shows what came back: a fetch's URL, size and status, a
+search's result titles, an MCP tool's result in short. Give them their own tool kinds in `agent/tools.ts`, map their
+results in `agent/claude/tool-calls.ts`, and draw a short preview that `ctrl+o` expands, like command output.
 
-### 4. Worktrees
+### 3. Worktrees
 
 Each task in its own git worktree, so several conversations can work on one repository at once without stepping on
 each other. Claude Code has this (worktree sessions, `EnterWorktree`); look up how it creates, names and cleans them up
 before designing Jinion's. Touches where Claude Code is started (`agent/claude/options.ts`, its `cwd`), the session
 store, `/diff` and the status line, which should say which worktree a conversation is in.
 
-### 5. A Codex adapter
+### 4. A Codex adapter
 
-A second `Agent` (`apps/cli/src/agent/types.ts`) proves the interface holds. `agent/claude/` is the reference: models
+A second `Agent` (`apps/cli/src/agent/agent.ts`) proves the interface holds. `agent/claude/` is the reference: models
 with effort levels, modes, the event stream in and between turns, steering, background tasks, compaction, usage and
 history. Optional parts of the interface stay optional, so the UI already copes with an agent that lacks them.
 
 ## Smaller items
 
 - **Rewind's "Summarize from here" and "Summarize up to here".** Claude Code's rewind menu has them, but the Agent SDK
-  (0.3.286) has no call for them. Add them to `panels/rewind.tsx` once it does.
+  (0.3.286) has no call for them. Add them to `panels/rewind/` once it does.
 - **Skills synced from claude.ai** (pdf, docx, ...) don't reach Jinion. Find out how Claude Code loads them, then hand
   them over in `agent/claude/plugins.ts` with the rest.
 - **A real second account.** Switching accounts mid-conversation is built (`/account`) but was never checked end to end
@@ -108,9 +96,9 @@ for it rather than build it early. What it takes:
 - **Tabs.** Several conversations, editors and shells open at once, each in its own tab, with a tab bar and shortcuts
   to move between them. Today the app is one conversation on the whole screen, with panels on top of it.
 - **More than one project.** Each tab belongs to a project folder, with its own session store, `/diff`, git state and
-  instruction files. Worktrees (item 4) are the first step: several conversations on one repository.
+  instruction files. Worktrees (item 3) are the first step: several conversations on one repository.
 - **An editor.** Open a file from the conversation, from `/diff` or from a file tree, move around it, change it and save
-  it, with syntax colors from the theme. The prompt's editor (`packages/tui/src/chat/prompt-input.tsx`) and `/diff`'s
+  it, with syntax colors from the theme. The prompt's editor (`packages/tui/src/chat/prompt/`) and `/diff`'s
   file view are the pieces closest to it today.
 - **A terminal.** A real shell in a tab or a split, running in a pseudo-terminal and drawn through a terminal emulator
   inside Jinion, so full-screen programs like `vim` or `htop` work in it too.
@@ -132,4 +120,5 @@ steering and the queue, rewind; the subagent tree, `/diff` across folders of rep
 tasks; `/usage` and `/stats`; the guard for commands that write outside the project; `/compact` and `/context`;
 `/diff`'s turn views; thinking and command output that fold once done, and open one at a time on a click, lit up under
 the pointer; the card of what a turn changed, each file opening its diff; selecting text with the mouse, copied on
-release. `git log` has the details.
+release; the codebase restructured into controllers over a jotai store, with its conventions in `AGENTS.md`. `git log`
+has the details.

@@ -122,7 +122,7 @@ In the panel, `l` signs the highlighted account in again, e.g. when its login ex
 | Tasks | `tasks 2/5` | |
 | Title, Duration, Turns, Clock, Agent, Version | the conversation's title, age and prompts, the time, the backend, jinion's version | |
 
-Segments live in `apps/cli/src/status/segments.tsx`; a new one is one entry there.
+Segments live in `apps/cli/src/status/segments/`; a new one is an object there, listed in `index.ts`.
 
 ### Modes
 

@@ -8,3 +8,71 @@ Read `docs/README.md` inside that installed package first, then read the relevan
 
 This block is written and re-added by `turbo` before repository-scoped commands when an AI agent is detected. In the Turborepo source repository, its template is defined in `crates/turborepo-cli/src/cli/agent_guidance.rs`. Removing the managed block while updates are enabled means a later qualifying invocation will add it again. Set `"agentGuidance": false` in the root `turbo.json` or `turbo.jsonc` to opt out; this does not remove an existing block. Keep the block committed with your work to avoid an uncommitted change on the next agent invocation.
 <!-- END:turborepo-agent-rules -->
+
+# Jinion
+
+A coding agent in the terminal. `apps/cli` is the app (`jinion`), `packages/tui` the terminal UI framework it is built
+on (Ink and React), `packages/virtualization` the list virtualizer under its scroll view, `apps/docs` the docs site.
+`ROADMAP.md` has what is left to build.
+
+## Architecture of `apps/cli/src`
+
+Dependencies point down this list; nothing lower imports from higher up.
+
+| Folder | What lives there |
+| --- | --- |
+| `main.tsx` | Flags, picking the agent, `run(<App />)`. |
+| `app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`). |
+| `commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a panel. |
+| `panels/` | One component per panel; a panel with several parts gets a folder with an `open.tsx` when more than one place opens it. |
+| `ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
+| `status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
+| `controllers/` | What the app does, as plain classes with no React: turns and the queue, the conversation, models, modes, accounts, tasks, input. `jinion.ts` is the composition root. They reach the screen only through the `Screen` port in `context.ts`. |
+| `state/` | Jotai atoms, the single source of truth for what changes. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
+| `conversation/` | The conversation as data: entry types, the pure reducer, edits and titles, the session store. No React, unit-tested. |
+| `agent/` | The backend contract (`agent.ts`, `events.ts`, `tools.ts`, ...) and its implementations: `claude/` drives Claude Code headless, `demo/` plays scripted scenarios for `--demo` and the app tests. |
+| `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` | Files on disk and outside tools, each behind a small module. |
+| `lib/` | Generic helpers: formatting (`format.ts`), text, errors, JSON files, paths. |
+
+Rules that keep it that way:
+
+- **State lives in atoms; behavior lives in controllers.** Components read atoms with `useAtomValue` and call the
+  `Jinion` from `useJinion()`, which never changes, so reading it never redraws. Don't put app state in `useState` when
+  more than one component or a controller needs it.
+- **Controllers stay free of React and JSX.** What they need from the screen goes through `Screen`; dialogs are data
+  (`Dialog`) that `app/dialogs.tsx` draws.
+- **Backends stay behind `Agent`.** The app only uses `agent/agent.ts` and its sibling contract files; anything Claude
+  Code specific stays in `agent/claude/`. Optional members are feature-detected, with a notice when missing.
+- **`@jinion/tui` knows nothing about Jinion.** Generic pieces come from `@jinion/tui`, the chat kit (messages, tool
+  views, composer, ask/permission/plan panels) from `@jinion/tui/chat`. It has no state library; its stores use
+  `useSyncExternalStore`.
+- **One concern per file**, named after it. Split a file when it holds unrelated things, not to hit a line count.
+- **Reuse before writing**: `lib/format.ts` for numbers, durations and plurals, `lib/text.ts`, `errorMessage`,
+  `useAsync` for a promise in a component, `usePager` for scrolled full-screen views.
+
+## Code
+
+- TypeScript, ESM with `.js` import suffixes, `import type` for types. `pnpm lint` (Biome) and `pnpm typecheck`.
+- Names read as plain English. No abbreviations.
+- Almost no comments. No doc comments that restate a name, type or signature, no module headers. A comment is a
+  single line saying a non-obvious why: a Claude Code quirk, a workaround, a constraint the code can't show.
+- No overengineering: an abstraction earns its place by being used more than once or by making the code clearly
+  simpler.
+- The look is plain ASCII (`+`, `-`, `|`, `|--`); `■` only for heatmap and waffle squares.
+- Where Claude Code has a feature, match its behavior and wording; improve the look where that helps.
+
+## Tests
+
+- Vitest. Run with `NODE_ENV=development` if your shell sets it to production, or `@jinion/tui/testing` won't resolve.
+- Screens: `renderTerminal` from `@jinion/tui/testing`, against the demo agent (`app/app.test.tsx`). Tests read the
+  screen as the user would; keep its text stable or update them on purpose.
+- Claude Code's messages: recorded fixtures in `agent/claude/fixtures` (`pnpm fixture` turns a `--debug` log into one)
+  and `FakeClaude` for the process.
+- Before calling something done: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then a real check through
+  the installed `jinion`, which runs `apps/cli/dist`.
+
+## Commits
+
+One line in Conventional Commits style that says what changed, e.g. `feat(cli): add /rename`,
+`fix(tui): keep hover on the item under the pointer`, `refactor(cli): move app state to jotai`. No body, no trailers, no
+co-author lines. Split a large change into several commits, one per logical part.
