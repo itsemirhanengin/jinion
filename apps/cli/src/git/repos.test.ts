@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { git, repo } from '../test/git.js';
 import { sandbox, type Sandbox } from '../test/sandbox.js';
-import { fileDiff, findRepos, repoChanges, repoState } from './repos.js';
+import { branchBase, fileDiff, findRepos, repoChanges, repoState } from './repos.js';
 
 let box: Sandbox;
 beforeEach(() => {
@@ -58,5 +58,25 @@ describe('repoChanges', () => {
     const modified = await fileDiff(api!, changes[0]!);
     expect(modified).toContain('-two\n+TWO\n+three');
     expect(await fileDiff(api!, changes[1]!)).toBe('@@ -0,0 +1,3 @@\n+a\n+b\n+c');
+  });
+});
+
+describe('branchBase', () => {
+  it('finds what a branch adds on top of the default branch, and nothing on the default branch itself', async () => {
+    const root = join(box.project, 'api');
+    repo(root, (path) => box.write(join(path, 'a.ts'), 'one\n'));
+    const [api] = findRepos(box.project);
+    expect(await branchBase(api!)).toBeUndefined();
+
+    git(root, 'checkout', '-qb', 'limits');
+    expect(await branchBase(api!)).toBeUndefined();
+    box.write(join(root, 'limit.ts'), 'export const limit = 100;\n');
+    git(root, 'add', '-A');
+    git(root, 'commit', '-qm', 'limit');
+    const since = await branchBase(api!);
+    expect(since).toMatchObject({ against: 'main' });
+    const changes = await repoChanges(api!, since!.base);
+    expect(changes.map(({ file, kind, insertions }) => `${file} ${kind} +${insertions}`)).toEqual(['limit.ts added +1']);
+    expect(await fileDiff(api!, changes[0]!, since!.base)).toContain('+export const limit = 100;');
   });
 });

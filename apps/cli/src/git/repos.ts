@@ -108,15 +108,16 @@ export interface FileChange {
 
 /**
  * What changed in a repository since its last commit, staged or not, new files included: what a commit of everything
- * would take.
+ * would take. With `since`, a commit, what the commits after it changed instead, e.g. a branch's own.
  */
-export async function repoChanges(repo: Repo): Promise<FileChange[]> {
+export async function repoChanges(repo: Repo, since?: string): Promise<FileChange[]> {
   const head = await hasCommits(repo);
   const run = (args: string[]) => git('git', args, { cwd: repo.root, maxBuffer: 64 * 1024 * 1024 }).then(({ stdout }) => stdout);
+  const range = since ? [since, 'HEAD', '-M'] : head ? ['HEAD', '-M'] : ['--cached'];
   const [numstat, names, untracked] = await Promise.all([
-    head ? run(['diff', 'HEAD', '--numstat', '-z', '-M']) : run(['diff', '--cached', '--numstat', '-z']),
-    head ? run(['diff', 'HEAD', '--name-status', '-z', '-M']) : run(['diff', '--cached', '--name-status', '-z']),
-    run(['ls-files', '--others', '--exclude-standard', '-z']),
+    run(['diff', ...range, '--numstat', '-z']),
+    run(['diff', ...range, '--name-status', '-z']),
+    since ? '' : run(['ls-files', '--others', '--exclude-standard', '-z']),
   ]);
   const kinds = parseNameStatus(names);
   const changes = parseNumstat(numstat).map(({ file, insertions, deletions, binary }) => ({
@@ -134,16 +135,39 @@ export async function repoChanges(repo: Repo): Promise<FileChange[]> {
   return changes.sort((a, b) => a.file.localeCompare(b.file));
 }
 
-/** The change as a unified diff; a new file shows all of its lines added. */
-export async function fileDiff(repo: Repo, change: FileChange): Promise<string> {
+/** The change as a unified diff; a new file shows all of its lines added. `since` as for `repoChanges`. */
+export async function fileDiff(repo: Repo, change: FileChange, since?: string): Promise<string> {
   if (change.binary) return '';
   if (change.kind === 'untracked') {
     const lines = readFileSync(change.absolute, 'utf8').replace(/\n$/, '').split('\n');
     return [`@@ -0,0 +1,${lines.length} @@`, ...lines.map((line) => `+${line}`)].join('\n');
   }
-  const base = (await hasCommits(repo)) ? ['diff', 'HEAD', '-M'] : ['diff', '--cached'];
+  const base = since ? ['diff', since, 'HEAD', '-M'] : (await hasCommits(repo)) ? ['diff', 'HEAD', '-M'] : ['diff', '--cached'];
   const { stdout } = await git('git', [...base, '--', change.file], { cwd: repo.root, maxBuffer: 64 * 1024 * 1024 });
   return stdout;
+}
+
+/**
+ * Where a branch left the default branch, for what it adds on top: the commit they share and the default branch's
+ * name. `undefined` on the default branch itself, or a branch with nothing of its own.
+ */
+export async function branchBase(repo: Repo): Promise<{ base: string; against: string } | undefined> {
+  const run = async (...args: string[]) => {
+    try {
+      return (await git('git', args, { cwd: repo.root })).stdout.trim();
+    } catch {
+      return '';
+    }
+  };
+  // origin/HEAD names the default branch; a repository without a remote has main or master.
+  const remote = await run('symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD');
+  const local = (await run('rev-parse', '--verify', '--quiet', 'refs/heads/main')) ? 'main' : 'master';
+  const against = remote || local;
+  const current = await run('rev-parse', '--abbrev-ref', 'HEAD');
+  if (!current || current === against || `origin/${current}` === against) return undefined;
+  const base = await run('merge-base', 'HEAD', against);
+  const head = await run('rev-parse', 'HEAD');
+  return base && base !== head ? { base, against } : undefined;
 }
 
 async function hasCommits(repo: Repo) {

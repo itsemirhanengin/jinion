@@ -6,7 +6,7 @@ import { ScriptedAgent } from './agent/scripted.js';
 import { App, contextWarning } from './app.js';
 import { MemoryStore } from './memory/store.js';
 import { MemorySessionStore } from './session-store.js';
-import { repo } from './test/git.js';
+import { git, repo } from './test/git.js';
 import { sandbox, type Sandbox } from './test/sandbox.js';
 
 /** The whole app in an emulated terminal, with the demo agent playing its scenarios without pauses. */
@@ -199,6 +199,40 @@ describe('App', () => {
     await terminal.waitFor('3 repositories');
     await terminal.press(KEYS.escape);
     await terminal.waitFor('Ask jinion anything');
+  });
+
+  it('goes through the turns in which the agent changed files with left and right, each with just its edits', async () => {
+    await playTour();
+    await terminal.type('/diff');
+    await terminal.press(KEYS.enter);
+    const current = await terminal.waitFor('Left/Right turn');
+    expect(current).toMatch(/ Current +add rate limiting to th… /);
+
+    await terminal.press(KEYS.right);
+    const turn = await terminal.waitFor('“add rate limiting to the api”');
+    // Made, then fixed in the same turn.
+    expect(turn).toMatch(/^\| > src\/middleware\/rate-limit\.ts +new \+\d+ -1 +\|$/m);
+    expect(turn).toMatch(/^\| {3}src\/server\.ts +\+\d+ -\d+ +\|$/m);
+    await terminal.press(KEYS.enter);
+    const diff = await terminal.waitFor('+- Diff src/middleware/rate-limit.ts');
+    expect(diff).toContain('Middleware');
+    await terminal.press(KEYS.escape);
+    await terminal.press(KEYS.left);
+    await terminal.waitFor(/Changes .*There is no git repository|There is no git repository here/);
+  });
+
+  it('shows what the branch adds to the default branch when nothing is uncommitted', async () => {
+    repo(box.project, (path) => box.write(join(path, 'a.ts'), 'one\n'));
+    git(box.project, 'checkout', '-qb', 'limits');
+    box.write(join(box.project, 'limit.ts'), 'export const limit = 100;\n');
+    git(box.project, 'add', '-A');
+    git(box.project, 'commit', '-qm', 'limit');
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/diff');
+    await terminal.press(KEYS.enter);
+    const list = await terminal.waitFor('limit.ts');
+    expect(list).toContain('limits · what it adds to main · 1 file · +1 -0');
+    expect(list).toMatch(/^\| > limit\.ts +new \+1 +\|$/m);
   });
 
   it('marks the files the agent changed in the diff', async () => {

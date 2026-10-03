@@ -251,6 +251,31 @@ function apply(session: Session, event: AgentEvent): Session {
   }
 }
 
+/** The files the agent changed in a turn, from its edits rather than from git, for `/diff`'s turn views. */
+export interface EditTurn {
+  /** The message that started the turn. */
+  prompt: string;
+  /** In the order they were made, subagents' included; a file changed twice has two. */
+  edits: { path: string; patch: string; created?: boolean }[];
+}
+
+/**
+ * The turns in which the agent changed files, newest first. A message that joined a running turn belongs to it; a call
+ * that failed or was cancelled changed nothing.
+ */
+export function editTurns(entries: Entry[]): EditTurn[] {
+  const turns: EditTurn[] = [];
+  for (const entry of entries) {
+    if (entry.kind === 'user' && !entry.steered) turns.push({ prompt: entry.text, edits: [] });
+    if (entry.kind !== 'tool') continue;
+    for (const call of [entry, ...(entry.children ?? [])]) {
+      if (call.run.name !== 'edit' || call.status !== 'done') continue;
+      turns.at(-1)?.edits.push({ path: call.run.input.path, patch: call.run.result?.patch ?? call.run.input.patch, created: call.run.input.created });
+    }
+  }
+  return turns.filter((turn) => turn.edits.length > 0).reverse();
+}
+
 /** A command or subagent call that went on as a background task. */
 export const isBackground = (entry: ToolEntry) =>
   (entry.run.name === 'bash' || entry.run.name === 'agent') && entry.run.result?.background !== undefined;

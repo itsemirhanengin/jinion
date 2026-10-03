@@ -198,11 +198,11 @@ The stats come from Claude Code's transcripts on this machine, every login's, so
 
 When the agent hands part of the work to a subagent, its tool calls grow as a tree under `Agent · what it is doing`, one line each, the latest six in view; the line under the prompt says what the subagent is on. Once it is done, the tree folds into `6 tool calls · 34s`, and `ctrl+o` opens it again.
 
-`/diff` shows what changed since the last commit, staged or not, new files included, with `+`/`-` lines per file. Files the agent changed in this conversation, subagents included, are marked `agent`, so they stand apart from your own edits. `enter` opens a file's diff, scrolled with `up`/`down` and `pgup`/`pgdn`, and `esc` goes back to the list.
+`/diff` works as in Claude Code. Its Current view shows what isn't committed, staged or not, new files included, with `+`/`-` lines per file, or, when nothing is, what the branch adds on top of the default branch. Files the agent changed in this conversation, subagents included, are marked `agent`, so they stand apart from your own edits. `left`/`right` go through the turns in which the agent changed files, newest first, each showing just that turn's edits; these come from the agent's edits rather than git, so a change made by a command shows only under Current. `enter` opens a file's diff, scrolled with `up`/`down` and `pgup`/`pgdn`, and `esc` goes back to the list. To take changes back, rewind (`esc` `esc`).
 
 Jinion also works in a folder that isn't a repository but holds several, such as a parent folder of four repositories opened for the context across them. It finds the repositories up to three folders down (skipping `node_modules`, build output and hidden folders), and:
 
-- `/diff` groups the changes under each repository with its branch;
+- `/diff` groups the changes under each repository with its branch, and shows what a branch adds for each repository with nothing uncommitted;
 - the status line's Git segment sums them up, as `4 repos *7`;
 - the system prompt lists the repositories and their branches, and tells the agent to run git in the one a change belongs to (`git -C api status`).
 
@@ -222,7 +222,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
 | `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
-| `/diff` | Full screen list of what changed since the last commit, in every repository here, with the agent's changes marked; `enter` opens a file's diff |
+| `/diff` | Full screen list of what isn't committed, in every repository here, with the agent's changes marked; `left`/`right` for each turn's edits, `enter` opens a file's diff |
 | `/rewind` | Goes back to before an earlier message: code, conversation or both, as `esc` `esc` does |
 | `/tasks` | What runs in the background, its output, and `x` to stop it, as `ctrl+t` does |
 | `/compact [focus]` | Summarizes the conversation so far to free context, keeping what `focus` says above all |

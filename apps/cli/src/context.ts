@@ -12,7 +12,7 @@ import type {
   UsageHistory,
 } from './agent/types.js';
 import type { CommandRegistry } from './commands/registry.js';
-import type { SavedSession } from './session.js';
+import type { EditTurn, SavedSession } from './session.js';
 import type { MemoryStore } from './memory/store.js';
 import type { SessionStore } from './session-store.js';
 import type { SeenLimits } from './settings.js';
@@ -100,6 +100,8 @@ export interface Jinion {
   memory: MemoryStore;
   /** The files the agent changed in this conversation, subagents included, as absolute paths. */
   edited: Set<string>;
+  /** The turns in which it changed them, newest first, for `/diff`. */
+  turns: EditTurn[];
   /** The agent's background tasks, running or ended, and a command or subagent the turn waits for, `foreground`. */
   tasks: BackgroundTask[];
   /** Whether jinion notifies when it waits for the user or ends a long turn in an unfocused window, and how. */

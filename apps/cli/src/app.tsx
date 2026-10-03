@@ -53,6 +53,7 @@ import {
 } from './context.js';
 import {
   createSession,
+  editTurns,
   fromSaved,
   reduce,
   resumeOf,
@@ -117,10 +118,11 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const reloadCommands = () => void agent.commands().then(setSkills, () => {});
   const mention = useMemo(() => skillMention(skills), [skills]);
   // For `/diff`, which marks the files the agent changed in this conversation.
-  const edited = useMemo(() => {
-    const calls = session.entries.flatMap((entry) => (entry.kind === 'tool' ? [entry, ...(entry.children ?? [])] : []));
-    return new Set(calls.flatMap((call) => (call.run.name === 'edit' ? [resolve(info.cwd, call.run.input.path)] : [])));
-  }, [session.entries, info.cwd]);
+  const turns = useMemo(() => editTurns(session.entries), [session.entries]);
+  const edited = useMemo(
+    () => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(info.cwd, change.path)))),
+    [turns, info.cwd],
+  );
   // Listed again after each turn, which may have added or removed files.
   const files = useProjectFiles(info.cwd, session.busySince === undefined);
   const completions = useMemo(
@@ -590,6 +592,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     sessions,
     memory,
     edited,
+    turns,
     tasks,
     notifications: { on: notifications, method: terminal.method },
     sessionId: session.id,

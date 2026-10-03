@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentEvent } from './agent/types.js';
-import { createSession, reduce, type Entry, type Session } from './session.js';
+import { createSession, editTurns, reduce, type Entry, type Session } from './session.js';
 
 const events = (session: Session, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
@@ -53,6 +53,29 @@ describe('reduce', () => {
     expect(done.entries.at(-1)).toMatchObject({ kind: 'compaction', trigger: 'auto', before: 160_000, after: 20_000, summary: 'So far' });
     const failed = events(running, { type: 'compaction', state: 'failed', error: 'Not enough messages' });
     expect(failed.entries.at(-1)).toMatchObject({ kind: 'notice', tone: 'error', text: "Couldn't compact the conversation: Not enough messages" });
+  });
+
+  it('groups the agent’s edits by turn, newest first, with what joined a turn in it and only edits that went through', () => {
+    const edit = (id: string, path: string, ok = true): AgentEvent[] => [
+      { type: 'tool-start', id, call: { name: 'edit', input: { path, patch: '@@ -1 +1 @@\n-a\n+b' } } },
+      { type: 'tool-end', id, ok, result: {} },
+    ];
+    let session = reduce(createSession(200_000), { type: 'submit', text: 'fix the build' });
+    session = events(session, ...edit('e1', 'src/a.ts'), ...edit('e2', 'src/b.ts', false));
+    session = reduce(session, { type: 'steer', text: 'and the docs', id: 's1' });
+    session = events(session, ...edit('e3', 'README.md'));
+    session = reduce(session, { type: 'submit', text: 'just explain it' });
+    session = reduce(session, { type: 'submit', text: 'add a test' });
+    session = events(
+      session,
+      { type: 'tool-start', id: 'agent', call: { name: 'agent', input: { description: 'Write the test' } } },
+      { type: 'tool-start', id: 'e4', call: { name: 'edit', input: { path: 'src/a.test.ts', patch: '@@ -0,0 +1 @@\n+x', created: true } }, parent: 'agent' },
+      { type: 'tool-end', id: 'e4', ok: true, result: {}, parent: 'agent' },
+    );
+    expect(editTurns(session.entries).map((turn) => [turn.prompt, turn.edits.map((change) => change.path)])).toEqual([
+      ['add a test', ['src/a.test.ts']],
+      ['fix the build', ['src/a.ts', 'README.md']],
+    ]);
   });
 
   it('replaces consecutive todo updates and keeps the list', () => {
