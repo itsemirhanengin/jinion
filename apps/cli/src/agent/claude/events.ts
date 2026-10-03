@@ -235,7 +235,7 @@ export class ClaudeEvents {
     if (message.status === 'compacting') yield { type: 'compaction', state: 'running' };
 
     if (message.compact_result === 'failed') {
-      yield { type: 'compaction', state: 'failed', error: message.compact_error || 'Claude Code could not compact the conversation.' };
+      yield { type: 'compaction', state: 'failed', error: message.compact_error || "The conversation couldn't be compacted." };
     }
   }
 

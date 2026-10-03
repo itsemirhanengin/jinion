@@ -51,12 +51,12 @@ describe('removeAccount', () => {
     const { dir } = signedIn('work');
 
     process.env.KEEP_LOGIN = '1';
-    await expect(removeAccount('work')).rejects.toThrow("Claude Code couldn't sign it out");
+    await expect(removeAccount('work')).rejects.toThrow("it couldn't be signed out");
     expect(existsSync(dir)).toBe(true);
   });
 
   it('keeps Claude Code’s own login, and says when there is no such account', async () => {
-    await expect(removeAccount('default')).rejects.toThrow("Claude Code's own login");
+    await expect(removeAccount('default')).rejects.toThrow("Claude's own login");
     await expect(removeAccount('nobody')).rejects.toThrow('there is no account called nobody');
   });
 });

@@ -111,7 +111,7 @@ export class ClaudeAgent implements Agent {
 
     if (code) {
       const result = await claude.query.rewindFiles(id);
-      if (!result.canRewind) throw new Error(result.error ?? "Claude Code couldn't restore the files.");
+      if (!result.canRewind) throw new Error(result.error ?? "The files couldn't be restored.");
     }
 
     if (!conversation) return;
@@ -122,7 +122,7 @@ export class ClaudeAgent implements Agent {
     const read = this.options.sessionMessages ?? getSessionMessages;
     const transcript = await read(resume.sessionId, { dir: this.cwd });
     const index = transcript.findIndex((message) => message.uuid === id);
-    if (index === -1) throw new Error("That message isn't in Claude Code's transcript of this conversation.");
+    if (index === -1) throw new Error("That message isn't in the transcript of this conversation.");
 
     const before = transcript[index - 1]?.uuid;
 

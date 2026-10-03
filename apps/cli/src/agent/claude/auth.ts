@@ -9,13 +9,13 @@ const PASTE_PROMPT = 'Paste code here if prompted';
 /** Logging out clears the Keychain entry or `.credentials.json`; conversations stay, as `projects` is only a link. */
 export async function removeAccount(name: string) {
   const dir = configDirOf(name);
-  if (!dir) throw new Error("it is Claude Code's own login, which stays");
+  if (!dir) throw new Error("it is Claude's own login, which stays");
   if (!existsSync(dir)) throw new Error(`there is no account called ${name}`);
 
   await runClaude(['auth', 'logout'], name).catch(() => {});
 
   // A folder deleted while still signed in would leave its login behind in the Keychain.
-  if ((await accountStatus(name)).signedIn) throw new Error("Claude Code couldn't sign it out, so it stays");
+  if ((await accountStatus(name)).signedIn) throw new Error("it couldn't be signed out, so it stays");
 
   rmSync(dir, { recursive: true, force: true });
 }

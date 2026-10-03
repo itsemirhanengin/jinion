@@ -59,7 +59,7 @@ export class ClaudeProcess {
   /** Yields until the results answering the prompt and those steered into the turn; `uuid` is where rewinding finds it. */
   async *send(content: Content, uuid: Uuid = randomUUID()): AsyncGenerator<SDKMessage> {
     if (this.exited) throw this.exited;
-    if (this.turn) throw new Error('Claude Code is still answering the previous prompt.');
+    if (this.turn) throw new Error('The agent is still answering the previous prompt.');
 
     const turn = { waiting: new Set<string>(), messages: new Inbox<SDKMessage | Error>() };
 
@@ -155,7 +155,7 @@ export class ClaudeProcess {
 
     const detail = this.stderr.trim().split('\n').slice(-5).join('\n');
 
-    this.exited = new Error(detail ? `Claude Code exited:\n${detail}` : 'Claude Code exited unexpectedly.');
+    this.exited = new Error(detail ? `The agent exited:\n${detail}` : 'The agent exited unexpectedly.');
     this.turn?.messages.push(this.exited);
     this.turn?.messages.close();
     this.options.onExit();
@@ -189,7 +189,7 @@ function answered(result: Result, waiting: Set<string>) {
 }
 
 export function errorOf(result: Result) {
-  if (result.subtype === 'success') return result.result || 'Claude Code reported an error.';
+  if (result.subtype === 'success') return result.result || 'The agent reported an error.';
 
-  return result.errors.join('\n') || `Claude Code stopped: ${result.subtype}.`;
+  return result.errors.join('\n') || `The agent stopped: ${result.subtype}.`;
 }

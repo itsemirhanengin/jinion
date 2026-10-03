@@ -65,7 +65,7 @@ export class ClaudeAccounts implements AgentAccounts {
   }
 
   async remove(name: string) {
-    if (name === this.name) throw new Error('it is in use. Switch to another account first');
+    if (name === this.name) throw new Error('it is in use; switch to another account first');
 
     await removeAccount(name);
   }

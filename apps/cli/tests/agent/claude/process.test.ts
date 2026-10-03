@@ -98,7 +98,7 @@ describe('ClaudeProcess', () => {
     await settle();
     await expect(claude.send('second').next()).rejects.toThrow('still answering');
     claude.close();
-    await expect(first).rejects.toThrow('Claude Code exited');
+    await expect(first).rejects.toThrow('The agent exited');
   });
 
   it('fails the turn with what Claude Code printed when it exits, and every turn after', async () => {
@@ -109,9 +109,9 @@ describe('ClaudeProcess', () => {
     await settle();
     fake.stderr('Error: not logged in\n');
     fake.exit();
-    await expect(turn).rejects.toThrow('Claude Code exited:\nError: not logged in');
+    await expect(turn).rejects.toThrow('The agent exited:\nError: not logged in');
     expect(onExit).toHaveBeenCalledOnce();
-    await expect(claude.send('again').next()).rejects.toThrow('Claude Code exited');
+    await expect(claude.send('again').next()).rejects.toThrow('The agent exited');
   });
 });
 

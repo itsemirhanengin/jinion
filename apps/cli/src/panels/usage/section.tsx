@@ -22,7 +22,7 @@ export function tokenLine(tokens: ModelTokens) {
   const split = tokens.input + tokens.output + tokens.cacheRead + tokens.cacheWrite;
   if (!tokens.summarized) return parts.join(' · ');
 
-  const summarized = `${compact(tokens.summarized)} from Claude Code's summary`;
+  const summarized = `${compact(tokens.summarized)} from a summary of older days`;
 
   return split > 0 ? `${parts.join(' · ')} · ${summarized}` : summarized;
 }

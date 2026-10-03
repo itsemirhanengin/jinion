@@ -61,9 +61,6 @@ history. Optional parts of the interface stay optional, so the UI already copes 
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
-- **Messages that name Claude Code.** `agent/claude/auth.ts` (removing an account), `agent/claude/agent.ts` (restoring
-  files) and `panels/usage/section.tsx` (the summary days come from) show "Claude Code" on screen. Removing an account
-  is also worded differently in `/account remove` and in the panel.
 ## Later: a system prompt sized to the request
 
 Most of the quota a small request spends goes to the frame around it: a long system prompt, then lint, typecheck,
