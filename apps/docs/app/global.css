@@ -1,0 +1,116 @@
+@import 'tailwindcss';
+@import 'fumadocs-ui/css/neutral.css';
+@import 'fumadocs-ui/css/preset.css';
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* The TUI's accent, which draws the `jinion` in its banner. */
+  --color-fd-primary: #3b7dd8;
+  --color-fd-primary-foreground: #ffffff;
+}
+
+.dark {
+  --color-fd-primary: #61afef;
+  --color-fd-primary-foreground: #0f1115;
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+/* The scroll lock of dialogs injects these with !important; the stable gutter above already keeps the layout still. */
+html > body[data-scroll-locked] {
+  /* biome-ignore lint/complexity/noImportantStyles: only !important outranks the scroll lock's own !important. */
+  margin-right: 0px !important;
+  /* biome-ignore lint/complexity/noImportantStyles: as above. */
+  --removed-body-scroll-bar-size: 0px !important;
+}
+
+/* Jinion's screens (components/terminal.tsx), in the colors of packages/tui/src/theme/themes.ts. */
+.terminal {
+  --t-bg: #fbfbfc;
+  --t-fg: #2c3038;
+  --t-muted: #8b8f98;
+  --t-border: #a0a4ab;
+  --t-accent: #3b7dd8;
+  --t-success: #3f8f3f;
+  --t-warning: #b7791f;
+  --t-error: #c4413c;
+  --t-heading: #b5891c;
+  --t-code: #2b8a8a;
+  --t-link: #3b7dd8;
+  --t-thinking: #6e737c;
+  --t-selection: #2b8a8a;
+  --t-model: #3b7dd8;
+  --t-directory: #2b8a8a;
+  --t-cost: #9a4fc4;
+  --t-added: #2e7d32;
+  --t-removed: #b3372f;
+  --t-command: #a8761a;
+  --t-string: #b0503a;
+  --t-operator: #3b7dd8;
+  --t-flag: #2b8a8a;
+  --t-variable: #8a4fc0;
+  --t-surface: #e9e9ef;
+  --t-user: #e3e5ee;
+  --t-added-bg: #d2e9cc;
+  --t-removed-bg: #f3d6d4;
+
+  margin-block: 1.5rem;
+  overflow: hidden;
+  border: 1px solid var(--color-fd-border);
+  border-radius: var(--radius-xl);
+  background: var(--t-bg);
+}
+
+.dark .terminal {
+  --t-bg: #16181d;
+  --t-fg: #d4d7dd;
+  --t-muted: #7f8590;
+  --t-border: #5a606b;
+  --t-accent: #61afef;
+  --t-success: #98c379;
+  --t-warning: #e5c07b;
+  --t-error: #e06c75;
+  --t-heading: #e5c07b;
+  --t-code: #56b6c2;
+  --t-link: #61afef;
+  --t-thinking: #8a909a;
+  --t-selection: #56b6c2;
+  --t-model: #61afef;
+  --t-directory: #56b6c2;
+  --t-cost: #c678dd;
+  --t-added: #98c379;
+  --t-removed: #e06c75;
+  --t-command: #e5c07b;
+  --t-string: #ce9178;
+  --t-operator: #61afef;
+  --t-flag: #56b6c2;
+  --t-variable: #c678dd;
+  --t-surface: #1f2228;
+  --t-user: #262a33;
+  --t-added-bg: #1f3324;
+  --t-removed-bg: #3a2024;
+}
+
+.terminal-title {
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--color-fd-border);
+  color: var(--t-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.terminal-screen {
+  margin: 0;
+  padding: 0.875rem 1rem;
+  overflow-x: auto;
+  color: var(--t-fg);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  white-space: pre;
+  /* Ligatures would join the `---` and `|--` the screens are drawn with. */
+  font-variant-ligatures: none;
+}

@@ -7,6 +7,39 @@ look where that helps.
 Before calling anything done: `pnpm typecheck`, `pnpm lint`, `pnpm test`, then `pnpm build` and a real check through
 the installed `jinion` command, which runs `apps/cli/dist`, not `pnpm dev`.
 
+## Docs (in progress)
+
+`apps/docs` is the documentation site, Fumadocs on Next.js, deployed as docs.jinion.co with the pages at the root
+(`pnpm dev:docs`). What was decided before writing it, after looking at how Claude Code, Codex, Cursor, OpenCode, Amp
+and Gemini CLI document themselves:
+
+- **Jinion is its own tool.** The docs never present it as running under Claude Code; a Claude login is a requirement,
+  stated where requirements go.
+- **Installed from npm** as `npm i -g @jinion/cli`, written as if the package were already published.
+- **English at the root, Turkish under `/tr`**, as `page.tr.mdx` next to `page.mdx`. An untranslated page shows the
+  English one. A page is translated once its English has settled.
+- **Plain and clear**, like the README: short sentences, second person, the expected result after each step. Guides
+  are titled by task, reference pages are tables, troubleshooting is titled by the symptom. Prompts to the agent go in
+  `text` blocks, shell commands in `sh`.
+- **Each topic in one place**, about twenty pages in four sections: Get started, Use Jinion, Customize, Reference.
+- **Screens as text.** A `<Terminal>` component shows Jinion's screens as ASCII rather than screenshots, so they follow
+  the theme and can be searched; later they can come from the app itself through `@jinion/tui/testing`.
+- **Developer docs** (the TUI framework, architecture, backends, tests) come after the user docs, in their own tab.
+
+Steps:
+
+1. **The skeleton** (done): English and Turkish, the sidebar with every page's title and description, the `terminal`
+   code block for screens, Jinion's look. `apps/docs/README.md` says how pages are written.
+2. **Reference**: CLI flags and environment variables, commands, keyboard shortcuts, the `~/.jinion` folder,
+   troubleshooting. Most of it moves over from the README.
+3. **Get started**: the introduction with a first session in three steps, installation, how Jinion works.
+4. **Guides**: the Use Jinion and Customize pages.
+5. **Wrap up**: shorten the README to point at the docs, deploy to docs.jinion.co.
+
+Known before the Turkish pages come: search matches whole Turkish words only (`bellek` doesn't find `belleği`), since
+the search engine Fumadocs ships stems English alone. Turkish needs a stemmer passed to `createFromSource` in
+`app/api/search/route.ts`.
+
 ## Next
 
 ### 1. The repository's own conventions in AGENTS.md

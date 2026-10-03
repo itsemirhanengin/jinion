@@ -1,0 +1,30 @@
+{
+  "title": "Jinion",
+  "pages": [
+    "---Get started---",
+    "index",
+    "installation",
+    "how-jinion-works",
+    "---Use Jinion---",
+    "prompting",
+    "permission-modes",
+    "conversations",
+    "review-changes",
+    "background-tasks",
+    "memory",
+    "skills-and-mcp",
+    "models-and-accounts",
+    "usage",
+    "notifications",
+    "---Customize---",
+    "project-instructions",
+    "status-line",
+    "terminal-setup",
+    "---Reference---",
+    "cli",
+    "commands",
+    "keyboard-shortcuts",
+    "jinion-folder",
+    "troubleshooting"
+  ]
+}

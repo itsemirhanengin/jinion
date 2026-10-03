@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @jinion/cli dev",
+    "dev:docs": "pnpm --filter @jinion/docs dev",
     "start": "pnpm --filter @jinion/cli start",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",

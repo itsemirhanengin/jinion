@@ -1,0 +1,30 @@
+{
+  "title": "Jinion",
+  "pages": [
+    "---Başlarken---",
+    "index",
+    "installation",
+    "how-jinion-works",
+    "---Jinion'u kullanmak---",
+    "prompting",
+    "permission-modes",
+    "conversations",
+    "review-changes",
+    "background-tasks",
+    "memory",
+    "skills-and-mcp",
+    "models-and-accounts",
+    "usage",
+    "notifications",
+    "---Özelleştirme---",
+    "project-instructions",
+    "status-line",
+    "terminal-setup",
+    "---Referans---",
+    "cli",
+    "commands",
+    "keyboard-shortcuts",
+    "jinion-folder",
+    "troubleshooting"
+  ]
+}
