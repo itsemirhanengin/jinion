@@ -2,6 +2,7 @@ import { execFile, spawn } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
 import type { AgentAccount, SignInOptions } from '../accounts.js';
 import { accountEnv, configDirOf, DEFAULT_ACCOUNT, makeConfigDir, planName } from './accounts.js';
+import { claudeBinary } from './paths.js';
 
 const PASTE_PROMPT = 'Paste code here if prompted';
 
@@ -47,7 +48,7 @@ export async function signIn(name: string, { signal, onLink, onPrompt }: SignInO
   makeConfigDir(name);
 
   await new Promise<void>((resolve, reject) => {
-    const login = spawn('claude', ['auth', 'login', '--claudeai'], {
+    const login = spawn(claudeBinary(), ['auth', 'login', '--claudeai'], {
       env: { ...process.env, ...accountEnv(name) },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -111,7 +112,7 @@ export async function signIn(name: string, { signal, onLink, onPrompt }: SignInO
 
 function runClaude(args: string[], account: string) {
   return new Promise<string>((resolve, reject) =>
-    execFile('claude', args, { env: { ...process.env, ...accountEnv(account) }, timeout: 15_000 }, (error, stdout) =>
+    execFile(claudeBinary(), args, { env: { ...process.env, ...accountEnv(account) }, timeout: 15_000 }, (error, stdout) =>
       error ? reject(error) : resolve(stdout),
     ),
   );

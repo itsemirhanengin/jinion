@@ -1,9 +1,16 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { sandboxEach } from '../../support/sandbox.js';
 import { removeAccount } from '../../../src/agent/claude/auth.js';
 import { accountsDir } from '../../../src/agent/claude/paths.js';
+
+const fake = vi.hoisted(() => ({ claude: '' }));
+
+vi.mock('../../../src/agent/claude/paths.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../src/agent/claude/paths.js')>()),
+  claudeBinary: () => fake.claude,
+}));
 
 /** Stands in for `claude`: `auth logout` deletes the login unless `KEEP_LOGIN` is set, and every call is logged. */
 const FAKE_CLAUDE = `#!/bin/sh
@@ -15,19 +22,14 @@ esac
 `;
 
 const box = sandboxEach();
-let path: string | undefined;
 
 beforeEach(() => {
-  const bin = join(box.home, 'bin');
-
-  chmodSync(box.write(join(bin, 'claude'), FAKE_CLAUDE), 0o755);
-  path = process.env.PATH;
-  process.env.PATH = `${bin}:${path}`;
+  fake.claude = box.write(join(box.home, 'bin', 'claude'), FAKE_CLAUDE);
+  chmodSync(fake.claude, 0o755);
   process.env.CLAUDE_LOG = join(box.home, 'claude.log');
 });
 
 afterEach(() => {
-  process.env.PATH = path;
   delete process.env.CLAUDE_LOG;
   delete process.env.KEEP_LOGIN;
 });
