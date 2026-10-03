@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { render } from 'ink';
 import xterm from '@xterm/headless';
 import { Root } from '../runtime/context.js';
+import { DRAWING } from '../runtime/drawing.js';
 import { createInput, type MouseListener } from '../runtime/input.js';
 import { createTerminalControl } from '../runtime/terminal.js';
 import { darkTheme, type Theme } from '../theme/themes.js';
@@ -45,6 +46,11 @@ export interface TestTerminal {
   focus(focused: boolean): Promise<void>;
   /** The desktop notifications shown so far, as `title: body`. */
   notifications(): string[];
+  /**
+   * Writes straight to the screen behind Ink's back, e.g. `\x1b[5;1Hstray`, as a terminal effectively does when it
+   * lays a character out wider or narrower than Ink measured it.
+   */
+  scribble(data: string): Promise<void>;
   unmount(): void;
 }
 
@@ -92,7 +98,7 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
     <Root theme={theme} mouse={mouse} terminal={terminalControl.control}>
       {node}
     </Root>,
-    { stdout, stdin: input.stdin, interactive: true, alternateScreen: true, exitOnCtrlC: false, patchConsole: false },
+    { stdout, stdin: input.stdin, interactive: true, patchConsole: false, ...DRAWING },
   );
 
   const drawn = () => new Promise<void>((resolve) => terminal.write('', resolve));
@@ -145,6 +151,7 @@ export function renderTerminal(node: ReactNode, { columns = 120, rows = 40, them
     },
     focus: (focused) => send(focused ? '\x1b[I' : '\x1b[O'),
     notifications: () => [...notifications],
+    scribble: (data) => new Promise<void>((resolve) => terminal.write(data, resolve)),
     unmount: () => {
       instance.unmount();
       input.close();

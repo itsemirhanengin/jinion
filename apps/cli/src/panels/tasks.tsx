@@ -5,6 +5,7 @@ import {
   ChoiceList,
   choiceIndent,
   Panel,
+  printable,
   StatusMark,
   Text,
   useAnimation,
@@ -52,7 +53,7 @@ export function TaskLine({ tasks }: { tasks: BackgroundTask[] }) {
         {shown.map((task, index) => (
           <Text key={task.id}>
             {index > 0 && <Text color={theme.muted}> · </Text>}
-            <StatusMark status={MARKS[task.status]} /> {task.title.split('\n')[0]}
+            <StatusMark status={MARKS[task.status]} /> {printable(task.title.split('\n')[0]!)}
             {task.status === 'running' && <Text color={theme.muted}> {duration(Date.now() - task.startedAt)}</Text>}
           </Text>
         ))}
@@ -90,7 +91,7 @@ export function TasksPanel() {
     label: (
       <Text wrap="truncate-end">
         <StatusMark status={MARKS[task.status]} /> {task.kind === 'agent' && <Text color={theme.muted}>Agent · </Text>}
-        {task.title.split('\n')[0]}
+        {printable(task.title.split('\n')[0]!)}
       </Text>
     ),
     aside: <TaskTime task={task} />,
@@ -194,7 +195,7 @@ function TaskOutput({ id }: { id: string }) {
   return (
     <Panel
       title="Output"
-      subtitle={`${task.title.split('\n')[0]}${range}`}
+      subtitle={`${printable(task.title.split('\n')[0]!)}${range}`}
       grow
       hints={[
         ['Up/Down', 'scroll'],
@@ -230,7 +231,7 @@ function useOutput(path: string | undefined, live: boolean) {
   return lines;
 }
 
-/** The end of an output file as lines, without color codes, and progress bars as their latest state. */
+/** The end of an output file as lines, laid out for the screen: no color codes, progress bars as they ended. */
 export function readOutput(path: string, maxBytes = MAX_BYTES) {
   let fd: number | undefined;
   try {
@@ -242,11 +243,7 @@ export function readOutput(path: string, maxBytes = MAX_BYTES) {
     let text = buffer.toString('utf8');
     // A cut at the start leaves half a line.
     if (length < size) text = text.slice(text.indexOf('\n') + 1);
-    return text
-      .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '')
-      .replace(/\n$/, '')
-      .split('\n')
-      .map((line) => line.slice(line.lastIndexOf('\r') + 1));
+    return printable(text.replace(/\n$/, '')).split('\n');
   } catch {
     return [];
   } finally {

@@ -1,3 +1,5 @@
+import { printable } from '../utils/printable.js';
+
 /** `[Pasted text #1 +42 lines]` or `[Pasted text #2 1200 chars]`. */
 export const PASTED_TEXT = /\[Pasted text #(\d+) (?:\+\d+ lines|\d+ chars)\]/g;
 
@@ -19,7 +21,8 @@ export class PastedTexts {
   /** What to insert for `text`: a placeholder for a long paste, the text itself otherwise. */
   add(text: string) {
     const lines = text.split('\n').length;
-    if (lines < this.minLines && text.length < this.minLength) return text;
+    // A tab or a control character would throw the prompt's layout off; as a placeholder, the text goes out as it is.
+    if (lines < this.minLines && text.length < this.minLength && printable(text) === text) return text;
     const id = ++this.count;
     this.texts.set(id, text);
     return lines > 1 ? `[Pasted text #${id} +${lines} lines]` : `[Pasted text #${id} ${text.length} chars]`;

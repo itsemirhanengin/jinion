@@ -1,6 +1,7 @@
 import { Text } from 'ink';
 import { useTheme } from '../runtime/context.js';
 import type { Theme } from '../theme/themes.js';
+import { printable } from '../utils/printable.js';
 
 type ShellTokenKind = 'space' | 'command' | 'argument' | 'flag' | 'string' | 'operator' | 'variable';
 
@@ -52,7 +53,7 @@ export function ShellCommand({ command }: { command: string }) {
   return (
     <Text>
       <Text color={theme.muted}>$ </Text>
-      {tokenizeShell(command).map((token, index) => (
+      {tokenizeShell(printable(command)).map((token, index) => (
         <Text key={index} color={colorOf(token.kind, theme)}>
           {token.text}
         </Text>

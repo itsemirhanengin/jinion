@@ -28,6 +28,7 @@ export { Shell, usePanel, usePanels } from './runtime/panels.js';
 export type { PanelPlacement, Panels, PanelSpec, ShellProps } from './runtime/panels.js';
 
 export { fuzzyFilter, fuzzyMatch } from './utils/fuzzy.js';
+export { printable, TAB_WIDTH } from './utils/printable.js';
 export type { FuzzyMatch } from './utils/fuzzy.js';
 
 export { Prose } from './primitives/prose.js';

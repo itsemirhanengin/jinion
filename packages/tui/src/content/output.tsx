@@ -1,5 +1,6 @@
 import { Box, Text } from 'ink';
 import { useTheme, useView } from '../runtime/context.js';
+import { printable } from '../utils/printable.js';
 
 export function ExpandHint({ children }: { children: string }) {
   const theme = useTheme();
@@ -17,7 +18,7 @@ export interface OutputLinesProps {
   color?: string;
 }
 
-/** Command output that collapses to its last lines until the view is expanded. */
+/** Command output that collapses to its last lines until the view is expanded. Tabs and control characters are laid out first. */
 export function OutputLines({ lines, tail = 10, color }: OutputLinesProps) {
   const { expanded } = useView();
   const hidden = expanded ? 0 : Math.max(0, lines.length - tail);
@@ -29,7 +30,7 @@ export function OutputLines({ lines, tail = 10, color }: OutputLinesProps) {
       )}
       {lines.slice(hidden).map((line, index) => (
         <Text key={index} color={color}>
-          {line || ' '}
+          {printable(line) || ' '}
         </Text>
       ))}
     </Box>

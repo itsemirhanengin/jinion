@@ -4,6 +4,8 @@ Terminal UI framework for Jinion, built on [Ink](https://github.com/vadimdemedes
 
 Everything is drawn with plain ASCII: frames use `+`, `-` and `|`, trees use `|--` and `'--`. No Unicode box-drawing characters.
 
+Text from outside, such as command output, file contents and diffs, goes through `printable` before it is laid out: Ink measures a tab as one column and a `\r` or an escape sequence as text, while the terminal jumps to the next tab stop, goes back to the line's start or colors what follows, and once the two disagree the screen is redrawn over the wrong cells. The components that show such text (`OutputLines`, `Diff`, `Markdown`, `ShellCommand`, `UserMessage`, `Thinking`, `Notice`) call it themselves; anything else drawing outside text should too. A short paste with a tab goes in as a placeholder, so it reaches the agent as it was.
+
 ```
 +--- ~ Edit: ts src/server.ts [+2/-1] -----------------------------+
 |   2|import { cors, errorHandler, requestId } from './index.js';  |
@@ -23,7 +25,7 @@ Everything is drawn with plain ASCII: frames use `+`, `-` and `|`, trees use `|-
 
 Apps run full screen in the alternate screen buffer. The root is a column exactly as tall as the terminal, and `Shell` lays it out: `content` (usually a `ScrollView`) takes the remaining height, while `aside`, `prompt` and `status` stay pinned to the bottom.
 
-- `run(<App />)` detects a light or dark background, enters the alternate screen, turns on mouse and focus reporting and returns Ink's instance.
+- `run(<App />)` detects a light or dark background, enters the alternate screen, turns on mouse and focus reporting and returns Ink's instance. It draws every frame whole (`runtime/drawing.ts`, which the test terminal shares): a character the terminal measures differently than Ink, such as some emoji, would otherwise leave stray cells on rows Ink thinks are unchanged; a whole frame erases them.
 - `ScrollView` follows the newest line. The mouse wheel or PageUp scrolls it; once scrolled, the view holds still while content grows below it, and a `Jump to bottom (click)` row brings it back.
 - Mouse reports are filtered out of stdin before Ink sees them, so key handlers never receive them. `useMouse()` subscribes to wheel and click events. While reporting is on, terminals select text with Shift held (Option in iTerm2).
 - `useTerminal()` tells whether the window has focus (`focused()`, from the terminal's focus reports, which are filtered out like mouse reports) and shows desktop notifications (`notify(title, body)`) with the sequence the terminal understands: OSC 777, 9 or 99, or the bell (`method`).

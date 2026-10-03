@@ -6,6 +6,7 @@ import {
   Frame,
   Markdown,
   Notice,
+  printable,
   ShellBlock,
   StatusMark,
   Text,
@@ -118,7 +119,7 @@ function TaskEnd({ entry }: { entry: Extract<Entry, { kind: 'task' }> }) {
       name={task.kind === 'agent' ? 'Background agent' : 'Background'}
       detail={
         <Text>
-          <Text color={task.kind === 'shell' ? theme.code : undefined}>{task.title.split('\n')[0]}</Text>
+          <Text color={task.kind === 'shell' ? theme.code : undefined}>{printable(task.title.split('\n')[0]!)}</Text>
           <Text color={task.status === 'failed' ? theme.error : theme.muted}> · {how}</Text>
         </Text>
       }
@@ -159,7 +160,7 @@ function ToolView({ entry }: { entry: ToolEntry }) {
             label: (
               <Text>
                 <Text color={theme.muted}>{match.line}|</Text>
-                {match.text}
+                {printable(match.text)}
               </Text>
             ),
           })),
@@ -239,7 +240,7 @@ function ToolView({ entry }: { entry: ToolEntry }) {
         <ToolLine
           status={status}
           name={MEMORY_VERBS[run.input.action]}
-          detail={<Text color={theme.muted}>{run.input.detail}</Text>}
+          detail={<Text color={theme.muted}>{printable(run.input.detail)}</Text>}
         />
       );
     case 'plan':
@@ -253,7 +254,7 @@ function ToolView({ entry }: { entry: ToolEntry }) {
         <ToolLine
           status={status}
           name={run.input.title}
-          detail={run.input.detail && <Text color={theme.muted}>{run.input.detail}</Text>}
+          detail={run.input.detail && <Text color={theme.muted}>{printable(run.input.detail)}</Text>}
         />
       );
     case 'agent':
@@ -308,7 +309,7 @@ function CallLine({ call }: { call: ToolCallEntry }) {
   return (
     <Text wrap="truncate-end">
       <StatusMark status={call.status} /> <Text bold>{name}</Text>
-      {detail && <Text color={theme.muted}> {detail}</Text>}
+      {detail && <Text color={theme.muted}> {printable(detail)}</Text>}
     </Text>
   );
 }

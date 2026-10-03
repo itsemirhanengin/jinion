@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Box, Text } from 'ink';
 import { useTheme, useView } from '../runtime/context.js';
+import { printable } from '../utils/printable.js';
 import { ExpandHint } from './output.js';
 
 export type DiffLineKind = 'context' | 'added' | 'removed' | 'gap';
@@ -34,7 +35,8 @@ export function parsePatch(patch: string): DiffLine[] {
     }
     if (!inHunk || raw.startsWith('\\')) continue;
 
-    const text = raw.slice(1).replaceAll('\t', '  ');
+    // Tab stops count from the line's own start, after the +/- column.
+    const text = printable(raw.slice(1));
     if (raw.startsWith('+')) lines.push({ kind: 'added', text, newNumber: newNumber++ });
     else if (raw.startsWith('-')) lines.push({ kind: 'removed', text, oldNumber: oldNumber++ });
     else lines.push({ kind: 'context', text, oldNumber: oldNumber++, newNumber: newNumber++ });

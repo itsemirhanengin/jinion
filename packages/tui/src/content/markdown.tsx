@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { lexer, type Token, type Tokens } from 'marked';
+import { printable } from '../utils/printable.js';
 import stringWidth from 'string-width';
 import { Inset, useContentWidth, useTheme } from '../runtime/context.js';
 import { Frame } from '../primitives/frame.js';
@@ -25,7 +26,7 @@ export interface MarkdownProps {
 }
 
 export function Markdown({ text }: MarkdownProps) {
-  const tokens = useMemo(() => lexer(text, { gfm: true }), [text]);
+  const tokens = useMemo(() => lexer(printable(text), { gfm: true }), [text]);
   return <Blocks tokens={tokens} />;
 }
 

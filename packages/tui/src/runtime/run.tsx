@@ -4,6 +4,7 @@ import { themes, type ColorScheme, type Theme } from '../theme/themes.js';
 import { Root } from './context.js';
 import { detectColorScheme } from './detect-scheme.js';
 import { createInput, DISABLE_FOCUS, DISABLE_MOUSE, ENABLE_FOCUS, ENABLE_MOUSE, type MouseListener } from './input.js';
+import { DRAWING } from './drawing.js';
 import { createTerminalControl } from './terminal.js';
 
 export interface RunOptions {
@@ -40,9 +41,7 @@ export async function run(node: ReactNode, options: RunOptions = {}): Promise<In
     </Root>,
     {
       stdin: input?.stdin,
-      alternateScreen: true,
-      exitOnCtrlC: false,
-      incrementalRendering: true,
+      ...DRAWING,
       maxFps: 60,
       // 'auto' queries the terminal, and Ink 7.1 also delivers the reply as typed
       // input ("[?0u" in the prompt). Terminals without the protocol ignore the

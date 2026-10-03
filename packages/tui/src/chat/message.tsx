@@ -4,6 +4,7 @@ import { Prose } from '../primitives/prose.js';
 import { anyOf, MENTION } from './mentions.js';
 import { PASTED_IMAGE } from './pasted-images.js';
 import { PASTED_TEXT } from './pasted-texts.js';
+import { printable } from '../utils/printable.js';
 
 export interface UserMessageProps {
   text: string;
@@ -17,8 +18,9 @@ export interface UserMessageProps {
  * The user's prompt. Paste placeholders and @-mentions are highlighted as they were in the prompt, and so is what
  * `mentions` matches.
  */
-export function UserMessage({ text, mentions = [], aside }: UserMessageProps) {
+export function UserMessage({ text: raw, mentions = [], aside }: UserMessageProps) {
   const theme = useTheme();
+  const text = printable(raw);
   const marks = [
     ...[...text.matchAll(anyOf([PASTED_TEXT, PASTED_IMAGE])!)].map((match) => ({ index: match.index, text: match[0], color: theme.accent })),
     ...[...text.matchAll(anyOf([MENTION, ...mentions])!)].map((match) => ({ index: match.index, text: match[0], color: theme.code })),
@@ -64,7 +66,7 @@ export function Thinking({ text }: { text: string }) {
   const theme = useTheme();
   return (
     <Prose italic color={theme.thinking}>
-      {text.trim()}
+      {printable(text).trim()}
     </Prose>
   );
 }
@@ -73,5 +75,5 @@ export type NoticeTone = 'muted' | 'success' | 'warning' | 'error';
 
 export function Notice({ text, tone = 'muted' }: { text: string; tone?: NoticeTone }) {
   const theme = useTheme();
-  return <Prose color={theme[tone]}>{text}</Prose>;
+  return <Prose color={theme[tone]}>{printable(text)}</Prose>;
 }
