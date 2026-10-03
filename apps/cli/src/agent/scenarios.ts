@@ -273,6 +273,14 @@ const rateLimiting: Scenario = {
       'The user wants rate limiting on the public API. Before adding anything I need to know how requests flow: where the server is created, whether there is a middleware chain, and whether something like a limiter already exists so I do not build a second one.',
     );
     yield* script.usage(3_200, 0.011);
+    yield* script.agent('Map how a request reaches a route', [
+      { call: { name: 'glob', input: { pattern: 'src/**/*.ts' } }, result: { files: Array.from({ length: 41 }, (_, index) => `src/file-${index}.ts`) } },
+      {
+        call: { name: 'grep', input: { pattern: 'app.use', path: 'src' } },
+        result: { matches: [{ file: 'src/server.ts', line: 12, text: 'app.use(requestId());' }, { file: 'src/server.ts', line: 13, text: 'app.use(cors());' }] },
+      },
+      { call: { name: 'read', input: { files: [{ path: 'src/server.ts' }] } }, result: {} },
+    ]);
     yield* script.tool('read', { files: [{ path: 'src/server.ts' }, { path: 'src/middleware/index.ts' }] }, {}, 700);
     yield* script.tool(
       'grep',

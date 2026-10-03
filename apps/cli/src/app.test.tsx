@@ -12,7 +12,7 @@ let box: Sandbox;
 let terminal: TestTerminal;
 
 /** `pace` 1 plays the demo as slowly as a real agent works, for tests that type while it does. */
-function start(pace: number) {
+function start(pace: number, rows = 40) {
   terminal?.unmount();
   terminal = renderTerminal(
     <App
@@ -21,7 +21,7 @@ function start(pace: number) {
       sessions={new MemorySessionStore()}
       memory={new MemoryStore(box.project)}
     />,
-    { columns: 120, rows: 40 },
+    { columns: 120, rows },
   );
 }
 
@@ -133,6 +133,22 @@ describe('App', () => {
     const screen = await terminal.waitFor('Interrupted');
     expect(screen).toMatch(/^ run the linter after$/m);
     expect(screen).not.toContain('queued:');
+  });
+
+  it('sums up a finished subagent, and shows its calls on ctrl+o', async () => {
+    // Tall enough to keep the subagent in view above the question that follows it.
+    start(0, 80);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('add rate limiting to the api');
+    await terminal.press(KEYS.enter);
+    const screen = await terminal.waitFor('Where should the limiter keep its counters?');
+    expect(screen).toContain('[x] Agent · Map how a request reaches a route');
+    expect(screen).toMatch(/3 tool calls · [\d.]+s · ctrl\+o to expand/);
+
+    await terminal.press('\x0f');
+    const expanded = await terminal.waitFor('Grep app.use · 2 matches');
+    expect(expanded).toContain('Glob src/**/*.ts · 41 files');
+    expect(expanded).toContain('Read src/server.ts');
   });
 
   it('plays the tour through its questions, edits and commands', async () => {

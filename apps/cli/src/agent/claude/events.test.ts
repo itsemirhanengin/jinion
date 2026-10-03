@@ -39,7 +39,7 @@ function transcript(events: AgentEvent[]) {
         else lines.push(`${event.type}: ${event.delta}`);
         break;
       case 'tool-start':
-        lines.push(`start ${id(event.id)} ${event.call.name} ${JSON.stringify(event.call.input)}`);
+        lines.push(`start ${id(event.id)} ${event.call.name} ${JSON.stringify(event.call.input)}${event.parent ? ` in ${id(event.parent)}` : ''}`);
         break;
       case 'tool-output':
         lines.push(`output ${id(event.id)} ${JSON.stringify(event.lines)}`);
@@ -47,7 +47,7 @@ function transcript(events: AgentEvent[]) {
       case 'tool-end': {
         // Durations differ from run to run.
         const result = event.result && 'wallMs' in event.result ? { ...event.result, wallMs: 0 } : event.result;
-        lines.push(`end ${id(event.id)} ${event.ok ? 'ok' : 'failed'} ${JSON.stringify(result ?? {})}`);
+        lines.push(`end ${id(event.id)} ${event.ok ? 'ok' : 'failed'} ${JSON.stringify(result ?? {})}${event.parent ? ` in ${id(event.parent)}` : ''}`);
         break;
       }
       case 'usage': {
@@ -76,7 +76,7 @@ const started = (events: AgentEvent[]) =>
   events.flatMap((event) => (event.type === 'tool-start' ? [event.call] : []));
 
 describe('ClaudeEvents replaying recorded conversations', () => {
-  for (const name of ['tools', 'plan', 'skills', 'interrupt']) {
+  for (const name of ['tools', 'plan', 'skills', 'interrupt', 'subagent']) {
     it(`maps the ${name} conversation as before`, () => {
       expect(transcript(replay(name))).toMatchSnapshot();
     });
@@ -106,6 +106,16 @@ describe('ClaudeEvents replaying recorded conversations', () => {
     expect(titles).toEqual(
       expect.arrayContaining(['Skill: explain-math', 'Load tools: context7:resolve-library-id', expect.stringMatching(/^context7:resolve-library-id/)]),
     );
+  });
+
+  it('puts a subagent’s tool calls under its agent call, without its text', () => {
+    const events = replay('subagent');
+    const agent = events.find((event) => event.type === 'tool-start' && event.call.name === 'agent');
+    expect(agent).toMatchObject({ call: { input: { kind: 'general-purpose' } } });
+    const children = events.filter((event) => (event.type === 'tool-start' || event.type === 'tool-end') && event.parent);
+    expect(children.length).toBeGreaterThan(0);
+    expect(children.every((event) => 'parent' in event && event.parent === (agent as { id: string }).id)).toBe(true);
+    expect(events.some((event) => event.type === 'tool-output')).toBe(false);
   });
 
   it('ends an interrupted turn without a result of its own and carries on with the next', () => {

@@ -7,6 +7,7 @@ import {
   Markdown,
   Notice,
   ShellBlock,
+  StatusMark,
   Text,
   Thinking,
   TodoBlock,
@@ -18,14 +19,17 @@ import {
   useView,
   type TreeNode,
 } from '@jinion/tui';
-import type { FileRef } from '../agent/types.js';
+import type { FileRef, ToolRun } from '../agent/types.js';
 import { useJinion } from '../context.js';
-import type { Entry } from '../session.js';
+import type { Entry, ToolCallEntry } from '../session.js';
 import { Banner } from './banner.js';
 
 type ToolEntry = Extract<Entry, { kind: 'tool' }>;
 
 const MAX_TREE_ITEMS = 6;
+
+/** A subagent's latest calls shown while it works; earlier ones are counted. */
+const LIVE_CALLS = 6;
 
 const MEMORY_VERBS = { remember: 'Remember', recall: 'Recall', forget: 'Forget' } as const;
 
@@ -194,6 +198,85 @@ function ToolView({ entry }: { entry: ToolEntry }) {
           detail={run.input.detail && <Text color={theme.muted}>{run.input.detail}</Text>}
         />
       );
+    case 'agent':
+      return <AgentView entry={entry} />;
+  }
+}
+
+/**
+ * A subagent: its tool calls as a tree while it works, the latest few in view; once it is done, how many it made and
+ * how long it took, with the whole tree on ctrl+o.
+ */
+function AgentView({ entry }: { entry: ToolEntry }) {
+  const theme = useTheme();
+  const { expanded } = useView();
+  if (entry.run.name !== 'agent') return null;
+  const calls = entry.children ?? [];
+  let tree: TreeNode[];
+  if (entry.status === 'running' || expanded) {
+    const shown = expanded ? calls : calls.slice(-LIVE_CALLS);
+    tree = shown.map((call) => ({ label: <CallLine call={call} /> }));
+    if (shown.length < calls.length) tree.unshift({ label: <Text color={theme.muted}>… {calls.length - shown.length} earlier</Text> });
+  } else {
+    const took = formatSeconds((entry.endedAt ?? Date.now()) - entry.startedAt);
+    const hint = calls.length > 0 ? ' · ctrl+o to expand' : '';
+    tree = [{ label: <Text color={theme.muted}>{`${plural(calls.length, 'tool call')} · ${took}${hint}`}</Text> }];
+  }
+  return (
+    <ToolLine
+      status={entry.status}
+      name="Agent"
+      detail={
+        <Text>
+          <Text color={theme.muted}>· </Text>
+          {entry.run.input.description}
+        </Text>
+      }
+      tree={tree}
+    />
+  );
+}
+
+/** One of a subagent's tool calls, on one line. */
+function CallLine({ call }: { call: ToolCallEntry }) {
+  const theme = useTheme();
+  const [name, detail] = callSummary(call.run);
+  return (
+    <Text wrap="truncate-end">
+      <StatusMark status={call.status} /> <Text bold>{name}</Text>
+      {detail && <Text color={theme.muted}> {detail}</Text>}
+    </Text>
+  );
+}
+
+function callSummary(run: ToolRun): [name: string, detail?: string] {
+  switch (run.name) {
+    case 'read':
+      return ['Read', run.input.files.map((file) => file.path).join(', ')];
+    case 'grep': {
+      const found = run.result && (run.result.files ? plural(run.result.files.length, 'file') : plural(run.result.matches.length, 'match', 'matches'));
+      return ['Grep', found ? `${run.input.pattern} · ${found}` : run.input.pattern];
+    }
+    case 'glob':
+      return ['Glob', run.result ? `${run.input.pattern} · ${plural(run.result.files.length, 'file')}` : run.input.pattern];
+    case 'bash': {
+      const command = run.input.command.split('\n')[0]!;
+      return ['Bash', run.result?.exitCode ? `${command} · exit ${run.result.exitCode}` : command];
+    }
+    case 'edit':
+      return [run.input.created ? 'Write' : 'Edit', run.input.path];
+    case 'memory':
+      return [MEMORY_VERBS[run.input.action], run.input.detail];
+    case 'other':
+      return [run.input.title, run.input.detail];
+    case 'agent':
+      return ['Agent', run.input.description];
+    case 'todo':
+      return ['Tasks'];
+    case 'ask':
+      return ['Ask'];
+    case 'plan':
+      return ['Plan'];
   }
 }
 

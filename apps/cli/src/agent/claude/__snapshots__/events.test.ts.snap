@@ -134,6 +134,34 @@ Let me provide the two-line answer they requested (from the original request):
 ]
 `;
 
+exports[`ClaudeEvents replaying recorded conversations > maps the subagent conversation as before 1`] = `
+[
+  "mode edits",
+  "session",
+  "usage 13811/200000 $0.0000",
+  "thinking: The user wants",
+  "limits 5h, 7d",
+  "thinking:  me to:
+1. Use the Agent tool with subagent_type "general-purpose" to find which files under src mention "export"
+2. Use Glob and Grep tools
+3. Answer in one line
+
+Let me invoke the general-purpose agent to search for files under src that mention "export".",
+  "start t1 agent {"description":"Find files mentioning \\"export\\" under src","kind":"general-purpose"}",
+  "start t2 grep {"pattern":"export","path":"src"} in t1",
+  "end t2 ok {"matches":[],"files":[]} in t1",
+  "end t1 ok {}",
+  "usage 22402/200000 $0.0000",
+  "thinking: The agent found that the files under the src directory that contain the word "export" are:
+- src/c.ts
+- src/a.ts
+
+The user asked me to answer in one line, so I should provide a concise answer.",
+  "text: Files under src that mention "export": **src/c.ts** and **src/a.ts**.",
+  "usage 22402/200000 $0.0717",
+]
+`;
+
 exports[`ClaudeEvents replaying recorded conversations > maps the tools conversation as before 1`] = `
 [
   "limits 5h, 7d",

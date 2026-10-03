@@ -11,9 +11,28 @@ export type Entry =
   | { id: string; kind: 'thinking'; text: string }
   | { id: string; kind: 'text'; text: string }
   | { id: string; kind: 'notice'; text: string; tone: NoticeTone }
-  | { id: string; kind: 'tool'; run: ToolRun; status: Status; output: string[]; startedAt: number; endedAt?: number };
+  /** `children` are the tool calls of the subagent an `agent` call runs. */
+  | {
+      id: string;
+      kind: 'tool';
+      run: ToolRun;
+      status: Status;
+      output: string[];
+      startedAt: number;
+      endedAt?: number;
+      children?: ToolCallEntry[];
+    };
 
 type ToolEntry = Extract<Entry, { kind: 'tool' }>;
+
+/** A subagent's tool call. */
+export interface ToolCallEntry {
+  id: string;
+  run: ToolRun;
+  status: Status;
+  startedAt: number;
+  endedAt?: number;
+}
 
 export interface Session {
   id: string;
@@ -105,10 +124,10 @@ export function reduce(session: Session, action: Action): Session {
     case 'event':
       return apply(session, action.event);
     case 'finish': {
-      const entries = session.entries.map((entry) =>
-        entry.kind === 'tool' && entry.status === 'running'
-          ? { ...entry, status: 'cancelled' as const, endedAt: Date.now() }
-          : entry,
+      const cancel = <T extends { status: Status; endedAt?: number }>(call: T): T =>
+        call.status === 'running' ? { ...call, status: 'cancelled', endedAt: Date.now() } : call;
+      const entries: Entry[] = session.entries.map((entry) =>
+        entry.kind === 'tool' ? { ...cancel(entry), children: entry.children?.map(cancel) } : entry,
       );
       if (action.outcome === 'interrupted') entries.push(notice('Interrupted. Tell jinion what to do instead.', 'warning'));
       if (action.outcome === 'failed') entries.push(notice(action.message ?? 'Something went wrong.', 'error'));
@@ -143,6 +162,10 @@ function apply(session: Session, event: AgentEvent): Session {
       return { ...session, entries };
     }
     case 'tool-start': {
+      if (event.parent) {
+        const child: ToolCallEntry = { id: event.id, run: event.call, status: 'running', startedAt: Date.now() };
+        return updateTool(session, event.parent, (entry) => ({ ...entry, children: [...(entry.children ?? []), child] }));
+      }
       const entry: Entry = {
         id: event.id,
         kind: 'tool',
@@ -159,13 +182,20 @@ function apply(session: Session, event: AgentEvent): Session {
     }
     case 'tool-output':
       return updateTool(session, event.id, (entry) => ({ ...entry, output: [...entry.output, ...event.lines] }));
-    case 'tool-end':
-      return updateTool(session, event.id, (entry) => ({
-        ...entry,
-        run: { ...entry.run, result: event.result } as ToolRun,
+    case 'tool-end': {
+      const end = <T extends { run: ToolRun }>(call: T): T => ({
+        ...call,
+        run: { ...call.run, result: event.result } as ToolRun,
         status: event.ok ? 'done' : 'error',
         endedAt: Date.now(),
+      });
+      const { parent } = event;
+      if (!parent) return updateTool(session, event.id, end);
+      return updateTool(session, parent, (entry) => ({
+        ...entry,
+        children: entry.children?.map((child) => (child.id === event.id ? end(child) : child)),
       }));
+    }
     case 'usage':
       return { ...session, usage: event.usage };
     case 'title':

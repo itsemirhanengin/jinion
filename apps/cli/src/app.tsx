@@ -597,6 +597,7 @@ function activity(session: Session, panel: string | undefined) {
   if (last?.kind === 'text') return 'Writing';
   if (last?.kind === 'tool' && last.status === 'running') {
     if (last.run.name === 'ask') return 'Waiting for your answer';
+    if (last.run.name === 'agent') return `A subagent is on it: ${last.run.input.description}`;
     return `Running ${last.run.name === 'other' ? last.run.input.title : last.run.name}`;
   }
   return 'Working';

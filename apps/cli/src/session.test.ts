@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgentEvent } from './agent/types.js';
-import { createSession, reduce, type Session } from './session.js';
+import { createSession, reduce, type Entry, type Session } from './session.js';
 
 const events = (session: Session, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
@@ -66,6 +66,23 @@ describe('reduce', () => {
     session = reduce(session, { type: 'rewind', entry: first!.id });
     expect(kinds(session)).toEqual(['banner']);
     expect(session.todos).toEqual([]);
+  });
+
+  it('keeps a subagent’s tool calls under its agent call, and cancels them with the turn', () => {
+    let session = reduce(createSession(200_000), { type: 'submit', text: 'look around' });
+    session = events(
+      session,
+      { type: 'tool-start', id: 'a1', call: { name: 'agent', input: { description: 'Map the code' } } },
+      { type: 'tool-start', id: 'c1', call: { name: 'glob', input: { pattern: '*.ts' } }, parent: 'a1' },
+      { type: 'tool-end', id: 'c1', ok: true, result: { files: ['a.ts'] }, parent: 'a1' },
+      { type: 'tool-start', id: 'c2', call: { name: 'read', input: { files: [{ path: 'a.ts' }] } }, parent: 'a1' },
+    );
+    expect(kinds(session).slice(-1)).toEqual(['tool:running']);
+    const agent = () => session.entries.at(-1) as Extract<Entry, { kind: 'tool' }>;
+    expect(agent().children?.map((child) => `${child.run.name}:${child.status}`)).toEqual(['glob:done', 'read:running']);
+
+    session = reduce(session, { type: 'finish', outcome: 'interrupted' });
+    expect(session.entries.at(-2)).toMatchObject({ status: 'cancelled', children: [{ status: 'done' }, { status: 'cancelled' }] });
   });
 
   it('cancels tools still running when the turn ends, and says why it ended', () => {

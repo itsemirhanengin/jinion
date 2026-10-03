@@ -8,6 +8,7 @@ import type {
   RunContext,
   ToolCall,
   ToolName,
+  ToolResult,
   Tools,
   Usage,
 } from './types.js';
@@ -111,6 +112,19 @@ export class Script {
     yield { type: 'tool-start', id, call: { name, input } as ToolCall };
     await this.wait(durationMs);
     yield { type: 'tool-end', id, ok: true, result };
+  }
+
+  /** A subagent that makes `calls` one after another. */
+  async *agent(description: string, calls: { call: ToolCall; result?: ToolResult }[], stepMs = 350): AsyncGenerator<AgentEvent> {
+    const id = `tool_${++toolSequence}`;
+    yield { type: 'tool-start', id, call: { name: 'agent', input: { description, kind: 'Explore' } } };
+    for (const { call, result } of calls) {
+      const child = `tool_${++toolSequence}`;
+      yield { type: 'tool-start', id: child, call, parent: id };
+      await this.wait(stepMs);
+      yield { type: 'tool-end', id: child, ok: true, result, parent: id };
+    }
+    yield { type: 'tool-end', id, ok: true, result: {} };
   }
 
   async *bash(

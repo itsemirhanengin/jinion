@@ -35,6 +35,8 @@ export interface Tools {
   plan: { input: { plan: string }; result: Record<string, never> };
   /** Any tool without a dedicated view, such as MCP tools or subagents. */
   other: { input: { title: string; detail?: string }; result: Record<string, never> };
+  /** A subagent at work on part of the task. Its own tool calls come as events with this call's id as `parent`. */
+  agent: { input: { description: string; kind?: string }; result: Record<string, never> };
 }
 
 /**
@@ -61,9 +63,10 @@ export interface Usage {
 export type AgentEvent =
   | { type: 'thinking'; delta: string }
   | { type: 'text'; delta: string }
-  | { type: 'tool-start'; id: string; call: ToolCall }
+  /** `parent` is the `agent` call a subagent's own tool call belongs to. */
+  | { type: 'tool-start'; id: string; call: ToolCall; parent?: string }
   | { type: 'tool-output'; id: string; lines: string[] }
-  | { type: 'tool-end'; id: string; ok: boolean; result?: ToolResult }
+  | { type: 'tool-end'; id: string; ok: boolean; result?: ToolResult; parent?: string }
   | { type: 'usage'; usage: Usage }
   | { type: 'title'; title: string }
   /** The backend's own id for the conversation, which `Agent.reset` takes to continue it. */

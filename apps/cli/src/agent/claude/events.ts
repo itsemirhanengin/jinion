@@ -19,6 +19,8 @@ interface Call {
   name: string;
   input: Input;
   startedAt: number;
+  /** The subagent call it was made in, if any. */
+  parent?: string;
 }
 
 interface Outcome {
@@ -98,9 +100,11 @@ export class ClaudeEvents {
         return;
       case 'assistant':
         if (message.parent_tool_use_id === null) yield* this.assistant(message.message);
+        else yield* this.subagent(this.assistant(message.message, message.parent_tool_use_id), message.parent_tool_use_id);
         return;
       case 'user':
         if (message.parent_tool_use_id === null) yield* this.toolResults(message);
+        else yield* this.subagent(this.toolResults(message), message.parent_tool_use_id);
         return;
       case 'result':
         yield* this.result(message);
@@ -136,7 +140,8 @@ export class ClaudeEvents {
     }
   }
 
-  private *assistant(message: SDKAssistantMessage['message']): Generator<AgentEvent> {
+  /** `parent` is the subagent call the message comes from, if it does. */
+  private *assistant(message: SDKAssistantMessage['message'], parent?: string): Generator<AgentEvent> {
     // Streamed messages already sent their text and thinking as deltas.
     const streamed = this.streamed.has(message.id);
     for (const block of message.content) {
@@ -144,10 +149,21 @@ export class ClaudeEvents {
       if (block.type === 'thinking' && !streamed && block.thinking) yield { type: 'thinking', delta: block.thinking };
       if (block.type === 'tool_use') {
         const input = (block.input ?? {}) as Input;
-        this.calls.set(block.id, { name: block.name, input, startedAt: Date.now() });
+        this.calls.set(block.id, { name: block.name, input, startedAt: Date.now(), parent });
         const call = this.toCall(block.name, input);
         if (call) yield { type: 'tool-start', id: block.id, call };
       }
+    }
+  }
+
+  /**
+   * A subagent's tool calls, under the `agent` call they belong to. What it writes and what its commands print stay
+   * out, so the tree stays one line per call.
+   */
+  private *subagent(events: Generator<AgentEvent>, parent: string): Generator<AgentEvent> {
+    for (const event of events) {
+      if (event.type === 'tool-start' && event.call.name !== 'todo') yield { ...event, parent };
+      if (event.type === 'tool-end') yield { ...event, parent };
     }
   }
 
@@ -175,7 +191,7 @@ export class ClaudeEvents {
         return { name: 'ask', input: { questions: toQuestions(input.questions as ClaudeQuestion[]) } };
       case 'Agent':
       case 'Task':
-        return { name: 'other', input: { title: 'Agent', detail: text(input.description) } };
+        return { name: 'agent', input: { description: text(input.description), kind: text(input.subagent_type) || undefined } };
       case 'ExitPlanMode':
         // Claude Code now passes the plan in its plan file rather than in the call.
         return { name: 'plan', input: { plan: text(input.plan) || this.readPlan() } };
@@ -215,6 +231,8 @@ export class ClaudeEvents {
 
   private *toolEnd(id: string, call: Call, { text: output, error, data }: Outcome): Generator<AgentEvent> {
     const ok = !error;
+    // A subagent's own task list isn't the one the conversation shows.
+    if (call.parent && TASK_TOOLS.has(call.name)) return;
     switch (call.name) {
       case 'Bash': {
         const exitCode = error ? Number(/^(?:Error: )?Exit code (\d+)/.exec(output)?.[1] ?? 1) : 0;

@@ -183,6 +183,8 @@ Files come back from Claude Code's checkpoints, which it takes before each chang
 
 The prompt stays open while the agent works. A message sent then steers the turn: it shows in the conversation marked `while working`, and Claude reads it as soon as its current tool calls finish, or answers it right after when the turn was ending anyway. `ctrl+q` queues a message instead: it waits above the prompt as `queued: …` and goes out as its own turn when this one is done, in order with the others. When the turn is interrupted or fails, queued messages come back into the prompt. An agent that can't take messages into a turn, like the demo, queues them all.
 
+When the agent hands part of the work to a subagent, its tool calls grow as a tree under `Agent · what it is doing`, one line each, the latest six in view; the line under the prompt says what the subagent is on. Once it is done, the tree folds into `6 tool calls · 34s`, and `ctrl+o` opens it again.
+
 When the agent asks a question, the prompt turns into the question panel: `up`/`down` move, `enter` picks, `n` attaches a note to the highlighted option, "Other" takes a free-text answer and `esc` cancels the turn. A question that takes several answers shows `[x]` boxes: `space` checks options and `enter` sends them.
 
 | Command | Does |
