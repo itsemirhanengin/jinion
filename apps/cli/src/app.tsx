@@ -150,15 +150,17 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const [account, setAccount] = useState(agent.accounts?.current);
   const [models, setModels] = useState<ModelOption[]>();
   const [identity, setIdentity] = useState<AgentAccount>();
+  // Counts the times the account in use signed in again, which can be another login under the same name.
+  const [logins, setLogins] = useState(0);
   // Each account can offer other models, e.g. a team plan next to a personal one.
   useEffect(() => {
     setModels(undefined);
     setIdentity(undefined);
     agent.models().then(setModels, () => setModels([]));
     agent.accounts?.active().then(setIdentity, () => setIdentity(undefined));
-  }, [agent, account]);
+  }, [agent, account, logins]);
   // Changes after that, e.g. as MCP servers connect, come as `commands` events.
-  useEffect(reloadCommands, [agent, account]);
+  useEffect(reloadCommands, [agent, account, logins]);
   const model: ModelState = {
     agent: agent.name,
     selection,
@@ -290,6 +292,7 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
   const selectAccount = (name: string) => {
     const accounts = agent.accounts;
     if (!accounts) return notice(`${agent.name} has a single login.`, 'warning');
+    if (name === account) return notice(`Already using the ${name} account.`, 'muted');
     if (busy) return notice('Finish or interrupt the current turn first (esc).', 'warning');
     accounts
       .list()
@@ -308,6 +311,37 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
         (error: unknown) =>
           notice(`Couldn't switch the account: ${error instanceof Error ? error.message : error}`, 'error'),
       );
+  };
+
+  // A new login for the account in use reaches the conversation in a process that starts with it, between turns.
+  const loginWaits = useRef(false);
+  const startWithNewLogin = () => {
+    loginWaits.current = false;
+    agent.accounts?.use(agent.accounts.current).then(
+      () => setLogins((count) => count + 1),
+      (error: unknown) =>
+        notice(`Couldn't start over with the new login: ${error instanceof Error ? error.message : error}`, 'error'),
+    );
+  };
+  useEffect(() => {
+    if (!busy && loginWaits.current) startWithNewLogin();
+  }, [busy]);
+
+  /** Signs an account out and forgets it, with the plan limits last seen for it. */
+  const removeAccount = async (name: string) => {
+    const accounts = agent.accounts;
+    if (!accounts) return notice(`${agent.name} has a single login.`, 'warning');
+    try {
+      await accounts.remove(name);
+    } catch (error) {
+      return notice(`Couldn't remove the ${name} account: ${error instanceof Error ? error.message : error}.`, 'error');
+    }
+    setSeenLimits((current) => {
+      const { [limitsKey(agent.name, name)]: _, ...rest } = current;
+      saveLimits(rest);
+      return rest;
+    });
+    notice(`Removed the ${name} account and signed it out. Its conversations stay.`, 'success');
   };
 
   const switchSession = (action: Extract<Action, { type: 'clear' | 'load' }>) => {
@@ -586,6 +620,12 @@ export function App({ agent, info, sessions, memory, initial }: AppProps) {
     selectModel,
     selectMode,
     selectAccount,
+    accountSignedIn: (name) => {
+      if (name !== agent.accounts?.current) return;
+      if (working()) loginWaits.current = true;
+      else startWithNewLogin();
+    },
+    removeAccount,
     previewStatusLine: setStatusPreview,
     saveStatusLine: (items) => {
       setStatusItems(items);

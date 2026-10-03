@@ -100,6 +100,8 @@ Jinion's own folders and `mcp.json` use the same formats as Claude Code and the 
 
 Switching happens between turns, and a conversation in progress carries on under the other login: all accounts share one folder of Claude Code transcripts, so the new process resumes the same session. The banner says who you are signed in as, the organization for a team plan (`BUGECE · Team`) and the email for a personal one (`me@example.com · Max`), and so can the status line's Account segment. The panel shows each account's email, plan and the plan limits it had when last used. `/account <name>` switches straight away, and the pick carries over to later runs.
 
+In the panel, `l` signs the highlighted account in again, e.g. when its login expired or should be another one; for the account in use, the conversation carries on with the new login after the turn. `d` twice signs an account out through `claude auth logout` and removes its folder; its conversations stay, since they are shared. The `default` account is Claude Code's own login, so it can sign in again but stays, and the account in use is removed after switching to another. `/account add <name>` and `/account remove <name>` do the same from the prompt.
+
 ### Status line
 
 `/statusline` picks from these, in any order, on either side:
@@ -221,7 +223,7 @@ When the agent asks a question, the prompt turns into the question panel: `up`/`
 | `/effort [level]` | Opens the same picker, or sets the effort straight away; `default` leaves it to the model |
 | `/remember [user] <note>` | Saves a note the agent keeps, for this project or, with `user`, for every project |
 | `/memory [import]` | Lists the agent's notes to open or forget them; `import` brings in Claude Code's |
-| `/account [name \| add <name>]` | Switches to another login, or signs a new one in |
+| `/account [name \| add <name> \| remove <name>]` | Switches to another login, signs one in (again), or signs one out and removes it |
 | `/mcp` | Lists the MCP servers with their state and tools; `space` turns them on or off, `enter` saves |
 | `/mode [mode]` | Picks the mode (manual, edits, plan, auto), as `shift+tab` does |
 | `/diff` | Full screen list of what isn't committed, in every repository here, with the agent's changes marked; `left`/`right` for each turn's edits, `enter` opens a file's diff |

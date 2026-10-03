@@ -319,6 +319,8 @@ export interface AgentAccount {
   /** e.g. `Max`, `Pro` or `Team`. */
   plan?: string;
   organization?: string;
+  /** The backend's own login, which it also uses outside Jinion: it can sign in again, but isn't removed. */
+  own?: boolean;
 }
 
 /** `BUGECE · Team` for a plan that belongs to an organization, `me@example.com · Max` for a personal one. */
@@ -334,10 +336,18 @@ export interface AgentAccounts {
   /** Who the agent runs as right now, as the backend reports it. */
   active(): Promise<AgentAccount>;
   list(): Promise<AgentAccount[]>;
-  /** The next request goes out with this account; a conversation in progress carries on there. */
+  /**
+   * The next request goes out with this account's login as it is now, also the one in use after it signed in again; a
+   * conversation in progress carries on there.
+   */
   use(name: string): Promise<void>;
-  /** Signs in to `name` through the backend's own login, e.g. in the browser, adding the account when it is new. */
+  /**
+   * Signs in to `name` through the backend's own login, e.g. in the browser, adding the account when it is new and
+   * replacing its login when it isn't.
+   */
   signIn(name: string, options: SignInOptions): Promise<AgentAccount>;
+  /** Signs `name` out and forgets it. Not the one in use, nor the backend's own login. */
+  remove(name: string): Promise<void>;
 }
 
 export interface SignInOptions {

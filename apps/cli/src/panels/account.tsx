@@ -31,7 +31,8 @@ type Step =
 
 /**
  * `/account`: the agent's logins with who is signed in and how much of each plan was used when last seen. Enter
- * switches to one; "Add an account" signs a new one in, in the browser.
+ * switches to one, `l` signs it in again, `d` twice signs it out and removes it; "Add an account" signs a new one in, in
+ * the browser.
  */
 export function AccountPicker({ signIn: initial }: { signIn?: string }) {
   const app = useJinion();
@@ -40,6 +41,8 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
   const manager = app.accounts.manager!;
   const [accounts, setAccounts] = useState<AgentAccount[]>();
   const [step, setStep] = useState<Step>({ kind: 'list' });
+  /** The account `d` was pressed on once, and why it can't go when it can't. */
+  const [removing, setRemoving] = useState<{ name: string; refused?: string; running?: boolean }>();
   const login = useRef<AbortController>(undefined);
 
   const refresh = () => manager.list().then(setAccounts, () => setAccounts([]));
@@ -58,12 +61,17 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
       })
       .then(
         (account) => {
+          const inUse = name === app.accounts.current;
+          const as = account.email ? ` as ${account.email}` : '';
           app.actions.notice(
-            account.signedIn
-              ? `Signed in to ${name}${account.email ? ` as ${account.email}` : ''}. Pick it here to switch.`
-              : `${name} isn't signed in yet. Try again from /account.`,
+            !account.signedIn
+              ? `${name} isn't signed in yet. Try again from /account.`
+              : inUse
+                ? `Signed in to ${name} again${as}. The conversation carries on with the new login.`
+                : `Signed in to ${name}${as}. Pick it here to switch.`,
             account.signedIn ? 'success' : 'warning',
           );
+          if (account.signedIn) app.actions.accountSignedIn(name);
           list.setFocus(name);
         },
         (error: unknown) => {
@@ -98,9 +106,31 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
       if (!account) return;
       if (!account.signedIn) return signIn(account.name);
       close();
-      app.actions.selectAccount(account.name);
+      if (account.name !== app.accounts.current) app.actions.selectAccount(account.name);
     },
   });
+
+  useInput(
+    (input) => {
+      const account = accounts?.find((candidate) => candidate.name === list.focus);
+      if (!account || removing?.running) return;
+      const { name } = account;
+      if (input === 'l') return signIn(name);
+      if (input !== 'd') return setRemoving(undefined);
+      const refused = account.own
+        ? `${app.model.agent}'s own login stays; l signs in again`
+        : name === app.accounts.current
+            ? 'in use; switch to another account first'
+            : undefined;
+      if (refused || removing?.name !== name) return setRemoving({ name, refused });
+      setRemoving({ name, running: true });
+      void app.actions.removeAccount(name).then(async () => {
+        await refresh();
+        setRemoving(undefined);
+      });
+    },
+    { isActive: step.kind === 'list' },
+  );
 
   useInput(
     (_, key) => {
@@ -160,7 +190,14 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
       key: account.name,
       label: account.name,
       description: describe(account, app.accounts.seen[limitsKey(app.model.agent, account.name)]),
-      aside: account.name === app.accounts.current ? 'current' : undefined,
+      aside:
+        removing?.name === account.name ? (
+          <Text color={removing.refused ? theme.warning : theme.error}>
+            {removing.refused ?? (removing.running ? 'signing out…' : 'press d again to remove')}
+          </Text>
+        ) : account.name === app.accounts.current ? (
+          'current'
+        ) : undefined,
     })),
     {
       key: ADD,
@@ -198,6 +235,8 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
             ]
           : [
               ['Enter', 'switch'],
+              ['l', 'sign in again'],
+              ['d', 'remove'],
               ['Up/Down', 'move'],
               ['Esc', 'close'],
             ]

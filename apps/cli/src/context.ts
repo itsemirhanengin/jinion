@@ -56,6 +56,10 @@ export interface AppActions {
   selectMode(mode: AgentMode): void;
   /** Switches to another of the agent's logins between turns; the conversation carries on there. */
   selectAccount(name: string): void;
+  /** An account signed in again; the one in use carries the conversation on with the new login, after the turn. */
+  accountSignedIn(name: string): void;
+  /** Signs an account out and forgets it; settles once it is done or said why it couldn't be. */
+  removeAccount(name: string): Promise<void>;
   /** Shows `items` in the status line until saved or reverted with `undefined`. */
   previewStatusLine(items: StatusItem[] | undefined): void;
   saveStatusLine(items: StatusItem[]): void;

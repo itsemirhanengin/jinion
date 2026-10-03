@@ -90,8 +90,8 @@ export const builtinCommands: Command[] = [
   },
   {
     name: 'account',
-    description: 'Switch between your logins, or add one (account add <name>)',
-    argumentHint: '[name | add <name>]',
+    description: 'Switch between your logins, sign one in (again) with account add <name>, or remove one',
+    argumentHint: '[name | add <name> | remove <name>]',
     run: (app, args) => {
       if (!app.accounts.manager) return app.actions.notice(`${app.model.agent} has a single login.`, 'warning');
       const [first = '', second = ''] = args.trim().split(/\s+/);
@@ -99,6 +99,10 @@ export const builtinCommands: Command[] = [
         app.panels.open({ id: 'account', placement: 'bottom', element: <AccountPicker signIn={signIn} /> });
       if (!first) return open();
       if (first === 'add') return second ? open(second) : open();
+      if (first === 'remove') {
+        if (!second) return app.actions.notice('Say which account to remove, e.g. /account remove work.', 'warning');
+        return void app.actions.removeAccount(second);
+      }
       app.actions.selectAccount(first);
     },
   },

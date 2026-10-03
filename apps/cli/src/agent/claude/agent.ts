@@ -18,7 +18,7 @@ import type {
   RunContext,
   SignInOptions,
 } from '../types.js';
-import { accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, signIn } from './accounts.js';
+import { accountNames, accountStatus, checkName, DEFAULT_ACCOUNT, planName, removeAccount, signIn } from './accounts.js';
 import { ClaudeApprovals } from './approvals.js';
 import { toAgentCommands, toClaudeContent, type Invocations } from './commands.js';
 import { serverInfos } from './mcp.js';
@@ -114,6 +114,10 @@ export class ClaudeAgent implements Agent {
       const problem = checkName(name);
       return problem ? Promise.reject(new Error(problem)) : signIn(name, options);
     },
+    remove: async (name: string) => {
+      if (name === agent.account) throw new Error('it is in use. Switch to another account first');
+      await removeAccount(name);
+    },
   }))(this);
 
   subscribe(listener: (event: AgentEvent) => void) {
@@ -172,9 +176,9 @@ export class ClaudeAgent implements Agent {
   }
 
   private async useAccount(name: string) {
-    if (name === this.account) return;
     if (!accountNames().includes(name)) throw new Error(`There is no account called ${name}.`);
-    // The conversation goes on under the new login: its transcript is shared between accounts.
+    // The conversation goes on under the new login, also a new one for the same account, in a process that starts with
+    // it: its transcript is shared between accounts.
     this.account = name;
     this.modelList = undefined;
     this.accountInfo = undefined;

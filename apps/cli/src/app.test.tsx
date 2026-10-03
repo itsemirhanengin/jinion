@@ -4,6 +4,7 @@ import { KEYS, renderTerminal, type TestTerminal } from '@jinion/tui/testing';
 import type { TodoStatus } from '@jinion/tui';
 import { demoCommands, scenarios } from './agent/scenarios.js';
 import { ScriptedAgent } from './agent/scripted.js';
+import type { AgentAccount, AgentAccounts } from './agent/types.js';
 import { App, contextWarning, hasWorkLeft } from './app.js';
 import { MemoryStore } from './memory/store.js';
 import { MemorySessionStore } from './session-store.js';
@@ -406,6 +407,51 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     await terminal.waitFor('Which routes should be limited?');
     expect(terminal.notifications()).toHaveLength(1);
+  });
+
+  it('signs an account in again with l, and removes one with d twice, but not the own login or the one in use', async () => {
+    const logins: AgentAccount[] = [
+      { name: 'default', own: true, signedIn: true, email: 'me@example.com', plan: 'Max' },
+      { name: 'old', signedIn: true, email: 'old@example.com', plan: 'Pro' },
+      { name: 'work', signedIn: true, email: 'me@acme.co', plan: 'Pro' },
+    ];
+    const used: string[] = [];
+    const accounts: AgentAccounts = {
+      current: 'work',
+      active: async () => logins.find((login) => login.name === 'work')!,
+      list: async () => logins,
+      use: async (name) => void used.push(name),
+      signIn: async (name) => ({ ...logins.find((login) => login.name === name)!, email: 'new@acme.co' }),
+      remove: async (name) => void logins.splice(logins.findIndex((login) => login.name === name), 1),
+    };
+    const agent = Object.assign(new ScriptedAgent(scenarios, demoCommands, 0), { accounts });
+    terminal.unmount();
+    terminal = renderTerminal(
+      <App agent={agent} info={{ version: '0.0.0', cwd: box.project, examples: [] }} sessions={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
+      { columns: 120, rows: 40 },
+    );
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/account');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('d remove');
+
+    await terminal.press(KEYS.up, KEYS.up);
+    await terminal.press('d');
+    await terminal.waitFor("Demo's own login stays; l signs in again");
+    await terminal.press(KEYS.down, KEYS.down);
+    await terminal.press('d');
+    await terminal.waitFor('in use; switch to another account first');
+
+    await terminal.press('l');
+    await terminal.waitFor('Signed in to work again as new@acme.co. The conversation carries on with the new login.');
+    expect(used).toEqual(['work']);
+
+    await terminal.press(KEYS.up);
+    await terminal.press('d');
+    await terminal.waitFor('press d again to remove');
+    await terminal.press('d');
+    const removed = await terminal.waitFor('Removed the old account and signed it out. Its conversations stay.');
+    expect(removed).not.toContain('old@example.com');
   });
 
   it('notifies when a long turn ends, unless notifications are off', async () => {

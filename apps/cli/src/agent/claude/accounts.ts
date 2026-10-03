@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, symlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { jinionHome } from '../../paths.js';
@@ -49,6 +49,23 @@ export function planName(type: string | undefined) {
   return plan ? plan[0]!.toUpperCase() + plan.slice(1).toLowerCase() : undefined;
 }
 
+/**
+ * Signs `name` out through Claude Code, which clears the login wherever it keeps it (the macOS Keychain entry for the
+ * account's folder, or the folder's `.credentials.json`), then deletes the folder. Conversations stay: the folder's
+ * `projects` is a link to the shared one, which goes as a link.
+ */
+export async function removeAccount(name: string) {
+  const dir = configDirOf(name);
+  if (!dir) throw new Error("it is Claude Code's own login, which stays");
+  if (!existsSync(dir)) throw new Error(`there is no account called ${name}`);
+  await new Promise<void>((resolve) =>
+    execFile('claude', ['auth', 'logout'], { env: { ...process.env, ...accountEnv(name) }, timeout: 15_000 }, () => resolve()),
+  );
+  // A folder deleted while still signed in would leave its login behind in the Keychain.
+  if ((await accountStatus(name)).signedIn) throw new Error("Claude Code couldn't sign it out, so it stays");
+  rmSync(dir, { recursive: true, force: true });
+}
+
 /** Asks Claude Code who is signed in to `name`. */
 export function accountStatus(name: string): Promise<AgentAccount> {
   return new Promise((resolve) => {
@@ -58,13 +75,14 @@ export function accountStatus(name: string): Promise<AgentAccount> {
         const status = JSON.parse(stdout) as { loggedIn?: boolean; email?: string; subscriptionType?: string; orgName?: string };
         resolve({
           name,
+          own: name === DEFAULT_ACCOUNT,
           signedIn: status.loggedIn === true,
           email: status.email,
           plan: planName(status.subscriptionType),
           organization: status.orgName,
         });
       } catch {
-        resolve({ name, signedIn: false });
+        resolve({ name, own: name === DEFAULT_ACCOUNT, signedIn: false });
       }
     });
   });
