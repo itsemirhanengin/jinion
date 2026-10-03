@@ -66,11 +66,6 @@ history. Optional parts of the interface stay optional, so the UI already copes 
 - **Messages that name Claude Code.** `agent/claude/auth.ts` (removing an account), `agent/claude/agent.ts` (restoring
   files) and `panels/usage/section.tsx` (the summary days come from) show "Claude Code" on screen. Removing an account
   is also worded differently in `/account remove` and in the panel.
-- **Small things on screen.** The memory panel says "1 notes" (`panels/memory.tsx`); `/help` calls `shift+drag` "select
-  text", though a plain drag selects and `shift` gives the terminal's own selection (`app/shortcuts.ts`); the `ctrl+b`
-  offer names the tool, `Running bash`, rather than the command (`app/activity.ts`); in `/usage`, a trait with a long
-  explanation wraps its meter onto two lines at about 92 columns (`packages/tui/src/charts/bar-list.tsx`).
-
 ## Later: a system prompt sized to the request
 
 Most of the quota a small request spends goes to the frame around it: a long system prompt, then lint, typecheck,

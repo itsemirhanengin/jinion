@@ -30,8 +30,10 @@ export function BarList({ bars, width = 20 }: BarListProps) {
             <Box width={labelWidth} flexShrink={0}>
               <Text wrap="truncate-end">{bar.label}</Text>
             </Box>
-            <Meter value={bar.value} width={width} color={bar.color ?? theme.accent} />
-            {bar.text !== undefined && <Text> {bar.text}</Text>}
+            <Box flexShrink={0}>
+              <Meter value={bar.value} width={width} color={bar.color ?? theme.accent} />
+            </Box>
+            {bar.text !== undefined && <Text wrap="truncate-end"> {bar.text}</Text>}
           </Box>
           {bar.detail !== undefined && (
             <Box paddingLeft={labelWidth}>

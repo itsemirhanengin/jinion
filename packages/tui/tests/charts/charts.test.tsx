@@ -136,4 +136,13 @@ describe('BarList', () => {
       'Haiku 4.5  [=---------] 10%',
     ]);
   });
+
+  it('keeps a bar whole on one line and cuts the text after it short when the line is too narrow', async () => {
+    terminal = renderTerminal(
+      <BarList width={10} bars={[{ label: 'Long context', value: 0.4, text: '40% sessions that went past 200k tokens of context' }]} />,
+      { columns: 40, rows: 3 },
+    );
+
+    expect(await lines(terminal.screen())).toEqual(['Long context  [====------] 40% sessions…']);
+  });
 });
