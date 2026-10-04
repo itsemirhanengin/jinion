@@ -46,8 +46,10 @@ Rules that keep it that way:
   instead); `biome.jsonc` checks it. What it needs from the screen goes through `Screen`, as data: views (`View`) and
   dialogs (`Dialog`) that each client draws. Its types are its own; the chat kit's are shaped the same, so the app passes
   one to the other as they are.
-- **Backends stay behind `Agent`.** The app only uses `agent/agent.ts` and its sibling contract files; anything Claude
-  Code specific stays in `agent/claude/`. Optional members are feature-detected, with a notice when missing.
+- **Backends stay behind `AgentBackend` and `AgentSession`.** A backend holds what its conversations share (models,
+  accounts, MCP servers, skills, usage); `backend.session()` opens one conversation, with its own process. The app only
+  uses `agent/agent.ts` and its sibling contract files; anything Claude Code specific stays in `agent/claude/`. Optional
+  members are feature-detected, with a notice when missing.
 - **`@jinion/tui` knows nothing about Jinion.** Generic pieces come from `@jinion/tui`, the chat kit (messages, tool
   views, composer, ask/permission/plan panels) from `@jinion/tui/chat`. It has no state library; its stores use
   `useSyncExternalStore`.
