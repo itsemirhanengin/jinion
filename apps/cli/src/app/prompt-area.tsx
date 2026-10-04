@@ -2,13 +2,15 @@ import { useMemo } from 'react';
 import { Text, useTheme } from '@jinion/tui';
 import { Composer } from '@jinion/tui/chat';
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { modeAtom, draftAtom, busyAtom, sessionAtom } from '@jinion/core/state/active';
+import { modeAtom, busyAtom, sessionAtom } from '@jinion/core/state/active';
 import { MODES } from '@jinion/core/agent/modes';
 import { fileCompletion } from '@jinion/core/prompt/files';
 import { useProjectFiles } from '../ui/use-project-files.js';
 import { skillCompletion } from '@jinion/core/prompt/skills';
 import { mentionAtom, skillsAtom } from '@jinion/core/state/agent';
-import { historyAtom } from '@jinion/core/state/prompt';
+import { useAttachments } from '../prompt/attachments.js';
+import { draftAtom, historyAtom } from '../prompt/draft.js';
+import { usePrompt } from '../prompt/use-prompt.js';
 import { modeColor } from '../ui/modes.js';
 import { contextWarning } from './activity.js';
 import { useJinion } from './context.js';
@@ -18,6 +20,8 @@ const contextLeftAtom = atom((get) => contextWarning(get(sessionAtom).usage));
 
 export function PromptArea() {
   const jinion = useJinion();
+  const attachments = useAttachments();
+  const prompt = usePrompt();
   const [draft, setDraft] = useAtom(draftAtom);
   const history = useAtomValue(historyAtom);
   const busy = useAtomValue(busyAtom);
@@ -35,12 +39,12 @@ export function PromptArea() {
 
   return (
     <Composer
-      pastes={jinion.session.attachments.texts}
-      onPaste={(text) => jinion.session.attachments.pastePath(text)}
-      onPasteKey={() => jinion.session.attachments.pasteClipboard()}
+      pastes={attachments.texts}
+      onPaste={(text) => attachments.pastePath(text)}
+      onPasteKey={() => attachments.pasteClipboard()}
       value={draft}
       onChange={setDraft}
-      onSubmit={(value) => jinion.session.input.submit(value)}
+      onSubmit={prompt.submit}
       history={history}
       completions={completions}
       mentions={[mention]}

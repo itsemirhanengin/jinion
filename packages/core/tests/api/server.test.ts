@@ -5,6 +5,7 @@ import { RpcPeer } from '../../src/api/rpc.js';
 import { JinionServer } from '../../src/api/server.js';
 import { inProcessTransports, type Transport } from '../../src/api/transport.js';
 import { ScriptedBackend } from '../../src/agent/demo/agent.js';
+import { demoCommands } from '../../src/agent/demo/commands.js';
 import { scenarios } from '../../src/agent/demo/scenarios/index.js';
 import { demoSessions } from '../../src/agent/demo/sessions.js';
 import { builtinCommands } from '../../src/commands/builtin.js';
@@ -19,7 +20,7 @@ function setup() {
   const saved = new MemorySessionStore(demoSessions());
 
   const server = new JinionServer({
-    backend: new ScriptedBackend(scenarios, [], 0),
+    backend: new ScriptedBackend(scenarios, demoCommands, 0),
     info: { version: '1.2.3', cwd: box.project },
     saved,
     memory: new MemoryStore(box.project),
@@ -28,7 +29,7 @@ function setup() {
 
   const connect = async (wire: (transport: Transport) => Transport = (transport) => transport) => {
     const [serverSide, clientSide] = inProcessTransports();
-    const screen: ScreenHandlers = { view: vi.fn(), notify: vi.fn(), expand: vi.fn(), exit: vi.fn() };
+    const screen: ScreenHandlers = { view: vi.fn(), fillPrompt: vi.fn(), notify: vi.fn(), expand: vi.fn(), exit: vi.fn() };
     const client = new JinionClient(wire(clientSide), { name: 'test', version: '0.0.0', screen });
 
     server.connect(serverSide);
@@ -87,6 +88,32 @@ describe('JinionServer', () => {
 
     expect(held.entries.map((entry) => entry.kind)).toEqual(['banner', 'user', 'thinking', 'text']);
     expect(client.store.get(client.sessionsAtom).sessions).toEqual([{ id, title: held.title, working: false }]);
+  });
+
+  it('shows the message as the user typed it, and sends the agent what was pasted in it', async () => {
+    const { server, connect } = setup();
+    const { client } = await connect();
+    const { id } = server.app.session;
+    const run = vi.spyOn(server.app.session.agent, 'run');
+    const prompt = { text: 'hi, see\nthe log', images: [{ mediaType: 'image/png', data: 'iVBORw0KGgo=' }] };
+
+    await client.follow(id);
+    await client.request('session/submit', { session: id, text: 'hi, see [Pasted text #1 +2 lines]', prompt });
+
+    await vi.waitFor(() => expect(run).toHaveBeenCalledWith(prompt, expect.anything()));
+    expect(client.store.get(client.session(id))?.state.entries[1]).toMatchObject({ kind: 'user', text: 'hi, see [Pasted text #1 +2 lines]', prompt: prompt.text });
+  });
+
+  it('puts a skill typed as a command back in the prompt of the session it was typed in', async () => {
+    const { server, connect } = setup();
+    const { client, screen } = await connect();
+    const { id } = server.app.session;
+
+    server.app.start();
+    await vi.waitFor(() => expect(client.store.get(client.appAtom)?.skills).not.toHaveLength(0));
+    await client.request('session/submit', { session: id, text: '/review the parser' });
+
+    await vi.waitFor(() => expect(screen.fillPrompt).toHaveBeenCalledWith(id, '$review the parser', 'replace'));
   });
 
   it('starts a client over from a fresh snapshot when a change goes missing on the way', async () => {

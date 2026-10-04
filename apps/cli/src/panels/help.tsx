@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Box, ListRow, Panel, Prose, SelectList, Tabs, Text, useInput, useListNavigation, usePanel, useTabs, useTheme, type KeyHint } from '@jinion/tui';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import type { AgentCommand } from '@jinion/core/agent/agent';
 import { useJinion } from '../app/context.js';
 import { SHORTCUTS } from '../app/shortcuts.js';
+import { draftAtom } from '../prompt/draft.js';
 import { requiresArgument } from '@jinion/core/commands/registry';
-import type { Jinion } from '@jinion/core/controllers/jinion';
 import { skillGroup, sortSkills } from '@jinion/core/prompt/skills';
 import { skillsAtom } from '@jinion/core/state/agent';
 
@@ -16,20 +16,21 @@ interface HelpItem {
   hint?: string;
   description: string;
   aside?: string;
-  pick(jinion: Jinion): void;
+  pick(): void;
 }
 
 export function HelpPanel({ topic = '' }: { topic?: string }) {
   const jinion = useJinion();
   const { close } = usePanel();
   const skills = sortSkills(useAtomValue(skillsAtom));
+  const setDraft = useSetAtom(draftAtom);
 
   const mention = (skill: AgentCommand): HelpItem => ({
     label: `$${skill.name}`,
     hint: skill.argumentHint,
     description: skill.description,
     aside: skillGroup(skill),
-    pick: (app) => app.session.input.fill(`$${skill.name} `),
+    pick: () => setDraft(`$${skill.name} `),
   });
 
   const groups = [
@@ -41,7 +42,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
           hint: command.argumentHint,
           description: command.description,
           aside: command.aliases?.map((alias) => `/${alias}`).join(' '),
-          pick: (app) => (requiresArgument(command) ? app.session.input.fill(`/${command.name} `) : command.run(app, '')),
+          pick: () => (requiresArgument(command) ? setDraft(`/${command.name} `) : command.run(jinion, '')),
         }),
       ),
     },
@@ -80,7 +81,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
     if (!key.return || !item) return;
 
     close();
-    item.pick(jinion);
+    item.pick();
   });
 
   return (

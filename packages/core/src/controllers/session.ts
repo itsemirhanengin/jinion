@@ -5,7 +5,6 @@ import type { Action, StampedAction } from '../conversation/reducer.js';
 import { firstLine } from '../lib/text.js';
 import { skillsAtom } from '../state/agent.js';
 import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/session.js';
-import { Attachments } from './attachments.js';
 import { BUSY, type SessionContext } from './context.js';
 import { ConversationController } from './conversation.js';
 import { DialogController } from './dialogs.js';
@@ -30,7 +29,6 @@ export interface Notice {
 /** One conversation: its agent session, its atoms and what it does. Several can be open; a client shows one or more. */
 export class Session {
   readonly atoms: SessionAtoms;
-  readonly attachments: Attachments;
   /** What it waits for the user to answer; a client answers through it. */
   readonly dialogs: DialogController;
   readonly conversation: ConversationController;
@@ -61,9 +59,9 @@ export class Session {
       dispatch: (action) => this.dispatch(action),
       notice: (text, tone) => this.notice(text, tone),
       notify: (body) => app.notify(body, this),
+      fillPrompt: (text, fill) => app.screen.fillPrompt(this.id, text, fill),
     };
 
-    this.attachments = new Attachments(context);
     this.dialogs = new DialogController(context);
     this.worktrees = new WorktreeController(context, this.dialogs);
     this.conversation = new ConversationController(context, app.saved);
@@ -71,7 +69,7 @@ export class Session {
     this.modes = new ModeController(context);
     this.tasks = new TaskController(context);
 
-    this.turns = new TurnController(context, this.attachments, this.dialogs, {
+    this.turns = new TurnController(context, this.dialogs, {
       apply: (event) => this.apply(event),
       preparing: () => this.worktrees.prepare(),
       planAccepted: (mode) => {
@@ -84,7 +82,7 @@ export class Session {
       },
     });
 
-    this.input = new InputController(context, app, app.commands, this.attachments, this.turns);
+    this.input = new InputController(context, app, app.commands, this.turns);
     this.unsubscribe = agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
   }
 

@@ -4,9 +4,9 @@ import { elapsed } from '../lib/format.js';
 import { errorMessage } from '../lib/errors.js';
 import { quote } from '../lib/text.js';
 import type { Action } from '../conversation/reducer.js';
-import type { Attachments } from './attachments.js';
 import { BUSY, type SessionContext } from './context.js';
 import { DialogCancelled, type DialogController } from './dialogs.js';
+import { promptOf, type Submission } from '../prompt/submission.js';
 
 const LONG_TURN_MS = 15_000;
 
@@ -25,7 +25,6 @@ export class TurnController {
 
   constructor(
     private readonly context: SessionContext,
-    private readonly attachments: Attachments,
     private readonly dialogs: DialogController,
     private readonly hooks: TurnHooks,
   ) {}
@@ -34,25 +33,27 @@ export class TurnController {
     return this.context.store.get(this.context.atoms.working);
   }
 
-  async prompt(text: string) {
+  async prompt(submission: Submission) {
     if (this.working) return this.context.notice('jinion is still working. Press esc to interrupt it first.', 'warning');
 
-    const sent = this.attachments.resolve(text);
+    const { text } = submission;
+    const sent = promptOf(submission);
 
     this.dispatch({ type: 'submit', text, prompt: sent.text === text ? undefined : sent.text });
     await this.run(quote(text), (turn) => this.afterPreparing(() => this.context.agent.run(sent, turn)));
   }
 
-  steer(text: string) {
-    const sent = this.attachments.resolve(text);
+  steer(submission: Submission) {
+    const { text } = submission;
+    const sent = promptOf(submission);
     const id = this.context.agent.steer?.(sent);
-    if (id === undefined) return this.enqueue(text);
+    if (id === undefined) return this.enqueue(submission);
 
     this.dispatch({ type: 'steer', text, prompt: sent.text === text ? undefined : sent.text, id });
   }
 
-  enqueue(text: string) {
-    this.context.store.set(this.context.atoms.queue, (queue) => [...queue, text]);
+  enqueue(submission: Submission) {
+    this.context.store.set(this.context.atoms.queue, (queue) => [...queue, submission]);
   }
 
   interrupt() {
@@ -162,12 +163,12 @@ export class TurnController {
   }
 
   private returnQueueToPrompt() {
-    const { store, atoms } = this.context;
+    const { store, atoms, fillPrompt } = this.context;
     const waiting = store.get(atoms.queue);
     if (waiting.length === 0) return;
 
     store.set(atoms.queue, []);
-    store.set(atoms.draft, (draft) => [...waiting, draft].filter(Boolean).join('\n'));
+    fillPrompt(waiting.map(({ text }) => text).join('\n'), 'prepend');
   }
 
   private next() {
@@ -178,10 +179,10 @@ export class TurnController {
     }
 
     const { store, atoms } = this.context;
-    const [text, ...rest] = store.get(atoms.queue);
-    if (text === undefined) return;
+    const [submission, ...rest] = store.get(atoms.queue);
+    if (!submission) return;
 
     store.set(atoms.queue, rest);
-    void this.prompt(text);
+    void this.prompt(submission);
   }
 }

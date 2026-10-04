@@ -1,7 +1,9 @@
-import { draftAtom, busyAtom } from '@jinion/core/state/active';
+import { busyAtom } from '@jinion/core/state/active';
 import { useRef } from 'react';
 import { useInput, usePanels, useSelection } from '@jinion/tui';
-import { useAtomValue } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
+import { draftAtom } from '../prompt/draft.js';
+import { usePrompt } from '../prompt/use-prompt.js';
 import { useJinion } from './context.js';
 
 const DOUBLE_ESCAPE_MS = 600;
@@ -11,8 +13,9 @@ export function useKeys() {
   const jinion = useJinion();
   const panels = usePanels();
   const selection = useSelection();
+  const prompt = usePrompt();
   const busy = useAtomValue(busyAtom);
-  const draft = useAtomValue(draftAtom);
+  const [draft, setDraft] = useAtom(draftAtom);
 
   const lastEscape = useRef(0);
 
@@ -37,17 +40,17 @@ export function useKeys() {
 
       lastEscape.current = 0;
 
-      return draft ? jinion.session.input.clear() : jinion.session.conversation.openRewind();
+      return draft ? prompt.clear() : jinion.session.conversation.openRewind();
     }
 
-    if (key.ctrl && input === 'q' && free) return jinion.session.input.queue();
+    if (key.ctrl && input === 'q' && free) return prompt.queue();
 
     if (key.ctrl && input === 'c') {
       // With text selected, as in Claude Code, ctrl+c copies it rather than stopping anything.
       if (selection.copy()) return;
       if (busy) return jinion.session.turns.interrupt();
       if (panels.top) return panels.close();
-      if (draft) return jinion.session.input.fill('');
+      if (draft) return setDraft('');
 
       return jinion.quit();
     }

@@ -6,6 +6,7 @@ import type { Dialog } from '../conversation/dialogs.js';
 import { editTurns } from '../conversation/edits.js';
 import { reduce, type StampedAction } from '../conversation/reducer.js';
 import type { SessionState } from '../conversation/session.js';
+import type { Submission } from '../prompt/submission.js';
 import { modelsAtom } from './agent.js';
 
 export const DEFAULT_CONTEXT_WINDOW = 200_000;
@@ -51,8 +52,7 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     editTurns: atom((get) => editTurns(get(entries))),
     turnAbort,
     working: atom((get) => get(busy) || get(turnAbort) !== undefined),
-    draft: atom(''),
-    queue: atom<string[]>([]),
+    queue: atom<Submission[]>([]),
     selection,
     modelName,
     modelLabel: atom((get) => {

@@ -95,7 +95,7 @@ export class ConversationController {
   }
 
   async rewindTo(point: RewindPoint, scope: RewindScope) {
-    const { agent, atoms, notice, store } = this.context;
+    const { agent, notice, fillPrompt } = this.context;
     const quoted = quote(point.text);
 
     try {
@@ -106,7 +106,7 @@ export class ConversationController {
 
     if (scope.conversation) {
       this.dispatch({ type: 'rewind', entry: point.entry });
-      store.set(atoms.draft, point.text);
+      fillPrompt(point.text, 'replace');
     }
 
     notice(

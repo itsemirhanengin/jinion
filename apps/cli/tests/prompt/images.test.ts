@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { sandbox, type Sandbox } from '@jinion/core/testing/sandbox';
 import { imageFromPaste } from '../../src/prompt/images.js';
-import { sandbox, type Sandbox } from '../support/sandbox.js';
 
 let box: Sandbox;
 

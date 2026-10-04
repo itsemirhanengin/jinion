@@ -1,4 +1,4 @@
-import { atom, type Atom, type Getter, type PrimitiveAtom, type SetStateAction } from 'jotai/vanilla';
+import { atom, type Atom, type Getter } from 'jotai/vanilla';
 import type { SessionAtoms } from './session.js';
 
 /**
@@ -16,12 +16,6 @@ function active(get: Getter) {
 
 const follow = <T>(pick: (atoms: SessionAtoms) => Atom<T>) => atom((get) => get(pick(active(get))));
 
-const followWritable = <T>(pick: (atoms: SessionAtoms) => PrimitiveAtom<T>) =>
-  atom(
-    (get) => get(pick(active(get))),
-    (get, set, update: SetStateAction<T>) => set(pick(active(get)), update),
-  );
-
 export const sessionAtom = follow((atoms) => atoms.state);
 
 export const entriesAtom = follow((atoms) => atoms.entries);
@@ -37,8 +31,6 @@ export const busyAtom = follow((atoms) => atoms.busy);
 export const editTurnsAtom = follow((atoms) => atoms.editTurns);
 
 export const workingAtom = follow((atoms) => atoms.working);
-
-export const draftAtom = followWritable((atoms) => atoms.draft);
 
 export const queueAtom = follow((atoms) => atoms.queue);
 

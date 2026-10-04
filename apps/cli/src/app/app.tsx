@@ -7,6 +7,7 @@ import { builtinCommands } from '@jinion/core/commands/builtin';
 import { CommandRegistry } from '@jinion/core/commands/registry';
 import { Jinion, type JinionOptions } from '@jinion/core/controllers/jinion';
 import { inRunningTurn } from '@jinion/core/conversation/session';
+import { Attachments, AttachmentsContext } from '../prompt/attachments.js';
 import { EntryView } from '../ui/entries/entry-view.js';
 import { Aside } from './aside.js';
 import { JinionContext } from './context.js';
@@ -19,15 +20,19 @@ import { useScreen } from './use-screen.js';
 export type AppProps = Omit<JinionOptions, 'commands'>;
 
 export function App(props: AppProps) {
-  const screen = useScreen();
+  // The screen is made before the app it serves, and only reaches its store once the app is there.
+  const screen = useScreen(() => jinion.store);
   const [jinion] = useState(() => new Jinion({ ...props, commands: new CommandRegistry(builtinCommands) }, screen));
+  const [attachments] = useState(() => new Attachments((text, tone) => jinion.notice(text, tone)));
 
   useEffect(() => jinion.start(), [jinion]);
 
   return (
     <Provider store={jinion.store}>
       <JinionContext.Provider value={jinion}>
-        <Layout />
+        <AttachmentsContext.Provider value={attachments}>
+          <Layout />
+        </AttachmentsContext.Provider>
       </JinionContext.Provider>
     </Provider>
   );

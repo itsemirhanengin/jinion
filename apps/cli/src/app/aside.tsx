@@ -43,7 +43,7 @@ function Queue() {
 
   return (
     <Box marginTop={1} flexDirection="column" paddingX={1}>
-      {queued.map((text, index) => (
+      {queued.map(({ text }, index) => (
         <Text key={index} color={theme.muted} wrap="truncate-end">
           queued: {text}
         </Text>

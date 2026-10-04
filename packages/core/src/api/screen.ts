@@ -1,4 +1,4 @@
-import type { Screen, View } from '../controllers/context.js';
+import type { PromptFill, Screen, View } from '../controllers/context.js';
 import type { ClientContract } from './protocol.js';
 
 type Notifications = ClientContract['notifications'];
@@ -22,6 +22,11 @@ export class ClientScreen implements Screen {
 
   openView(view: View) {
     this.clients.send('screen/view', { view });
+  }
+
+  /** Every client that shows the session keeps a draft of its own. */
+  fillPrompt(session: string, text: string, fill: PromptFill) {
+    this.clients.broadcast('screen/fill-prompt', { session, text, fill });
   }
 
   focused() {

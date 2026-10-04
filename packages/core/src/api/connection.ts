@@ -67,11 +67,11 @@ export class Connection {
     this.answer('session/unsubscribe', ({ session }) => this.unfollow(session));
 
     // A command acts on the session the user looks at, and one types into the session they look at.
-    this.answer('session/submit', ({ session, text }) => {
+    this.answer('session/submit', ({ session, ...submission }) => {
       const target = this.find(session);
 
       if (host.app.session !== target) host.app.activate(target);
-      target.input.submit(text);
+      target.input.submit(submission);
     });
 
     this.answer('session/interrupt', ({ session }) => this.find(session).turns.interrupt());

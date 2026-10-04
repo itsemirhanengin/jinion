@@ -11,9 +11,14 @@ export interface AppInfo {
   examples?: string[];
 }
 
+/** Whether text put in a prompt replaces what is there, or goes before it, as queued messages coming back do. */
+export type PromptFill = 'replace' | 'prepend';
+
 /** Implemented by each client, so controllers draw nothing. */
 export interface Screen {
   openView(view: View): void;
+  /** The draft is the client's; the core only puts text in it, e.g. the message a rewind went back to. */
+  fillPrompt(session: string, text: string, fill: PromptFill): void;
   focused(): boolean;
   notify(title: string, body: string): void;
   /** How this client tells the user something while they look elsewhere. */
@@ -59,6 +64,8 @@ export interface SessionContext extends AppContext {
   dispatch(action: Action): void;
   /** In this session's conversation, whichever the user looks at. */
   notice(text: string, tone?: NoticeTone): void;
+  /** In this session's prompt. */
+  fillPrompt(text: string, fill: PromptFill): void;
 }
 
 export const BUSY = 'Finish or interrupt the current turn first (esc).';

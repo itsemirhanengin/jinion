@@ -1,66 +1,45 @@
 import type { CommandRegistry } from '../commands/registry.js';
-import { historyAtom } from '../state/prompt.js';
+import { promptOf, type Submission } from '../prompt/submission.js';
 import { skillsAtom } from '../state/agent.js';
-import type { Attachments } from './attachments.js';
 import type { SessionContext } from './context.js';
 import type { Jinion } from './jinion.js';
 import type { TurnController } from './turns.js';
 
-/** What the user types into one session's prompt. */
+/** What the user sends from one session's prompt. */
 export class InputController {
   constructor(
     private readonly context: SessionContext,
     private readonly jinion: Jinion,
     private readonly commands: CommandRegistry,
-    private readonly attachments: Attachments,
     private readonly turns: TurnController,
   ) {}
 
-  submit(value: string) {
-    const { store, atoms, notice } = this.context;
-    const text = value.trim();
+  submit(submission: Submission) {
+    const { store, notice, fillPrompt } = this.context;
+    const text = submission.text.trim();
     if (!text) return;
+    if (!text.startsWith('/')) return this.turns.working ? this.turns.steer(submission) : void this.turns.prompt(submission);
 
-    this.sent(text);
-    if (!text.startsWith('/')) return this.turns.working ? this.turns.steer(text) : void this.turns.prompt(text);
-
-    const [name = '', ...args] = text.slice(1).split(/\s+/);
+    const [name = ''] = text.slice(1).split(/\s+/, 1);
     const command = this.commands.find(name);
 
     if (!command && store.get(skillsAtom).some((skill) => skill.name === name)) {
       // Typed out of habit: it goes back in the prompt the new way, to send as it is or to add to.
-      store.set(atoms.draft, `$${text.slice(1)}`);
+      fillPrompt(`$${text.slice(1)}`, 'replace');
 
       return notice(`Skills go after $ now, anywhere in the message: $${name}. Press enter to send it.`, 'muted');
     }
 
     if (!command) return notice(`Unknown command /${name}. Type / to see what is available.`, 'error');
 
-    command.run(this.jinion, this.attachments.texts.expand(args.join(' ')));
+    command.run(this.jinion, promptOf(submission).text.trim().slice(name.length + 1).trim());
   }
 
-  queue() {
-    const { store, atoms } = this.context;
-    const text = store.get(atoms.draft).trim();
-    if (!text) return;
-    if (!store.get(atoms.busy)) return this.submit(text);
+  /** Sent at once when nothing runs; otherwise after the turn, as `ctrl+q` does. */
+  queue(submission: Submission) {
+    if (!submission.text.trim()) return;
+    if (!this.context.store.get(this.context.atoms.busy)) return this.submit(submission);
 
-    this.sent(text);
-    this.turns.enqueue(text);
-  }
-
-  fill(text: string) {
-    this.context.store.set(this.context.atoms.draft, text);
-  }
-
-  clear() {
-    const draft = this.context.store.get(this.context.atoms.draft);
-
-    if (draft) this.sent(draft);
-  }
-
-  private sent(text: string) {
-    this.context.store.set(this.context.atoms.draft, '');
-    this.context.store.set(historyAtom, (history) => [...history, text]);
+    this.turns.enqueue(submission);
   }
 }

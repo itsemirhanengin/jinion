@@ -1,5 +1,5 @@
 import { atom, createStore, type PrimitiveAtom } from 'jotai/vanilla';
-import type { View } from '../controllers/context.js';
+import type { PromptFill, View } from '../controllers/context.js';
 import { reduce } from '../conversation/reducer.js';
 import type { AppFields } from './fields.js';
 import { type ClientContract, type Initialized, PROTOCOL_VERSION, type ServerContract, type SessionSnapshot, type Sessions } from './protocol.js';
@@ -13,6 +13,7 @@ type Change = (snapshot: SessionSnapshot) => SessionSnapshot;
 /** What the server asks a client's screen to do. */
 export interface ScreenHandlers {
   view(view: View): void;
+  fillPrompt(session: string, text: string, fill: PromptFill): void;
   notify(title: string, body: string): void;
   expand(): void;
   exit(): void;
@@ -67,6 +68,7 @@ export class JinionClient {
     );
 
     this.peer.on('screen/view', ({ view }) => screen.view(view));
+    this.peer.on('screen/fill-prompt', ({ session, text, fill }) => screen.fillPrompt(session, text, fill));
     this.peer.on('screen/notify', ({ title, body }) => screen.notify(title, body));
     this.peer.on('screen/expand', () => screen.expand());
     this.peer.on('screen/exit', () => screen.exit());

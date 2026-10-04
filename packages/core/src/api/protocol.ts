@@ -2,8 +2,9 @@ import { z } from 'zod';
 import type { AgentMode, PlanDecision } from '../agent/agent.js';
 import type { PermissionDecision } from '../agent/permissions.js';
 import type { QuestionAnswer } from '../agent/questions.js';
-import type { AppInfo, View } from '../controllers/context.js';
+import type { AppInfo, PromptFill, View } from '../controllers/context.js';
 import type { SentAction } from '../controllers/session.js';
+import type { Submission } from '../prompt/submission.js';
 import type { SessionState } from '../conversation/session.js';
 import type { AppFields, FieldChange, SessionFields } from './fields.js';
 
@@ -21,6 +22,13 @@ export const ApiCode = {
 const session = z.object({ session: z.string() });
 
 const mode = z.enum(['manual', 'edits', 'plan', 'auto']) satisfies z.ZodType<AgentMode>;
+
+const submission = z.object({
+  text: z.string(),
+  prompt: z
+    .object({ text: z.string(), images: z.array(z.object({ mediaType: z.string(), data: z.string() })).optional() })
+    .optional(),
+}) satisfies z.ZodType<Submission>;
 
 const questionAnswer = z.object({
   options: z.array(z.number().int().nonnegative()),
@@ -53,8 +61,8 @@ export const clientSchemas = {
   /** Answered with the conversation as it is; every change after it comes as `session/action`. */
   'session/subscribe': session,
   'session/unsubscribe': session,
-  /** What the user typed: a prompt, a message for the running turn, or a slash command. */
-  'session/submit': session.extend({ text: z.string() }),
+  /** What the user sent: a prompt, a message for the running turn, or a slash command. */
+  'session/submit': session.extend(submission.shape),
   'session/interrupt': session,
   /** Names the dialog it answers, so an answer meant for one that is gone answers nothing else. */
   'dialog/answer': z.discriminatedUnion('dialog', [
@@ -124,6 +132,8 @@ export type ClientContract = {
     'app/field': FieldChange<AppFields>;
     /** A command asked to show something, such as a picker. */
     'screen/view': { view: View };
+    /** Text for the prompt of `session`, e.g. the message a rewind went back to. */
+    'screen/fill-prompt': { session: string; text: string; fill: PromptFill };
     'screen/notify': { title: string; body: string };
     'screen/expand': Record<never, never>;
     'screen/exit': Record<never, never>;

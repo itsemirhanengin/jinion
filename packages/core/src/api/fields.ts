@@ -15,13 +15,12 @@ export const appFields = { models: modelsAtom, account: accountAtom, identity: i
 export type AppFields = FieldValues<typeof appFields>;
 
 /** What a client shows of a session besides its conversation, which it follows action by action instead. */
-export const sessionFields = ({ selection, mode, tasks, dialog, queue, draft, wantsWorktree, working }: SessionAtoms) => ({
+export const sessionFields = ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) => ({
   selection,
   mode,
   tasks,
   dialog,
   queue,
-  draft,
   wantsWorktree,
   working,
 });

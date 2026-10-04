@@ -2,7 +2,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { extname, isAbsolute, join } from 'node:path';
-import type { AgentImage } from '../agent/agent.js';
+import type { AgentImage } from '@jinion/core/agent/agent';
 
 const MEDIA_TYPES: Record<string, string> = {
   '.png': 'image/png',

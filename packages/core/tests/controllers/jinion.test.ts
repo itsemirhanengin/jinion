@@ -15,6 +15,7 @@ const box = sandboxEach();
 function setup() {
   const screen: Screen = {
     openView: vi.fn(),
+    fillPrompt: vi.fn(),
     focused: () => true,
     notify: vi.fn(),
     notifications: 'desktop',
