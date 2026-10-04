@@ -123,8 +123,8 @@ export class TurnController {
       this.returnQueueToPrompt();
     } finally {
       store.set(turnAbortAtom, undefined);
-      this.context.screen.closePanel('ask');
-      this.context.screen.closePanel('permission');
+      this.context.screen.closeDialog('ask');
+      this.context.screen.closeDialog('permission');
       this.hooks.ended();
       this.next();
     }
@@ -214,7 +214,7 @@ class DialogLine {
 
         const shown = dialog(
           (value) => {
-            screen.closePanel(shown.id);
+            screen.closeDialog(shown.id);
             resolve(value);
           },
           () => this.abort.abort(),
@@ -226,7 +226,7 @@ class DialogLine {
         signal.addEventListener(
           'abort',
           () => {
-            screen.closePanel(shown.id);
+            screen.closeDialog(shown.id);
             reject(signal.reason);
           },
           { once: true },

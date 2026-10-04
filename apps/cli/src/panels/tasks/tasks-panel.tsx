@@ -1,4 +1,20 @@
-import { Box, ChoiceList, choiceIndent, Panel, printable, StatusMark, Text, useAnimation, useChoiceList, useInput, usePanel, useTheme, type Choice, type KeyHint } from '@jinion/tui';
+import {
+  Box,
+  ChoiceList,
+  choiceIndent,
+  Panel,
+  printable,
+  StatusMark,
+  Text,
+  useAnimation,
+  useChoiceList,
+  useInput,
+  usePanel,
+  usePanels,
+  useTheme,
+  type Choice,
+  type KeyHint,
+} from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import type { BackgroundTask } from '../../agent/tasks.js';
 import { useJinion } from '../../app/context.js';
@@ -16,6 +32,7 @@ export function TasksPanel() {
   const jinion = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
+  const panels = usePanels();
   const tasks = useAtomValue(backgroundTasksAtom);
 
   useAnimation({ interval: 1000 });
@@ -27,7 +44,7 @@ export function TasksPanel() {
     onSubmit: ([id]) => {
       const task = tasks.find((candidate) => candidate.id === id);
 
-      if (task?.output) jinion.screen.openPanel({ id: 'task-output', placement: 'fullscreen', element: <TaskOutput id={task.id} /> });
+      if (task?.output) panels.open({ id: 'task-output', placement: 'fullscreen', element: <TaskOutput id={task.id} /> });
     },
   });
 

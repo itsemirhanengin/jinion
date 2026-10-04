@@ -135,11 +135,11 @@ export class WorktreeController {
           },
         ],
         onSubmit: ([answer]) => {
-          this.context.screen.closePanel('ask');
+          this.context.screen.closeDialog('ask');
           resolve(answer?.options[0] === 1 ? 'remove' : 'keep');
         },
         onCancel: () => {
-          this.context.screen.closePanel('ask');
+          this.context.screen.closeDialog('ask');
           resolve(undefined);
         },
       });

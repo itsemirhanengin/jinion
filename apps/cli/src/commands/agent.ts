@@ -1,8 +1,5 @@
 import type { AgentMode } from '../agent/agent.js';
 import { MODES } from '../agent/modes.js';
-import { AccountPicker } from '../panels/account/account-picker.js';
-import { McpPanel } from '../panels/mcp.js';
-import { ModePicker } from '../panels/mode.js';
 import type { Command } from './registry.js';
 
 export const mode: Command = {
@@ -11,7 +8,7 @@ export const mode: Command = {
   argumentHint: '[mode]',
   run: (jinion, args) => {
     const wanted = args.trim().toLowerCase();
-    if (!wanted) return jinion.screen.openPanel({ id: 'mode', placement: 'bottom', element: <ModePicker /> });
+    if (!wanted) return jinion.screen.openView({ id: 'mode' });
 
     const { modes } = jinion.agent;
 
@@ -29,15 +26,11 @@ export const account: Command = {
   description: 'Switch between your logins, sign one in (again) with account add <name>, or remove one',
   argumentHint: '[name | add <name> | remove <name>]',
   run: (jinion, args) => {
-    const manager = jinion.agent.accounts;
-    if (!manager) return jinion.notice(`${jinion.agent.name} has a single login.`, 'warning');
-
-    const open = (signIn?: string) =>
-      jinion.screen.openPanel({ id: 'account', placement: 'bottom', element: <AccountPicker accounts={manager} signIn={signIn} /> });
+    if (!jinion.agent.accounts) return jinion.notice(`${jinion.agent.name} has a single login.`, 'warning');
 
     const [first = '', second = ''] = args.trim().split(/\s+/);
-    if (!first) return open();
-    if (first === 'add') return open(second || undefined);
+    if (!first) return jinion.screen.openView({ id: 'account' });
+    if (first === 'add') return jinion.screen.openView({ id: 'account', signIn: second || undefined });
 
     if (first === 'remove') {
       if (!second) return jinion.notice('Say which account to remove, e.g. /account remove work.', 'warning');
@@ -53,9 +46,8 @@ export const mcp: Command = {
   name: 'mcp',
   description: 'The MCP servers the agent connects to; turn them on or off',
   run: (jinion) => {
-    const servers = jinion.agent.mcp;
-    if (!servers) return jinion.notice(`${jinion.agent.name} has no MCP servers.`, 'warning');
+    if (!jinion.agent.mcp) return jinion.notice(`${jinion.agent.name} has no MCP servers.`, 'warning');
 
-    jinion.screen.openPanel({ id: 'mcp', placement: 'bottom', element: <McpPanel mcp={servers} /> });
+    jinion.screen.openView({ id: 'mcp' });
   },
 };

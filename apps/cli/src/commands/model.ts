@@ -1,7 +1,6 @@
 import { fuzzyFilter } from '../lib/fuzzy.js';
 import type { ModelOption } from '../agent/models.js';
 import type { Jinion } from '../controllers/jinion.js';
-import { ModelPicker } from '../panels/model.js';
 import { selectionAtom, modelNameAtom } from '../state/agent.js';
 import type { Command } from './registry.js';
 
@@ -48,7 +47,7 @@ export const effort: Command = {
   },
 };
 
-const openModelPicker = (jinion: Jinion) => jinion.screen.openPanel({ id: 'model', placement: 'bottom', element: <ModelPicker /> });
+const openModelPicker = (jinion: Jinion) => jinion.screen.openView({ id: 'model' });
 
 /** An exact id or name first, then the closest fuzzy match, so `/model sonnet` picks the `sonnet` alias. */
 function findModel(models: ModelOption[], query: string) {

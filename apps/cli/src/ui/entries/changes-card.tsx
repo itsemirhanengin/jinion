@@ -2,7 +2,6 @@ import { Box, Clickable, ExpandHint, FRAME_INSET, Frame, Text, useContentWidth, 
 import { useJinion } from '../../app/context.js';
 import type { ChangedFile, EntryOf } from '../../conversation/entries.js';
 import { plural } from '../../lib/format.js';
-import { openDiff } from '../../panels/diff/open.js';
 
 const CARD_FILES = 8;
 
@@ -24,7 +23,7 @@ export function ChangesCard({ entry }: { entry: EntryOf<'changes'> }) {
 
   const pathWidth = Math.min(Math.max(...shown.map((file) => file.path.length)) + 2, Math.max(10, width - FRAME_INSET - 16));
 
-  const open = (file?: string) => openDiff(jinion, { turn: entry.turn, file });
+  const open = (file?: string) => jinion.screen.openView({ id: 'diff', turn: entry.turn, file });
 
   return (
     <Frame

@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useApp, usePanels, useTerminal, useView } from '@jinion/tui';
 import type { Screen } from '../controllers/context.js';
 import { DialogView } from './dialogs.js';
+import { viewPanel } from './views.js';
 
 /** Created once, so controllers can hold it, and reading the TUI as it is now on every call. */
 export function useScreen(): Screen {
@@ -11,11 +12,10 @@ export function useScreen(): Screen {
   latest.current = tui;
 
   const [screen] = useState<Screen>(() => ({
-    openPanel: (panel) => latest.current.panels.open(panel),
-    closePanel: (id) => latest.current.panels.close(id),
-    topPanel: () => latest.current.panels.top?.id,
+    openView: (view) => latest.current.panels.open(viewPanel(view)),
     showDialog: (dialog) =>
       latest.current.panels.open({ id: dialog.id, placement: 'bottom', element: <DialogView dialog={dialog} /> }),
+    closeDialog: (id) => latest.current.panels.close(id),
     focused: () => latest.current.terminal.focused(),
     notify: (title, body) => latest.current.terminal.notify(title, body),
     get notifications() {

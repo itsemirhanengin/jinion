@@ -88,6 +88,17 @@ export class ConversationController {
     );
   }
 
+  openRewind() {
+    const { agent, notice, screen, store } = this.context;
+    if (!agent.rewind) return notice(`${agent.name} can't rewind.`, 'warning');
+    if (store.get(workingAtom)) return notice(BUSY, 'warning');
+
+    const points = this.rewindPoints();
+    if (points.length === 0) return notice('There is nothing to rewind yet.', 'muted');
+
+    screen.openView({ id: 'rewind', points });
+  }
+
   /** A message that joined a running turn is no place to go back to, as in Claude Code. */
   rewindPoints(): RewindPoint[] {
     return this.session.entries

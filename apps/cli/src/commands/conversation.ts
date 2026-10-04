@@ -1,12 +1,10 @@
-import { openRewind } from '../panels/rewind/open.js';
-import { ResumePanel } from '../panels/resume.js';
 import type { Command } from './registry.js';
 
 export const resume: Command = {
   name: 'resume',
   description: 'Pick up a previous conversation',
   argumentHint: '[search]',
-  run: (jinion, args) => jinion.screen.openPanel({ id: 'resume', placement: 'fullscreen', element: <ResumePanel query={args} /> }),
+  run: (jinion, args) => jinion.screen.openView({ id: 'resume', query: args }),
 };
 
 export const compact: Command = {
@@ -26,7 +24,7 @@ export const rename: Command = {
 export const rewind: Command = {
   name: 'rewind',
   description: 'Go back to before an earlier message: code, conversation or both (esc esc)',
-  run: openRewind,
+  run: (jinion) => jinion.conversation.openRewind(),
 };
 
 export const clear: Command = {

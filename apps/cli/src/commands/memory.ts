@@ -1,7 +1,6 @@
 import { importClaudeMemory } from '../memory/import.js';
 import { plural } from '../lib/format.js';
 import { truncate } from '../lib/text.js';
-import { MemoryPanel } from '../panels/memory.js';
 import type { Command } from './registry.js';
 
 export const remember: Command = {
@@ -33,7 +32,7 @@ export const memory: Command = {
   description: "The notes the agent keeps; memory import brings in Claude Code's",
   argumentHint: '[import]',
   run: (jinion, args) => {
-    if (args.trim() !== 'import') return jinion.screen.openPanel({ id: 'memory', placement: 'bottom', element: <MemoryPanel /> });
+    if (args.trim() !== 'import') return jinion.screen.openView({ id: 'memory' });
 
     const { added, skipped } = importClaudeMemory(jinion.memory, jinion.info.cwd);
     const note = skipped > 0 ? ` (${skipped} already here)` : '';

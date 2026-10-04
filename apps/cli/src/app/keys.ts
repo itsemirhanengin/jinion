@@ -1,8 +1,6 @@
 import { useRef } from 'react';
 import { useInput, usePanels, useSelection } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { openRewind } from '../panels/rewind/open.js';
-import { openTasks } from '../panels/tasks/open.js';
 import { draftAtom } from '../state/prompt.js';
 import { busyAtom } from '../state/session.js';
 import { useJinion } from './context.js';
@@ -23,7 +21,7 @@ export function useKeys() {
 
   useInput((input, key) => {
     if (key.ctrl && input === 'o') return jinion.screen.toggleExpanded();
-    if (key.ctrl && input === 't' && free) return openTasks(jinion);
+    if (key.ctrl && input === 't' && free) return jinion.screen.openView({ id: 'tasks' });
     if (key.ctrl && input === 'b' && busy && free) return jinion.tasks.sendToBackground();
     if (key.ctrl && input === 'g' && free) return jinion.worktrees.toggle();
     if (key.tab && key.shift && free && jinion.agent.modes.length > 1) return jinion.modes.cycle();
@@ -40,7 +38,7 @@ export function useKeys() {
 
       lastEscape.current = 0;
 
-      return draft ? jinion.input.clear() : openRewind(jinion);
+      return draft ? jinion.input.clear() : jinion.conversation.openRewind();
     }
 
     if (key.ctrl && input === 'q' && free) return jinion.input.queue();
