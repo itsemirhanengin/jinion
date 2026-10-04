@@ -146,8 +146,11 @@ Steps, each one leaving Jinion working as it does today:
 
 Known before starting:
 
-- **Several Jinions at once** write the same `settings.json`, `permissions.json` and session folder with read, change
-  and write; a single core per user would remove the race.
+- **Several Jinions at once** (done). Files they share change through `updateJson`, which applies the change to what
+  is on disk under a lock file (`lib/file-lock.ts`); four processes adding 40 each to a counter lost 114 of 160 without
+  it. A conversation is open in one process at a time: `sessions/<id>.open` holds its pid, and another Jinion refuses it
+  (`ApiCode.openElsewhere`), pointing at `jinion --attach` for a `jinion serve`. A single core per user isn't needed for
+  this; following one live conversation from two windows comes with the desktop app.
 - **claude.ai login** is offered without Anthropic's approval; see Going public.
 
 ## Known and left as they are
