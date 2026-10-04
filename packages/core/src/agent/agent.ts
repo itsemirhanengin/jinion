@@ -46,6 +46,8 @@ export interface AgentSession {
   readonly selection: ModelSelection;
   /** Takes effect from the next request, also in a conversation that is already running. */
   select(selection: ModelSelection): Promise<void>;
+  /** The model changes only between turns, so one picked during a turn applies from the next. */
+  readonly modelPerTurn?: boolean;
   readonly mode: AgentMode;
   /** Takes effect right away, also in a running turn. */
   setMode(mode: AgentMode): Promise<void>;

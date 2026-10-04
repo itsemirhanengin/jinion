@@ -66,6 +66,38 @@ describe('session methods', () => {
     expect(client.store.get(client.session(session))?.state).toEqual(store.get(atoms.state));
   });
 
+  it('says a model picked during a turn applies from the next message, on a backend that switches only between turns', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+
+    const waiting: Scenario = {
+      title: 'Wait',
+      async *play(script) {
+        await gate;
+        yield* script.say('done');
+      },
+    };
+
+    const { server, connect } = serve(box.project, { backends: [new ScriptedBackend([waiting], [], 0)] });
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms, agent } = server.app.session;
+    const notices = () => store.get(atoms.entries).flatMap((entry) => (entry.kind === 'notice' ? [entry.text] : []));
+
+    Object.assign(agent, { modelPerTurn: true });
+    await client.request('session/submit', { session, text: 'go' });
+    await client.request('session/model', { session, selection: { model: 'scripted-demo', effort: 'high' } });
+
+    await vi.waitFor(() =>
+      expect(notices()).toContain('Switched to scripted-demo · high. The running turn finishes on scripted-demo; your next message uses scripted-demo · high.'),
+    );
+
+    release();
+    await vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
+    await client.request('session/model', { session, selection: { model: 'scripted-demo' } });
+    await vi.waitFor(() => expect(notices().at(-1)).toBe('Switched to scripted-demo.'));
+  });
+
   it('turns worktrees on for new sessions and for this one while it hasn’t started', async () => {
     const { server, connect } = serve(box.project);
     const { client, session } = await connect();

@@ -46,6 +46,8 @@ const DEFAULT_WORKSPACE: SandboxPolicy = { type: 'workspaceWrite', writableRoots
 
 /** One Codex thread, in the backend's one app-server, which starts as the conversation's first prompt is sent. */
 export class CodexSession implements AgentSession {
+  /** Switching within a turn is a Codex feature still under development (step_model_switching). */
+  readonly modelPerTurn = true;
   private current: ModelSelection;
   private currentMode: AgentMode;
   private cwd: string;
@@ -85,7 +87,6 @@ export class CodexSession implements AgentSession {
     return this.turn !== undefined;
   }
 
-  /** From the next turn on: switching within a turn is a Codex feature still under development (step_model_switching). */
   async select(selection: ModelSelection) {
     this.current = selection;
   }

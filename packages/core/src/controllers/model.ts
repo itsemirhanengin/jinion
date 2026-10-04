@@ -44,12 +44,18 @@ export class ModelController {
     const { backend, store, atoms, notice } = this.context;
     if (agent !== backend.name) return this.move(this.app.named(agent), next);
 
+    const before = store.get(atoms.modelLabel);
+    const waits = this.context.agent.modelPerTurn && store.get(atoms.working);
+
     this.context.agent.select(next).then(
       () => {
         store.set(atoms.selection, next);
         saveModel(backend.name, next);
         saveAgent(backend.name);
-        notice(`Switched to ${store.get(atoms.modelLabel)}.`);
+
+        const label = store.get(atoms.modelLabel);
+
+        notice(waits ? `Switched to ${label}. The running turn finishes on ${before}; your next message uses ${label}.` : `Switched to ${label}.`);
       },
       (error: unknown) => notice(`Couldn't switch the model: ${errorMessage(error)}`, 'error'),
     );
