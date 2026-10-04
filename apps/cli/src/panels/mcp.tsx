@@ -29,22 +29,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     onToggle: (name) => void touched.current.add(name),
     onSubmit: (checked) => {
       close();
-
-      const changed = (servers ?? []).filter((server) => checked.includes(server.name) !== server.enabled);
-      if (changed.length === 0) return;
-
-      const labels = (on: boolean) => changed.filter((server) => !server.enabled === on).map((server) => server.label);
-
-      mcp.setEnabled(Object.fromEntries(changed.map((server) => [server.name, !server.enabled]))).then(
-        () => {
-          const parts = [labels(true).length > 0 && `turned on ${labels(true).join(', ')}`, labels(false).length > 0 && `turned off ${labels(false).join(', ')}`];
-          const done = parts.filter(Boolean).join('; ');
-
-          jinion.notice(`${done.charAt(0).toUpperCase()}${done.slice(1)}. This applies from the next turn.`, 'success');
-          jinion.reloadSkills();
-        },
-        (error: unknown) => jinion.notice(`Couldn't change the MCP servers: ${errorMessage(error)}`, 'error'),
-      );
+      void jinion.mcp.save(servers ?? [], checked);
     },
   });
 

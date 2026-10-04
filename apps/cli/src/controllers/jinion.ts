@@ -15,6 +15,7 @@ import { Attachments } from './attachments.js';
 import type { AppInfo, Context, Screen } from './context.js';
 import { ConversationController } from './conversation.js';
 import { InputController } from './input.js';
+import { McpController } from './mcp.js';
 import { ModeController } from './mode.js';
 import { ModelController } from './model.js';
 import { TaskController } from './tasks.js';
@@ -47,6 +48,7 @@ export class Jinion {
   readonly models: ModelController;
   readonly modes: ModeController;
   readonly accounts: AccountController;
+  readonly mcp: McpController;
   readonly tasks: TaskController;
   readonly worktrees: WorktreeController;
   private readonly onExit?: (message: string) => void;
@@ -72,6 +74,7 @@ export class Jinion {
     this.models = new ModelController(context);
     this.modes = new ModeController(context);
     this.accounts = new AccountController(context, () => this.refresh());
+    this.mcp = new McpController(context, () => this.reloadSkills());
     this.tasks = new TaskController(context);
 
     this.turns = new TurnController(context, this.attachments, {
@@ -109,7 +112,7 @@ export class Jinion {
   }
 
   /** Later changes, e.g. as MCP servers connect, come as `commands` events. */
-  reloadSkills() {
+  private reloadSkills() {
     this.agent.commands().then(
       (skills) => this.store.set(skillsAtom, skills),
       () => {},
