@@ -5,6 +5,7 @@ import { readJson, writeJson } from '../../lib/json-file.js';
 import { projectDir } from '../../lib/paths.js';
 import { GUARD_REASONS } from './guard.js';
 import type { Input } from './input.js';
+import { within } from './paths.js';
 import { toolTitle } from './tool-names.js';
 
 type RequestOptions = Parameters<CanUseTool>[2];
@@ -25,6 +26,7 @@ export function toPermissionRequest(
   input: Input,
   options: RequestOptions,
   always: PermissionRuleValue[],
+  cwd: string,
 ): PermissionRequest {
   const command = name === 'Bash' && typeof input.command === 'string' ? input.command : undefined;
   const target = [input.file_path, input.url, input.path].find((value) => typeof value === 'string') as string | undefined;
@@ -32,7 +34,7 @@ export function toPermissionRequest(
   const description = [
     options.decisionReason && GUARD_REASONS.has(options.decisionReason) ? options.decisionReason : undefined,
     command ? (input.description as string | undefined) : options.description,
-    options.blockedPath && `Outside the project: ${options.blockedPath}`,
+    options.blockedPath && blockedPathLabel(options.blockedPath, cwd),
     options.agentID && 'Asked by a subagent',
   ].filter((part) => part && part !== target);
 
@@ -53,6 +55,12 @@ function ruleLabel(rule: PermissionRuleValue) {
   if (rule.toolName === 'Bash' && rule.ruleContent) return `\`${rule.ruleContent}\``;
 
   return rule.ruleContent === undefined ? toolTitle(rule.toolName) : formatRule(rule);
+}
+
+function blockedPathLabel(path: string, cwd: string) {
+  const relative = within(path, cwd);
+
+  return relative === undefined ? `Outside the project: ${path}` : `Changes ${relative || '.'} in the project`;
 }
 
 function defaultTitle(name: string) {

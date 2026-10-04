@@ -102,7 +102,7 @@ export class ClaudeApprovals {
     let decision: PermissionDecision;
 
     try {
-      decision = await turn.approve(toPermissionRequest(name, input, options, rules), options.toolUseID);
+      decision = await turn.approve(toPermissionRequest(name, input, options, rules, this.options.cwd()), options.toolUseID);
     } catch {
       return { behavior: 'deny', message: 'The user stopped the turn.', interrupt: true };
     }
