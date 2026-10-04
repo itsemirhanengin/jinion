@@ -3,13 +3,15 @@ import { Box } from 'ink';
 import { PanelOutlet, usePanels } from '../runtime/panels.js';
 
 export interface ShellProps {
+  /** Above the content, such as tabs; a full-screen panel covers it. */
+  header?: ReactNode;
   content: ReactNode;
   aside?: ReactNode;
   prompt: ReactNode;
   status?: ReactNode;
 }
 
-export function Shell({ content, aside, prompt, status }: ShellProps) {
+export function Shell({ header, content, aside, prompt, status }: ShellProps) {
   const { top } = usePanels();
 
   if (top?.placement === 'fullscreen') {
@@ -22,6 +24,7 @@ export function Shell({ content, aside, prompt, status }: ShellProps) {
 
   return (
     <>
+      {header && <Box flexShrink={0}>{header}</Box>}
       {content}
       <Box flexDirection="column" flexShrink={0}>
         {aside}
