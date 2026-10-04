@@ -1,0 +1,46 @@
+---
+title: Başarısız bir testi düzeltin
+description: Jinion'a kırmızı bir test verin; nedenini bulsun, düzeltsin ve düzeltmeyi kanıtlasın.
+---
+
+## 1. Jinion'a testi gösterin [#1-point-jinion-at-the-test]
+
+Jinion'u projede başlatın ve hangi testin başarısız olduğunu söyleyin. Ajan hemen okusun diye test dosyasını `@` ile
+anın:
+
+```text
+@src/middleware/rate-limit.test.ts "resets the window after a minute" başarısız oluyor, nedenini bul ve düzelt
+```
+
+Hata çıktısı elinizdeyse aynı mesaja yapıştırın. Uzun çıktı `[Pasted text #1 +42 lines]` olarak girer ve ajan
+hepsini alır. [Ajana yön verin](/tr/prompting#paste-text) sayfasına bakın.
+
+## 2. Nedenini bulmasına izin verin [#2-let-it-find-the-cause]
+
+Ajan testi çalıştırır, testin dokunduğu kodu okur ve yanlış olanı düzenler. Her düzenleme konuşmada bir diff olarak
+görünür ve tur, değiştirdiği dosyaları gösteren bir kartla biter.
+
+Yanlış yöne giderse o çalışırken yazın ve `enter`'a basın. Mesajınız tura katılır:
+
+```text
+test doğru, testi değil kodu düzelt
+```
+
+Yavaş bir test paketi, tur devam ederken `ctrl+b` ile [arka plana](/tr/background-tasks) geçebilir.
+
+## 3. Düzeltmeyi kontrol edin [#3-check-the-fix]
+
+Ajan değişikliğinden sonra testi yeniden çalıştırır ve nasıl kontrol ettiğini söyler. Bütün değişiklikleri birlikte
+görmek için `/diff` yazın. [Değişiklikleri inceleyin](/tr/review-changes) sayfasına bakın.
+
+Emin olmak istiyorsanız testi kendiniz çalıştırın:
+
+```sh
+pnpm test src/middleware/rate-limit.test.ts
+```
+
+## Düzeltme yanlışsa [#if-the-fix-is-wrong]
+
+Mesajınızın öncesine [geri sarın](/tr/conversations/rewind): `esc`'ye iki kez basın ve **Restore code and
+conversation** seçeneğini seçin. Dosyalar geri döner, mesajınız da daha fazlasını söyleyip yeniden gönderebilmeniz için
+mesaj alanına geri gelir.

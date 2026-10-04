@@ -1,0 +1,49 @@
+---
+title: Bir değişikliğin bir kısmını geri alın
+description: Konuşmayı kaybetmeden bir turluk düzenlemeyi ya da yalnızca kodu geri alın.
+---
+
+Geri sarma, dosyaları gönderdiğiniz bir mesajdan önceki hallerine döndürür. Konuşmanın da geri dönüp dönmeyeceğini
+siz seçersiniz. Bütün seçenekler için [Önceki bir mesaja geri sarın](/tr/conversations/rewind) sayfasına bakın.
+
+## 1. Yanlış giden turu bulun [#1-find-the-turn-that-went-wrong]
+
+`/diff` yazın ve turlar arasında en yeniden başlayarak gezinmek için `left` ve `right` tuşlarını kullanın. Her tur
+yalnızca o mesajın değiştirdiği dosyaları gösterir. Hangi mesaj olduğunu not edin.
+
+## 2. Geri sarmayı açın [#2-open-rewind]
+
+Mesaj alanı boşken `esc`'ye iki kez basın ya da `/rewind` yazın. Değişikliğe sebep olan mesaja gidin. Jinion onun
+altında, geri dönmenin neyi değiştireceğini gösterir, örneğin `2 files change +29 -1`.
+
+Bir mesaja geri dönmek, o zamandan beri, o turda ve sonrakilerde yapılan bütün dosya değişikliklerini geri alır.
+
+## 3. Neyi geri alacağınızı seçin [#3-pick-what-to-take-back]
+
+`enter`'a basın, sonra:
+
+- Dosyaları geri alıp konuşmaya devam etmek için **Restore code**. Konuşma olduğu gibi devam eder; böylece ajana
+  bunun yerine ne yapacağını söyleyebilirsiniz:
+
+  ```text
+  rate limiter'daki son değişikliğini geri aldım. Limit IP başına kalsın ama config'den okunsun
+  ```
+
+- O mesajı baştan almak için **Restore code and conversation**. Dosyalar ve konuşma geri döner, mesajınız da
+  düzenleyip yeniden göndermeniz için mesaj alanına geri gelir.
+
+Jinion bunu onaylar, örneğin `The files went back to how they were before “add a test for the window reset”; the
+conversation goes on.`
+
+## Tek bir dosyayı geri alın [#undo-a-single-file]
+
+Geri sarma mesaj bazında çalışır. Yalnızca bir dosyayı geri almak için ajandan isteyin:
+
+```text
+src/server.ts'deki değişikliklerini geri al, gerisi kalsın
+```
+
+<Callout type="warn">
+  Geri sarma yalnızca ajanın dosya araçlarıyla yapılan değişiklikleri geri alır. Bir kod üretici ya da `git checkout`
+  gibi bir komutun değiştirdiği dosya olduğu gibi kalır.
+</Callout>

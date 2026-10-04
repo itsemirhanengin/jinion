@@ -1,0 +1,56 @@
+---
+title: Büyük bir değişikliği önce planlayın
+description: Hiçbir dosya değişmeden yaklaşımda anlaşmak için Plan modunu kullanın.
+---
+
+## 1. Plan moduna geçin [#1-switch-to-plan-mode]
+
+Mesaj alanının altındaki çizgide `Plan` görünene kadar `shift+tab`'a basın ya da şunu yazın:
+
+```text
+/mode plan
+```
+
+Plan modunda ajan okur ve düşünür; siz planını onaylayana kadar hiçbir şeyi değiştirmez.
+[İzin modunu seçin](/tr/permission-modes) sayfasına bakın.
+
+## 2. Değişikliği anlatın [#2-describe-the-change]
+
+Ne istediğinizi ve sizin için neyin önemli olduğunu söyleyin:
+
+```text
+girişi session cookie'lerinden Keycloak'ımızla OIDC'ye taşı; herkes yeniden giriş yapana kadar mevcut oturumlar çalışmaya devam etsin
+```
+
+Ajan kodu okur. Hangi kütüphanenin kullanılacağı gibi bir seçim size kaldığında sorar, siz de soru panelinde bir cevap
+seçersiniz.
+
+## 3. Planı inceleyin [#3-review-the-plan]
+
+Plan hazır olduğunda konuşmada görünür ve plan paneli `Ready to start? The plan is above.` diye sorar.
+
+Değiştirmek için **No, keep planning** seçeneğini seçin, `n`'ye basın ve neyin değişmesi gerektiğini söyleyin. Ajan
+planı yeniden yazar.
+
+## 4. İşe başlayın [#4-start-the-work]
+
+Ajanın ne kadar serbest devam edeceğini seçin:
+
+| Seçim                      | Sonra                                                                                                    |
+| -------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Yes, and use auto mode     | Bir güvenlik sınıflandırıcısı rutin işlerin çalışmasına izin verir, riskli olanları durdurur; proje dışına yazmalar yine sorar, `/commit-approval` kapalı değilse commit'ler de |
+| Yes, and accept edits      | Projedeki dosyaları sormadan düzenler; riskli komutlardan önce sorar                                    |
+| Yes, and approve each edit | Her düzenlemeden ve güvenli listenin dışındaki her komuttan önce sorar                                  |
+
+Seçtiğiniz mod plandan sonra da bu projede açık kalır. Ajan planı adım adım uygular; görev listesi mesaj alanının
+üstünde durur.
+
+## 5. Sonucu inceleyin [#5-review-the-result]
+
+`/diff` yazın ve değişikliği tur tur gezmek için `left` ve `right` tuşlarını kullanın.
+[Değişiklikleri inceleyin](/tr/review-changes) sayfasına bakın.
+
+<Callout>
+  Uzun sürecek bir değişiklik için önce [worktree'leri](/tr/worktrees) açın. İş kendi dalında yapılır ve çalışma
+  kopyanız başka işler için serbest kalır.
+</Callout>

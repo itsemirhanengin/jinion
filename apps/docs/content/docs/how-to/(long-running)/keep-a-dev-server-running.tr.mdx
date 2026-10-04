@@ -1,0 +1,47 @@
+---
+title: Bir dev sunucusunu çalışır tutun
+description: Siz ve ajan çalışırken bir dev sunucusunu arka planda çalıştırın.
+---
+
+## 1. Başlatın [#1-start-it]
+
+Ajandan isteyin:
+
+```text
+dev sunucusunu başlat
+```
+
+Bir dev sunucusu kendiliğinden bitmez; bu yüzden ajan onu arka planda başlatır ve tur devam eder. Sunucu çalışırken
+mesaj alanının üstündeki bir satır onu gösterir:
+
+```terminal
+ {muted|bg} {accent|[|]} pnpm dev {muted|12s · ctrl+t}
+```
+
+Ajan onu önde başlattıysa ve tur onu bekliyorsa, çalışma satırı bunu sunduğunda `ctrl+b`'ye basın.
+[İşleri arka planda çalıştırın](/tr/background-tasks) sayfasına bakın.
+
+## 2. Ona karşı çalışmaya devam edin [#2-keep-working-against-it]
+
+Ajan çalışan sunucuyu kullanabilir, örneğin bir değişikliği kontrol etmek için:
+
+```text
+bir /health route'u ekle ve dev sunucusuna curl atarak kontrol et
+```
+
+## 3. Çıktısına bakın [#3-look-at-its-output]
+
+`ctrl+t`'ye basın ya da `/tasks` yazın. Panel, üzerinde durduğunuz görevin son çıktısını gösterir; sonunu takip
+ederek tamamını görmek için `enter`'a basın. `esc` geri döner.
+
+Sunucu çöktüğünde konuşma bunu söyler, örneğin `[!] Background pnpm dev · failed after 41s · exit 1`, ve ajan neyin
+yanlış gittiğine bakar.
+
+## 4. Durdurun [#4-stop-it]
+
+`ctrl+t`'ye basın, göreve gidin ve `x`'e basın.
+
+<Callout>
+  Sunucu siz çıktığınızda, `/clear` ile yeni bir konuşma başlattığınızda ya da `/resume` ile başka birine
+  geçtiğinizde kendiliğinden durur. `esc` ajanın turunu durdurur ama sunucuyu çalışır halde bırakır.
+</Callout>

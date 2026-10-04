@@ -1,0 +1,57 @@
+---
+title: Claude Code kurulumunuzu getirin
+description: Claude Code'da zaten sahip olduğunuz skill'leri, MCP sunucularını ve belleği kullanın.
+---
+
+Bir Claude Code kurulumunun çoğu Jinion'da olduğu gibi çalışır. Elle getirilmesi gereken tek şey bellektir.
+
+## Girişiniz [#your-login]
+
+Jinion, makinenizde zaten bulunan Claude girişini `default` hesabı olarak kullanır. Claude Code'a giriş yaptıysanız
+yapacak bir şey yoktur. İkinci bir giriş eklemek için [Bir iş ve bir kişisel hesap kullanın](/tr/how-to/use-two-accounts)
+sayfasına bakın.
+
+## Skill'ler ve plugin'ler [#skills-and-plugins]
+
+Bunlar kendiliğinden gelir:
+
+- `~/.claude/skills` içindeki skill'leriniz ve projenin `.claude/skills` içindekileri;
+- Claude Code'da açtığınız plugin'ler; skill'leri, komutları, ajanları ve MCP sunucularıyla. Hook'ları kapalı kalır.
+
+Görmek için `$` yazın. Eskiden `/review` olarak çalıştırdığınız bir skill artık `$review`'dur; alışkanlıkla `/review`
+yazmak mesaj alanına `$review` koyar. [Skill'leri ve MCP sunucularını kullanın](/tr/skills-and-mcp) sayfasına bakın.
+
+## MCP sunucuları [#mcp-servers]
+
+`~/.claude.json` içindeki sunucular ve claude.ai bağlayıcılarınız Claude Code'daki gibi bağlanır. Projenin
+`.mcp.json` dosyasındaki sunucular siz açana kadar kapalı kalır:
+
+```text
+/mcp
+```
+
+Sunucuya gidin, açmak için `space`'e, kaydetmek için `enter`'a basın.
+
+## Proje talimatları [#project-instructions]
+
+Projenin kökündeki bir `CLAUDE.md`, varsa bir `AGENTS.md` ile birlikte, olduğu gibi okunur.
+[Proje talimatlarını yazın](/tr/project-instructions) sayfasına bakın.
+
+## Bellek [#memory]
+
+Claude Code'un topladıklarını getirin:
+
+```text
+/memory import
+```
+
+Jinion `Imported 12 notes from Claude Code. The agent sees them from the next conversation on.` der. Bu, Claude
+Code'un bu proje için tuttuğu bellek notlarını, `~/.claude/rules` ve `~/.claude/CLAUDE.md` dosyalarınızı getirir.
+Notlarını istediğiniz her projede çalıştırın. Yeniden çalıştırmak hiçbir şeyi iki kez eklemez.
+[Belleği kullanın](/tr/memory) sayfasına bakın.
+
+## Geride kalanlar [#what-stays-behind]
+
+- Claude Code'un ayarları; izin kuralları ve hook'larıyla birlikte. Jinion yeniden sorar ve "bir daha sorma" kuralı
+  Jinion'a kaydeder. [İzin modunu seçin](/tr/permission-modes) sayfasına bakın.
+- Claude Code'un konuşmaları. `/resume`, Jinion'da yaptığınız konuşmaları listeler.

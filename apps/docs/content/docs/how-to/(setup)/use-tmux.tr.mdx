@@ -1,0 +1,67 @@
+---
+title: Jinion'u tmux içinde kullanın
+description: tmux içinde bildirimleri, renkleri ve tuşları çalışır hale getirin.
+---
+
+Jinion tmux içinde olduğu gibi çalışır. Birkaç tmux ayarı fareyi, bildirimleri, panoyu ve renkleri geçirir.
+
+## 1. Ayarları ekleyin [#1-add-the-settings]
+
+Bu satırları `~/.tmux.conf` dosyasına ekleyin:
+
+```text title="~/.tmux.conf"
+set -g mouse on
+set -g focus-events on
+set -g set-clipboard on
+set -as terminal-features ',*:RGB'
+```
+
+Sonra çalışan bir tmux'ta yükleyin:
+
+```sh
+tmux source-file ~/.tmux.conf
+```
+
+| Ayar              | Neyi geçirir                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------- |
+| `mouse`           | Kaydırmak için tekeri, bir değişiklik kartındaki dosyaya tıklamayı, metin seçmek için sürüklemeyi |
+| `focus-events`    | Bölmeye bakıp bakmadığınızı; böylece Jinion size ne zaman bildirim göndereceğini bilir      |
+| `set-clipboard`   | Kopyalanan metni SSH üzerinden bilgisayarınızın panosuna                                    |
+| `RGB`             | 256 renkten en yakını yerine Jinion'un renklerinin tamamını                                 |
+
+## 2. Bildirimleri kontrol edin [#2-check-notifications]
+
+tmux içinde Jinion masaüstü bildirimi göndermek yerine zil çalar, çünkü tmux bildirim dizilerini kendine saklar.
+`focus-events` olmadan Jinion başka yere geçtiğinizi anlayamaz ve sessiz kalır.
+
+Kontrol etmek için biraz sürecek bir şey isteyin, sonra başka bir tmux penceresine geçin. Tur bittiğinde tmux
+pencereyi işaretler, terminaliniz de zili kendi yoluyla, örneğin bir sesle ya da bir rozetle gösterir.
+[Bildirim alın](/tr/notifications) sayfasına bakın.
+
+## 3. Renkleri kontrol edin [#3-check-colors]
+
+Renkler soluk görünüyorsa tmux'un içinde 24 bit renk olduğunu kontrol edin:
+
+```sh
+echo $COLORTERM
+```
+
+`truecolor` yazmalıdır. Hiçbir şey yazmıyorsa kabuk profilinize `export COLORTERM=truecolor` ekleyin.
+
+Jinion açık bir arka planda koyu renkler seçiyorsa kendiniz ayarlayın:
+
+```sh
+jinion --theme light
+```
+
+[Terminalinizi ayarlayın](/tr/terminal-setup#light-and-dark) sayfasına bakın.
+
+## Yeni satırlar [#new-lines]
+
+`shift+enter`, tmux içindeki programlara çoğu zaman düz bir `enter` olarak ulaşır ve mesajı gönderir. Bunun yerine
+`alt+enter` kullanın ya da satırı `\` ile bitirip `enter`'a basın.
+
+## Metin kopyalayın [#copy-text]
+
+Jinion'da seçtiğiniz metin panonuza ve tmux'un yapıştırma arabelleğine gider; böylece `prefix` `]` onu başka bir
+bölmeye yapıştırır.

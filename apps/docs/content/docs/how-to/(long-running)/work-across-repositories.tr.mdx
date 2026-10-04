@@ -1,0 +1,45 @@
+---
+title: Birkaç repoda çalışın
+description: Repolardan oluşan bir klasörü açın ve hepsine yayılan tek bir değişiklik yapın.
+---
+
+## 1. Jinion'u repoların üstündeki klasörde başlatın [#1-start-jinion-in-the-folder-above-them]
+
+```sh
+cd ~/code/acme
+jinion
+```
+
+Jinion `node_modules`, build çıktısı ve gizli klasörleri atlayarak `api/` ve `web/` gibi repoları üç klasör derinliğe
+kadar bulur. Ajan hangi repoların olduğunu ve her birinin hangi dalda olduğunu bilir.
+
+## 2. Değişikliği isteyin [#2-ask-for-the-change]
+
+Ajan onlardan başlasın diye iki taraftaki dosyaları da `@` ile anın:
+
+```text
+@api/src/routes/users.ts içindeki kullanıcının name alanını fullName olarak yeniden adlandır, @web/src içinde kullanıldığı her yerde de
+```
+
+Ajan iki repoyu da düzenler ve git'i değişikliğin ait olduğu repoda çalıştırır.
+
+## 3. Repo bazında inceleyin [#3-review-it-per-repository]
+
+`/diff` yazın. Değişiklikler her reponun altında, dalıyla birlikte gruplanır. Değişikliği olmayan bir repo listenin
+altında adıyla belirtilir.
+
+Çalışırken repolara bir bakışta göz atmak için [`/statusline`](/tr/status-line) içinde Git bölümünü açın. Bölüm
+bunları `2 repos *5` gibi toplar: iki repo, beş değişmiş dosya.
+
+## 4. Her birinde commit edin [#4-commit-in-each]
+
+```text
+değişikliği her repoda aynı mesajla commit et
+```
+
+Jinion, siz `/commit-approval off` ile kapatmadıysanız her modda her commit'ten önce sorar.
+
+<Callout>
+  [Worktree'ler](/tr/worktrees) projenin tek bir repo olmasını gerektirir; bu yüzden birkaç repo içeren bir klasör
+  worktree almaz.
+</Callout>

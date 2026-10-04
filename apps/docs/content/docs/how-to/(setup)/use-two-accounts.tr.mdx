@@ -1,0 +1,57 @@
+---
+title: Bir iş ve bir kişisel hesap kullanın
+description: İki kez giriş yapın ve hesaplar arasında, konuşmanın ortasında bile geçiş yapın.
+---
+
+İlk hesabınız `default`'tur: makinenizde zaten bulunan Claude girişi. İkincisini kendi seçtiğiniz bir adla ekleyin.
+`/account`'un bütün ayrıntıları [Modelleri ve hesapları değiştirin](/tr/models-and-accounts#switch-accounts)
+sayfasındadır.
+
+## 1. İkinci hesabı ekleyin [#1-add-the-second-account]
+
+```text
+/account add work
+```
+
+Jinion girişi tarayıcınızda açar. Diğer girişle oturum açın, tarayıcının gösterdiği kodu yapıştırın ve `enter`'a
+basın. Jinion `Signed in to work as me@acme.dev. Pick it here to switch.` der.
+
+## 2. Geçiş yapın [#2-switch]
+
+`/account` yazın, hesaba gidin ve `enter`'a basın ya da doğrudan geçin:
+
+```text
+/account work
+```
+
+Konuşmanın ortasında Jinion `Switched to the work account; the conversation carries on there.` der. Konuşma yeni
+girişle devam eder, sonraki oturumlar da onunla başlar.
+
+Geçiş turlar arasında olur; bu yüzden önce o anki turun bitmesini bekleyin ya da `esc`'ye basın.
+[Arka planda](/tr/background-tasks) çalışanlar durur.
+
+## 3. Hangisinin kullanımda olduğunu kontrol edin [#3-check-which-one-is-in-use]
+
+Üstteki karşılama ekranı kim olarak giriş yaptığınızı gösterir, örneğin `ACME · Team` ya da `me@example.com · Max`.
+Bunu sürekli görmek için [`/statusline`](/tr/status-line) içinde Account bölümünü açın.
+
+`/account` ayrıca her hesabın en son kullandığınızdaki plan limitlerini gösterir; böylece hangisinde yer kaldığını
+görebilirsiniz.
+
+## Bir girişin süresi dolduğunda [#when-a-login-expires]
+
+Hesap `/account` içinde `Not signed in; press enter to sign in` gösterir. Üzerinde `enter`'a basın ve tarayıcıda
+yeniden giriş yapın. Bir hesaba başka bir girişle yeniden giriş yapmak için ona gidin ve `l`'ye basın.
+
+Kullanımdaki hesaba yeniden giriş yapmak, konuşmayı yeni girişle sürdürür.
+
+## Bir hesabı kaldırın [#remove-an-account]
+
+`/account` içinde hesaba gidin ve `d`'ye iki kez basın. Ya da şunu yazın:
+
+```text
+/account remove work
+```
+
+Jinion hesaptan çıkış yapar ve `Removed the work account and signed it out. Its conversations stay.` der.
+Kullanımdaki hesabı ya da `default`'u kaldıramazsınız.
