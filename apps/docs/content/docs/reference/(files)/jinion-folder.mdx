@@ -7,7 +7,7 @@ Jinion keeps everything on your machine, in `~/.jinion`. Set `JINION_HOME` to us
 
 ```text
 ~/.jinion/
-|-- settings.json          the last model and account, the status line, servers turned off, worktrees
+|-- settings.json          the last model and account, the status line, servers turned off, worktrees, commits
 |-- limits.json            the plan limits last seen, per account
 |-- mcp.json               MCP servers of Jinion's own
 |-- memory/                user notes, one Markdown file each
@@ -17,7 +17,7 @@ Jinion keeps everything on your machine, in `~/.jinion`. Set `JINION_HOME` to us
 |-- logs/                  debug logs from --debug
 '-- projects/
     '-- -Users-me-code-api/
-        |-- settings.json      the mode, and the .mcp.json servers turned on
+        |-- settings.json      the mode, the .mcp.json servers turned on, commits
         |-- permissions.json   the "don't ask again" rules
         |-- memory/            project notes
         |-- plugins/           the project's skills handed to the agent
@@ -31,7 +31,7 @@ A project's folder is named after its path, with every character other than lett
 
 | Path                               | What it holds                                                                          |
 | ---------------------------------- | -------------------------------------------------------------------------------------- |
-| `settings.json`                    | The model and account you picked last, the status line, MCP servers you turned off, and whether [worktrees](/worktrees) are on |
+| `settings.json`                    | The model and account you picked last, the status line, MCP servers you turned off, whether [worktrees](/worktrees) are on, and whether Jinion [asks before commits](/permission-modes#stop-asking-before-commits) |
 | `limits.json`                      | Each account's plan limits when it was last used, shown in `/account`                  |
 | `mcp.json`                         | MCP servers only Jinion uses, in the same format as `.mcp.json`                        |
 | `memory/`                          | [User notes](/memory), as Markdown files you can edit                                  |
@@ -39,7 +39,7 @@ A project's folder is named after its path, with every character other than lett
 | `plugins/`                         | Your skills, linked so the agent can load them                                         |
 | `usage/claude.json`                | Days `/stats` has counted, so it only reads what was added                             |
 | `logs/<time>.jsonl`                | A [debug log](/reference/troubleshooting#record-a-debug-log) per `--debug` session                |
-| `projects/<project>/settings.json` | The project's [mode](/permission-modes), and its `.mcp.json` servers you turned on     |
+| `projects/<project>/settings.json` | The project's [mode](/permission-modes), its `.mcp.json` servers you turned on, and whether Jinion asks before commits here |
 | `projects/<project>/permissions.json` | Rules you saved with "don't ask again"                                              |
 | `projects/<project>/memory/`       | [Project notes](/memory)                                                               |
 | `projects/<project>/plugins/`      | The project's skills, linked so the agent can load them                                |

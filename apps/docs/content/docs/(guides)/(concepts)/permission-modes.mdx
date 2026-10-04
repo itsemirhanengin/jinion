@@ -109,3 +109,13 @@ In every mode, Jinion asks before:
 
 These requests have no "don't ask again" choice. Temporary folders such as `/tmp` don't count as outside. In a
 [worktree](/worktrees), the project is the worktree, so a change to your own checkout asks too.
+
+### Stop asking before commits
+
+```text
+/commit-approval off
+```
+
+Jinion stops asking before commits in this project. A commit then runs as any other command does in the mode you are
+in: auto mode lets it run, the other modes still ask. `/commit-approval off global` does the same in every project,
+and `/commit-approval on` asks again. A project's own setting comes before the global one.
