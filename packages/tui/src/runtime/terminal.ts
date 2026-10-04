@@ -5,6 +5,8 @@ export type NotificationMethod = 'osc777' | 'osc9' | 'osc99' | 'bell';
 
 export interface TerminalControl {
   focused(): boolean;
+  /** Each time the terminal gains or loses focus, until the returned function is called. */
+  onFocus(listener: (focused: boolean) => void): () => void;
   method: NotificationMethod;
   notify(title: string, body: string): void;
   pointer(shape: PointerShape): void;
@@ -52,9 +54,15 @@ export function createTerminalControl(
 ) {
   let focused = true;
   let shape: PointerShape = 'default';
+  const focusListeners = new Set<(focused: boolean) => void>();
 
   const control: TerminalControl = {
     focused: () => focused,
+    onFocus: (listener) => {
+      focusListeners.add(listener);
+
+      return () => void focusListeners.delete(listener);
+    },
     method,
     notify: (title, body) => write(notificationSequence(method, title, body)),
     pointer: (next) => {
@@ -69,7 +77,10 @@ export function createTerminalControl(
   return {
     control,
     setFocused: (value: boolean) => {
+      if (value === focused) return;
+
       focused = value;
+      for (const listener of focusListeners) listener(value);
     },
   };
 }
