@@ -28,11 +28,15 @@ and Gemini CLI document themselves:
 
 Every English page is written and checked against the code, and the README points at the docs.
 `tests/commands/builtin.test.ts` and `tests/app/shortcuts.test.ts` in `apps/cli` fail when a command or shortcut is
-missing from the reference pages. What is left:
+missing from the reference pages.
 
-- **The Turkish pages.** Get started is translated, addressing the reader as "siz"; headings keep the English anchors
-  (`## Kurulum [#install]`) and links go to `/tr/...`. Search stems Turkish with a tokenizer of its own
-  (`lib/turkish-tokenizer.ts`), since zbsearch's folds ğ, ı and ş away before the stemmer sees them.
+Every page is in Turkish too, addressing the reader as "siz": headings keep the English anchors
+(`## Kurulum [#install]`), links go to `/tr/...`, and the screens stay as the app draws them. Search stems Turkish with
+a tokenizer of its own (`lib/turkish-tokenizer.ts`), since zbsearch's folds ğ, ı and ş away before the stemmer sees
+them. A change to an English page needs the same change in its `.tr.mdx`. What is left:
+
+- **Chinese and Russian**, the same way as Turkish. Chinese needs no stemmer, but words aren't split by spaces, so its
+  search needs a look of its own.
 - **Screens that refresh themselves.** The screens in the pages were captured from the demo app in the test terminal,
   with each cell's color turned into the theme's name; that capture could become a script to run when the TUI changes.
 - **Developer docs**, in their own tab.
