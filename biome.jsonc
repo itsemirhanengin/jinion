@@ -31,5 +31,48 @@
         "useExhaustiveDependencies": "off"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      // What moves into packages/core draws nothing, so a desktop app can drive it too.
+      "includes": [
+        "apps/cli/src/agent/**",
+        "apps/cli/src/commands/**",
+        "apps/cli/src/controllers/**",
+        "apps/cli/src/conversation/**",
+        "apps/cli/src/git/**",
+        "apps/cli/src/lib/**",
+        "apps/cli/src/mcp/**",
+        "apps/cli/src/memory/**",
+        "apps/cli/src/prompt/**",
+        "apps/cli/src/settings/**",
+        "apps/cli/src/state/**",
+        "apps/cli/src/usage/**"
+      ],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "react": "Core draws nothing; React stays in the TUI.",
+                  "ink": "Core draws nothing; Ink stays in the TUI.",
+                  "jotai": "Import from jotai/vanilla: the root entry loads React.",
+                  "jotai/utils": "Import from jotai/vanilla/utils: this entry loads React."
+                },
+                "patterns": [
+                  { "group": ["@jinion/tui", "@jinion/tui/**"], "message": "Core has its own types and helpers; @jinion/tui is the TUI's." },
+                  {
+                    "group": ["**/app/**", "**/panels/**", "**/ui/**", "**/status/**"],
+                    "message": "Core doesn't reach into the TUI's folders."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

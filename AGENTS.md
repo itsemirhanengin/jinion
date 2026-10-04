@@ -23,9 +23,9 @@ Dependencies point down this list; nothing lower imports from higher up.
 | Folder | What lives there |
 | --- | --- |
 | `main.tsx` | Flags, picking the agent, `run(<App />)`. |
-| `app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`). |
-| `commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a panel. |
-| `panels/` | One component per panel; a panel with several parts gets a folder with an `open.tsx` when more than one place opens it. |
+| `app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs controllers ask for. |
+| `commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
+| `panels/` | One component per panel, a folder for one with several parts. A new panel gets a `View` in `controllers/context.ts` and a case in `app/views.tsx`. |
 | `ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
 | `status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
 | `controllers/` | What the app does, as plain classes with no React: turns and the queue, the conversation, models, modes, accounts, tasks, input. `jinion.ts` is the composition root. They reach the screen only through the `Screen` port in `context.ts`. |
@@ -40,8 +40,10 @@ Rules that keep it that way:
 - **State lives in atoms; behavior lives in controllers.** Components read atoms with `useAtomValue` and call the
   `Jinion` from `useJinion()`, which never changes, so reading it never redraws. Don't put app state in `useState` when
   more than one component or a controller needs it.
-- **Controllers stay free of React and JSX.** What they need from the screen goes through `Screen`; dialogs are data
-  (`Dialog`) that `app/dialogs.tsx` draws.
+- **What will be `packages/core` draws nothing.** `agent/`, `commands/`, `controllers/`, `conversation/`, `state/`,
+  `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` and `lib/` import no React, Ink, `@jinion/tui` or
+  jotai's root entry (`jotai/vanilla` instead), and nothing from the TUI's folders; `biome.jsonc` checks it. What they
+  need from the screen goes through `Screen`, as data: views (`View`) and dialogs (`Dialog`) that each client draws.
 - **Backends stay behind `Agent`.** The app only uses `agent/agent.ts` and its sibling contract files; anything Claude
   Code specific stays in `agent/claude/`. Optional members are feature-detected, with a notice when missing.
 - **`@jinion/tui` knows nothing about Jinion.** Generic pieces come from `@jinion/tui`, the chat kit (messages, tool
