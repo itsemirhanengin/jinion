@@ -55,8 +55,6 @@ history. Optional parts of the interface stay optional, so the UI already copes 
 
 - **Rewind's "Summarize from here" and "Summarize up to here".** Claude Code's rewind menu has them, but the Agent SDK
   (0.3.286) has no call for them. Add them to `panels/rewind/` once it does.
-- **Skills synced from claude.ai** (pdf, docx, ...) don't reach Jinion. Find out how Claude Code loads them, then hand
-  them over in `agent/claude/plugins.ts` with the rest.
 - **A real second account.** Switching accounts mid-conversation is built (`/account`) but was never checked end to end
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
@@ -116,4 +114,5 @@ the pointer; the card of what a turn changed, each file opening its diff; select
 release; web fetches, searches and MCP calls shown with what came back; a git worktree per conversation, opt-in with
 `ctrl+g`; a fuller system prompt after Claude Code's; the codebase restructured into controllers over a jotai store,
 with its conventions in `AGENTS.md`; the docs at docs.jinion.co and the page at jinion.co, on Railway; signing in with
-the `claude` that comes with the SDK, so Jinion needs no Claude Code installed. `git log` has the details.
+the `claude` that comes with the SDK, so Jinion needs no Claude Code installed; claude.ai's skills, synced per account
+by a short process of their own (`agent/claude/synced-skills.ts`). `git log` has the details.

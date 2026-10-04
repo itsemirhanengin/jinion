@@ -15,7 +15,16 @@ tools and data from other services, such as Linear or Figma. Jinion brings in bo
 | Plugins you turned on in Claude Code                        | Their skills, commands, agents and MCP servers; their hooks stay off |
 | `~/.jinion/mcp.json`, `~/.claude.json`                      | MCP servers                                                         |
 | The project's `.mcp.json`                                   | MCP servers that stay off until you turn them on                    |
-| Your Claude account                                         | Its claude.ai connectors                                            |
+| Your Claude account                                         | Its claude.ai connectors, and its claude.ai skills, such as `$pdf`  |
+
+### claude.ai skills
+
+The skills your claude.ai organization has, such as `pdf`, `docx`, `pptx` and `xlsx`, show in the `$` list under
+claude.ai. Each account gets its own organization's skills, so after a switch with `/account` you see that
+organization's.
+
+Jinion fetches them in the background when you start it and after you switch accounts, and they come in from the next
+conversation on. So the first time you use an account, they show up after `/clear` or the next start.
 
 ## Use a skill
 
