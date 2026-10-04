@@ -11,10 +11,13 @@ export class PastedTexts {
     private readonly minLength = 800,
   ) {}
 
+  /** The same text pasted again goes in as it is, as in Claude Code, to read or edit it in the prompt. */
   add(text: string) {
     const lines = text.split('\n').length;
     // A tab or a control character would throw the prompt's layout off; as a placeholder, the text goes out as it is.
-    if (lines < this.minLines && text.length < this.minLength && printable(text) === text) return text;
+    const drawable = printable(text) === text;
+
+    if (drawable && ((lines < this.minLines && text.length < this.minLength) || this.pasted(text))) return text;
 
     const id = ++this.count;
 
@@ -25,5 +28,9 @@ export class PastedTexts {
 
   expand(value: string) {
     return value.replace(PASTED_TEXT, (placeholder, id: string) => this.texts.get(Number(id)) ?? placeholder);
+  }
+
+  private pasted(text: string) {
+    return [...this.texts.values()].includes(text);
   }
 }

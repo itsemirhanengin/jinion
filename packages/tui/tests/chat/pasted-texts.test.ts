@@ -20,6 +20,15 @@ describe('PastedTexts', () => {
     expect(pastes.add('x'.repeat(800))).toBe('[Pasted text #2 800 chars]');
   });
 
+  it('puts a long text in as it is when it was pasted before, as Claude Code does, unless the prompt can’t draw it', () => {
+    const pastes = new PastedTexts();
+
+    expect(pastes.add('a\nb\nc')).toBe('[Pasted text #1 +3 lines]');
+    expect(pastes.add('a\nb\nc')).toBe('a\nb\nc');
+    expect(pastes.add('id\tname')).toBe('[Pasted text #2 7 chars]');
+    expect(pastes.add('id\tname')).toBe('[Pasted text #3 7 chars]');
+  });
+
   it('expands placeholders, also in text recalled later, and leaves unknown ones', () => {
     const pastes = new PastedTexts();
     const placeholder = pastes.add('a\nb');
