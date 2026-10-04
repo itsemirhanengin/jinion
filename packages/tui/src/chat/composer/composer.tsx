@@ -5,7 +5,6 @@ import { useToast } from '../../runtime/toast.js';
 import { Rule } from '../../primitives/rule.js';
 import { plural } from '../../utils/plural.js';
 import { PLACEHOLDERS, useMentions } from '../highlights.js';
-import type { PastedTexts } from '../pasted-texts.js';
 import { PromptInput, type HiddenRows, type PromptInputProps } from '../prompt/prompt-input.js';
 import { CompletionList } from './completion-list.js';
 import { useCompletion, type CompletionSource } from './use-completion.js';
@@ -14,7 +13,8 @@ export interface ComposerProps
   extends Omit<PromptInputProps, 'onKeyDown' | 'onCursorChange' | 'onScroll' | 'onPaste' | 'atoms' | 'highlight'> {
   completions?: CompletionSource[];
   limit?: number;
-  pastes?: PastedTexts;
+  /** Turns a paste into what goes in the prompt, such as a placeholder for a long one. */
+  pastes?: { add(text: string): string };
   footer?: ReactNode;
   mentions?: (RegExp | undefined)[];
   onPaste?(text: string): string | undefined;
