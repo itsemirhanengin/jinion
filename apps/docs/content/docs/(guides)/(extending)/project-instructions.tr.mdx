@@ -1,0 +1,46 @@
+---
+title: Proje talimatlarını yazın
+description: Projenizin kurallarını ajana AGENTS.md ya da CLAUDE.md ile verin.
+---
+
+Ajan, projenizin talimatlarını her konuşmanın başında okur ve onlara uyar. Talimatları Jinion'u başlattığınız
+klasördeki `AGENTS.md` ya da `CLAUDE.md` dosyasına yazın. İkisi de varsa ajan ikisini de alır.
+
+## Ne yazılır [#what-to-write]
+
+Projeye yeni katılan birinin ilk gününde ihtiyaç duyacağı ve koddan öğrenemeyeceği şeyleri yazın:
+
+- nasıl build alınacağı, test ve lint çalıştırılacağı, bir değişikliğe bitti demeden önce neyin çalıştırılacağı;
+- kodun uyduğu kurallar: adlandırma, klasör düzeni ya da hata yönetimi gibi;
+- kullanılacak ve kaçınılacak kütüphaneler;
+- üretilmiş dosyalar gibi dokunulmaması gerekenler.
+
+Kısa tutun. Her satır her konuşmaya girer.
+
+```md title="AGENTS.md"
+# Kurallar
+
+- npm değil pnpm. `pnpm test` Vitest'i çalıştırır; bir değişiklik bitmeden `pnpm typecheck` ve `pnpm lint` geçmeli.
+- Route handler'lar `src/routes` içinde, her kaynak için bir dosya. Hatalar `src/http/errors.ts` içindeki sınıflardır.
+- Doğrulama için zod kullanın. Yeni HTTP kütüphanesi eklemeyin.
+- `src/generated/` klasörünü `pnpm codegen` yazar; asla elle düzenlemeyin.
+```
+
+## AGENTS.md mi, CLAUDE.md mi [#agentsmd-or-claudemd]
+
+İkisi de aynı şekilde çalışır. `AGENTS.md` pek çok ajanın okuduğu addır; tek bir dosya hepsine yeter. Projenizde zaten
+bir `CLAUDE.md` varsa Jinion onu olduğu gibi okur.
+
+Jinion yalnızca bu iki dosyayı, onu başlattığınız klasörde okur. Üst ya da alt klasörlerdeki aynı adlı dosyalar,
+`CLAUDE.local.md` ve genel `~/.claude/CLAUDE.md` dosyanız okunmaz. Geneli getirmek için `/memory import` onu bir
+[bellek](/tr/memory) notu olarak ekler.
+
+## Talimatlar ve bellek [#instructions-vs-memory]
+
+| Proje talimatları                     | [Bellek](/tr/memory)                                |
+| ------------------------------------- | --------------------------------------------------- |
+| Siz yazarsınız, repoda durur          | Ajan yazar, makinenizde durur                       |
+| Projedeki herkesle paylaşılır         | Yalnızca sizindir                                   |
+| Her konuşmaya her zaman tamamıyla girer | Bir dizin; ajan bir nota ihtiyaç duyduğunda açar  |
+
+Bütün ekibin uyduğu kuralları `AGENTS.md` dosyasına koyun. Kendi tercihlerinizi belleğe bırakın.

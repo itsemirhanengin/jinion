@@ -1,0 +1,61 @@
+---
+title: Terminalinizi ayarlayın
+description: Jinion'un desteklediği terminallerde temalar, bildirimler, metin seçme ve görsel yapıştırma.
+---
+
+Jinion her modern terminalde çalışır. Birkaç ayar daha iyi çalışmasını sağlar.
+
+## Açık ve koyu [#light-and-dark]
+
+Jinion terminal arka planınızın açık mı koyu mu olduğunu algılar ve renklerini buna göre seçer. Yanlış tahmin ederse
+kendiniz ayarlayın:
+
+```sh
+jinion --theme light
+```
+
+Ya da kalıcı olması için kabuk profilinize `JINION_THEME=light` (veya `dark`) ekleyin.
+
+## Yeni satırlar [#new-lines]
+
+`shift+enter` çoğu terminalde yeni bir satır ekler. Sizinki bunun yerine mesajı gönderiyorsa `alt+enter` kullanın ya
+da satırı `\` ile bitirip `enter`'a basın.
+
+## Metin seçin ve kopyalayın [#select-and-copy-text]
+
+Metin seçmek için sürükleyin. Bıraktığınızda kopyalanır ve mesaj alanının sağ üstünde `copied 27 chars to clipboard`
+görünür. Çift tıklama bir kelimeyi seçer; bir dosya yolu ya da URL tek kelime sayılır. Üç kez tıklama bir satırı
+seçer. Metin seçiliyken `ctrl+c` ajanı durdurmak yerine metni yeniden kopyalar. Yazmak, tıklamak ya da kaydırmak
+seçimi bırakır.
+
+Kendi makinenizde metin sistemin pano aracından geçer: macOS'ta `pbcopy`, Linux'ta `wl-copy`, `xclip` ya da `xsel`.
+SSH üzerinden terminaliniz aracılığıyla gider (OSC 52). iTerm2, Settings → General → Selection → Applications in
+terminal may access clipboard seçeneğini açtığınızda buna izin verir. tmux içinde metin ayrıca tmux'un yapıştırma
+arabelleğine de gider.
+
+Terminalinizin kendi seçimi için sürüklerken `shift`'e basılı tutun: iTerm2'de `option`, Terminal.app'te `fn`.
+
+## Kaydırma [#scroll]
+
+Fare tekeri ve `pgup` / `pgdn` konuşmayı kaydırır. Yukarı kaydırdığınızda bir **Jump to bottom** satırı belirir;
+konuşmayı yeniden takip etmek için ona tıklayın.
+
+## Bildirimler [#notifications]
+
+Bildirimler terminalinizin kendi masaüstü bildirimlerini, olmadığı yerde de zilini kullanır. Hangi terminallerin
+bildirim gösterdiği için [Bildirim alın](/tr/notifications#terminal-support) sayfasına bakın.
+
+<Callout>
+  tmux ya da screen içinde bildirimler zile dönüşür. Görmek için çoklayıcınızın zil iletme ayarını açın.
+</Callout>
+
+## Görsel yapıştırın [#paste-images]
+
+`ctrl+v` macOS'ta panodan bir görsel okur. Linux'ta `wl-paste` (Wayland) ya da `xclip` (X11) gerekir:
+
+```sh
+sudo apt install wl-clipboard   # Wayland
+sudo apt install xclip          # X11
+```
+
+Bir görsel dosyasını terminale sürüklemek her yerde çalışır, çünkü terminal dosyanın yolunu yapıştırır.

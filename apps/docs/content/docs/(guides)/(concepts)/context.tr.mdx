@@ -1,0 +1,45 @@
+---
+title: Bağlam
+description: Modelin bir konuşma boyunca aklında tuttukları, bunu neyin doldurduğu ve sıkıştırmanın nasıl yer açtığı.
+---
+
+Bağlam (context), modelin cevap vermeden önce okuduğu her şeydir: system prompt, projenizin talimatları, araçlar ve
+o ana kadarki konuşmanın tamamı. Bir sınırı vardır: bağlam penceresi. Uzun bir konuşma onu doldurur.
+
+## Bağlamı neyin doldurduğunu görün [#see-what-fills-the-context]
+
+`/context`, bağlam penceresini her yüzde için bir kare olacak şekilde, neyin doldurduğuna göre bir ızgara olarak
+gösterir:
+
+```terminal
+{accent|+- Context} {muted|Opus 5.5 · 41.0k of 200.0k tokens · 21%} {accent|----------------------------------------+}
+{accent|| ■ ■ ■} {code|■ ■ ■ ■ ■ ■ ■}   {accent|■} System prompt       {muted|6.2k tokens · 3%}                             {accent||}
+{accent||} {heading|■ ■} {string|■ ■ ■ ■ ■ ■ ■ ■}   {code|■} System tools        {muted|14.8k tokens · 7%}                            {accent||}
+{accent||} {string|■} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■}   {heading|■} Skills              {muted|1.9k tokens · 0.9%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {string|■} Messages            {muted|18.1k tokens · 9%}                            {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■   ■} Free space          {muted|126.0k tokens · 63%}                          {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}   {border|■} Autocompact buffer  {muted|33.0k tokens · 17%}                           {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {heat-0|■ ■ ■ ■} {border|■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||} {border|■ ■ ■ ■ ■ ■ ■ ■ ■ ■}                                                                      {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Compacts on its own at 167.0k tokens (84%); /compact does it now, with a focus if you g…} {accent||}
+{accent||} {muted|Listed by name and loaded when used, so they take no room yet: MCP tools 52.0k}           {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Esc {muted|close}                                                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Uzun bir konuşmayı sıkıştırın [#compact-a-long-conversation]
+
+Uzun bir konuşma modelin bağlamını doldurur. `/compact` konuşmayı o ana kadar özetler ve özetten devam eder. En
+önemli olanı yazarsanız her şeyden önce o korunur:
+
+```text
+/compact API değişiklikleri
+```
+
+Jinion bağlam doldukça kendisi de sıkıştırır. Buna beşte bir ya da daha az kaldığında mesaj alanının altındaki çizgi
+ne kadar kaldığını söyler, örneğin `15% context left until auto-compact · /compact`. Sıkıştırmadan sonra konuşma
+bunun yapıldığı yeri işaretler, örneğin `[x] Compacted · 160.2k → 21.4k tokens`. Özeti görmek için üstüne tıklayın.

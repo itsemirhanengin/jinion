@@ -1,0 +1,60 @@
+---
+title: Önceki bir mesaja geri sarın
+description: Gönderdiğiniz bir mesajın öncesine dönün; kodu, konuşmayı ya da ikisini birden geri alın.
+---
+
+Gönderdiğiniz bir mesajın öncesine dönmek için mesaj alanı boşken `esc`'ye iki kez basın ya da `/rewind` yazın. Mesaj
+alanında metin varsa iki kez `esc` onun yerine metni temizler. Geri sarma turun bitmesini bekler; tek bir `esc` turu
+yarıda keser.
+
+Panel mesajlarınızı en yeniden başlayarak listeler. Üzerinde durduğunuz mesajın altında, geri dönmenin dosyalarda neyi
+değiştireceğini gösterir.
+
+```terminal
+{accent|+- Rewind} {muted|3 messages} {accent|----------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|add a test for the window reset}                                                     {accent||}
+{accent||}      2 files change {added|+29} {removed|-1}                                                               {accent||}
+{accent||}      {muted|src/middleware/rate-limit.test.ts, src/middleware/rate-limit.ts}                     {accent||}
+{accent||}   2. use the existing TooManyRequests error                                              {accent||}
+{accent||}   3. add rate limiting to the api                                                        {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|pick ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Ajan çalışırken gönderdiğiniz bir mesaj o tura katılmıştır; bu yüzden listede yer almaz.
+
+Bir mesajın üzerinde `enter`'a basın, sonra neyi geri alacağınızı seçin:
+
+```terminal
+{accent|+- Rewind to before} {muted|add a test for the window reset} {accent|---------------------------------------+}
+{accent||} 2 files change {added|+29} {removed|-1}                                                                    {accent||}
+{accent||} {muted|src/middleware/rate-limit.test.ts, src/middleware/rate-limit.ts}                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Restore code and conversation}                                                       {accent||}
+{accent||}      {muted|Files go back, and the conversation goes on from before this message, which goes}    {accent||}
+{accent||}      {muted|back into the prompt}                                                                {accent||}
+{accent||}   2. Restore conversation                                                                {accent||}
+{accent||}      {muted|The conversation goes on from before this message; the files stay as they are}       {accent||}
+{accent||}   3. Restore code                                                                        {accent||}
+{accent||}      {muted|Files go back; the conversation goes on as it is}                                    {accent||}
+{accent||}   4. Never mind                                                                          {accent||}
+{accent||}      {muted|Back to the messages}                                                                {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|rewind ·} Up/Down {muted|move ·} Esc {muted|back}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+| Seçim                         | Ne olur                                                                                 |
+| ----------------------------- | --------------------------------------------------------------------------------------- |
+| Restore code and conversation | Dosyalar ve konuşma geri döner; mesajınız düzenleyip göndermeniz için mesaj alanına geri gelir |
+| Restore conversation          | Konuşma geri döner; dosyalar olduğu gibi kalır                                          |
+| Restore code                  | Dosyalar geri döner; konuşma devam eder                                                 |
+| Never mind                    | Listeye döner                                                                           |
+
+O mesajdan bu yana hiçbir dosya değişmediyse yalnızca Restore conversation ve Never mind sunulur.
+
+<Callout type="warn">
+  Yalnızca dosya araçlarıyla yapılan değişiklikler geri gelir. `git checkout` gibi komutların yaptığı değişiklikler
+  kalır.
+</Callout>

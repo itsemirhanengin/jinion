@@ -1,0 +1,87 @@
+---
+title: İşleri arka planda çalıştırın
+description: Konuşma devam ederken dev sunucularını, test çalıştırmalarını ve alt ajanları sürdürün, ctrl+t ile takip edin.
+---
+
+Bazı komutlar bir dev sunucusu gibi çalışmaya devam eder ya da tüm testleri çalıştırmak gibi bir süre alır. Siz ve
+ajan çalışmaya devam ederken bunlar arka planda sürebilir.
+
+## Bir şeyi arka planda başlatın [#start-something-in-the-background]
+
+İsteyin, ajan onu arka planda başlatsın:
+
+```text
+dev sunucusunu başlat
+```
+
+Mesaj alanının üstündeki bir satır neyin ne kadar süredir çalıştığını söyler:
+
+```terminal
+{on-user| }{accent,on-user,bold|> }{on-user|start the dev server                                                                     }
+
+ {thinking,italic|A dev server keeps running, so it goes in the background and the conversation goes on.}
+
+{border,on-surface-success|+------------------------------------------------------------------------------------------+}
+{border,on-surface-success||}{on-surface-success| }{muted,on-surface-success|$ }{warning,on-surface-success|pnpm}{on-surface-success| dev                                                                               }{border,on-surface-success||}
+{border,on-surface-success|+--- }{on-surface-success|Output }{border,on-surface-success|-------------------------------------------------------------------------------+}
+{border,on-surface-success||}{on-surface-success| }{muted,on-surface-success|[In the background | ctrl+t to see it]}{on-surface-success|                                                   }{border,on-surface-success||}
+{border,on-surface-success|+------------------------------------------------------------------------------------------+}
+
+ The dev server runs in the background on {accent,bold,underline|http://localhost:3000}. {code|ctrl+t} shows its output,
+ and {code|x} there stops it; I keep it running while we work.
+
+ {muted|bg} {accent|[|]} pnpm dev {muted|0s · ctrl+t}
+
+{border|--------------------------------------------------------------------------------------------}
+ {accent|A}{muted|sk jinion anything · / commands · $ skills · @ files}
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 23K/200K {muted|·} {cost|$0.09}   {muted|Start the dev server}
+```
+
+Turun zaten beklediği bir komut ya da alt ajan da arka plana geçebilir. Birkaç saniye çalıştıktan sonra mesaj
+alanının üstündeki çalışma satırında `Running bash · ctrl+b to run it in the background` yazar. `ctrl+b`'ye basın,
+tur onu beklemeden devam etsin.
+
+## Görevleri takip edin ve durdurun [#follow-and-stop-tasks]
+
+Görevler panelini açmak için `ctrl+t`'ye basın ya da `/tasks` yazın. Panel, konuşmanın her görevini nasıl bittiğiyle
+birlikte, üzerinde durduğunuz görevin de son çıktısını gösterir.
+
+```terminal
+{accent|+- Background tasks} {muted|1 running} {accent|-------------------------------------------------------------+}
+{accent||} {code|> 1.} {accent,bold|[|]} {code,bold|pnpm dev}                                                                     {muted|1s} {accent||}
+{accent||}      {muted|> acme-api@1.4.0 dev}                                                                {accent||}
+{accent||}      {muted|> tsx watch src/server.ts}                                                           {accent||}
+{accent||                                                                                          |}
+{accent||}      {muted|[watch] starting `node src/server.ts`}                                               {accent||}
+{accent||}      {muted|Server listening on http://localhost:3000}                                           {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|output ·} x {muted|stop ·} Up/Down {muted|move ·} Esc {muted|close}                                         {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+| Tuş     | Ne yapar                                         |
+| ------- | ------------------------------------------------ |
+| `enter` | Çıktının tamamını gösterir, sonunu takip ederek  |
+| `x`     | Görevi durdurur                                  |
+| `esc`   | Paneli kapatır; görevler çalışmaya devam eder    |
+
+Çıktıda `up`, `down`, `pgup` ve `pgdn` kaydırır, `x` görevi durdurur, `esc` listeye döner. Bir alt ajan `Agent · ` ve
+ne yaptığıyla görünür; çıktı yerine o ana kadarki araç çağrıları yer alır.
+
+## Bir görev bittiğinde [#when-a-task-ends]
+
+Konuşma bunu söyler, örneğin `[!] Background pnpm test · failed after 41s · exit 1`, ve ajan sonuca kendi başına bir
+turda bakar. Pencere odakta değilse bir [bildirim](/tr/notifications) alırsınız.
+
+<Callout>
+  Görevler oturuma aittir. `/clear`, `/resume`, konuşmanın [geri sarılması](/tr/conversations/rewind), hesap
+  değiştirme ya da çıkış ile dururlar. `esc` turu durdurur ama arka plan görevlerini çalışır halde bırakır.
+</Callout>
+
+## Alt ajanlar [#subagents]
+
+Ajan işin bir kısmını bir alt ajana verdiğinde, alt ajanın araç çağrıları `Agent · what it is doing` altında bir ağaç
+olarak büyür; son altısı görünür. İş bittiğinde ağaç `6 tool calls · 34s` gibi tek bir satıra katlanır; yeniden açmak
+için tıklayın. Alt ajanlar da komutlar gibi arka planda çalışabilir.

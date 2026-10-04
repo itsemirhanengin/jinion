@@ -1,0 +1,39 @@
+---
+title: Bildirim alın
+description: Başka bir penceredeyken Jinion sizi beklediğinde ya da uzun bir turu bitirdiğinde bildirim alın.
+---
+
+Terminal penceresi odakta değilken Jinion şu durumlarda size bildirim gönderir:
+
+- sizi beklediğinde: bir soru, bir izin isteği ya da incelenecek bir plan;
+- 15 saniye ya da daha uzun süren bir tur bittiğinde;
+- bir [arka plan görevi](/tr/background-tasks) bittiğinde.
+
+Bildirim neyle ilgili olduğunu söyler:
+
+```text
+jinion · api: Done with “add rate limiting” after 1m 12s.
+```
+
+Pencereye bakarken hiçbir şey açılmaz, çünkü terminal odağı ne zaman kazanıp kaybettiğini Jinion'a bildirir.
+
+## Terminal desteği [#terminal-support]
+
+Bildirim terminalinizin kendi bildirimidir; bu yüzden bildirimi destekleyen bir terminal gerekir:
+
+| Terminal                           | Nasıl                          |
+| ---------------------------------- | ------------------------------ |
+| Ghostty, WezTerm, Warp, foot, rxvt | Masaüstü bildirimi (OSC 777)   |
+| iTerm2                             | Masaüstü bildirimi (OSC 9)     |
+| kitty                              | Masaüstü bildirimi (OSC 99)    |
+| Diğerleri, tmux ya da screen içi   | Terminal zili                  |
+
+## Kapatın [#turn-them-off]
+
+```text
+/notifications off
+```
+
+Jinion `Notifications are off. /notifications on turns them back on.` der. `/notifications on` onları yeniden açar ve
+bu terminalin nasıl bildirim gönderdiğini söyler: masaüstü bildirimi ya da terminal zili. Tek başına `/notifications`
+açıp kapatır. Seçim her projede geçerlidir.

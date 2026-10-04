@@ -1,0 +1,70 @@
+---
+title: Bir konuşmaya devam edin
+description: Önceki bir konuşmaya kaldığı yerden devam edin, ona bir başlık verin ya da yenisini başlatın.
+---
+
+Her konuşma her turdan sonra, proje bazında kaydedilir. Çıktığınızda hiçbir şey kaybolmaz.
+
+## Birini seçin [#pick-one-up]
+
+`/resume` projenin diğer konuşmalarını başlıklarıyla, en yeniden başlayarak listeler. Başlığa göre süzmek için yazın,
+sonra `enter`'a basın. Konuşma kendi [sekmesinde](/tr/conversations/tabs) açılır, içinde olduğunuz konuşma da yanında
+açık kalır. Ajan kaldığı yerden devam eder ve konuşulanları hatırlar.
+
+```terminal
+{accent|+- Resume} {muted|4 conversations} {accent|-----------------------------------------------------------------+}
+{accent||} {muted|search} {accent|T}{muted|ype to filter}                                                                    {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>} {code,bold|Flaky checkout e2e test}                                                         {muted|2h ago} {accent||}
+{accent||}     {muted|2 messages · "the checkout e2e test fails every few runs, can you find out why?"}     {accent||}
+{accent||}   Migrate auth to OIDC                                                         {muted|yesterday} {accent||}
+{accent||}     {muted|4 messages · "plan the migration from our session cookies to OIDC"}                   {accent||}
+{accent||}   Billing reconciliation job                                                      {muted|3d ago} {accent||}
+{accent||}     {muted|2 messages · "how does the nightly billing reconciliation work?"}                     {accent||}
+{accent||}   Speed up the CI cache                                                           {muted|1w ago} {accent||}
+{accent||}     {muted|2 messages · "CI takes 14 minutes, most of it installing dependencies"}               {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|resume ·} Up/Down {muted|move ·} PgUp/PgDn {muted|page ·} Esc {muted|close}                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Her başlığın altında mesaj sayısı ve ilk mesajınız yer alır. `/resume oidc` listeyi süzülmüş olarak açar.
+
+Bir [worktree](/tr/worktrees) içinde çalışmış bir konuşma `worktree swift-running-fox` gösterir ve o worktree'ye geri
+döner.
+
+Son konuşmayı doğrudan açmak için Jinion'u `-c` ya da `--continue` ile başlatın:
+
+```sh
+jinion -c
+```
+
+## Başlıklar [#titles]
+
+Jinion ilk tur bittiğinde her konuşmaya `Flaky checkout e2e test` gibi birkaç kelimelik bir başlık verir. O zamana
+kadar başlık, ilk mesajınızın ilk satırıdır.
+
+Konuşma ilerledikçe Jinion onu yeniden adlandırır; böylece başlık işe ayak uydurur: gönderdiğiniz mesajlar iki katına
+çıktığında, yeni mesajlarla 20 dakika geçtiğinde ve bir [planı](/tr/permission-modes#plan-first) kabul ettiğinizde.
+
+Başlık `/resume` içinde ve durum satırının sağında görünür.
+
+## Bir konuşmayı yeniden adlandırın [#rename-a-conversation]
+
+Konuşmaya kendi başlığınızı vermek için `/rename` ve ardından başlığı yazın:
+
+```text
+/rename checkout hatası
+```
+
+Jinion `Renamed the conversation to “checkout hatası”.` der. Sizin verdiğiniz başlık kalır: Jinion konuşmayı bir daha
+yeniden adlandırmaz.
+
+Tek başına `/rename`, Jinion'un konuşmayı konusuna göre şimdi adlandırmasını sağlar; konuşma ilerledikçe de
+adlandırmaya devam eder.
+
+## Yenisini başlatın [#start-a-new-one]
+
+`/clear` ya da `/new` o anki konuşmayı kaydeder ve yenisini başlatır. [Arka planda](/tr/background-tasks) çalışanlar
+durur.

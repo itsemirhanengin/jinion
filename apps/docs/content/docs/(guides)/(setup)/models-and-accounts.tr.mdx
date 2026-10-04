@@ -1,0 +1,133 @@
+---
+title: Modelleri ve hesapları değiştirin
+description: Modeli ve ne kadar çaba harcayacağını seçin; Claude hesapları ekleyin, aralarında geçin, yeniden giriş yapın ve kaldırın.
+---
+
+## Bir model seçin [#pick-a-model]
+
+`/model`, hesabınızın kullanabildiği modelleri listeler. `up` ve `down` modeli, `left` ve `right` çabasını seçer,
+`enter` geçiş yapar.
+
+```terminal
+{accent|+- Model} {muted|Claude} {accent|---------------------------------------------------------------------------+}
+{accent||} {muted|effort  default   low   medium}   {accent,bold|high}   {muted|xhigh   max}                                      {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Opus 5.5}                                                                    {muted|current} {accent||}
+{accent||}      {muted|Most capable, for complex work}                                                      {accent||}
+{accent||}   2. Sonnet 5                                                                            {accent||}
+{accent||}      {muted|Fast and capable, for everyday work}                                                 {accent||}
+{accent||}   3. Haiku 4.5                                                                           {accent||}
+{accent||}      {muted|Fastest, for quick answers}                                                          {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} Up/Down {muted|model ·} Left/Right {muted|effort ·} Esc {muted|cancel}                            {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Yeni model bir sonraki istekten itibaren geçerli olur ve sonraki oturumlar onunla başlar. Bir seçim yapılmadıysa
+Jinion, Opus'u modelin varsayılan çabasıyla kullanır.
+
+Doğrudan geçmek için:
+
+```text
+/model sonnet
+```
+
+## Çabayı ayarlayın [#set-the-effort]
+
+Çaba (effort), modelin cevap vermeden önce ne kadar düşündüğüdür. Daha fazla çaba daha yavaştır ve planınızdan daha
+fazla harcar; zor problemlerde işe yarar.
+
+```text
+/effort high
+```
+
+`/effort default` kararı modele bırakır, tek başına `/effort` ise `/model` panelini açar. Her modelin çaba seviyeleri
+yoktur; olmayan bir model için paneldeki çaba satırı, modelin çaba ayarı olmadığını söyler.
+
+## Tek bir çalıştırma için seçin [#choose-for-one-run]
+
+Flag'ler ve ortam değişkenleri, kayıtlı seçimi tek bir çalıştırma için geçersiz kılar:
+
+```sh
+jinion --model sonnet --effort low
+```
+
+| Flag             | Değişken         |
+| ---------------- | ---------------- |
+| `--model`, `-m`  | `JINION_MODEL`   |
+| `--effort`, `-e` | `JINION_EFFORT`  |
+
+## Hesap değiştirin [#switch-accounts]
+
+Kişisel ve iş hesabı gibi birden fazla Claude girişiniz varsa `/account` onları listeler ve aralarında geçiş yapar.
+
+```terminal
+{accent|+- Account} {muted|Claude} {accent|-------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|default}                                                                     {muted|current} {accent||}
+{accent||}      {muted|me@example.com · Max · 5h 92% left · 7d 80% left just now}                           {accent||}
+{accent||}   2. work                                                                                {accent||}
+{accent||}      {muted|ACME · Team · me@acme.dev · 5h 69% left · 7d 88% left 2h ago}                        {accent||}
+{accent||}   3. client                                                                              {accent||}
+{accent||}      {muted|Not signed in; press enter to sign in}                                               {accent||}
+{accent||}   4. Add an account                                                                      {accent||}
+{accent||}      {muted|Signs another login in, in the browser}                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|switch ·} l {muted|sign in again ·} d {muted|remove ·} Up/Down {muted|move ·} Esc {muted|close}                     {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Her hesap kim olarak giriş yaptığını ve, kullandıktan sonra, en son görülen plan limitlerini gösterir. Geçmek için
+bir hesabın üzerinde `enter`'a basın. Devam eden bir konuşma diğer hesapla sürer. Geçiş turlar arasında olur; bu
+yüzden önce o anki turu bitirin ya da yarıda kesin.
+
+`/account work` doğrudan geçer; sonraki oturumlar seçtiğiniz hesapla başlar.
+
+Karşılama ekranı kim olarak giriş yaptığınızı gösterir: takım planı için `ACME · Team` gibi organizasyonu, kişisel
+plan için `me@example.com · Max` gibi e-postayı. Bunu durum satırında da görmek için [`/statusline`](/tr/status-line)
+içinde Account bölümünü açın.
+
+## Hesap ekleyin [#add-an-account]
+
+`/account` içinde **Add an account** seçeneğini seçin, `work` gibi bir ad yazın ve `enter`'a basın. Ya da
+`/account add work` yazın. Ad harf, rakam, `-` ya da `_` içerebilir ve en fazla 32 karakter olabilir.
+
+Jinion girişi tarayıcınızda açar:
+
+```terminal
+{accent|+- Account} {muted|work} {accent|---------------------------------------------------------------------------+}
+{accent||} Signing in to {bold|work}. Finish it in your browser.                                           {accent||}
+{accent||} {muted|If the browser didn't open: }{code|https://claude.ai/oauth/authorize?code=true&client_id=…}      {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Paste the code the browser shows: }{muted|code}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|send ·} Esc {muted|cancel}                                                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Giriş yapın, tarayıcının gösterdiği kodu yapıştırın ve `enter`'a basın. Jinion şifrenizi asla görmez. İş bittiğinde
+Jinion `Signed in to work as me@acme.dev. Pick it here to switch.` der ve hesap listede yer alır.
+
+`default` hesabı, makinenizde zaten bulunan Claude girişidir.
+
+## Yeniden giriş yapın [#sign-in-again]
+
+Bir girişin süresi dolduğunda ya da çıkış yapıldığında hesabı `Not signed in; press enter to sign in` gösterir.
+Yeniden giriş yapmak için üzerinde `enter`'a basın. Hâlâ giriş yapılmış bir hesaba, örneğin başka bir girişle,
+yeniden giriş yapmak için üzerinde `l`'ye basın ya da `/account add work` yazın.
+
+Kullanımdaki hesaba yeniden giriş yapmak konuşmayı bitirmez: Jinion
+`Signed in to work again as me@acme.dev. The conversation carries on with the new login.` der. Bir tur çalışıyorsa
+yeni giriş tur bitince devreye girer.
+
+## Bir hesabı kaldırın [#remove-an-account]
+
+`/account` içinde hesaba gidin ve `d`'ye basın. Satırda `press d again to remove` yazar; kaldırmak için yeniden `d`'ye,
+tutmak için başka bir tuşa basın. Jinion hesaptan çıkış yapar, onu kaldırır ve
+`Removed the work account and signed it out. Its conversations stay.` der.
+
+`/account remove work` aynısını sormadan yapar.
+
+İki hesap kaldırılamaz:
+
+- kullanımda olan; `in use; switch to another account first` gösterir;
+- `default`; `Claude's own login stays; l signs in again` gösterir.

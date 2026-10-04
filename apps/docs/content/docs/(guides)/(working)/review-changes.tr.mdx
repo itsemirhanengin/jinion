@@ -1,0 +1,98 @@
+---
+title: Değişiklikleri inceleyin
+description: Ajanın neyi değiştirdiğini /diff ile tur tur görün; tek bir repoda ya da birkaç repo içeren bir klasörde.
+---
+
+Ajanın yaptığı her düzenleme konuşmada bir diff olarak görünür. Hepsine birlikte bakmak için `/diff` yazın.
+
+## Bir turun neyi değiştirdiğini görün [#see-what-a-turn-changed]
+
+Dosya değiştiren bir tur, bu dosyaları gösteren bir kartla biter: her dosya eklenen ve silinen satırlarıyla, başlıkta
+da toplamla.
+
+```terminal
+{border|+---} {bold|4 files changed} {added|+63} {removed|-3} {border|---------------------------------------------------------------+}
+{border||} {code|src/middleware/rate-limit.ts}       {muted|new} {added|+30}                                               {border||}
+{border||} {code|src/server.ts}                          {added|+2} {removed|-1}                                             {border||}
+{border||} {code|src/routes/auth.ts}                     {added|+2} {removed|-2}                                             {border||}
+{border||} {code|src/middleware/rate-limit.test.ts}  {muted|new} {added|+29}                                               {border||}
+{border|+------------------------------------------------------------------------------------------+}
+```
+
+Bir dosyaya tıklamak onun diff'ini `/diff` içinde, o turun görünümünde açar; `esc` turun listesine döner. Sekizden
+fazla dosya içeren bir kart, kalanları son satırında sayar; o satır turun listesini açar.
+
+## Commit edilmemiş olanları görün [#see-what-isnt-committed]
+
+`/diff` tam ekran açılır. Current görünümü, stage edilmiş olsun olmasın, yeni dosyalar da dahil commit edilmemiş her
+dosyayı eklenen ve silinen satırlarıyla listeler. Ajanın bu konuşmada değiştirdiği dosyalar `agent` olarak
+işaretlenir; böylece kendi düzenlemelerinizden ayrılırlar.
+
+```terminal
+{accent|+- Changes} {muted|main · 3 files · +27 -0} {accent|--------------------------------------------------------+}
+{accent||}  {accent,bold|Current}    {muted|add rate limiting to th…}                                                     {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>} {code,bold|src/middleware/rate-limit.test.ts}    {muted|new} {success|+8}                                      {muted|agent} {accent||}
+{accent||}   src/middleware/rate-limit.ts         {muted|new} {success|+17}                                     {muted|agent} {accent||}
+{accent||}   src/server.ts                        {success|+2}                                          {muted|agent} {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Left/Right {muted|turn ·} Enter {muted|open ·} Up/Down {muted|move ·} Esc {muted|close}                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Commit edilmemiş hiçbir şey yoksa Current, dalınızın varsayılan dalın üstüne eklediklerini gösterir.
+
+## Bir dosya açın [#open-a-file]
+
+Bir dosyanın diff'ini görmek için üzerinde `enter`'a basın. `up` ve `down` kaydırır, `pgup` ve `pgdn` sayfa sayfa
+gider, `esc` listeye döner.
+
+```terminal
+{accent|+- Diff} {muted|src/middleware/rate-limit.ts} {accent|------------------------------------------------------+}
+{accent||} {success,on-added-bg|+ 1}{border,on-added-bg||}{success,on-added-bg|import type { RequestHandler \} from 'express';}{on-added-bg|                                      } {accent||}
+{accent||} {success,on-added-bg|+ 2}{border,on-added-bg||}{success,on-added-bg|import { TooManyRequests \} from '../http/errors';}{on-added-bg|                                   } {accent||}
+{accent||} {success,on-added-bg|+ 3}{border,on-added-bg||}{success,on-added-bg| }{on-added-bg|                                                                                   } {accent||}
+{accent||} {success,on-added-bg|+ 4}{border,on-added-bg||}{success,on-added-bg|export function rateLimit({ limit = 100, windowMs = 60_000 \} = {\}): RequestHandler {} {accent||}
+{accent||} {success,on-added-bg|+ 5}{border,on-added-bg||}{success,on-added-bg|  const hits = new Map<string, { count: number; start: number \}>();}{on-added-bg|                 } {accent||}
+{accent||} {success,on-added-bg|+ 6}{border,on-added-bg||}{success,on-added-bg|  return (req, _res, next) => {}{on-added-bg|                                                     } {accent||}
+{accent||} {success,on-added-bg|+ 7}{border,on-added-bg||}{success,on-added-bg|    const now = Date.now();}{on-added-bg|                                                         } {accent||}
+{accent||} {success,on-added-bg|+ 8}{border,on-added-bg||}{success,on-added-bg|    const key = req.ip ?? 'unknown';}{on-added-bg|                                                } {accent||}
+{accent||} {success,on-added-bg|+ 9}{border,on-added-bg||}{success,on-added-bg|    const entry = hits.get(key);}{on-added-bg|                                                    } {accent||}
+{accent||} {success,on-added-bg|+10}{border,on-added-bg||}{success,on-added-bg|    if (!entry || now - entry.start >= windowMs) {}{on-added-bg|                                  } {accent||}
+{accent||} {success,on-added-bg|+11}{border,on-added-bg||}{success,on-added-bg|      hits.set(key, { count: 1, start: now \});}{on-added-bg|                                      } {accent||}
+{accent||} {success,on-added-bg|+12}{border,on-added-bg||}{success,on-added-bg|      return next();}{on-added-bg|                                                                } {accent||}
+{accent||} {success,on-added-bg|+13}{border,on-added-bg||}{success,on-added-bg|    \}}{on-added-bg|                                                                               } {accent||}
+{accent||} {success,on-added-bg|+14}{border,on-added-bg||}{success,on-added-bg|    if (++entry.count > limit) return next(new TooManyRequests());}{on-added-bg|                  } {accent||}
+{accent||} {success,on-added-bg|+15}{border,on-added-bg||}{success,on-added-bg|    next();}{on-added-bg|                                                                         } {accent||}
+{accent||} {success,on-added-bg|+16}{border,on-added-bg||}{success,on-added-bg|  \};}{on-added-bg|                                                                                } {accent||}
+{accent||} {success,on-added-bg|+17}{border,on-added-bg||}{success,on-added-bg|\}}{on-added-bg|                                                                                   } {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Up/Down {muted|scroll ·} PgUp/PgDn {muted|page ·} Esc {muted|back}                                               {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Tur tur gezin [#go-turn-by-turn]
+
+`left` ve `right`, ajanın dosya değiştirdiği turlar arasında en yeniden başlayarak gezinir. Her tur yalnızca kendi
+düzenlemelerini gösterir; böylece tek bir isteğin ne yaptığını görebilirsiniz.
+
+<Callout>
+  Tur görünümleri ajanın kendi düzenlemelerinden gelir. Bir komutun yaptığı değişiklik yalnızca Current altında
+  görünür.
+</Callout>
+
+## Tek klasörde birkaç repo [#several-repositories-in-one-folder]
+
+Repolar arasında bağlam olsun diye Jinion'u birkaç repo içeren bir klasörde başlatabilirsiniz. Jinion üç klasör
+derinliğe kadar repoları bulur ve:
+
+- `/diff` değişiklikleri her reponun altında, dalıyla birlikte gruplar;
+- durum satırının Git bölümü, onu [`/statusline`](/tr/status-line) içinde açtığınızda, bunları `4 repos *7` gibi
+  toplar;
+- ajan git'i değişikliğin ait olduğu repoda çalıştırır.
+
+## Bir değişikliği geri alın [#take-a-change-back]
+
+Ajanın yaptığını geri almak için ona sebep olan mesajın öncesine [geri sarın](/tr/conversations/rewind).

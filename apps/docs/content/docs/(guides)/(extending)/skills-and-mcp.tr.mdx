@@ -1,0 +1,82 @@
+---
+title: Skill'leri ve MCP sunucularını kullanın
+description: Skill'lerinizi ve MCP sunucularınızı getirin, onları $ ile seçin ve sunucuları /mcp ile açıp kapatın.
+---
+
+Skill'ler, bir inceleme kontrol listesi ya da bir deploy süreci gibi bir iş türü için yazılmış talimatlardır. MCP
+sunucuları ajana Linear ya da Figma gibi başka servislerden araçlar ve veriler verir. Jinion ikisini de onları zaten
+tuttuğunuz yerden getirir.
+
+## Nereden gelirler [#where-they-come-from]
+
+| Kaynak                                                      | Ne olarak gelir                                                     |
+| ----------------------------------------------------------- | ------------------------------------------------------------------- |
+| `~/.claude/skills`, `~/.agents/skills`                      | `$design` gibi skill'leriniz                                        |
+| Projedeki `.claude/skills`, `.agents/skills`                | Proje skill'leri; aynı adlı bir kullanıcı skill'inin önüne geçerler |
+| Claude Code'da açtığınız plugin'ler                         | Skill'leri, komutları, ajanları ve MCP sunucuları; hook'ları kapalı kalır |
+| `~/.jinion/mcp.json`, `~/.claude.json`                      | MCP sunucuları                                                      |
+| Projenin `.mcp.json` dosyası                                | Siz açana kadar kapalı kalan MCP sunucuları                         |
+| Claude hesabınız                                            | claude.ai bağlayıcıları ve `$pdf` gibi claude.ai skill'leri         |
+
+### claude.ai skill'leri [#claudeai-skills]
+
+claude.ai organizasyonunuzun `pdf`, `docx`, `pptx` ve `xlsx` gibi skill'leri `$` listesinde claude.ai altında görünür.
+Her hesap kendi organizasyonunun skill'lerini alır; bu yüzden `/account` ile hesap değiştirdikten sonra o
+organizasyonunkileri görürsünüz.
+
+Jinion onları siz başlattığınızda ve hesap değiştirdikten sonra arka planda getirir; bir sonraki konuşmadan itibaren
+gelirler. Yani bir hesabı ilk kez kullandığınızda `/clear` sonrasında ya da bir sonraki açılışta görünürler.
+
+## Bir skill kullanın [#use-a-skill]
+
+`$` yazın ve birini seçin. Skill mesajın herhangi bir yerinde olabilir ve birkaç tane seçebilirsiniz:
+
+```text
+açık PR'ı incele $review
+```
+
+Bir skill ile başlayan mesaj onu çalıştırır; mesajın geri kalanı skill'in girdisi olur. Ajan, işe uyan bir skill
+olduğunda onu kendisi de yükler ve konuşmada `Skill design` görünür.
+
+Alışkanlıkla `/design` yazarsanız mesaj alanına `$design` geri konur ve Jinion
+`Skills go after $ now, anywhere in the message: $design. Press enter to send it.` der.
+
+## Bir MCP prompt'u kullanın [#use-an-mcp-prompt]
+
+MCP sunucuları prompt'lar sunabilir; bunlar `$` altında sunucunun adıyla listelenir. Mesajın geri kalanı prompt'un
+girdisi olur:
+
+```text
+$pr-summary 128
+```
+
+## Sunucuları açın ya da kapatın [#turn-servers-on-or-off]
+
+`/mcp` her sunucuyu durumu ve nereden geldiğiyle listeler. Durum, araç sayısıyla birlikte `connected`,
+`connecting…`, `not signed in`, `failed to connect` ya da `off` olur. Üzerinde durduğunuz sunucu URL'sini ya da
+komutunu, hatasını ve araçlarını gösterir.
+
+| Tuş     | Ne yapar                                     |
+| ------- | -------------------------------------------- |
+| `space` | Sunucuyu açar ya da kapatır                  |
+| `enter` | Kaydeder; bir sonraki turdan itibaren geçerli olur |
+| `esc`   | Kaydetmeden kapatır                          |
+
+`enter`'dan sonra Jinion neyin değiştiğini söyler, örneğin `Turned on linear. This applies from the next turn.`
+Konuşma devam eder.
+
+`not signed in` gösteren bir sunucunun girişe ihtiyacı vardır: ajandan onu doğrulamasını isteyin ya da bir claude.ai
+bağlayıcısıysa claude.ai ayarlarınızdan bağlayın.
+
+<Callout type="warn">
+  Projenin `.mcp.json` dosyasındaki sunucular siz açana kadar kapalı kalır, çünkü commit yetkisi olan herkes o dosyayı
+  değiştirebilir. Bunlar `off until you turn it on (from .mcp.json)` olarak görünür.
+</Callout>
+
+## Araç çağrıları ve bağlam [#tool-calls-and-context]
+
+MCP araçları modele yalnızca adlarıyla listelenir ve kullanıldıklarında yüklenir. Bu sayede çok sayıda sunucu bağlamda
+az yer kaplar. Her çağrı, diğer araçlar gibi izin ister ve projede o araç için "bir daha sorma" seçeneği sunar.
+
+Konuşmada bir çağrı argümanlarıyla birlikte `server:tool (MCP)` olarak görünür; altında da dönen sonucun ilk satırları
+yer alır. Tamamını görmek için üstüne tıklayın ya da `ctrl+o`'ya basın.

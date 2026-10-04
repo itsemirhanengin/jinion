@@ -1,0 +1,67 @@
+---
+title: Kullanımı takip edin
+description: Planınızın limitlerinin ne durumda olduğunu, bu oturumun maliyetini ve Jinion'u kullandığınız her günün takvimini görün.
+---
+
+## Limitlerinizi görün [#see-your-limits]
+
+`/usage` üç bölümle tam ekran açılır:
+
+- **Plan limitleri**: 5 saatlik pencere ve hafta, planınızda varsa model başına hafta; her birinin ne zaman
+  sıfırlandığıyla birlikte.
+- **Bu oturum**: API fiyatlarıyla maliyeti, geçen süre, değişen satırlar ve modele göre token'lar.
+- **Limitlerinize ne ekliyor**: son gün ya da hafta içinde (`d` ve `w`), oturum türleri ve en çok kullanan skill'ler,
+  alt ajanlar, plugin'ler ve MCP sunucuları.
+
+Planınızda ek kullanım varsa plan limitleri bu ay ondan ne kadar kullandığınızı da gösterir.
+
+```terminal
+{accent|+- Usage} {muted|Claude} {accent|---------------------------------------------------------------------------+}
+{accent||}  {accent,bold|Usage}   {muted|Stats}                                                                           {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {bold|Plan limits} {muted|Max}                                                                          {accent||}
+{accent||} 5-hour window     {muted|[}{success|==}{muted|--------------------------]}   8% {muted|resets 08:11 PM}                    {accent||}
+{accent||} Week, all models  {muted|[}{success|======}{muted|----------------------]}  20% {muted|resets Wed 04:59 PM}                {accent||}
+{accent||                                                                                          |}
+{accent||} {bold|This session} {muted|$0.42 · 1m 35s waiting on the model · 21m 0s in all · +86 -7 lines}          {accent||}
+{accent||} Opus 5.5  {muted|12.4k in · 8.9k out · 310.0k cache read · 41.0k cache write}  $0.42             {accent||}
+{accent||                                                                                          |}
+{accent||} {bold|What adds to your limits · last 24 hours}                                                 {accent||}
+{accent||} {muted|412 requests in 6 sessions on this machine, roughly. The traits overlap, so they don't}   {accent||}
+{accent||} {muted|add up.}                                                                                  {accent||}
+{accent||                                                                                          |}
+{accent||} Subagent-heavy  {muted|[}{accent|=====}{muted|-----------]}  34% {muted|each subagent makes requests of its own}          {accent||}
+{accent||} Parallel        {muted|[}{accent|=}{muted|---------------]}   9% {muted|while four or more sessions ran at once}          {accent||}
+{accent||                                                                                          |}
+{accent||} {muted|Most used:} design {muted|skill 12% ·} Explore {muted|subagent 21% ·} linear {muted|MCP 6%}                       {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Tab {muted|stats ·} d/w {muted|last day or week ·} Esc {muted|close}                                             {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+<Callout>
+  Maliyet, oturumun API fiyatlarıyla tutacağı tutardır. Abonelik bunu faturalandırmaz; ne kadar kullandığınızı
+  gösterir.
+</Callout>
+
+## Kullandığınız her günü görün [#see-every-day-of-use]
+
+Jinion'u kullandığınız her günün, GitHub'ın katkı grafiği gibi günde bir kare olan ve ne kadar çalıştığınıza göre
+renklenen takvimi için `/usage` içinde `tab`'a basın ya da `/stats` yazın.
+
+| Tuş            | Ne yapar                                                      |
+| -------------- | ------------------------------------------------------------- |
+| Ok tuşları     | Mesajlarını, oturumlarını ve token'larını görmek için bir gün seçer |
+| `r`            | All time, Last 30 days ve Last 7 days arasında geçer          |
+
+Takvimin altında: en sevdiğiniz model, token'lar, oturumlar, en uzun oturum, aktif günler, en uzun ve şu anki seri, en
+aktif gün ve her modelin token'lardaki payı.
+
+İstatistikler bu makinedeki, bütün [hesaplarınız](/tr/models-and-accounts) altındaki, Jinion dışında yaptıklarınız da
+dahil her Claude konuşmasını kapsar.
+
+## Çalışırken göz kulak olun [#keep-an-eye-on-it-while-you-work]
+
+[Durum satırı](/tr/status-line), plan limitlerinden kalanı (`5h 92% left · 7d 80% left`), bağlamı
+(`ctx [====------] 41%`) ve oturumun maliyetini her zaman gösterebilir.

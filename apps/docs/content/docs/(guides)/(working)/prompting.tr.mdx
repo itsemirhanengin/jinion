@@ -1,0 +1,89 @@
+---
+title: Ajana yön verin
+description: Mesaj gönderin, çalışırken yönlendirin ve sıraya alın, dosyaları @ ile anın, skill'leri $ ile seçin, yapıştırdığınız metni ve görselleri ekleyin.
+---
+
+## Mesaj gönderin [#send-a-message]
+
+En alttaki mesaj alanına yazın ve `enter`'a basın. Yeni bir satır için `shift+enter` ya da `alt+enter`'a basın veya
+satırı `\` ile bitirin. Mesaj alanı 20 satıra kadar büyür, sonra kayar.
+
+`up` ve `down` daha önce gönderdiğiniz mesajlar arasında gezinir.
+
+## Çalışırken yönlendirin [#steer-while-it-works]
+
+Ajan çalışırken mesaj alanı açık kalır. Yönlendirmek için `enter`'a basın: mesajınız tura katılır, `while working`
+işaretiyle görünür ve ajan o anki adımını bitirir bitirmez okur.
+
+```text
+yeni bir hata ekleme, var olan TooManyRequests hatasını kullan
+```
+
+Bunun yerine turdan sonra gönderilecek bir şey için `ctrl+q`'ya basın. Mesaj mesaj alanının üstünde `queued: …`
+olarak bekler ve tur bitince kendiliğinden gider. Tur yarıda kesilirse sıradaki mesajlar mesaj alanına geri döner.
+
+`esc` turu yarıda keser.
+
+## Dosyaları @ ile anın [#mention-files-with-]
+
+`@` ve bir adın bir kısmını yazın. Jinion projenin dosya ve klasörlerini, yani git'in takip ettiği ya da takip
+edebileceği olanları tamamlar; görmezden gelinen dosyalar dışarıda kalır. Bir git reposunun dışında `node_modules` ve
+`dist` gibi klasörler dışındaki her dosyayı listeler. Ajan dosyanın içeriğini mesajınızla birlikte alır; böylece
+hemen üzerinde çalışabilir.
+
+```text
+@src/middleware/rate-limit.ts pencere sıfırlaması için bir test ekle
+```
+
+Klasörler sonlarına boşluk eklenmeden girer; böylece içine girmek için yazmaya devam edebilirsiniz.
+
+## $ ile bir skill kullanın [#use-a-skill-with-]
+
+Bir skill ya da MCP prompt'u seçmek için `$` yazın. Liste her birinin nereden geldiğine göre gruplanır: önce
+projenin, sonra sizin, sonra her plugin'in ve her MCP sunucusunun olanlar. Yazdıkça süzülür.
+
+```terminal
+{border|--------------------------------------------------------------------------------------------}
+ $
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+   {muted|Project}
+ {code|>}   {code,bold|review}               {muted|Review the current changes for bugs and risky patterns}
+   {muted|Yours}
+     commit               {muted|Write a commit message for the staged changes}
+     explain {muted|<path>       Explain how a piece of code works}
+   {muted|github prompts}
+     pr-summary {muted|<number>  Summarize a pull request}
+   {muted|Linear prompts}
+     create-issue         {muted|Turn this conversation into a Linear issue}
+   Tab {muted|complete ·} Enter {muted|insert ·} Esc {muted|dismiss}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+```
+
+Skill mesajın herhangi bir yerinde olabilir ve birkaç tane seçebilirsiniz:
+
+```text
+mobilde navbar'ı düzelt $make-responsive $design
+```
+
+[Skill'leri ve MCP sunucularını kullanın](/tr/skills-and-mcp) sayfasına bakın.
+
+## Metin yapıştırın [#paste-text]
+
+İki ya da daha fazla satırlık metin `[Pasted text #1 +42 lines]`, 800 ya da daha fazla karakterlik tek bir satır ise
+`[Pasted text #2 1200 chars]` olarak girer. Ajan hepsini alır. Mesaj alanında `backspace` bu yer tutucuyu bütün olarak
+siler. Gönderildikten sonra metnin tamamını görmek için mesaja tıklayın.
+
+## Görsel ekleyin [#attach-images]
+
+Panodaki görseli `[Image #1]` olarak eklemek için `ctrl+v`'ye basın ya da bir görsel dosyasını terminale sürükleyin.
+PNG, JPEG, GIF ve WebP çalışır.
+
+<Callout>
+  Panodaki görseller için macOS ya da Linux'ta `wl-paste` veya `xclip` gerekir. 3,7 MB'den büyük görseller macOS'ta
+  küçültülür, başka yerlerde reddedilir.
+</Callout>
+
+## Komutlar [#commands]
+
+`/model` ya da `/diff` gibi Jinion'un kendi komutları için `/` yazın. [Komutlar](/tr/reference/commands) sayfasına
+bakın.

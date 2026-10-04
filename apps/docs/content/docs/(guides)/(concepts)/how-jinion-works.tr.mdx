@@ -1,0 +1,49 @@
+---
+title: Jinion nasıl çalışır
+description: "Jinion'un modele neler verdiği: system prompt'u, projenizin talimatları, bellek, modlar ve araçlar."
+---
+
+Gönderdiğiniz her mesaj, Jinion'un sizin ve projeniz hakkında bildikleriyle birlikte modele gider. Model sonra adım
+adım çalışır: iş bitene ya da size ihtiyaç duyana kadar Jinion'un araçlarıyla dosyaları okur, komutları çalıştırır ve
+kodu düzenler.
+
+## Model neyi görür [#what-the-model-sees]
+
+| Parça                | Nereden gelir                                                                                         |
+| -------------------- | ----------------------------------------------------------------------------------------------------- |
+| System prompt        | Jinion'un yazdığı metin: nasıl çalışacağı, önce size neyi soracağı, hangi araçları kullanacağı, git, sizinle nasıl konuşacağı |
+| Ortam                | Çalıştığı klasör, git dalı ya da içindeki repolar, platformunuz ve tarih. Bir [worktree](/tr/worktrees) içinde bu klasör worktree'nin kendisidir |
+| Proje talimatları    | Jinion'u başlattığınız klasördeki `AGENTS.md` ve `CLAUDE.md`. [Proje talimatlarını yazın](/tr/project-instructions) sayfasına bakın |
+| Bellek               | Ajanın tuttuğu notların her biri tek satırlık bir dizini. [Belleği kullanın](/tr/memory) sayfasına bakın |
+| Skill'ler ve MCP araçları | Adlarıyla listelenir, yalnızca kullanıldıklarında yüklenir. [Skill'leri ve MCP sunucularını kullanın](/tr/skills-and-mcp) sayfasına bakın |
+| Konuşma              | Mesajlarınız, ajanın cevapları ve araçların döndürdükleri                                             |
+
+Başka hiçbir şey girmez: Jinion kendi ayarlarını tutar; başka araçların ayar dosyalarını, hook'larını ya da
+`~/.claude/CLAUDE.md` gibi genel talimatlarını yüklemez. Başka yerde kurduğunuz belleği, skill'leri ve MCP
+sunucularını taşımak için [Claude Code kurulumunuzu getirin](/tr/how-to/bring-your-claude-code-setup) sayfasına bakın.
+
+## Araçlar [#tools]
+
+Ajan araçlarla çalışır ve her çağrı konuşmada bir satır olarak görünür:
+
+| Araç                 | Ne yapar                                                             |
+| -------------------- | -------------------------------------------------------------------- |
+| Read, Glob, Grep     | Dosyaları okur ve projede arar                                       |
+| Edit, Write          | Dosyaları değiştirir; her değişiklik bir diff olarak görünür         |
+| Bash                 | Komutları önde ya da [arka planda](/tr/background-tasks) çalıştırır  |
+| Web fetch ve search  | Sayfaları okur ve web'de arar; her biri gelen sonucu gösterir        |
+| Agent                | İşin bir kısmını bir alt ajana verir; canlı bir ağaç olarak görünür  |
+| Ask                  | Size seçenekli bir soru sorar                                        |
+| Todo                 | Takip edebileceğiniz bir görev listesi tutar                          |
+| Remember, Recall, Forget | [Bellek](/tr/memory) notlarını kaydeder, okur ve siler           |
+
+## Neyin çalışacağına kim karar verir [#who-decides-what-runs]
+
+Okumalar her zaman çalışır. Başka neyin sormadan çalışacağı seçtiğiniz [izin moduna](/tr/permission-modes) bağlıdır.
+Her modun üstüne Jinion, siz [kapatmadıkça](/tr/permission-modes#stop-asking-before-commits) her commit'ten önce ve
+projenizin dışında bir şey değişmeden önce kendisi sorar.
+
+## Verileriniz nerede durur [#where-your-data-lives]
+
+Konuşmalar, bellek, ayarlar, worktree'ler ve kayıtlar makinenizde `~/.jinion` içinde durur.
+[~/.jinion klasörü](/tr/reference/jinion-folder) sayfasına bakın.

@@ -1,0 +1,125 @@
+---
+title: İzin modunu seçin
+description: Manual, Accept edits, Plan ve Auto arasında geçiş yapın ve ajanın harekete geçmeden önce sorduklarını cevaplayın.
+---
+
+Mod, ajanın size sormadan neler yapabileceğine karar verir. Mesaj alanının altındaki çizgide görünür ve her proje en
+son bıraktığınız modda başlar.
+
+## Modlar [#the-modes]
+
+| Mod          | Sormadan çalışanlar                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| Manual       | Okumalar ve birkaç güvenli komut                                                                            |
+| Accept edits | Ayrıca projedeki dosya düzenlemeleri. `rm`, `rmdir`, `mv`, `cp` ve `sed` yine sorar. Yeni bir projede varsayılan budur |
+| Plan         | Yalnızca okumalar. Ajan bir plan çıkarır ve başlamadan önce sorar                                           |
+| Auto         | Rutin işler çalışır; bir güvenlik kontrolü, force push ya da gizli bilgileri dışarı göndermek gibi isteğinizin ötesine geçen işleri durdurur |
+
+## Mod değiştirin [#switch-modes]
+
+Modlar arasında sırayla geçmek için `shift+tab`'a basın ya da birini seçmek için `/mode` yazın:
+
+```terminal
+{accent|+- Mode} {muted|Claude} {accent|----------------------------------------------------------------------------+}
+{accent||}   1. {muted|Manual}                                                                              {accent||}
+{accent||}      {muted|Asks before every edit and every command outside a safe list}                        {accent||}
+{accent||} {code|> 2.} {accent,bold|Accept edits}                                                                {muted|current} {accent||}
+{accent||}      {muted|Edits files in the project without asking; asks before risky commands}               {accent||}
+{accent||}   3. {code|Plan}                                                                                {accent||}
+{accent||}      {muted|Reads and plans; changes nothing until you approve the plan}                         {accent||}
+{accent||}   4. {warning|Auto}                                                                                {accent||}
+{accent||}      {muted|A safety classifier lets routine actions run and stops risky ones; writes outside}   {accent||}
+{accent||}      {muted|the project still ask, and commits too unless /commit-approval is off}               {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} Up/Down {muted|move ·} Esc {muted|cancel}                                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+`/mode plan` doğrudan geçiş yapar.
+
+<Callout>
+  Auto, Opus ya da Sonnet gibi onu destekleyen bir model ister. Başka bir modelle ajan Manual modda çalışır ve mesaj
+  alanının altındaki çizgi bunu söyler. Proje bir sonraki sefer için Auto'yu hatırlar.
+</Callout>
+
+## Bir izin isteğini cevaplayın [#answer-a-permission-request]
+
+Ajan modun izin vermediği bir şey yapmak istediğinde mesaj alanının yerini izin paneli alır:
+
+```terminal
+{accent|+- Permission -----------------------------------------------------------------+}
+{accent||} {bold|jinion wants to run a command}                                                {accent||}
+{accent||}   {muted|$} {warning|pnpm} add zod                                                             {accent||}
+{accent||}   {muted|Adds zod to validate the request body.}                                     {accent||}
+{accent||                                                                              |}
+{accent|+------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Yes}                                                                     {accent||}
+{accent||}   2. Yes, and don't ask again for `pnpm add:*` in this project               {accent||}
+{accent||}   3. No                                                                      {accent||}
+{accent||}      {muted|Press n to tell jinion what to do instead}                               {accent||}
+{accent|+------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|stop the turn}                     {accent||}
+{accent|+------------------------------------------------------------------------------+}
+```
+
+| Seçim                           | Ne olur                                                                  |
+| ------------------------------- | ------------------------------------------------------------------------ |
+| Yes                             | Bu seferlik çalıştırır                                                   |
+| Yes, and don't ask again for …  | `pnpm add:*` gibi kuralı bu proje için kaydeder                          |
+| No                              | Ajana hayır der. Bunun yerine ne yapması gerektiğini söylemek için önce `n`'ye basın |
+| `esc`                           | Turu durdurur                                                            |
+
+Uzun bir komut, seçeneklerin üstünde kendi alanında kayar: `shift+up` ve `shift+down` tuşlarını ya da fare tekerini
+kullanın.
+
+Kaydettiğiniz kurallar projenin `permissions.json` dosyasında durur. [~/.jinion klasörü](/tr/reference/jinion-folder)
+sayfasına bakın.
+
+## Önce plan yapın [#plan-first]
+
+Plan modunda ajan hiçbir şeyi değiştirmeden okur, düşünür ve bir plan yazar. Plan hazır olduğunda konuşmada görünür
+ve plan paneli nasıl devam edileceğini sorar:
+
+```terminal
+{accent|+- Plan -----------------------------------------------------------------------------------+}
+{accent||} {bold|Ready to start? The plan is above.}                                                       {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Yes, and use auto mode}                                                              {accent||}
+{accent||}      {muted|A safety classifier lets routine actions run and stops risky ones; writes outside}   {accent||}
+{accent||}      {muted|the project still ask, and commits too unless /commit-approval is off}               {accent||}
+{accent||}   2. Yes, and accept edits                                                               {accent||}
+{accent||}      {muted|Edits files in the project without asking; asks before risky commands}               {accent||}
+{accent||}   3. Yes, and approve each edit                                                          {accent||}
+{accent||}      {muted|Asks before every edit and every command outside a safe list}                        {accent||}
+{accent||}   4. No, keep planning                                                                   {accent||}
+{accent||}      {muted|Press n to say what should change}                                                   {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|stop the turn}                                 {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Ne kadar serbest devam edileceğini seçin ya da planlamaya devam edip neyin değişmesi gerektiğini söylemek için `n`'ye
+basın.
+
+## Her zaman sorulanlar [#what-always-asks]
+
+Her modda Jinion şunlardan önce sorar:
+
+- bir commit;
+- dosya araçlarıyla ya da orada yazan (`>`, `tee`), değiştiren (`rm`, `mv`, `chmod`, `sed -i`) veya kopyalayan (`cp`,
+  `ln`) komutlarla proje dışındaki bir dosyada yapılacak değişiklik.
+
+Bu isteklerde "bir daha sorma" seçeneği yoktur. `/tmp` gibi geçici klasörler dışarıda sayılmaz. Bir
+[worktree](/tr/worktrees) içinde proje worktree'nin kendisidir; bu yüzden kendi çalışma kopyanızdaki bir değişiklik de
+sorulur.
+
+### Commit'lerden önce sormayı kapatın [#stop-asking-before-commits]
+
+```text
+/commit-approval off
+```
+
+Jinion bu projede commit'lerden önce sormayı bırakır. Commit bundan sonra, bulunduğunuz modda diğer komutlar nasıl
+çalışıyorsa öyle çalışır: Auto mod çalıştırır, diğer modlar yine sorar. `/commit-approval off global` aynısını her
+projede yapar, `/commit-approval on` yeniden sormaya başlatır. Projenin kendi ayarı global ayardan önce gelir.

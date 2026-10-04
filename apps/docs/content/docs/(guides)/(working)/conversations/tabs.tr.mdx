@@ -1,0 +1,53 @@
+---
+title: Sekmeler
+description: Birkaç konuşmayı aynı anda, her biri kendi sekmesinde açık tutun ve aralarında geçiş yapın.
+---
+
+Her sekme kendi başına bir konuşmadır: mesajları, taslağı, görevleri ve ajanı kendinedir. Bakmadığınız bir sekme
+çalışmaya devam eder.
+
+## Bir sekme açın [#open-a-tab]
+
+`ctrl+n`'ye basın ya da `/tab` yazın. İçinde olduğunuz konuşmanın yanında yeni bir konuşma açılır ve konuşmanın
+üstünde bir sekme satırı görünür:
+
+```terminal
+{border|+-} {muted|1 Fix the flaky checkout test} {border|--[} {accent|2} {accent,bold|New conversation} {border|]-------------------------------------+}
+```
+
+İçinde olduğunuz sekme köşeli parantez içindekidir. Satır iki sekme olduğunda görünür; böylece tek bir konuşma bütün
+alanı kullanır. Dar bir pencerede başlıklar satırı tek satırda tutmak için kısalır.
+
+`/resume` de kayıtlı bir konuşmayı bir sekmede açar. O konuşma zaten açıksa sekmesi öne gelir.
+
+## Sekmeler arasında geçin [#move-between-tabs]
+
+`alt+1` ile `alt+9` arası o sekmeye gider. Bir sekmeye tıklamak da aynısını yapar.
+
+<Callout title="macOS'ta">
+  `alt+1` için Option tuşunun Meta göndermesi gerekir. iTerm2'de bunu Settings, Profiles, Keys, Left Option key
+  altında `Esc+` olarak ayarlayın. Ghostty'de config dosyasına `macos-option-as-alt = true` ekleyin. Terminal'de
+  Settings, Profiles, Keyboard altında "Use Option as Meta key" seçeneğini işaretleyin. Tıklamalar ve `/resume` bu
+  ayar olmadan da çalışır.
+</Callout>
+
+## Bir sekme size ne söyler [#what-a-tab-tells-you]
+
+| İşaret     | Anlamı                                                    |
+| ---------- | --------------------------------------------------------- |
+| dönen bir gösterge | Konuşma çalışıyor                                 |
+| `?`        | Sizi bekliyor: bir soru, bir izin ya da bir plan          |
+
+Bakmadığınız bir sekme sizi beklediğinde Jinion ayrıca size [bildirim](/tr/notifications) gönderir.
+
+## Bir sekmeyi kapatın [#close-a-tab]
+
+`/close` konuşmayı kaydeder ve sekmesini kapatır; [arka planda](/tr/background-tasks) çalıştırdıkları durur. Son
+sekmeyi kapatmak, `/clear` gibi yeni bir konuşma bırakır.
+
+`/clear` olduğu gibi kalır: konuşmayı kaydeder ve aynı sekmede yenisini başlatır.
+
+## Worktree'ler [#worktrees]
+
+Yeni bir sekme, yalnızca worktree'ler açıkken (`ctrl+g`) kendi [worktree'sini](/tr/worktrees) alır; yani seçimi
+sekme başına yaparsınız. Her sekme kendi klasöründe çalışır: kendi worktree'sinde ya da projede.

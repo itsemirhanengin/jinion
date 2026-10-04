@@ -1,0 +1,94 @@
+---
+title: Worktree'lerle paralel çalışın
+description: Her yeni konuşmaya kendi git worktree'sini ve dalını verin; böylece birkaç konuşma aynı repoyu aynı anda değiştirebilir.
+---
+
+Aynı klasörü düzenleyen iki konuşma birbirinin ayağına basar. Worktree'ler açıkken her yeni konuşma kendi git
+worktree'sinde çalışır: reponun ayrı bir çalışma kopyası, kendi dalında, reponun geçmişini paylaşarak. Sizin çalışma
+kopyanız olduğu gibi kalır.
+
+Worktree'ler siz açana kadar kapalıdır.
+
+## Worktree'leri açın [#turn-worktrees-on]
+
+`ctrl+g`'ye basın ya da `/worktree on` yazın. Ayar, siz kapatana kadar her projede açık kalır.
+
+Bu konuşmada henüz mesaj göndermediyseniz, konuşma ilk mesajıyla bir worktree alır. Gönderdiyseniz bir sonraki
+konuşma alır; `/clear` yeni bir konuşma başlatır.
+
+İlk mesaj gittiğinde Jinion:
+
+1. `~/.jinion/projects/<project>/worktrees/` içinde `swift-running-fox` gibi adlandırılmış bir worktree oluşturur.
+   Reponuza yeni bir klasör eklenmez, yani `.gitignore` dosyasına eklenecek bir şey yoktur.
+2. Onu uzak reponun `origin/main` gibi varsayılan dalından açılan yeni bir dala, `worktree-swift-running-fox` dalına
+   koyar. Uzak repo yoksa dal, üzerinde bulunduğunuz commit'ten başlar.
+3. `.worktreeinclude` dosyasının listelediği, git'in görmezden geldiği dosyaları kopyalar.
+   [Görmezden gelinen dosyaları da getirin](#bring-along-ignored-files) bölümüne bakın.
+
+Konuşma nerede çalıştığını söyler ve durum satırı `[W] swift-running-fox` gösterir. Ajan düzenlemeleri, komutları ve
+commit'leri orada yapar. `/diff`, `@` ile dosya anma ve geri sarma da worktree'ye bakar. Ajan worktree'nin dışında,
+kendi çalışma kopyanız da dahil, herhangi bir yere yazmadan önce Jinion sorar.
+
+Projenin en az bir commit'i olan bir git reposunda olması gerekir; bu yüzden birkaç repo içeren bir klasör worktree
+almaz. Jinion worktree oluşturamazsa nedenini söyler ve konuşma proje klasöründe çalışır.
+
+Worktree yeni bir çalışma kopyasıdır; bağımlılıklar ve build çıktısı henüz orada değildir. Önce ajandan onları
+kurmasını isteyin:
+
+```text
+bağımlılıkları kur, sonra bir /health route'u ekle
+```
+
+## Görmezden gelinen dosyaları da getirin [#bring-along-ignored-files]
+
+`.env` gibi git'in görmezden geldiği dosyalar bir çalışma kopyasının parçası değildir. Onları her yeni worktree'ye
+kopyalamak için reponun kökündeki bir `.worktreeinclude` dosyasında, `.gitignore` sözdizimiyle listeleyin:
+
+```text
+.env
+.env.local
+config/secrets.json
+```
+
+Yalnızca bir satırla eşleşen ve git'in görmezden geldiği dosyalar kopyalanır.
+
+## Bir konuşmadan ayrılın [#leave-a-conversation]
+
+Başka bir konuşma başlattığınızda ya da birine devam ettiğinizde Jinion önce worktree'ye bakar:
+
+| Worktree'de                        | Ne olur                                                    |
+| ---------------------------------- | ---------------------------------------------------------- |
+| Değişiklik ve yeni commit yoksa    | Dalıyla birlikte kaldırılır                                |
+| Değişmiş dosyalar ya da yeni commit'ler varsa | Jinion sorar: Keep it ya da Remove it; `esc` olduğu gibi bırakır |
+
+Bir worktree'yi kaldırmak, klasörünü ve dalını içlerindeki işle birlikte siler. İşi saklamak istiyorsanız önce dalı
+merge edin ya da push edin.
+
+Çıkarken hiçbir şey sorulmaz. Değişmemiş bir worktree kaldırılır. İş içeren biri saklanır ve ekran kapandığında Jinion
+nerede olduğunu yazar.
+
+## Bir worktree'ye geri dönün [#go-back-to-a-worktree]
+
+`/resume`, her worktree'nin konuşmalarını projeninkilerle birlikte `worktree swift-running-fox` işaretiyle listeler.
+Birini seçmek onun worktree'sine geri döner; son konuşma için `jinion --continue` da aynısını yapar.
+
+Worktree bu arada kaldırıldıysa Jinion bunu söyler ve konuşma proje klasöründe devam eder.
+
+## İşi geri getirin [#bring-the-work-back]
+
+İş worktree'nin dalındadır. Ajandan onu commit etmesini isteyin, sonra dalı kendi çalışma kopyanızdan merge edin:
+
+```sh
+git merge worktree-swift-running-fox
+```
+
+Ya da ajandan dalı push etmesini ve bir pull request açmasını isteyin:
+
+```text
+bunu commit et, dalı push et ve bir pull request aç
+```
+
+## Worktree'leri kapatın [#turn-worktrees-off]
+
+`ctrl+g`'ye yeniden basın ya da `/worktree off` yazın. Zaten worktree'si olan bir konuşma orada çalışmaya devam eder.
+Bir sonraki konuşma proje klasöründe çalışır.

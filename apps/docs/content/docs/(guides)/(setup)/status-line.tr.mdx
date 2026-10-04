@@ -1,0 +1,52 @@
+---
+title: Durum satırını özelleştirin
+description: "Mesaj alanının altındaki satırın neyi göstereceğini seçin: model, mod, git, bağlam, plan limitleri ve daha fazlası."
+---
+
+Durum satırı mesaj alanının altında durur. `/statusline` neyi, hangi sırayla ve hangi tarafta göstereceğini seçer.
+
+```terminal
+{accent|+- Status line} {muted|7 of 18 shown} {accent|--------------------------------------------------------------+}
+{accent||} {muted|Checked items show in the status line below, in this order. Changes show as you make}     {accent||}
+{accent||} {muted|them.}                                                                                    {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|>  1. [x]} {code,bold|Jinion}       {muted,bold|jinion}                                                       {muted|left} {accent||}
+{accent||}           {muted|The app name}                                                                   {accent||}
+{accent||}    2. {code|[x]} Model        {muted|[M]} {model|Opus 5.5 · high}                                          {muted|left} {accent||}
+{accent||}           {muted|The model in use · with effort}                                                 {accent||}
+{accent||}    3. {code|[x]} Directory    {muted|[D]} {directory|code/api}                                                 {muted|left} {accent||}
+{accent||}           {muted|Where jinion is working · last two folders}                                     {accent||}
+{accent||}    4. {code|[x]} Worktree     {muted|nothing to show yet}                                          {muted|left} {accent||}
+{accent||}           {muted|The git worktree the conversation works in, when it has one (ctrl+g)}           {accent||}
+{accent||}    5. {code|[x]} Context      ctx: 22K/200K                                                {muted|left} {accent||}
+{accent||}           {muted|How full the context window is · tokens}                                        {accent||}
+{accent||}    6. {code|[x]} Cost         {cost|$0.08}                                                        {muted|left} {accent||}
+{accent||}           {muted|What the conversation would cost at API prices; a subscription doesn't bill it} {accent||}
+{accent||}   {muted|… 12 more}                                                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Space {muted|select ·} Shift+Up/Down {muted|move ·} Tab {muted|side ·} Left/Right {muted|style ·} r {muted|reset ·} Enter {muted|save ·} {accent||}
+{accent||}  Esc {muted|cancel}                                                                              {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+ {muted|jinion · [M]} {model|Opus 5.5 · high} {muted|· [D]} {directory|code/api} {muted|·} ctx: 22K/200K {muted|·} {cost|$0.08}  {muted|Add rate limiting to…}
+```
+
+| Tuş                 | Ne yapar                                   |
+| ------------------- | ------------------------------------------ |
+| `space`             | Bölümü gösterir ya da gizler               |
+| `left` / `right`    | Birden fazla stili varsa bölümün stilini seçer |
+| `tab`               | Bölümü diğer tarafa taşır                  |
+| `shift+up` / `down` | Bölümü sırada yukarı ya da aşağı taşır     |
+| `r`                 | Varsayılana döndürür                       |
+| `enter`             | Kaydeder                                   |
+| `esc`               | Kaydetmeden kapatır                        |
+
+Panelin altındaki satır, değişikliklerinizi yaptıkça önizler. Worktree'si olmayan bir konuşmadaki Worktree gibi
+gösterecek bir şeyi olmayan bir bölüm, panelde `nothing to show yet` gösterir ve satırda yer kaplamaz. Durum satırı
+her projede aynıdır.
+
+## Bölümler [#segments]
+
+Modelden ve git dalından plan limitlerine ve saate kadar on sekiz bölüm vardır. Satır varsayılan olarak uygulama
+adını, modeli, klasörü, [worktree'yi](/tr/worktrees), bağlamı, maliyeti ve sağda konuşmanın
+[başlığını](/tr/conversations/resume#titles) gösterir. Her birinin ne gösterdiği ve stilleri için
+[Durum satırı bölümleri](/tr/reference/status-line-segments) sayfasına bakın.

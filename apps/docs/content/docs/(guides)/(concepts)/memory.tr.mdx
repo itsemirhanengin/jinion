@@ -1,0 +1,66 @@
+---
+title: Belleği kullanın
+description: Ajanın konuşmalar boyunca sizin ve proje hakkında tuttuğu notlar; onları nasıl okuyacağınız, ekleyeceğiniz ve sileceğiniz.
+---
+
+Ajan bir konuşmadan diğerine taşınan notlar tutar; böylece aynı şeyleri tekrar tekrar söylemeniz gerekmez.
+
+| Tür     | Konusu                       | Geçerli olduğu yer |
+| ------- | ---------------------------- | ------------------ |
+| Kullanıcı | Siz: tercihler, alışkanlıklar | Her proje         |
+| Proje   | İçinde olduğunuz proje       | Bu proje           |
+
+## Ajan neleri kaydeder [#what-the-agent-saves]
+
+Sonraki bir konuşmanın ihtiyaç duyacağı ve koddan anlaşılamayan şeyleri kaydeder: tercihleriniz ve düzeltmeleriniz,
+birlikte aldığınız kararlar, proje hakkında açık olmayan gerçekler. Her kayıt bir satır olarak görünür, örneğin
+`Remember project · Use pnpm, not npm`.
+
+Yalnızca sizin söylediğinizi ya da onunla birlikte karar verdiğiniz şeyleri kaydeder. Dosyalarda, komut çıktılarında ya
+da web sayfalarında bulduğu talimatları asla kaydetmez, gizli bilgileri de asla kaydetmez.
+
+## Ajan notları nasıl kullanır [#how-the-agent-uses-notes]
+
+Her konuşma, notların her biri tek satırlık bir diziniyle başlar. Ajan bir nota ihtiyaç duyduğunda onu tam olarak
+açar, yanlış çıkan bir notu da siler.
+
+## Kendiniz not ekleyin [#add-a-note-yourself]
+
+```text
+/remember Use pnpm, not npm
+```
+
+Bu bir proje notu kaydeder. Her projede geçerli bir not için `user` ekleyin:
+
+```text
+/remember user Türkçe cevap ver
+```
+
+## Notları görün ve silin [#see-and-forget-notes]
+
+`/memory` notları listeler. `enter` birini açar; iki kez `d` onu siler.
+
+```terminal
+ {success|Saved project/use-pnpm-not-npm. The agent sees it from the next conversation on.}
+
+{accent|+- Memory} {muted|1 notes} {accent|-------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|Use pnpm, not npm}                                                        {muted|2026-10-03} {accent||}
+{accent||}      {muted|project · fact · Use pnpm, not npm}                                                  {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|open ·} d {muted|forget ·} Up/Down {muted|move ·} Esc {muted|close}                                         {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+## Claude Code'un belleğini getirin [#bring-in-claude-codes-memory]
+
+`/memory import`, Claude Code'un topladıklarını getirir: bu proje için tuttuğu bellek notlarını, ayrıca
+`~/.claude/rules` ve `~/.claude/CLAUDE.md` dosyalarınızı. Yeniden içe aktarmak hiçbir şeyi iki kez eklemez.
+
+## Notları elle düzenleyin [#edit-notes-by-hand]
+
+Notlar, kısa bir frontmatter'ı olan Markdown dosyalarıdır:
+
+| Notlar    | Klasör                                       |
+| --------- | -------------------------------------------- |
+| Kullanıcı | `~/.jinion/memory/`                          |
+| Proje     | `~/.jinion/projects/<project>/memory/`       |
