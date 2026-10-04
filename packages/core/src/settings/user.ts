@@ -10,6 +10,7 @@ export interface Settings {
   mcp?: { disabled?: string[] };
   notifications?: boolean;
   worktrees?: boolean;
+  askBeforeCommits?: boolean;
 }
 
 const file = () => join(jinionHome(), 'settings.json');
@@ -33,3 +34,5 @@ export const saveMcpSettings = (mcp: Settings['mcp']) => update(() => ({ mcp }))
 export const saveNotifications = (notifications: boolean) => update(() => ({ notifications }));
 
 export const saveWorktrees = (worktrees: boolean) => update(() => ({ worktrees }));
+
+export const saveAskBeforeCommits = (askBeforeCommits: boolean) => update(() => ({ askBeforeCommits }));

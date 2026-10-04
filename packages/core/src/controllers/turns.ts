@@ -7,6 +7,7 @@ import type { Action } from '../conversation/reducer.js';
 import { BUSY, type SessionContext } from './context.js';
 import { DialogCancelled, type DialogController } from './dialogs.js';
 import { promptOf, type Submission } from '../prompt/submission.js';
+import { asksBeforeCommits } from '../settings/project.js';
 
 const LONG_TURN_MS = 15_000;
 
@@ -159,6 +160,7 @@ export class TurnController {
 
         return decision;
       },
+      asksBeforeCommits: () => asksBeforeCommits(this.context.info.cwd),
     };
   }
 

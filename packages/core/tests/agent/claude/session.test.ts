@@ -225,6 +225,7 @@ const context = (): RunContext => ({
   ask: async () => [],
   approve: async () => ({ allow: true }),
   approvePlan: async () => ({ approve: false }),
+  asksBeforeCommits: () => true,
 });
 
 async function turn(prompt: string | AgentPrompt, reply: (uuid: string) => Parameters<FakeClaude['reply']>) {

@@ -45,7 +45,8 @@ export class ClaudeApprovals {
       return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion memory' } };
     }
 
-    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Input, this.options.cwd());
+    const asksBeforeCommits = this.options.turn()?.asksBeforeCommits() ?? true;
+    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Input, this.options.cwd(), asksBeforeCommits);
     if (!reason) return {};
 
     return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };

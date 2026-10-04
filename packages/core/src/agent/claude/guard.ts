@@ -8,12 +8,19 @@ const FILE_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit']);
 const SCRATCH = [tmpdir(), '/tmp', '/private/tmp', '/var/tmp', '/var/folders', '/private/var/folders'];
 const STREAMS = /^\/dev\/(?:null|stdout|stderr|tty|fd\/\d+)$/;
 
+interface Rule {
+  reason: string;
+  matches(tool: string, input: Input, cwd: string): boolean;
+}
+
+const COMMITS: Rule = {
+  reason: 'Jinion asks before every commit.',
+  matches: (tool, input) => tool === 'Bash' && commands(input.command).some((command) => /^git\s+(?:-[cC]\s+\S+\s+)*commit\b/.test(command)),
+};
+
 /** Asked in every mode, auto included, whatever rules allow: a PreToolUse hook runs these before Claude Code's own checks. */
-const RULES: { reason: string; matches(tool: string, input: Input, cwd: string): boolean }[] = [
-  {
-    reason: 'Jinion asks before every commit.',
-    matches: (tool, input) => tool === 'Bash' && commands(input.command).some((command) => /^git\s+(?:-[cC]\s+\S+\s+)*commit\b/.test(command)),
-  },
+const RULES: Rule[] = [
+  COMMITS,
   {
     reason: 'Jinion asks before changing files outside the project.',
     matches: (tool, input, cwd) => {
@@ -29,8 +36,8 @@ const RULES: { reason: string; matches(tool: string, input: Input, cwd: string):
 
 export const GUARD_REASONS = new Set(RULES.map((rule) => rule.reason));
 
-export function guardReason(tool: string, input: Input, cwd: string) {
-  return RULES.find((rule) => rule.matches(tool, input, cwd))?.reason;
+export function guardReason(tool: string, input: Input, cwd: string, asksBeforeCommits = true) {
+  return RULES.find((rule) => (asksBeforeCommits || rule !== COMMITS) && rule.matches(tool, input, cwd))?.reason;
 }
 
 /** A rule can't allow these safely: `*` spans spaces, so `git -C * status*` would also match `git -C api push origin status`. */

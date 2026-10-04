@@ -1,4 +1,5 @@
 import { account, mcp, mode } from './agent.js';
+import { commitApproval } from './commit-approval.js';
 import { clear, close, compact, exit, rename, resume, rewind, tab } from './conversation.js';
 import { memory, remember } from './memory.js';
 import { effort, model } from './model.js';
@@ -28,6 +29,7 @@ export const builtinCommands: Command[] = [
   rewind,
   worktree,
   notifications,
+  commitApproval,
   statusline,
   clear,
   tab,

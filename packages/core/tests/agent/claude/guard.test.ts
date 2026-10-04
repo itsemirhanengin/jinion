@@ -19,6 +19,11 @@ describe('guardReason', () => {
     }
   });
 
+  it('lets commits through when the user turned asking off, but still asks about changes outside the project', () => {
+    expect(guardReason('Bash', { command: 'git commit -m x' }, cwd, false)).toBeUndefined();
+    expect(guardReason('Bash', { command: 'git commit -m x > ~/log.txt' }, cwd, false)).toBe('Jinion asks before changing files outside the project.');
+  });
+
   it('lets other git commands through', () => {
     expect(bash('git status && git log --oneline')).toBeUndefined();
     expect(bash('echo "commit"')).toBeUndefined();

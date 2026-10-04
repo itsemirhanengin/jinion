@@ -83,6 +83,8 @@ export interface RunContext {
   /** Rejects when the turn is interrupted. `call` is the tool call it is for, which waits meanwhile. */
   approve(request: PermissionRequest, call?: string): Promise<PermissionDecision>;
   approvePlan(modes: AgentMode[]): Promise<PlanDecision>;
+  /** Read at each commit, so changing the setting counts in a turn that already runs. */
+  asksBeforeCommits(): boolean;
 }
 
 export const PlanDecision = z.union([
