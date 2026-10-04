@@ -30,8 +30,8 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 | `apps/cli/src/ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
 | `apps/cli/src/status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
 | `packages/core/src/commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
-| `packages/core/src/controllers/` | What the app does, as plain classes: turns and the queue, the conversation, models, modes, accounts, MCP, tasks, input. `jinion.ts` is the composition root. They reach the screen only through the `Screen` port in `context.ts`. |
-| `packages/core/src/state/` | Jotai atoms, the single source of truth for what changes. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
+| `packages/core/src/controllers/` | What the app does, as plain classes. `jinion.ts` is the app: what sessions share (accounts, MCP, models, skills) and the session the user looks at; `session.ts` is one conversation, with its turns and queue, conversation, worktree, model, mode, tasks and input. They reach the screen only through the `Screen` port in `context.ts`. |
+| `packages/core/src/state/` | Jotai atoms in one store, the single source of truth for what changes. What sessions share is global (`agent.ts`, `preferences.ts`); each session has its own set from `sessionAtoms()`, and `active.ts` follows the one the user looks at, for clients to draw. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
 | `packages/core/src/conversation/` | The conversation as data: entry types, the pure reducer, edits and titles, the session store. No React, unit-tested. |
 | `packages/core/src/agent/` | The backend contract (`agent.ts`, `events.ts`, `tools.ts`, ...) and its implementations: `claude/` drives Claude Code headless, `demo/` plays scripted scenarios for `--demo` and the app tests. |
 | `packages/core/src/` `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` | Files on disk and outside tools, each behind a small module. |
@@ -40,8 +40,10 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 Rules that keep it that way:
 
 - **State lives in atoms; behavior lives in controllers.** Components read atoms with `useAtomValue` and call the
-  `Jinion` from `useJinion()`, which never changes, so reading it never redraws. Don't put app state in `useState` when
-  more than one component or a controller needs it.
+  `Jinion` from `useJinion()`, which never changes, so reading it never redraws; `jinion.session` is the session the
+  user looks at. Don't put app state in `useState` when more than one component or a controller needs it.
+- **A session keeps to its own atoms.** Its controllers read and write `context.atoms`, never `state/active.ts`, so one
+  running in the background never touches another; `biome.jsonc` checks it.
 - **`@jinion/core` draws nothing.** It imports no React, Ink, `@jinion/tui` or jotai's root entry (`jotai/vanilla`
   instead); `biome.jsonc` checks it. What it needs from the screen goes through `Screen`, as data: views (`View`) and
   dialogs (`Dialog`) that each client draws. Its types are its own; the chat kit's are shaped the same, so the app passes
