@@ -27,7 +27,7 @@ const skills: CompletionSource = (value, cursor) => {
   return { from: cursor - typed[1]!.length - 1, to: cursor, items };
 };
 
-function Prompt({ onSubmit }: { onSubmit: (text: string) => void }) {
+function Prompt({ onSubmit, onPasteKey }: { onSubmit: (text: string) => void; onPasteKey?: () => Promise<string | undefined> }) {
   const [value, setValue] = useState('');
 
   return (
@@ -35,6 +35,7 @@ function Prompt({ onSubmit }: { onSubmit: (text: string) => void }) {
       value={value}
       onChange={setValue}
       onSubmit={onSubmit}
+      onPasteKey={onPasteKey}
       completions={[skills]}
       mentions={[namedMention('$', SKILLS.map((skill) => skill.name))]}
     />
@@ -52,6 +53,21 @@ describe('Composer', () => {
     const list = screen.split('\n').filter((line) => line.trim()).slice(-8, -1).map((line) => line.trimEnd());
 
     expect(list).toEqual(['   Project', ' >   hello', '   Yours', '     design', '     ideas', '   vercel', '     nextjs']);
+  });
+
+  it('puts an image pasted with ctrl+v where the cursor is, and the cursor right after it', async () => {
+    const sent: string[] = [];
+    const image = async () => '[Image #1]';
+
+    terminal = renderTerminal(<Prompt onSubmit={(text) => sent.push(text)} onPasteKey={image} />, { columns: 60, rows: 16 });
+    await terminal.type('compare  with the design');
+    await terminal.press(...Array<string>(16).fill(KEYS.left));
+    await terminal.press('\x16');
+    await terminal.waitFor('[Image #1]');
+    await terminal.type('closely');
+    await terminal.press(KEYS.enter);
+
+    expect(sent).toEqual(['compare [Image #1]closely with the design']);
   });
 
   it('inserts the picked item and highlights known mentions only', async () => {

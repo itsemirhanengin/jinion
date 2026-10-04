@@ -20,6 +20,8 @@ export interface PromptInputProps {
   maxRows?: number;
   onScroll?(hidden: HiddenRows): void;
   onPaste?(text: string): string;
+  /** What `ctrl+v` puts in, e.g. a placeholder for an image read from the clipboard; nothing when it found none. */
+  onPasteKey?(): Promise<string | undefined>;
   /** Spans the cursor steps over and deletes whole, e.g. paste placeholders. Needs the `g` flag. */
   atoms?: RegExp;
   /** Needs the `g` flag. */
@@ -47,6 +49,7 @@ export function PromptInput({
   maxRows = 20,
   onScroll,
   onPaste,
+  onPasteKey,
   atoms,
   highlight,
 }: PromptInputProps) {
@@ -112,6 +115,23 @@ export function PromptInput({
 
   const insert = (text: string) => update(value.slice(0, position) + text + value.slice(position), position + text.length);
 
+  // An image takes a moment to read, so it goes where the cursor is once it is in, which typing may have moved.
+  const latest = useRef({ value, position });
+
+  latest.current = { value, position };
+
+  const pasteKey = (paste: () => Promise<string | undefined>) =>
+    void paste().then((text) => {
+      if (!text) return;
+
+      const now = latest.current;
+      const next = now.value.slice(0, now.position) + text + now.value.slice(now.position);
+
+      emitted.current = next;
+      setCursor(now.position + text.length);
+      onChange(next);
+    });
+
   const moveVertically = (direction: -1 | 1) => {
     const target = rows[caretRow + direction];
 
@@ -131,6 +151,7 @@ export function PromptInput({
   useInput(
     (input, key) => {
       if (onKeyDown?.(input, key)) return;
+      if (key.ctrl && input === 'v' && onPasteKey) return pasteKey(onPasteKey);
 
       if (key.return) {
         if (key.shift || key.meta) return insert('\n');

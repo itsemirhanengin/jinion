@@ -18,7 +18,6 @@ export interface ComposerProps
   footer?: ReactNode;
   mentions?: (RegExp | undefined)[];
   onPaste?(text: string): string | undefined;
-  onPasteKey?(): Promise<string | undefined>;
 }
 
 export function Composer({
@@ -28,7 +27,6 @@ export function Composer({
   footer,
   mentions = [],
   onPaste,
-  onPasteKey,
   ...input
 }: ComposerProps) {
   const theme = useTheme();
@@ -41,17 +39,7 @@ export function Composer({
   const highlight = useMentions(mentions);
   const { completion, selected, submits, onKey } = useCompletion({ sources: completions, value, cursor, onChange, onSubmit });
 
-  const onKeyDown = (input: string, key: Key) => {
-    if (key.ctrl && input === 'v' && onPasteKey) {
-      void onPasteKey().then((text) => {
-        if (text) onChange(value.slice(0, cursor) + text + value.slice(cursor));
-      });
-
-      return true;
-    }
-
-    return onKey(key);
-  };
+  const onKeyDown = (_: string, key: Key) => onKey(key);
 
   return (
     <Box flexDirection="column">
