@@ -6,7 +6,8 @@ export const MODES: Record<AgentMode, { name: string; description: string }> = {
   plan: { name: 'Plan', description: 'Reads and plans; changes nothing until you approve the plan' },
   auto: {
     name: 'Auto',
-    description: 'A safety classifier lets routine actions run and stops risky ones; commits and writes outside the project still ask',
+    description:
+      'A safety classifier lets routine actions run and stops risky ones; writes outside the project still ask, and commits too unless /commit-approval is off',
   },
 };
 
