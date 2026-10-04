@@ -131,7 +131,9 @@ Steps, each one leaving Jinion working as it does today:
      from a `JinionClient`'s store, following every open session. The draft, the history, pastes and the status line's
      layout are the app's; everything else, from git and files to sign-in and task output, comes over the API, and
      `biome.jsonc` keeps it that way.
-   - **4c**: stdio and WebSocket transports and `jinion serve`.
+   - **4c** (done): `jinion serve` runs the core without a screen, on a WebSocket on 127.0.0.1 with a random token in
+     a 0600 file under `~/.jinion/servers` and an Origin check, or over stdio (`--stdio`), a JSON message per line.
+     `jinion --attach` shows its conversations; leaving keeps them running.
    - **4d**: zod schemas for results and notifications too, a JSON Schema from them, and the rules for versions.
 5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
    opening into a new tab.
