@@ -34,6 +34,18 @@ export const clear: Command = {
   run: (jinion) => jinion.newSession(),
 };
 
+export const tab: Command = {
+  name: 'tab',
+  description: 'Start a new conversation in a tab of its own, beside this one (ctrl+n)',
+  run: (jinion) => void jinion.openBeside(),
+};
+
+export const close: Command = {
+  name: 'close',
+  description: 'Save this conversation and close its tab',
+  run: (jinion) => void jinion.close(jinion.session),
+};
+
 export const exit: Command = {
   name: 'exit',
   aliases: ['quit'],

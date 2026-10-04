@@ -1,5 +1,5 @@
 import { account, mcp, mode } from './agent.js';
-import { clear, compact, exit, rename, resume, rewind } from './conversation.js';
+import { clear, close, compact, exit, rename, resume, rewind, tab } from './conversation.js';
 import { memory, remember } from './memory.js';
 import { effort, model } from './model.js';
 import { notifications } from './notifications.js';
@@ -30,6 +30,8 @@ export const builtinCommands: Command[] = [
   notifications,
   statusline,
   clear,
+  tab,
+  close,
   expand,
   exit,
 ];

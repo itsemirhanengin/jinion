@@ -160,6 +160,15 @@ export class Jinion {
     return true;
   }
 
+  /** A new conversation, or `saved`, beside those open, and the one the user looks at from now on, as a new tab is. */
+  openBeside(saved?: SavedSession) {
+    const session = this.openSession(saved);
+
+    this.activate(session);
+
+    return session;
+  }
+
   /** A new conversation in place of the one the user looks at, as `/clear` does. */
   newSession() {
     return this.replace();

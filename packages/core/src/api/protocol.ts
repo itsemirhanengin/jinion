@@ -65,9 +65,12 @@ export const requests = {
   },
   'app/quit': { params: empty, result: done },
 
-  /** A new conversation, or the saved one `resume` names, beside those open. */
+  /**
+   * A new conversation, or the saved one `resume` names, beside those open; one already open comes back instead.
+   * `activate` makes it the one the user looks at, as a new tab is.
+   */
   'sessions/open': {
-    params: z.object({ resume: z.string().optional(), worktree: z.boolean().optional() }),
+    params: z.object({ resume: z.string().optional(), worktree: z.boolean().optional(), activate: z.boolean().optional() }),
     result: z.object({ session: z.string() }),
   },
   /** A new conversation, or the saved one `resume` names, in place of `session`, as `/clear` and `/resume` do. */

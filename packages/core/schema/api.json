@@ -82,6 +82,9 @@
                 },
                 "worktree": {
                   "type": "boolean"
+                },
+                "activate": {
+                  "type": "boolean"
                 }
               }
             },

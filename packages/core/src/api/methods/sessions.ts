@@ -15,7 +15,13 @@ export const sessionsMethods: Methods = (connection) => {
     return found;
   };
 
-  connection.answer('sessions/open', ({ resume, worktree }) => ({ session: app.openSession(saved(resume), { worktree }).id }));
+  connection.answer('sessions/open', ({ resume, worktree, activate }) => {
+    const session = app.openSession(saved(resume), { worktree });
+
+    if (activate) app.activate(session);
+
+    return { session: session.id };
+  });
 
   // `/clear` and `/resume` replace the session the user looks at, so it becomes that one first.
   connection.answer('sessions/replace', async ({ session, resume }) => {
