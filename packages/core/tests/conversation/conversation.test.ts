@@ -259,24 +259,24 @@ describe('titles', () => {
     reduce(session, { type: 'retitle', session: session.id, title, by, turns: session.entries.filter((entry) => entry.kind === 'user').length });
 
   it('names a conversation after its first message, again when its messages double or after a while, never over the user’s name', () => {
-    expect(titleDue(createSessionState(200_000))).toBe(false);
+    expect(titleDue(createSessionState(200_000), NOW)).toBe(false);
 
     const first = sent('hello');
 
-    expect(titleDue(first)).toBe(true);
+    expect(titleDue(first, NOW)).toBe(true);
 
     const named = titled(first, 'agent');
 
-    expect(titleDue(named)).toBe(false);
+    expect(titleDue(named, NOW)).toBe(false);
 
     const second = reduce(reduce(named, { type: 'submit', text: 'fix the build' }), { type: 'finish', outcome: 'done' });
 
-    expect(titleDue(second)).toBe(true);
+    expect(titleDue(second, NOW)).toBe(true);
 
     const atTwo = titled(second, 'agent');
     const third = reduce(atTwo, { type: 'submit', text: 'and the docs' });
 
-    expect(titleDue(third)).toBe(false);
+    expect(titleDue(third, NOW)).toBe(false);
     expect(titleDue(third, NOW + 20 * 60_000)).toBe(true);
     expect(titleDue(atTwo, NOW + 20 * 60_000)).toBe(false);
 
