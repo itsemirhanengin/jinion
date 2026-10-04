@@ -66,7 +66,13 @@ export function claudeOptions({ cwd, project, selection, mode, account, resume, 
     includePartialMessages: true,
     // The tasks panel stops background tasks one at a time, so esc only stops the turn and leaves them running.
     perTaskStopAffordance: true,
-    // Claude Code's bash-first experiment tells the model, in auto mode, to read and edit through Bash instead of the file tools.
-    env: { ...env, ...accountEnv(account), CLAUDE_CODE_THRIFTY_SONIC: '0' },
+    env: {
+      ...env,
+      ...accountEnv(account),
+      // Claude Code's bash-first experiment tells the model, in auto mode, to read and edit through Bash instead of the file tools.
+      CLAUDE_CODE_THRIFTY_SONIC: '0',
+      // Claude Code's own memory comes in despite `settingSources`, from the projects folder Jinion shares with it.
+      CLAUDE_CODE_DISABLE_AUTO_MEMORY: '1',
+    },
   };
 }
