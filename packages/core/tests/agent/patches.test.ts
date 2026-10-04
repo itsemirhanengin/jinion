@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addPatch, hunksToPatch, replacePatch } from '../../../src/agent/claude/patches.js';
+import { addPatch, hunksToPatch, replacePatch } from '../../src/agent/patches.js';
 
 describe('patches', () => {
   it('previews a replacement and a new file', () => {

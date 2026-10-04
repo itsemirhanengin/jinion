@@ -2,7 +2,7 @@ import type { AgentEvent } from '../events.js';
 import type { GrepMatch, SearchHit, ToolCall } from '../tools.js';
 import { type Input, isObject, number, text } from './input.js';
 import { MEMORY_SERVER } from './memory.js';
-import { addPatch, type Hunk, hunksToPatch, replacePatch, splitLines } from './patches.js';
+import { addPatch, type Hunk, hunksToPatch, replacePatch, splitLines } from '../patches.js';
 import type { PlanFile } from './plan.js';
 import { skillLabel } from './plugins.js';
 import { type ClaudeQuestion, fromClaudeAnswers, toQuestions } from './questions.js';
