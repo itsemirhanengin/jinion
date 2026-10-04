@@ -7,6 +7,7 @@ import type { TodoStatus } from '@jinion/tui/chat';
 import { demoCommands } from '@jinion/core/agent/demo/commands';
 import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
 import { ScriptedBackend, ScriptedSession } from '@jinion/core/agent/demo/agent';
+import type { Scenario } from '@jinion/core/agent/demo/types';
 import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
 import type { AgentBackend } from '@jinion/core/agent/agent';
 import { contextWarning, hasWorkLeft } from '../../src/app/activity.js';
@@ -54,6 +55,48 @@ const below = (screen: string) => {
 };
 
 describe('App', () => {
+  it('gives a question the todos’ place, leaves out what was done once the turn is over, and folds the list on a click', async () => {
+    const steps = (done: number) =>
+      Array.from({ length: 10 }, (_, index) => ({
+        text: `Step ${index + 1}`,
+        status: (index < done ? 'done' : index === done ? 'active' : 'pending') as TodoStatus,
+      }));
+
+    const checklist: Scenario = {
+      title: 'Work through the list',
+      async *play(script) {
+        yield* script.tool('todo', { groups: [{ title: 'Ship it', items: steps(8) }] }, {}, 0);
+        yield* script.ask([{ id: 'go', prompt: 'Carry on with step 9?', options: [{ label: 'Yes' }, { label: 'No' }] }]);
+        yield* script.say('On it.');
+      },
+    };
+
+    terminal.unmount();
+    terminal = renderTerminal(app(new ScriptedBackend([checklist], [], 0)), { columns: 120, rows: 40 });
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('work through the list');
+    await terminal.press(KEYS.enter);
+
+    // The conversation keeps the list as it was sent; the panel above the prompt is what changes.
+    const panel = (screen: string) => screen.slice(screen.lastIndexOf('TODO'), screen.lastIndexOf('Ask jinion anything'));
+
+    expect(await terminal.waitFor('Carry on with step 9?')).not.toContain('TODO');
+
+    await terminal.press(KEYS.enter);
+
+    const after = panel(await terminal.waitFor(/On it\.[\s\S]*\[x\] 8 done/));
+
+    expect(after).not.toContain('Step 8');
+    expect(after).toContain('[/] Step 9');
+
+    await terminal.click('TODO');
+
+    const folded = panel(await terminal.waitFor('+ TODO'));
+
+    expect(folded).toContain('TODO · 8/10 · [/] Step 9');
+    expect(folded).not.toContain('Step 10');
+  });
+
   it('opens on the banner and the prompt', async () => {
     const screen = await terminal.waitFor('Ask jinion anything');
 

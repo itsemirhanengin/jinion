@@ -1,24 +1,39 @@
-import { dialogAtom, tasksAtom, queueAtom, sessionAtom, todosAtom } from '../state/session.js';
+import { useState } from 'react';
 import { Box, Text, useTheme } from '@jinion/tui';
 import { TodoPanel, Working } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
+import { busyAtom, dialogAtom, queueAtom, sessionAtom, tasksAtom, todosAtom } from '../state/session.js';
 import { activity, hasWorkLeft } from './activity.js';
 import { TaskLine } from './task-line.js';
 
-export function Aside() {
-  const todos = useAtomValue(todosAtom);
+/** While a turn runs, the last done items stay in view, to see what just happened; between turns none do. */
+const KEEP_DONE_WHILE_BUSY = 2;
 
+export function Aside() {
   return (
     <>
       <Activity />
-      {hasWorkLeft(todos) && (
-        <Box marginTop={1} flexDirection="column">
-          <TodoPanel groups={todos} />
-        </Box>
-      )}
+      <Todos />
       <TaskLine />
       <Queue />
     </>
+  );
+}
+
+/** A dialog takes their place: what jinion asks matters more than the list while it waits. */
+function Todos() {
+  const todos = useAtomValue(todosAtom);
+  const busy = useAtomValue(busyAtom);
+  const dialog = useAtomValue(dialogAtom);
+
+  const [folded, setFolded] = useState(false);
+
+  if (dialog || !hasWorkLeft(todos)) return null;
+
+  return (
+    <Box marginTop={1} flexDirection="column">
+      <TodoPanel groups={todos} folded={folded} onToggle={() => setFolded(!folded)} keepDone={busy ? KEEP_DONE_WHILE_BUSY : 0} />
+    </Box>
   );
 }
 
