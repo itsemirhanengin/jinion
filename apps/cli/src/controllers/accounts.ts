@@ -1,3 +1,4 @@
+import type { SignInOptions } from '../agent/accounts.js';
 import type { LimitWindow } from '../agent/usage.js';
 import { errorMessage } from '../lib/errors.js';
 import { limitsKey } from '../settings/limits.js';
@@ -78,7 +79,35 @@ export class AccountController {
     notice(`Removed the ${name} account and signed it out. Its conversations stay.`, 'success');
   }
 
-  signedIn(name: string) {
+  /** Resolves whether the account is signed in now; a cancelled sign-in says nothing. */
+  async signIn(name: string, options: SignInOptions) {
+    const { agent, store, notice } = this.context;
+    if (!agent.accounts) return false;
+
+    try {
+      const account = await agent.accounts.signIn(name, options);
+      const as = account.email ? ` as ${account.email}` : '';
+
+      notice(
+        !account.signedIn
+          ? `${name} isn't signed in yet. Try again from /account.`
+          : name === store.get(accountAtom)
+            ? `Signed in to ${name} again${as}. The conversation carries on with the new login.`
+            : `Signed in to ${name}${as}. Pick it here to switch.`,
+        account.signedIn ? 'success' : 'warning',
+      );
+
+      if (account.signedIn) this.signedIn(name);
+
+      return account.signedIn;
+    } catch (error) {
+      if (!options.signal.aborted) notice(`Couldn't sign in to ${name}: ${errorMessage(error)}`, 'error');
+
+      return false;
+    }
+  }
+
+  private signedIn(name: string) {
     if (name !== this.context.agent.accounts?.current) return;
 
     if (this.context.store.get(workingAtom)) this.loginWaits = true;

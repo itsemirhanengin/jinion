@@ -26,7 +26,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
 
   const refresh = () => accounts.list().then(setList, () => setList([]));
 
-  const login = useSignIn(accounts, (name, signedIn) => {
+  const login = useSignIn((name, signedIn) => {
     if (signedIn) choices.setFocus(name);
     void refresh();
   });
