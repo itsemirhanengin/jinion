@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react';
 import { Box, Text } from 'ink';
 import { useTheme } from '../runtime/theme.js';
+import { Clickable } from '../primitives/clickable.js';
 import { Frame } from '../primitives/frame.js';
 import { StatusMark, toneOf, type Status } from '../primitives/spinner.js';
 import { TreeRow } from '../primitives/tree.js';
@@ -53,7 +55,18 @@ export function TodoBlock({ groups, status = 'done' }: { groups: TodoGroup[]; st
   );
 }
 
-export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
+export interface TodoPanelProps {
+  groups: TodoGroup[];
+  /** One line: how many are done, and the item being worked on. */
+  folded?: boolean;
+  /** Clicking the title folds the panel or opens it. */
+  onToggle?(): void;
+  /** How many of the last done items stay listed; the ones before go into a count, so a long list stays short. */
+  keepDone?: number;
+}
+
+/** The group being worked on; done items beyond `keepDone` fold into a count. */
+export function TodoPanel({ groups, folded = false, onToggle, keepDone = Number.POSITIVE_INFINITY }: TodoPanelProps) {
   const theme = useTheme();
 
   const current = groups.findIndex((group) => !isComplete(group));
@@ -61,13 +74,41 @@ export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
   const group = groups[index];
   if (!group) return null;
 
+  const all = groups.reduce((sum, each) => ({ done: sum.done + progress(each).done, total: sum.total + progress(each).total }), { done: 0, total: 0 });
   const { done, total } = progress(group);
+  const doing = group.items.find((item) => item.status === 'active') ?? group.items.find((item) => item.status === 'pending');
+
+  const title = (
+    <Text wrap={folded ? 'truncate-end' : 'wrap'}>
+      <Text bold color={theme.success}>
+        {folded ? '+' : '-'} TODO
+      </Text>
+      <Text color={theme.muted}> · {all.done}/{all.total}</Text>
+      {folded && doing && (
+        <Text>
+          <Text color={theme.muted}> · </Text>
+          <TodoText item={doing} />
+        </Text>
+      )}
+    </Text>
+  );
+
+  if (folded) {
+    return (
+      <Box paddingX={1}>
+        <Toggle onToggle={onToggle}>{title}</Toggle>
+      </Box>
+    );
+  }
+
+  const doneItems = group.items.filter((item) => item.status === 'done');
+  const shownDone = new Set(doneItems.slice(Math.max(0, doneItems.length - keepDone)));
+  const tucked = doneItems.length - shownDone.size;
+  const rows = group.items.filter((item) => item.status !== 'done' || shownDone.has(item));
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Text bold color={theme.success}>
-        TODO
-      </Text>
+      <Toggle onToggle={onToggle}>{title}</Toggle>
       <TreeRow
         prefix=" |-- "
         label={
@@ -76,15 +117,22 @@ export function TodoPanel({ groups }: { groups: TodoGroup[] }) {
           </Text>
         }
       />
-      {group.items.map((item, itemIndex) => (
-        <TreeRow
-          key={itemIndex}
-          prefix={itemIndex === group.items.length - 1 ? " |  '-- " : ' |  |-- '}
-          label={<TodoText item={item} />}
-        />
+      {tucked > 0 && <TreeRow prefix={rows.length === 0 ? " |  '-- " : ' |  |-- '} label={<Text color={theme.muted}>[x] {tucked} done</Text>} />}
+      {rows.map((item, itemIndex) => (
+        <TreeRow key={itemIndex} prefix={itemIndex === rows.length - 1 ? " |  '-- " : ' |  |-- '} label={<TodoText item={item} />} />
       ))}
       <Text color={theme.border}> `-----</Text>
     </Box>
+  );
+}
+
+function Toggle({ onToggle, children }: { onToggle?: () => void; children: ReactNode }) {
+  if (!onToggle) return <Box>{children}</Box>;
+
+  return (
+    <Clickable id="todo" fit onClick={onToggle}>
+      <Box>{children}</Box>
+    </Clickable>
   );
 }
 
