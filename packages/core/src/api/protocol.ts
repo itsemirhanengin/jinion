@@ -1,28 +1,37 @@
 import { z } from 'zod';
-import type { AgentMode, FileChanges, PlanDecision, RewindScope } from '../agent/agent.js';
-import type { AgentAccount } from '../agent/accounts.js';
-import type { McpServerInfo } from '../agent/mcp.js';
-import type { ModelSelection } from '../agent/models.js';
-import type { PermissionDecision } from '../agent/permissions.js';
-import type { QuestionAnswer } from '../agent/questions.js';
-import type { AgentUsage, ContextUsage, UsageHistory } from '../agent/usage.js';
-import type { CommandInfo } from '../commands/registry.js';
-import type { AppInfo, PromptFill, View } from '../controllers/context.js';
-import type { RewindPoint } from '../controllers/context.js';
-import type { SentAction } from '../controllers/session.js';
-import type { NoticeTone } from '../conversation/entries.js';
-import type { SessionState } from '../conversation/session.js';
-import type { GitStatus, RepoChanges } from '../git/types.js';
-import type { Memory } from '../memory/types.js';
-import type { Submission } from '../prompt/submission.js';
-import type { AppFields, FieldChange, SessionFields } from './fields.js';
+import { AgentAccount } from '../agent/accounts.js';
+import { AgentMode, FileChanges, PlanDecision, RewindScope } from '../agent/agent.js';
+import { McpServerInfo } from '../agent/mcp.js';
+import { ModelSelection } from '../agent/models.js';
+import { PermissionDecision } from '../agent/permissions.js';
+import { QuestionAnswer } from '../agent/questions.js';
+import { AgentUsage, ContextUsage, UsageHistory } from '../agent/usage.js';
+import { PromptFill, RewindPoint, View } from '../controllers/context.js';
+import { NoticeTone } from '../conversation/entries.js';
+import { SentAction } from '../conversation/reducer.js';
+import { GitStatus, RepoChanges } from '../git/types.js';
+import { MemoryScope } from '../memory/types.js';
+import { Submission } from '../prompt/submission.js';
+import {
+  AppFieldChange,
+  Initialized,
+  MemoryNote,
+  SavedSummary,
+  SessionFieldChange,
+  Sessions,
+  SessionSnapshot,
+} from './schemas.js';
 
 /** The core's types that come over the API, so a client imports them from it rather than from where the core keeps them. */
-export type { AppInfo, PromptFill, View } from '../controllers/context.js';
-export type { RewindPoint } from '../controllers/context.js';
+export type { AppInfo, PromptFill, RewindPoint, View } from '../controllers/context.js';
 export type { FileChange, GitStatus, RepoChanges } from '../git/types.js';
+export type * from './schemas.js';
 
-/** Raised when a change would break a client written for the one before. */
+/**
+ * Raised only when a change would break a client written for the one before. Adding a method, a notification or an
+ * optional field doesn't: a client ignores what it doesn't know. Removing or renaming any, or making a field required,
+ * does.
+ */
 export const PROTOCOL_VERSION = 1;
 
 /** The protocol's own error codes, in the range JSON-RPC leaves to it. */
@@ -37,252 +46,140 @@ export const ApiCode = {
 
 const empty = z.object({});
 
+const done = z.null();
+
 const name = z.object({ name: z.string() });
 
 const session = z.object({ session: z.string() });
 
-const mode = z.enum(['manual', 'edits', 'plan', 'auto']) satisfies z.ZodType<AgentMode>;
-
-const submission = z.object({
-  text: z.string(),
-  prompt: z
-    .object({ text: z.string(), images: z.array(z.object({ mediaType: z.string(), data: z.string() })).optional() })
-    .optional(),
-}) satisfies z.ZodType<Submission>;
-
-const questionAnswer = z.object({
-  options: z.array(z.number().int().nonnegative()),
-  text: z.string().optional(),
-  note: z.string().optional(),
-}) satisfies z.ZodType<QuestionAnswer>;
-
-const permissionDecision = z.union([
-  z.object({ allow: z.literal(true), always: z.boolean().optional() }),
-  z.object({ allow: z.literal(false), note: z.string().optional() }),
-]) satisfies z.ZodType<PermissionDecision>;
-
-const planDecision = z.union([
-  z.object({ approve: z.literal(true), mode }),
-  z.object({ approve: z.literal(false), note: z.string().optional() }),
-]) satisfies z.ZodType<PlanDecision>;
-
-const selection = z.object({ model: z.string(), effort: z.string().optional() }) satisfies z.ZodType<ModelSelection>;
-
-const rewindPoint = z.object({ entry: z.string(), promptId: z.string(), text: z.string() }) satisfies z.ZodType<RewindPoint>;
-
-const rewindScope = z.object({ code: z.boolean(), conversation: z.boolean() }) satisfies z.ZodType<RewindScope>;
-
-const tone = z.enum(['muted', 'success', 'warning', 'error']) satisfies z.ZodType<NoticeTone>;
-
-/** The params of everything a client sends, checked where they come in, since a client may be any program. */
-export const clientSchemas = {
-  initialize: z.object({
-    protocolVersion: z.number().int(),
-    client: z.object({ name: z.string(), version: z.string() }),
-    /** How this client tells the user something while they look elsewhere. */
-    notifications: z.enum(['desktop', 'bell']).optional(),
-  }),
-  'app/quit': empty,
+/** Every method the server answers: what a client sends, checked where it comes in, and what it gets back. */
+export const requests = {
+  initialize: {
+    params: z.object({
+      protocolVersion: z.number().int(),
+      client: z.object({ name: z.string(), version: z.string() }),
+      /** How this client tells the user something while they look elsewhere. */
+      notifications: z.enum(['desktop', 'bell']).optional(),
+    }),
+    result: Initialized,
+  },
+  'app/quit': { params: empty, result: done },
 
   /** A new conversation, or the saved one `resume` names, beside those open. */
-  'sessions/open': z.object({ resume: z.string().optional(), worktree: z.boolean().optional() }),
+  'sessions/open': {
+    params: z.object({ resume: z.string().optional(), worktree: z.boolean().optional() }),
+    result: z.object({ session: z.string() }),
+  },
   /** A new conversation, or the saved one `resume` names, in place of `session`, as `/clear` and `/resume` do. */
-  'sessions/replace': session.extend({ resume: z.string().optional() }),
-  'sessions/activate': session,
-  'sessions/close': session,
-  'saved/list': empty,
+  'sessions/replace': { params: session.extend({ resume: z.string().optional() }), result: done },
+  'sessions/activate': { params: session, result: done },
+  /** `closed` is `false` when the user chose to keep it open, e.g. over a worktree with work in it. */
+  'sessions/close': { params: session, result: z.object({ closed: z.boolean() }) },
+  'saved/list': { params: empty, result: z.array(SavedSummary) },
 
   /** Answered with the conversation as it is; every change after it comes as `session/action`. */
-  'session/subscribe': session,
-  'session/unsubscribe': session,
+  'session/subscribe': { params: session, result: SessionSnapshot },
+  'session/unsubscribe': { params: session, result: done },
   /** What the user sent: a prompt, a message for the running turn, or a slash command. */
-  'session/submit': session.extend(submission.shape),
+  'session/submit': { params: session.extend(Submission.shape), result: done },
   /** Sent once the running turn ends, or at once when none runs. */
-  'session/queue': session.extend(submission.shape),
-  'session/interrupt': session,
+  'session/queue': { params: session.extend(Submission.shape), result: done },
+  'session/interrupt': { params: session, result: done },
   /** A line in the conversation from the client, e.g. that a paste couldn't be read. */
-  'session/notice': session.extend({ text: z.string(), tone: tone.optional() }),
-  'session/model': session.extend({ selection }),
-  'session/mode': session.extend({ mode }),
+  'session/notice': { params: session.extend({ text: z.string(), tone: NoticeTone.optional() }), result: done },
+  'session/model': { params: session.extend({ selection: ModelSelection }), result: done },
+  'session/mode': { params: session.extend({ mode: AgentMode }), result: done },
   /** The default for new sessions, and this one's choice while it hasn't started. */
-  'session/worktree': session.extend({ on: z.boolean() }),
-  'session/stop-task': session.extend({ task: z.string() }),
+  'session/worktree': { params: session.extend({ on: z.boolean() }), result: done },
+  'session/stop-task': { params: session.extend({ task: z.string() }), result: done },
   /** The end of what a task wrote, by the task's id, so a client never names a file. */
-  'session/task-output': session.extend({ task: z.string() }),
+  'session/task-output': { params: session.extend({ task: z.string() }), result: z.array(z.string()).nullable() },
   /** Sends the command or subagent the turn waits for to the background. */
-  'session/background': session,
-  'session/context': session,
+  'session/background': { params: session, result: done },
+  'session/context': { params: session, result: ContextUsage },
   /** Shows the messages it can go back to, or says why it can't. */
-  'session/open-rewind': session,
-  'session/rewind-preview': session.extend({ prompt: z.string() }),
-  'session/rewind': session.extend({ point: rewindPoint, scope: rewindScope }),
+  'session/open-rewind': { params: session, result: done },
+  'session/rewind-preview': { params: session.extend({ prompt: z.string() }), result: FileChanges.nullable() },
+  'session/rewind': { params: session.extend({ point: RewindPoint, scope: RewindScope }), result: done },
 
   /** Names the dialog it answers, so an answer meant for one that is gone answers nothing else. */
-  'dialog/answer': z.discriminatedUnion('dialog', [
-    session.extend({ dialog: z.literal('ask'), answer: z.array(questionAnswer) }),
-    session.extend({ dialog: z.literal('permission'), answer: permissionDecision }),
-    session.extend({ dialog: z.literal('plan'), answer: planDecision }),
-  ]),
-  'dialog/cancel': session,
+  'dialog/answer': {
+    params: z.discriminatedUnion('dialog', [
+      session.extend({ dialog: z.literal('ask'), answer: z.array(QuestionAnswer) }),
+      session.extend({ dialog: z.literal('permission'), answer: PermissionDecision }),
+      session.extend({ dialog: z.literal('plan'), answer: PlanDecision }),
+    ]),
+    result: done,
+  },
+  'dialog/cancel': { params: session, result: done },
 
   /** In the folder the session works in, its worktree or the project. */
-  'git/status': session,
-  'git/changes': session,
+  'git/status': { params: session, result: GitStatus.nullable() },
+  'git/changes': { params: session, result: z.array(RepoChanges) },
   /** A file from the session's last `git/changes`, by its absolute path. */
-  'git/diff': session.extend({ file: z.string() }),
-  'files/list': session,
+  'git/diff': { params: session.extend({ file: z.string() }), result: z.string() },
+  'files/list': { params: session, result: z.array(z.string()) },
 
-  'accounts/list': empty,
-  'accounts/select': name,
-  'accounts/remove': name,
+  'accounts/list': { params: empty, result: z.array(AgentAccount) },
+  'accounts/select': { params: name, result: done },
+  'accounts/remove': { params: name, result: done },
   /** Answered once signing in ends; meanwhile the link and what to type come as notifications. */
-  'accounts/sign-in': name,
-  'accounts/sign-in-answer': name.extend({ text: z.string() }),
-  'accounts/sign-in-cancel': name,
+  'accounts/sign-in': { params: name, result: z.object({ signedIn: z.boolean() }) },
+  'accounts/sign-in-answer': { params: name.extend({ text: z.string() }), result: done },
+  'accounts/sign-in-cancel': { params: name, result: done },
 
-  'mcp/servers': empty,
+  'mcp/servers': { params: empty, result: z.array(McpServerInfo) },
   /** The servers to have on, by name; the others go off. */
-  'mcp/save': z.object({ enabled: z.array(z.string()) }),
-  'memory/list': empty,
-  'memory/forget': z.object({ scope: z.enum(['user', 'project']), id: z.string() }),
-  'usage/limits': z.object({ drivers: z.boolean().optional() }),
+  'mcp/save': { params: z.object({ enabled: z.array(z.string()) }), result: done },
+  'memory/list': { params: empty, result: z.array(MemoryNote) },
+  'memory/forget': { params: z.object({ scope: MemoryScope, id: z.string() }), result: done },
+  'usage/limits': { params: z.object({ drivers: z.boolean().optional() }), result: AgentUsage },
   /** `usage/history-progress` tells how far it got. */
-  'usage/history': empty,
+  'usage/history': { params: empty, result: UsageHistory },
+};
 
+/** What a client tells the server, with no answer. */
+export const notificationsToServer = {
   'client/focus': z.object({ focused: z.boolean() }),
 };
 
-type ClientParams = { [M in keyof typeof clientSchemas]: z.infer<(typeof clientSchemas)[M]> };
+/** What the server tells a client, with no answer. */
+export const notificationsToClient = {
+  'sessions/changed': Sessions,
+  'session/action': SentAction.extend({ session: z.string() }),
+  'session/field': SessionFieldChange,
+  'app/field': AppFieldChange,
+  /** A command asked to show something, such as a picker. */
+  'screen/view': z.object({ view: View }),
+  /** Text for the prompt of `session`, e.g. the message a rewind went back to. */
+  'screen/fill-prompt': z.object({ session: z.string(), text: z.string(), fill: PromptFill }),
+  'screen/notify': z.object({ title: z.string(), body: z.string() }),
+  'screen/expand': empty,
+  'screen/exit': empty,
+  'accounts/sign-in-link': z.object({ name: z.string(), url: z.string() }),
+  /** `problem` says why it asks again, e.g. a code that didn't work. */
+  'accounts/sign-in-prompt': z.object({ name: z.string(), prompt: z.string(), problem: z.string().optional() }),
+  'usage/history-progress': z.object({ done: z.number(), total: z.number() }),
+};
 
-/** What the backend can do; a client leaves out what it can't. */
-export interface AgentFeatures {
-  accounts: boolean;
-  mcp: boolean;
-  usage: boolean;
-  history: boolean;
-  steer: boolean;
-  rewind: boolean;
-  context: boolean;
-  background: boolean;
-  compact: boolean;
-}
+/** The params of everything a client sends, as the server's peer checks them. */
+export const clientSchemas: Record<string, z.ZodType> = {
+  ...Object.fromEntries(Object.entries(requests).map(([method, { params }]) => [method, params])),
+  ...notificationsToServer,
+};
 
-export interface AgentInfo {
-  name: string;
-  modes: AgentMode[];
-  features: AgentFeatures;
-}
+type Requests = typeof requests;
 
-export interface SessionSummary {
-  id: string;
-  title?: string;
-  working: boolean;
-}
-
-/** The open sessions, in the order they opened, and the one the user looks at. */
-export interface Sessions {
-  sessions: SessionSummary[];
-  active?: string;
-}
-
-/** `seq` is the session's last action; each `session/action` after it carries the next number. */
-export interface SessionSnapshot {
-  state: SessionState;
-  fields: SessionFields;
-  seq: number;
-}
-
-export interface SavedSummary {
-  id: string;
-  title: string;
-  updatedAt: number;
-  messages: number;
-  firstPrompt?: string;
-  worktree?: string;
-}
-
-export interface MemoryNote extends Memory {
-  path: string;
-}
-
-export interface Initialized extends Sessions {
-  protocolVersion: number;
-  server: { name: string; version: string };
-  info: AppInfo;
-  agent: AgentInfo;
-  commands: CommandInfo[];
-  app: AppFields;
-}
-
-interface ServerResults {
-  initialize: Initialized;
-  'app/quit': null;
-  'sessions/open': { session: string };
-  'sessions/replace': null;
-  'sessions/activate': null;
-  /** `false` when the user chose to keep it open, e.g. over a worktree with work in it. */
-  'sessions/close': { closed: boolean };
-  'saved/list': SavedSummary[];
-  'session/subscribe': SessionSnapshot;
-  'session/unsubscribe': null;
-  'session/submit': null;
-  'session/queue': null;
-  'session/interrupt': null;
-  'session/notice': null;
-  'session/model': null;
-  'session/mode': null;
-  'session/worktree': null;
-  'session/stop-task': null;
-  'session/task-output': string[] | null;
-  'session/background': null;
-  'session/context': ContextUsage;
-  'session/open-rewind': null;
-  'session/rewind-preview': FileChanges | null;
-  'session/rewind': null;
-  'dialog/answer': null;
-  'dialog/cancel': null;
-  'git/status': GitStatus | null;
-  'git/changes': RepoChanges[];
-  'git/diff': string;
-  'files/list': string[];
-  'accounts/list': AgentAccount[];
-  'accounts/select': null;
-  'accounts/remove': null;
-  'accounts/sign-in': { signedIn: boolean };
-  'accounts/sign-in-answer': null;
-  'accounts/sign-in-cancel': null;
-  'mcp/servers': McpServerInfo[];
-  'mcp/save': null;
-  'memory/list': MemoryNote[];
-  'memory/forget': null;
-  'usage/limits': AgentUsage;
-  'usage/history': UsageHistory;
-}
+type Inferred<T extends Record<string, z.ZodType>> = { [K in keyof T]: z.infer<T[K]> };
 
 /** What the server answers. */
 export type ServerContract = {
-  requests: { [M in keyof ServerResults]: { params: ClientParams[M]; result: ServerResults[M] } };
-  notifications: { 'client/focus': ClientParams['client/focus'] };
+  requests: { [M in keyof Requests]: { params: z.infer<Requests[M]['params']>; result: z.infer<Requests[M]['result']> } };
+  notifications: Inferred<typeof notificationsToServer>;
 };
 
 /** What a client answers: for now only what the server tells it. */
 export type ClientContract = {
   requests: Record<never, never>;
-  notifications: {
-    'sessions/changed': Sessions;
-    'session/action': SentAction & { session: string };
-    'session/field': FieldChange<SessionFields> & { session: string };
-    'app/field': FieldChange<AppFields>;
-    /** A command asked to show something, such as a picker. */
-    'screen/view': { view: View };
-    /** Text for the prompt of `session`, e.g. the message a rewind went back to. */
-    'screen/fill-prompt': { session: string; text: string; fill: PromptFill };
-    'screen/notify': { title: string; body: string };
-    'screen/expand': Record<never, never>;
-    'screen/exit': Record<never, never>;
-    'accounts/sign-in-link': { name: string; url: string };
-    /** `problem` says why it asks again, e.g. a code that didn't work. */
-    'accounts/sign-in-prompt': { name: string; prompt: string; problem?: string };
-    'usage/history-progress': { done: number; total: number };
-  };
+  notifications: Inferred<typeof notificationsToClient>;
 };

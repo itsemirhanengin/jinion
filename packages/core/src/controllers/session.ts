@@ -1,7 +1,7 @@
 import type { AgentSession } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { NoticeTone } from '../conversation/entries.js';
-import type { Action, StampedAction } from '../conversation/reducer.js';
+import type { Action, SentAction } from '../conversation/reducer.js';
 import { firstLine } from '../lib/text.js';
 import { skillsAtom } from '../state/agent.js';
 import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/session.js';
@@ -15,11 +15,6 @@ import { ModelController } from './model.js';
 import { TaskController } from './tasks.js';
 import { TurnController } from './turns.js';
 import { WorktreeController } from './worktrees.js';
-
-/** An action as its session took it: stamped, and numbered in the order they came. */
-export interface SentAction extends StampedAction {
-  seq: number;
-}
 
 export interface Notice {
   text: string;

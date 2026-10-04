@@ -32,6 +32,11 @@ export const StampedAction = z.object({ action: Action, at: z.number() });
 
 export type StampedAction = z.infer<typeof StampedAction>;
 
+/** An action as its session took it: stamped, and numbered in the order they came. */
+export const SentAction = StampedAction.extend({ seq: z.number().int() });
+
+export type SentAction = z.infer<typeof SentAction>;
+
 /**
  * Pure: the same conversation and the same action, at the same time, give the same conversation anywhere. So a client
  * that replays a session's actions holds what the session holds, and everything on screen can be tested without React.

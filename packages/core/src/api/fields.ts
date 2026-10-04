@@ -1,16 +1,13 @@
-import type { Atom, ExtractAtomValue, Store } from 'jotai/vanilla';
+import type { Atom, Store } from 'jotai/vanilla';
 import { accountAtom, identityAtom, modelsAtom, seenLimitsAtom, skillsAtom } from '../state/agent.js';
 import { worktreesAtom } from '../state/preferences.js';
 import type { SessionAtoms } from '../state/session.js';
+import type { AppFields, FieldChange, SessionFields } from './schemas.js';
 
-type Fields = Record<string, Atom<unknown>>;
+/** The atoms a set of fields is read from, each of the type its field has on the wire. */
+type FieldAtoms<V> = { [K in keyof V]-?: Atom<V[K]> };
 
-export type FieldValues<F extends Fields> = { [K in keyof F]: ExtractAtomValue<F[K]> };
-
-/** One field's new value, named, since a value gone to `undefined` would vanish from an object sent as JSON. */
-export type FieldChange<V> = { [K in keyof V]: { name: K; value: V[K] } }[keyof V];
-
-/** What every session shares that a client shows. `worktrees` is the default for new sessions. */
+/** Where the server reads `AppFields` from. */
 export const appFields = {
   models: modelsAtom,
   account: accountAtom,
@@ -18,31 +15,20 @@ export const appFields = {
   skills: skillsAtom,
   seenLimits: seenLimitsAtom,
   worktrees: worktreesAtom,
-};
+} satisfies FieldAtoms<AppFields>;
 
-export type AppFields = FieldValues<typeof appFields>;
+/** Where the server reads a session's `SessionFields` from. */
+export const sessionFields = ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) =>
+  ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }) satisfies FieldAtoms<SessionFields>;
 
-/** What a client shows of a session besides its conversation, which it follows action by action instead. */
-export const sessionFields = ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) => ({
-  selection,
-  mode,
-  tasks,
-  dialog,
-  queue,
-  wantsWorktree,
-  working,
-});
-
-export type SessionFields = FieldValues<ReturnType<typeof sessionFields>>;
-
-export function readFields<F extends Fields>(store: Store, fields: F) {
-  return Object.fromEntries(Object.entries(fields).map(([name, atom]) => [name, store.get(atom)])) as FieldValues<F>;
+export function readFields<V>(store: Store, fields: FieldAtoms<V>) {
+  return Object.fromEntries(Object.entries<Atom<unknown>>(fields).map(([name, atom]) => [name, store.get(atom)])) as V;
 }
 
 /** Tells `changed` of each field that changes, until the returned function is called. */
-export function watchFields<F extends Fields>(store: Store, fields: F, changed: (change: FieldChange<FieldValues<F>>) => void) {
-  const stops = Object.entries(fields).map(([name, atom]) =>
-    store.sub(atom, () => changed({ name, value: store.get(atom) } as FieldChange<FieldValues<F>>)),
+export function watchFields<V>(store: Store, fields: FieldAtoms<V>, changed: (change: FieldChange<V>) => void) {
+  const stops = Object.entries<Atom<unknown>>(fields).map(([name, atom]) =>
+    store.sub(atom, () => changed({ name, value: store.get(atom) } as FieldChange<V>)),
   );
 
   return () => {

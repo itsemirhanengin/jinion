@@ -1,7 +1,7 @@
 import { atom, createStore, type PrimitiveAtom } from 'jotai/vanilla';
 import type { PromptFill, View } from '../controllers/context.js';
 import { reduce } from '../conversation/reducer.js';
-import type { AppFields } from './fields.js';
+import type { AppFields } from './schemas.js';
 import { type ClientContract, type Initialized, PROTOCOL_VERSION, type ServerContract, type SessionSnapshot, type Sessions } from './protocol.js';
 import { type Params, type Result, RpcPeer } from './rpc.js';
 import type { Transport } from './transport.js';
