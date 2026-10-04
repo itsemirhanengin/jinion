@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
-import type { RepoChanges } from '@jinion/core/git/changes';
+import type { RepoChanges } from '@jinion/core/api/protocol';
 import { plural } from '@jinion/core/lib/format';
 import { useApi } from '../../app/api.js';
 import { editTurnsAtom } from '../../state/session.js';

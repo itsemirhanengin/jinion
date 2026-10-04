@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { GitStatus } from '@jinion/core/git/status';
+import type { GitStatus } from '@jinion/core/api/protocol';
 import { useApi } from '../app/api.js';
 
 /** Of the folder the shown session works in, read again as `folder` or `refresh` changes; the last one stays shown meanwhile. */

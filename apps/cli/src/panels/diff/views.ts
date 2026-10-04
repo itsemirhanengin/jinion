@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { changedFiles, type EditTurn } from '@jinion/core/conversation/edits';
-import type { FileChange } from '@jinion/core/git/repos';
+import type { FileChange } from '@jinion/core/api/protocol';
 import { plural } from '@jinion/core/lib/format';
 import { firstFilledLine, truncate } from '@jinion/core/lib/text';
 

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { ChoiceList, choiceIndent, Panel, Text, useChoiceList, usePanel, useTheme, type Choice } from '@jinion/tui';
 import type { FileChanges, RewindScope } from '@jinion/core/agent/agent';
-import type { RewindPoint } from '@jinion/core/controllers/conversation';
+import type { RewindPoint } from '@jinion/core/api/protocol';
 import { plural } from '@jinion/core/lib/format';
 import { firstFilledLine as firstLine } from '@jinion/core/lib/text';
 import { useAsync } from '../../ui/use-async.js';

@@ -18,6 +18,13 @@ import type { Memory } from '../memory/store.js';
 import type { Submission } from '../prompt/submission.js';
 import type { AppFields, FieldChange, SessionFields } from './fields.js';
 
+/** The core's types that come over the API, so a client imports them from it rather than from where the core keeps them. */
+export type { AppInfo, PromptFill, View } from '../controllers/context.js';
+export type { RewindPoint } from '../controllers/conversation.js';
+export type { RepoChanges } from '../git/changes.js';
+export type { FileChange } from '../git/repos.js';
+export type { GitStatus } from '../git/status.js';
+
 /** Raised when a change would break a client written for the one before. */
 export const PROTOCOL_VERSION = 1;
 

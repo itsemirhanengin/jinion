@@ -1,5 +1,5 @@
 import type { PanelSpec } from '@jinion/tui';
-import type { View } from '@jinion/core/controllers/context';
+import type { View } from '@jinion/core/api/protocol';
 import { AccountPicker } from '../panels/account/account-picker.js';
 import { ContextPanel } from '../panels/context.js';
 import { DiffPanel } from '../panels/diff/diff-panel.js';

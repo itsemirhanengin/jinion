@@ -1,5 +1,5 @@
 import { atom, type SetStateAction } from 'jotai';
-import type { PromptFill } from '@jinion/core/controllers/context';
+import type { PromptFill } from '@jinion/core/api/protocol';
 import { shownAtom } from '../state/session.js';
 
 /** Each session's draft. It is the client's: the core only puts text in it, e.g. the message a rewind went back to. */

@@ -5,7 +5,7 @@ import type { AgentAccount } from '@jinion/core/agent/accounts';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import type { LimitWindow } from '@jinion/core/agent/usage';
 import type { SessionState } from '@jinion/core/conversation/session';
-import type { GitStatus } from '@jinion/core/git/status';
+import type { GitStatus } from '@jinion/core/api/protocol';
 
 export interface StatusData {
   version: string;

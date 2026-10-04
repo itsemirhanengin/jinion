@@ -53,10 +53,48 @@
                   {
                     "group": ["**/app/**", "**/panels/**", "**/ui/**", "**/status/**"],
                     "message": "Core doesn't reach into the TUI's folders."
-                  },
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      // The terminal app is a client: what it needs of the core comes over the API, as for a desktop app or a phone.
+      // `main.tsx` and `host.ts` start the core in this process, so they are the only files that build it.
+      "includes": ["apps/cli/src/**", "!apps/cli/src/main.tsx", "!apps/cli/src/host.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "@jinion/core/prompt/files": {
+                    "importNames": ["listProjectFiles"],
+                    "message": "The app lists files through the API (files/list), as a client on another machine would."
+                  }
+                },
+                "patterns": [
                   {
-                    "group": ["**/state/active.js"],
-                    "message": "These atoms follow the session the user looks at, for clients to draw; a session's controllers use its own atoms."
+                    "group": [
+                      "@jinion/core/controllers/**",
+                      "@jinion/core/state/**",
+                      "@jinion/core/settings/**",
+                      "@jinion/core/git/**",
+                      "@jinion/core/memory/**",
+                      "@jinion/core/mcp/**",
+                      "@jinion/core/agent/claude/**",
+                      "@jinion/core/agent/demo/**",
+                      "@jinion/core/conversation/store",
+                      "@jinion/core/commands/builtin",
+                      "@jinion/core/api/server",
+                      "@jinion/core/api/connection",
+                      "@jinion/core/api/methods/**"
+                    ],
+                    "message": "The app reaches the core through the API (useApi); its types come from @jinion/core/api/protocol."
                   }
                 ]
               }

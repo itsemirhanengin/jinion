@@ -34,7 +34,7 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 | `packages/core/src/api/` | The API clients drive the core through: JSON-RPC 2.0 (`rpc.ts`, one peer for both sides) over a `Transport` (`transport.ts`, in process for now), the methods and notifications in `protocol.ts` with zod params, `server.ts` over one `Jinion` with a `Connection` per client, whose handlers are in `methods/`, one file per area, and `client.ts`, which holds what the server tells it in its own store. A client follows a session from a snapshot, then replays its numbered actions with the same reducer; the rest is named fields (`fields.ts`). `client.ts` takes only types and the reducer from the core, so a client carries no app of its own. |
 | `packages/core/src/commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
 | `packages/core/src/controllers/` | What the app does, as plain classes. `jinion.ts` is the app: what sessions share (accounts, MCP, models, skills), the sessions open in it (`openSession`, `activate`, `close`; a conversation is never open twice) and the one the user looks at; `session.ts` is one conversation, with its turns and queue, dialogs, conversation, worktree, model, mode, tasks and input. They reach the screen only through the `Screen` port in `context.ts`. |
-| `packages/core/src/state/` | Jotai atoms in one store, the single source of truth for what changes. What sessions share is global (`agent.ts`, `preferences.ts`); each session has its own set from `sessionAtoms()`, and `active.ts` follows the one the user looks at, for clients to draw. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
+| `packages/core/src/state/` | Jotai atoms in one store, the single source of truth for what changes. What sessions share is global (`agent.ts`, `preferences.ts`); each session has its own set from `sessionAtoms()`. Clients don't read them: they hold what the API tells them in a store of their own. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
 | `packages/core/src/conversation/` | The conversation as data: entry types, the pure reducer, edits and titles, the session store. No React, unit-tested. The reducer gets the time with each action and numbers entries from the conversation's own count, so replaying the same actions anywhere gives the same conversation; a session sends every action through its one `dispatch`. |
 | `packages/core/src/agent/` | The backend contract (`agent.ts`, `events.ts`, `tools.ts`, ...) and its implementations: `claude/` drives Claude Code headless, `demo/` plays scripted scenarios for `--demo` and the app tests. |
 | `packages/core/src/` `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` | Files on disk and outside tools, each behind a small module. |
@@ -49,12 +49,12 @@ Rules that keep it that way:
 - **The app is a client.** Whatever another client would need, a desktop app or a phone, goes through the API, so a
   panel never reads the core's files, git or settings itself; what only this app needs, such as the draft or the
   status line's layout, stays in the app.
-- **A session keeps to its own atoms.** Its controllers read and write `context.atoms`, never `state/active.ts`, so one
-  running in the background never touches another; `biome.jsonc` checks it.
+- **A session keeps to its own atoms.** Its controllers read and write `context.atoms`, so one running in the
+  background never touches another.
 - **`@jinion/core` draws nothing.** It imports no React, Ink, `@jinion/tui` or jotai's root entry (`jotai/vanilla`
-  instead); `biome.jsonc` checks it. Views a command opens go through `Screen` as data (`View`). What a session asks the
-  user is data too: the dialog it waits on is in its atoms (`atoms.dialog`), a client draws the active session's, and
-  answers through `session.dialogs`. Its types are its own; the chat kit's are shaped the same, so the app passes one to
+  instead); `biome.jsonc` checks it, and checks that the app reaches the core only through the API. Views a command
+  opens go through `Screen` as data (`View`). What a session asks the user is data too: the dialog it waits on is in its
+  atoms (`atoms.dialog`), a client draws it from the session's fields, and answers it with `dialog/answer`. Its types are its own; the chat kit's are shaped the same, so the app passes one to
   the other as they are.
 - **Backends stay behind `AgentBackend` and `AgentSession`.** A backend holds what its conversations share (models,
   accounts, MCP servers, skills, usage); `backend.session()` opens one conversation, with its own process. The app only
