@@ -31,27 +31,35 @@ export class CommandRegistry {
   }
 
   completion(): CompletionSource {
-    return (value) => {
-      if (!value.startsWith('/') || /\s/.test(value)) return undefined;
-
-      const matches = fuzzyFilter(this.commands, value.slice(1), (command) => command.name);
-
-      return {
-        from: 0,
-        to: value.length,
-        submit: true,
-        items: matches.map(({ item, positions }) => ({
-          key: item.name,
-          label: `/${item.name}`,
-          positions: positions.map((position) => position + 1),
-          hint: item.argumentHint,
-          description: item.description,
-          insert: `/${item.name} `,
-          submit: requiresArgument(item) ? false : undefined,
-        })),
-      };
-    };
+    return commandCompletion(this.commands);
   }
 }
 
-export const requiresArgument = (command: Command) => command.argumentHint?.startsWith('<') === true;
+/** What a command is, without running it, as a client lists it. */
+export type CommandInfo = Omit<Command, 'run'>;
+
+export const requiresArgument = (command: CommandInfo) => command.argumentHint?.startsWith('<') === true;
+
+/** Commands after a `/` at the start of the prompt. */
+export function commandCompletion(commands: CommandInfo[]): CompletionSource {
+  return (value) => {
+    if (!value.startsWith('/') || /\s/.test(value)) return undefined;
+
+    const matches = fuzzyFilter(commands, value.slice(1), (command) => command.name);
+
+    return {
+      from: 0,
+      to: value.length,
+      submit: true,
+      items: matches.map(({ item, positions }) => ({
+        key: item.name,
+        label: `/${item.name}`,
+        positions: positions.map((position) => position + 1),
+        hint: item.argumentHint,
+        description: item.description,
+        insert: `/${item.name} `,
+        submit: requiresArgument(item) ? false : undefined,
+      })),
+    };
+  };
+}

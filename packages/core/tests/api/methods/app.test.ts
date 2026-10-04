@@ -30,7 +30,16 @@ describe('app methods', () => {
     const summaries = await client.request('saved/list', {});
 
     expect(summaries).toHaveLength(saved.list().length);
-    expect(summaries[0]).toEqual({ id: first!.id, title: first!.title, updatedAt: first!.updatedAt, messages: expect.any(Number), worktree: undefined });
+
+    expect(summaries[0]).toEqual({
+      id: first!.id,
+      title: first!.title,
+      updatedAt: first!.updatedAt,
+      messages: expect.any(Number),
+      firstPrompt: expect.any(String),
+      worktree: undefined,
+    });
+
     expect(summaries[0]).not.toHaveProperty('entries');
   });
 

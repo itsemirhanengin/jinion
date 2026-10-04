@@ -6,7 +6,7 @@ import type { ModelSelection } from '../agent/models.js';
 import type { PermissionDecision } from '../agent/permissions.js';
 import type { QuestionAnswer } from '../agent/questions.js';
 import type { AgentUsage, ContextUsage, UsageHistory } from '../agent/usage.js';
-import type { Command } from '../commands/registry.js';
+import type { CommandInfo } from '../commands/registry.js';
 import type { AppInfo, PromptFill, View } from '../controllers/context.js';
 import type { RewindPoint } from '../controllers/conversation.js';
 import type { SentAction } from '../controllers/session.js';
@@ -103,6 +103,8 @@ export const clientSchemas = {
   /** The default for new sessions, and this one's choice while it hasn't started. */
   'session/worktree': session.extend({ on: z.boolean() }),
   'session/stop-task': session.extend({ task: z.string() }),
+  /** The end of what a task wrote, by the task's id, so a client never names a file. */
+  'session/task-output': session.extend({ task: z.string() }),
   /** Sends the command or subagent the turn waits for to the background. */
   'session/background': session,
   'session/context': session,
@@ -167,8 +169,6 @@ export interface AgentInfo {
   features: AgentFeatures;
 }
 
-export type CommandInfo = Omit<Command, 'run'>;
-
 export interface SessionSummary {
   id: string;
   title?: string;
@@ -193,6 +193,7 @@ export interface SavedSummary {
   title: string;
   updatedAt: number;
   messages: number;
+  firstPrompt?: string;
   worktree?: string;
 }
 
@@ -228,6 +229,7 @@ interface ServerResults {
   'session/mode': null;
   'session/worktree': null;
   'session/stop-task': null;
+  'session/task-output': string[] | null;
   'session/background': null;
   'session/context': ContextUsage;
   'session/open-rewind': null;

@@ -1,6 +1,6 @@
 import { atom } from 'jotai/vanilla';
 import type { AgentMode } from '../agent/agent.js';
-import type { ModelSelection } from '../agent/models.js';
+import { modelLabel, modelName, type ModelSelection } from '../agent/models.js';
 import type { BackgroundTask } from '../agent/tasks.js';
 import type { Dialog } from '../conversation/dialogs.js';
 import { editTurns } from '../conversation/edits.js';
@@ -29,12 +29,6 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
   const turnAbort = atom<AbortController | undefined>(undefined);
   const selection = atom(initialSelection);
 
-  const modelName = atom((get) => {
-    const { model } = get(selection);
-
-    return get(modelsAtom)?.find((option) => option.id === model)?.name ?? model;
-  });
-
   /** Includes the command or subagent the turn waits for, as `foreground`. */
   const tasks = atom<BackgroundTask[]>([]);
 
@@ -54,12 +48,8 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     working: atom((get) => get(busy) || get(turnAbort) !== undefined),
     queue: atom<Submission[]>([]),
     selection,
-    modelName,
-    modelLabel: atom((get) => {
-      const { effort } = get(selection);
-
-      return effort ? `${get(modelName)} · ${effort}` : get(modelName);
-    }),
+    modelName: atom((get) => modelName(get(selection), get(modelsAtom))),
+    modelLabel: atom((get) => modelLabel(get(selection), get(modelsAtom))),
     mode: atom(mode),
     tasks,
     backgroundTasks: atom((get) => get(tasks).filter((task) => !task.foreground)),

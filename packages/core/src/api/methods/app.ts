@@ -1,5 +1,5 @@
 import type { Jinion } from '../../controllers/jinion.js';
-import type { SavedSession } from '../../conversation/session.js';
+import { firstPrompt, type SavedSession } from '../../conversation/session.js';
 import type { Methods } from '../connection.js';
 import { appFields, readFields } from '../fields.js';
 import { type AgentInfo, ApiCode, PROTOCOL_VERSION, type SavedSummary } from '../protocol.js';
@@ -74,6 +74,9 @@ function agentInfo({ backend, session: { agent } }: Jinion): AgentInfo {
   };
 }
 
-function summary({ id, title, updatedAt, entries, worktree }: SavedSession): SavedSummary {
-  return { id, title, updatedAt, messages: entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length, worktree: worktree?.name };
+function summary(session: SavedSession): SavedSummary {
+  const { id, title, updatedAt, entries, worktree } = session;
+  const messages = entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
+
+  return { id, title, updatedAt, messages, firstPrompt: firstPrompt(session), worktree: worktree?.name };
 }

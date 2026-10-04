@@ -26,10 +26,10 @@ export function serve(project: string, { backend = new ScriptedBackend(scenarios
   });
 
   /** `wire` stands between the client and its transport, e.g. to lose a message on the way. */
-  const connect = async (wire: (transport: Transport) => Transport = (transport) => transport) => {
+  const connect = async ({ wire = (transport: Transport) => transport, followAll = false } = {}) => {
     const [serverSide, clientSide] = inProcessTransports();
     const screen: ScreenHandlers = { view: vi.fn(), fillPrompt: vi.fn(), notify: vi.fn(), expand: vi.fn(), exit: vi.fn() };
-    const client = new JinionClient(wire(clientSide), { name: 'test', version: '0.0.0', screen });
+    const client = new JinionClient(wire(clientSide), { name: 'test', version: '0.0.0', screen, followAll });
 
     server.connect(serverSide);
 

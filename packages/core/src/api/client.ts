@@ -24,6 +24,8 @@ export interface ClientOptions {
   version: string;
   notifications?: 'desktop' | 'bell';
   screen: ScreenHandlers;
+  /** Follows every session as it opens, as a client with tabs does, rather than only those it asks for. */
+  followAll?: boolean;
 }
 
 /**
@@ -35,10 +37,16 @@ export class JinionClient {
   readonly sessionsAtom = atom<Sessions>({ sessions: [] });
   /** Until `initialize` answers. */
   readonly appAtom = atom<AppFields | undefined>(undefined);
+  /**
+   * The active session once this client holds it. It stays on the one before until then, even one that closed, so a
+   * client never draws a session it doesn't have yet.
+   */
+  readonly shownAtom = atom<string | undefined>(undefined);
   private readonly peer: RpcPeer<ClientContract, ServerContract>;
   private readonly followed = new Map<string, PrimitiveAtom<SessionSnapshot | undefined>>();
   /** Changes that came while a snapshot was on its way, applied to it once it arrives. */
   private readonly waiting = new Map<string, Change[]>();
+  private readonly pending = new Map<string, Promise<SessionSnapshot>>();
 
   constructor(
     transport: Transport,
@@ -79,8 +87,9 @@ export class JinionClient {
     const initialized = await this.request('initialize', { protocolVersion: PROTOCOL_VERSION, client: { name, version }, notifications });
     const { sessions, active, app } = initialized;
 
-    this.store.set(this.sessionsAtom, { sessions, active });
     this.store.set(this.appAtom, app);
+    this.sessionsChanged({ sessions, active });
+    await Promise.all([...this.waiting.keys()].map((id) => this.settled(id)));
 
     return initialized;
   }
@@ -108,15 +117,22 @@ export class JinionClient {
 
   async follow(id: string) {
     const changes: Change[] = [];
+    const following = this.request('session/subscribe', { session: id });
 
     this.waiting.set(id, changes);
+    this.pending.set(id, following);
 
     try {
-      const snapshot = await this.request('session/subscribe', { session: id });
+      const snapshot = await following;
 
       this.store.set(this.session(id), changes.reduce((current, change) => change(current), snapshot));
     } finally {
-      if (this.waiting.get(id) === changes) this.waiting.delete(id);
+      if (this.waiting.get(id) === changes) {
+        this.waiting.delete(id);
+        this.pending.delete(id);
+      }
+
+      this.show();
     }
   }
 
@@ -144,16 +160,37 @@ export class JinionClient {
     if (snapshot) this.store.set(followed, change(snapshot));
   }
 
+  /** Resolves once the snapshot `follow` asked for is in, or failed. */
+  private settled(id: string) {
+    return this.pending.get(id)?.then(
+      () => {},
+      () => {},
+    );
+  }
+
   private sessionsChanged(sessions: Sessions) {
-    const open = new Set(sessions.sessions.map((session) => session.id));
+    this.store.set(this.sessionsAtom, sessions);
+
+    if (this.options.followAll) {
+      for (const { id } of sessions.sessions) if (!this.waiting.has(id) && !this.store.get(this.session(id))) void this.follow(id);
+    }
+
+    this.show();
+  }
+
+  /** Shows the active session once it is held, and lets go of closed ones but the one still shown. */
+  private show() {
+    const { sessions, active } = this.store.get(this.sessionsAtom);
+
+    if (active && this.store.get(this.session(active))) this.store.set(this.shownAtom, active);
+
+    const keep = new Set([...sessions.map((session) => session.id), this.store.get(this.shownAtom)]);
 
     for (const [id, followed] of this.followed) {
-      if (open.has(id)) continue;
+      if (keep.has(id) || this.waiting.has(id)) continue;
 
       this.store.set(followed, undefined);
       this.followed.delete(id);
     }
-
-    this.store.set(this.sessionsAtom, sessions);
   }
 }

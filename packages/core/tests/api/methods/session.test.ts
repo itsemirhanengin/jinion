@@ -60,6 +60,22 @@ describe('session methods', () => {
     await expect(client.request('session/rewind-preview', { session, prompt: 'prompt_1' })).resolves.toBeNull();
   });
 
+  it('reads what a task wrote by its id, and nothing for a task it doesn’t know', async () => {
+    const { server, connect } = serve(box.project);
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+
+    await client.request('session/submit', { session, text: 'start the dev server' });
+    await vi.waitFor(() => expect(store.get(atoms.tasks).find((task) => task.output)).toBeDefined());
+
+    const task = store.get(atoms.tasks).find((candidate) => candidate.output)!;
+
+    await vi.waitFor(async () => expect(await client.request('session/task-output', { session, task: task.id })).not.toEqual([]));
+    await expect(client.request('session/task-output', { session, task: 'gone' })).resolves.toBeNull();
+    await client.request('session/stop-task', { session, task: task.id });
+  });
+
   it('tells what fills the context', async () => {
     const { client, session } = await serve(box.project).connect();
 

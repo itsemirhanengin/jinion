@@ -90,8 +90,8 @@ describe('JinionServer', () => {
     const { server, connect } = setup();
     let dropped = false;
 
-    const { client } = await connect((transport) => ({
-      ...transport,
+    const { client } = await connect({
+      wire: (transport) => ({
       start: (receiver) =>
         transport.start({
           message: (text) => {
@@ -100,9 +100,10 @@ describe('JinionServer', () => {
           },
           closed: () => receiver.closed(),
         }),
-      send: (text) => transport.send(text),
-      close: () => transport.close(),
-    }));
+        send: (text) => transport.send(text),
+        close: () => transport.close(),
+      }),
+    });
 
     const session = server.app.session;
 
@@ -137,7 +138,7 @@ describe('JinionServer', () => {
     expect(both(server, client).client).toEqual(both(server, client).server);
   });
 
-  it('tells every client as sessions open, become active and close, and stops following one that closed', async () => {
+  it('tells every client as sessions open, become active and close', async () => {
     const { server, saved, connect } = setup();
     const first = await connect();
     const second = await connect();
@@ -145,14 +146,32 @@ describe('JinionServer', () => {
 
     const { session } = await first.client.request('sessions/open', { resume: resumed!.id });
 
-    await first.client.follow(session);
     await first.client.request('sessions/activate', { session });
     await vi.waitFor(() => expect(second.client.store.get(second.client.sessionsAtom)).toMatchObject({ active: session, sessions: [{}, { id: session }] }));
 
     await expect(first.client.request('sessions/close', { session })).resolves.toEqual({ closed: true });
     await vi.waitFor(() => expect(second.client.store.get(second.client.sessionsAtom).sessions).toHaveLength(1));
-    expect(first.client.store.get(first.client.session(session))).toBeUndefined();
     expect(server.app.sessions.map((open) => open.id)).not.toContain(session);
+  });
+
+  it('follows every session as it opens, and shows the active one once it holds it, until the next is held', async () => {
+    const { server, saved, connect } = setup();
+    const { client, session: first } = await connect({ followAll: true });
+    const [resumed] = saved.list();
+
+    expect(client.store.get(client.shownAtom)).toBe(first);
+
+    const { session } = await client.request('sessions/open', { resume: resumed!.id });
+
+    await client.request('sessions/activate', { session });
+    await vi.waitFor(() => expect(client.store.get(client.shownAtom)).toBe(session));
+    expect(client.store.get(client.session(session))?.state.title).toBe(resumed!.title);
+
+    await client.request('sessions/close', { session });
+
+    await vi.waitFor(() => expect(client.store.get(client.shownAtom)).toBe(first));
+    expect(client.store.get(client.session(session))).toBeUndefined();
+    expect(server.app.sessions.map((open) => open.id)).toEqual([first]);
   });
 
   it('shows what a command opens on the client that typed it', async () => {
