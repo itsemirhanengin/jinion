@@ -1,8 +1,6 @@
 import type { NoticeTone } from '../conversation/entries.js';
-import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
-import type { Question, QuestionAnswer } from '../agent/questions.js';
 import type { Store } from 'jotai/vanilla';
-import type { AgentBackend, AgentMode, AgentSession, PlanDecision } from '../agent/agent.js';
+import type { AgentBackend, AgentSession } from '../agent/agent.js';
 import type { SessionAtoms } from '../state/session.js';
 import type { RewindPoint } from './conversation.js';
 
@@ -15,8 +13,6 @@ export interface AppInfo {
 /** Implemented by each client, so controllers draw nothing. */
 export interface Screen {
   openView(view: View): void;
-  showDialog(dialog: Dialog): void;
-  closeDialog(id: Dialog['id']): void;
   focused(): boolean;
   notify(title: string, body: string): void;
   /** How this client tells the user something while they look elsewhere. */
@@ -41,11 +37,6 @@ export type View =
   | { id: 'tasks' }
   | { id: 'statusline' };
 
-export type Dialog =
-  | { id: 'ask'; questions: Question[]; onSubmit(answers: QuestionAnswer[]): void; onCancel(): void }
-  | { id: 'permission'; request: PermissionRequest; onDecide(decision: PermissionDecision): void; onCancel(): void }
-  | { id: 'plan'; modes: AgentMode[]; onDecide(decision: PlanDecision): void; onCancel(): void };
-
 /** What the app's controllers work with. */
 export interface AppContext {
   store: Store;
@@ -55,7 +46,7 @@ export interface AppContext {
   screen: Screen;
   /** In the conversation the user looks at. */
   notice(text: string, tone?: NoticeTone): void;
-  /** Nothing while the user looks at this window. */
+  /** Nothing while the user looks at what it is about. */
   notify(body: string): void;
 }
 

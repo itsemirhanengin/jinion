@@ -1,13 +1,12 @@
-import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
-import type { Question, QuestionAnswer } from '../agent/questions.js';
-import type { AgentMode, PlanDecision, RunContext } from '../agent/agent.js';
+import type { AgentMode, RunContext } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import { elapsed } from '../lib/format.js';
 import { errorMessage } from '../lib/errors.js';
 import { quote } from '../lib/text.js';
 import type { Action } from '../conversation/reducer.js';
 import type { Attachments } from './attachments.js';
-import { BUSY, type Dialog, type SessionContext } from './context.js';
+import { BUSY, type SessionContext } from './context.js';
+import { DialogCancelled, type DialogController } from './dialogs.js';
 
 const LONG_TURN_MS = 15_000;
 
@@ -27,6 +26,7 @@ export class TurnController {
   constructor(
     private readonly context: SessionContext,
     private readonly attachments: Attachments,
+    private readonly dialogs: DialogController,
     private readonly hooks: TurnHooks,
   ) {}
 
@@ -120,51 +120,44 @@ export class TurnController {
       this.returnQueueToPrompt();
     } finally {
       store.set(atoms.turnAbort, undefined);
-      this.context.screen.closeDialog('ask');
-      this.context.screen.closeDialog('permission');
       this.hooks.ended();
       this.next();
     }
   }
 
+  /** What the agent asks during the turn goes to the user as dialogs; cancelling one stops the turn. */
   private runContext(abort: AbortController): RunContext {
-    const dialogs = new DialogLine(this.context, abort);
+    const { signal } = abort;
+
+    const stopOnCancel = <T>(answer: Promise<T>) =>
+      answer.catch((error: unknown) => {
+        if (error instanceof DialogCancelled) abort.abort();
+
+        throw error;
+      });
 
     return {
-      signal: abort.signal,
-      ask: (questions: Question[]) =>
-        dialogs.open<QuestionAnswer[]>(`jinion asks: ${questions[0]?.prompt ?? 'a question'}`, (done, cancel) => ({
-          id: 'ask',
-          questions,
-          onSubmit: done,
-          onCancel: cancel,
-        })),
-      approve: async (request: PermissionRequest, call?: string) => {
+      signal,
+      ask: (questions) =>
+        stopOnCancel(this.dialogs.open({ id: 'ask', questions }, { message: `jinion asks: ${questions[0]?.prompt ?? 'a question'}`, signal })),
+      approve: async (request, call) => {
         if (call) this.dispatch({ type: 'approval', id: call, waiting: true });
 
         try {
           const message = [request.title, request.command ?? request.subject].filter(Boolean).join(': ');
 
-          return await dialogs.open<PermissionDecision>(message, (done, cancel) => ({
-            id: 'permission',
-            request,
-            onDecide: done,
-            onCancel: cancel,
-          }));
+          return await stopOnCancel(this.dialogs.open({ id: 'permission', request }, { message, signal }));
         } finally {
           if (call) this.dispatch({ type: 'approval', id: call, waiting: false });
         }
       },
-      approvePlan: (modes: AgentMode[]) =>
-        dialogs.open<PlanDecision>('The plan is ready for you to review.', (done, cancel) => ({
-          id: 'plan',
-          modes,
-          onDecide: (decision) => {
-            if (decision.approve) this.hooks.planAccepted(decision.mode);
-            done(decision);
-          },
-          onCancel: cancel,
-        })),
+      approvePlan: async (modes) => {
+        const decision = await stopOnCancel(this.dialogs.open({ id: 'plan', modes }, { message: 'The plan is ready for you to review.', signal }));
+
+        if (decision.approve) this.hooks.planAccepted(decision.mode);
+
+        return decision;
+      },
     };
   }
 
@@ -190,54 +183,5 @@ export class TurnController {
 
     store.set(atoms.queue, rest);
     void this.prompt(text);
-  }
-}
-
-/** Parallel tool calls can ask at the same time, so their dialogs open one after another. */
-class DialogLine {
-  private line = Promise.resolve();
-
-  constructor(
-    private readonly context: SessionContext,
-    private readonly abort: AbortController,
-  ) {}
-
-  open<T>(message: string, dialog: (done: (value: T) => void, cancel: () => void) => Dialog): Promise<T> {
-    const { screen, notify } = this.context;
-    const { signal } = this.abort;
-
-    const show = () =>
-      new Promise<T>((resolve, reject) => {
-        if (signal.aborted) return reject(signal.reason);
-
-        const shown = dialog(
-          (value) => {
-            screen.closeDialog(shown.id);
-            resolve(value);
-          },
-          () => this.abort.abort(),
-        );
-
-        screen.showDialog(shown);
-        notify(message);
-
-        signal.addEventListener(
-          'abort',
-          () => {
-            screen.closeDialog(shown.id);
-            reject(signal.reason);
-          },
-          { once: true },
-        );
-      });
-
-    const result = this.line.then(show);
-
-    this.line = result.then(
-      () => {},
-      () => {},
-    );
-
-    return result;
   }
 }

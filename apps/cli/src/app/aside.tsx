@@ -1,5 +1,5 @@
-import { tasksAtom, queueAtom, sessionAtom, todosAtom } from '@jinion/core/state/active';
-import { Box, Text, usePanels, useTheme } from '@jinion/tui';
+import { dialogAtom, tasksAtom, queueAtom, sessionAtom, todosAtom } from '@jinion/core/state/active';
+import { Box, Text, useTheme } from '@jinion/tui';
 import { TodoPanel, Working } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
 import { activity, hasWorkLeft } from './activity.js';
@@ -25,13 +25,13 @@ export function Aside() {
 function Activity() {
   const session = useAtomValue(sessionAtom);
   const tasks = useAtomValue(tasksAtom);
-  const { top } = usePanels();
+  const dialog = useAtomValue(dialogAtom);
 
   if (session.busySince === undefined) return null;
 
   return (
     <Box marginTop={1}>
-      <Working label={activity(session, top?.id, tasks)} since={session.busySince} />
+      <Working label={activity(session, dialog?.id, tasks)} since={session.busySince} />
     </Box>
   );
 }

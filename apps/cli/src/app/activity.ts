@@ -2,6 +2,7 @@ import type { TodoGroup } from '@jinion/tui/chat';
 import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import type { ToolRun } from '@jinion/core/agent/tools';
 import type { Usage } from '@jinion/core/agent/usage';
+import type { Dialog } from '@jinion/core/conversation/dialogs';
 import type { SessionState } from '@jinion/core/conversation/session';
 import { clip } from '@jinion/core/lib/text';
 
@@ -19,8 +20,8 @@ export function contextWarning({ contextTokens, compactAt }: Usage) {
   return left <= CONTEXT_WARNING ? left : undefined;
 }
 
-export function activity(session: SessionState, panel: string | undefined, tasks: BackgroundTask[]) {
-  if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
+export function activity(session: SessionState, dialog: Dialog['id'] | undefined, tasks: BackgroundTask[]) {
+  if (dialog === 'permission' || dialog === 'plan') return 'Waiting for your approval';
   if (session.compacting) return 'Compacting the conversation';
 
   const last = session.entries.at(-1);

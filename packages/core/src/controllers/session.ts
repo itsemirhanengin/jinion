@@ -6,6 +6,7 @@ import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/ses
 import { Attachments } from './attachments.js';
 import type { SessionContext } from './context.js';
 import { ConversationController } from './conversation.js';
+import { DialogController } from './dialogs.js';
 import { InputController } from './input.js';
 import type { Jinion } from './jinion.js';
 import { ModeController } from './mode.js';
@@ -18,6 +19,8 @@ import { WorktreeController } from './worktrees.js';
 export class Session {
   readonly atoms: SessionAtoms;
   readonly attachments: Attachments;
+  /** What it waits for the user to answer; a client answers through it. */
+  readonly dialogs: DialogController;
   readonly conversation: ConversationController;
   readonly turns: TurnController;
   readonly input: InputController;
@@ -41,17 +44,18 @@ export class Session {
       agent,
       atoms: this.atoms,
       notice: (text, tone) => this.notice(text, tone),
-      notify: (body) => app.notify(body),
+      notify: (body) => app.notify(body, this),
     };
 
     this.attachments = new Attachments(context);
-    this.worktrees = new WorktreeController(context);
+    this.dialogs = new DialogController(context);
+    this.worktrees = new WorktreeController(context, this.dialogs);
     this.conversation = new ConversationController(context, app.sessions, this.worktrees);
     this.models = new ModelController(context);
     this.modes = new ModeController(context);
     this.tasks = new TaskController(context);
 
-    this.turns = new TurnController(context, this.attachments, {
+    this.turns = new TurnController(context, this.attachments, this.dialogs, {
       apply: (event) => this.apply(event),
       preparing: () => this.worktrees.prepare(),
       planAccepted: (mode) => {

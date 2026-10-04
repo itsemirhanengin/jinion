@@ -7,6 +7,7 @@ import { plural } from '../lib/format.js';
 import { tildify } from '../lib/paths.js';
 import { worktreesAtom } from '../state/preferences.js';
 import type { SessionContext } from './context.js';
+import type { DialogController } from './dialogs.js';
 
 /** What to tell the user once the next conversation shows. */
 export interface Left {
@@ -14,7 +15,10 @@ export interface Left {
 }
 
 export class WorktreeController {
-  constructor(private readonly context: SessionContext) {}
+  constructor(
+    private readonly context: SessionContext,
+    private readonly dialogs: DialogController,
+  ) {}
 
   get on() {
     return this.context.store.get(worktreesAtom);
@@ -114,35 +118,29 @@ export class WorktreeController {
     return promptCount(this.context.store.get(this.context.atoms.entries));
   }
 
-  private ask(worktree: Worktree, work: WorktreeWork | undefined) {
+  /** `undefined` when the user cancelled. */
+  private async ask(worktree: Worktree, work: WorktreeWork | undefined) {
     const holds = work
       ? [work.changed > 0 && plural(work.changed, 'changed file'), work.commits > 0 && plural(work.commits, 'commit')].filter(Boolean).join(' and ')
       : 'work that couldn’t be checked';
 
-    return new Promise<'keep' | 'remove' | undefined>((resolve) => {
-      this.context.screen.showDialog({
-        id: 'ask',
-        questions: [
-          {
-            id: 'worktree',
-            prompt: `The worktree ${worktree.name} has ${holds}. Keep it?`,
-            other: false,
-            options: [
-              { label: 'Keep it', description: `the folder and the branch ${worktree.branch} stay; /resume brings the conversation back to it` },
-              { label: 'Remove it', description: 'deletes the folder and the branch, with the work in them' },
-            ],
-          },
-        ],
-        onSubmit: ([answer]) => {
-          this.context.screen.closeDialog('ask');
-          resolve(answer?.options[0] === 1 ? 'remove' : 'keep');
-        },
-        onCancel: () => {
-          this.context.screen.closeDialog('ask');
-          resolve(undefined);
-        },
-      });
-    });
+    const question = {
+      id: 'worktree',
+      prompt: `The worktree ${worktree.name} has ${holds}. Keep it?`,
+      other: false,
+      options: [
+        { label: 'Keep it', description: `the folder and the branch ${worktree.branch} stay; /resume brings the conversation back to it` },
+        { label: 'Remove it', description: 'deletes the folder and the branch, with the work in them' },
+      ],
+    };
+
+    try {
+      const [answer] = await this.dialogs.open({ id: 'ask', questions: [question] });
+
+      return answer?.options[0] === 1 ? 'remove' : 'keep';
+    } catch {
+      return undefined;
+    }
   }
 
   private async remove(worktree: Worktree, why: string): Promise<Left> {

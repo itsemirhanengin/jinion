@@ -100,10 +100,12 @@ export class Jinion {
     this.session.notice(text, tone);
   }
 
-  notify(body: string) {
-    if (this.store.get(notificationsAtom) && !this.screen.focused()) {
-      this.screen.notify(`jinion · ${basename(this.info.cwd)}`, body);
-    }
+  /** Also while the window has focus, when it comes from a session the user isn't looking at. */
+  notify(body: string, from?: Session) {
+    if (!this.store.get(notificationsAtom)) return;
+    if (this.screen.focused() && (from === undefined || from === this.session)) return;
+
+    this.screen.notify(`jinion · ${basename(this.info.cwd)}`, body);
   }
 
   async quit() {

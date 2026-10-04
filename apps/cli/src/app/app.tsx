@@ -10,6 +10,7 @@ import { inRunningTurn } from '@jinion/core/conversation/session';
 import { EntryView } from '../ui/entries/entry-view.js';
 import { Aside } from './aside.js';
 import { JinionContext } from './context.js';
+import { useDialogs } from './dialogs.js';
 import { useKeys } from './keys.js';
 import { PromptArea } from './prompt-area.js';
 import { StatusLine } from './status-line.js';
@@ -34,6 +35,7 @@ export function App(props: AppProps) {
 
 function Layout() {
   useKeys();
+  useDialogs();
 
   return <Shell content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
 }

@@ -2,6 +2,7 @@ import { atom } from 'jotai/vanilla';
 import type { AgentMode } from '../agent/agent.js';
 import type { ModelSelection } from '../agent/models.js';
 import type { BackgroundTask } from '../agent/tasks.js';
+import type { Dialog } from '../conversation/dialogs.js';
 import { editTurns } from '../conversation/edits.js';
 import { reduce, type Action } from '../conversation/reducer.js';
 import type { SessionState } from '../conversation/session.js';
@@ -58,6 +59,8 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     tasks,
     backgroundTasks: atom((get) => get(tasks).filter((task) => !task.foreground)),
     waitsOnForegroundTask: atom((get) => get(tasks).some((task) => task.foreground && task.status === 'running')),
+    /** What the session waits for the user to answer, such as a permission; a client shows the active session's. */
+    dialog: atom<Dialog | undefined>(undefined),
   };
 }
 

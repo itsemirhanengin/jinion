@@ -55,3 +55,5 @@ export const tasksAtom = follow((atoms) => atoms.tasks);
 export const backgroundTasksAtom = follow((atoms) => atoms.backgroundTasks);
 
 export const waitsOnForegroundTaskAtom = follow((atoms) => atoms.waitsOnForegroundTask);
+
+export const dialogAtom = follow((atoms) => atoms.dialog);
