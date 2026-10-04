@@ -4,10 +4,47 @@ import { basename, resolve } from 'node:path';
 export function commands(line: unknown) {
   if (typeof line !== 'string') return [];
 
-  return line
-    .split(/&&|\|\||[;|\n]|\$\(|`/)
-    .map((part) => part.trim().replace(/^(?:\w+=\S*\s+|sudo\s+)+/, ''))
-    .filter(Boolean);
+  const parts: string[] = [];
+  let part = '';
+  let quote: string | undefined;
+
+  for (let index = 0; index < line.length; index++) {
+    const char = line[index]!;
+    const pair = line.slice(index, index + 2);
+    let split = 0;
+
+    if (quote === "'") {
+      if (char === "'") quote = undefined;
+    } else if (char === '\\') {
+      part += pair;
+      index++;
+      continue;
+    } else if (char === '`' || pair === '$(') {
+      // A command substitution runs inside double quotes too.
+      split = char === '`' ? 1 : 2;
+    } else if (quote === '"') {
+      if (char === '"') quote = undefined;
+    } else if (char === "'" || char === '"') {
+      quote = char;
+    } else if (pair === '&&' || pair === '||') {
+      split = 2;
+    } else if (char === ';' || char === '\n' || (char === '|' && line[index - 1] !== '>')) {
+      split = 1;
+    }
+
+    if (split === 0) {
+      part += char;
+      continue;
+    }
+
+    parts.push(part);
+    part = '';
+    index += split - 1;
+  }
+
+  parts.push(part);
+
+  return parts.map((command) => command.trim().replace(/^(?:\w+=\S*\s+|sudo\s+)+/, '')).filter(Boolean);
 }
 
 /** Absolute paths, each from where a `cd` before it went; a path with a variable other than `$HOME` can't be told and is left out. */

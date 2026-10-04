@@ -8,6 +8,12 @@ describe('commands', () => {
     expect(commands('FOO=1 sudo git commit && pnpm test | tee out; echo `date`')).toEqual(['git commit', 'pnpm test', 'tee out', 'echo', 'date']);
     expect(commands(undefined)).toEqual([]);
   });
+
+  it('splits only outside quotes, except for command substitutions', () => {
+    expect(commands(`awk 'NR>1 && /a|b/' x; echo "a && b; c"`)).toEqual([`awk 'NR>1 && /a|b/' x`, 'echo "a && b; c"']);
+    expect(commands('echo "$(git commit -m x)" \\; done')).toEqual(['echo "', 'git commit -m x)" \\; done']);
+    expect(commands(`echo '$(date)' >| out`)).toEqual([`echo '$(date)' >| out`]);
+  });
 });
 
 describe('shellWords', () => {
@@ -25,5 +31,9 @@ describe('writtenPaths', () => {
   it('leaves out what only the shell knows, and streams pointed at each other', () => {
     expect(writtenPaths('rm $TARGET; ls 2>&1', '/work')).toEqual([]);
     expect(writtenPaths('cd $DIR && rm a', '/work')).toEqual([]);
+  });
+
+  it('reads a quoted program as one word', () => {
+    expect(writtenPaths(`awk 'NR>21366 && /x/' dump.sql > ../out.txt`, '/work/project')).toEqual(['/work/out.txt']);
   });
 });
