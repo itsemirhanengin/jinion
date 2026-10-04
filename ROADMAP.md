@@ -69,7 +69,6 @@ Jinion's note tools as dynamic tools, Codex's questions); bumping it means runni
 @jinion/core codex-fixture`). What Claude has and Codex doesn't yet:
 
 - **`ctrl+b`.** Codex decides itself which commands go on in the background, so there is nothing to send there.
-- **`/stats`.** Codex keeps its sessions in `~/.codex/sessions`; `history()` could read them.
 - **What always asks, in Auto.** Codex's reviewer answers for commits and writes outside the project there, so
   `/commit-approval` doesn't apply; the other modes ask through Codex's sandbox.
 - **MCP elicitations** are declined for now; they could become questions.

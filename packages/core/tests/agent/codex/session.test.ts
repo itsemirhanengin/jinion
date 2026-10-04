@@ -169,7 +169,7 @@ describe('CodexSession', () => {
     const notes = join(box.project, 'notes.txt');
     const change = { path: notes, kind: { type: 'update', move_path: null }, diff: '@@ -1,2 +1,2 @@\n hello\n-world\n+there\n' };
     const history = [{ id: 'turn-1', status: 'completed', error: null, items: [{ type: 'fileChange', id: 'patch', status: 'completed', changes: [change] }] }];
-    const { fake, session } = setup('compact', { fake: { history } });
+    const { fake, session } = setup('compact', { fake: { answers: { 'thread/turns/list': { data: history, nextCursor: null } } } });
 
     box.write(notes, 'hello\nthere\n');
 
@@ -201,6 +201,44 @@ describe('CodexSession', () => {
     expect(ended).toMatchObject({ task: { status: 'completed' } });
     expect(readFileSync((ended as { task: { output: string } }).task.output, 'utf8')).toBe('tick 1\ntick 2\ntick 3\ntick 4\ntick 5\ntick 6\n');
     expect(fake.sent('thread/backgroundTerminals/terminate')).toHaveLength(0);
+  });
+
+  it('reads /stats from Codex’s history on this machine, with the account’s tokens of those days', async () => {
+    const at = (day: string, hour: number) => new Date(`${day}T${String(hour).padStart(2, '0')}:00:00`).getTime() / 1000;
+    const message = (id: string) => ({ type: 'agentMessage', id, text: 'Done.' });
+    const command = (id: string) => ({ type: 'commandExecution', id, command: 'ls', status: 'completed', commandActions: [] });
+
+    const turns = [
+      { id: 't1', status: 'completed', error: null, startedAt: at('2026-10-01', 10), completedAt: at('2026-10-01', 11), items: [command('c1'), message('m1')] },
+      { id: 't2', status: 'completed', error: null, startedAt: at('2026-10-02', 9), completedAt: at('2026-10-02', 9), items: [message('m2')] },
+    ];
+
+    const threads = [
+      { id: 'one', model: 'gpt-5.5', parentThreadId: null, createdAt: at('2026-10-01', 10) },
+      { id: 'helper', model: 'gpt-5.5', parentThreadId: 'one', createdAt: at('2026-10-01', 10) },
+    ];
+
+    const { backend } = setup('compact', {
+      fake: {
+        answers: {
+          'thread/list': { data: threads, nextCursor: null },
+          'thread/turns/list': { data: turns, nextCursor: null },
+          'account/usage/read': { dailyUsageBuckets: [{ startDate: '2026-10-01', tokens: 900 }, { startDate: '2026-09-30', tokens: 5000 }] },
+          'model/list': { data: [{ id: 'gpt-5.5', displayName: 'GPT-5.5', description: '', hidden: false, isDefault: false, supportedReasoningEfforts: [] }], nextCursor: null },
+        },
+      },
+    });
+
+    const progress = vi.fn();
+    const history = await backend.history(progress);
+
+    expect(history.days).toEqual([
+      { date: '2026-10-01', messages: 2, toolCalls: 2, sessions: 1, models: { 'GPT-5.5': { input: 0, output: 0, cacheRead: 0, cacheWrite: 0, summarized: 900 } } },
+      { date: '2026-10-02', messages: 2, toolCalls: 0, sessions: 1, models: {} },
+    ]);
+
+    expect(history.sessions).toEqual([{ id: 'one', start: at('2026-10-01', 10) * 1000, end: at('2026-10-02', 9) * 1000 }]);
+    expect(progress).toHaveBeenLastCalledWith(2, 2);
   });
 
   it('names a conversation in a thread that isn’t kept, told only to name it', async () => {

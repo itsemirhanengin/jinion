@@ -5,6 +5,7 @@ import type { AgentMcp } from '../mcp.js';
 import type { ModelOption } from '../models.js';
 import { CodexAccounts } from './accounts.js';
 import { CodexConnection, type CodexProcess } from './connection.js';
+import { codexHistory } from './history.js';
 import { codexMcp } from './mcp.js';
 import { type Model, type Notification, type RateLimitSnapshot, type ServerRequest, type SkillMetadata, threadOf } from './protocol.js';
 import { CodexSession, type CodexHost } from './session.js';
@@ -79,15 +80,7 @@ export class CodexBackend implements AgentBackend, CodexHost {
   }
 
   async models(): Promise<ModelOption[]> {
-    const models: Model[] = [];
-    let cursor: string | null = null;
-
-    do {
-      const page: { data: Model[]; nextCursor: string | null } = await this.connect().request('model/list', { cursor });
-
-      models.push(...page.data);
-      cursor = page.nextCursor;
-    } while (cursor);
+    const models = await this.connect().all<Model>('model/list', {});
 
     return models
       .filter((model) => !model.hidden)
@@ -121,6 +114,13 @@ export class CodexBackend implements AgentBackend, CodexHost {
     const { rateLimits } = await this.connect().request<{ rateLimits: RateLimitSnapshot }>('account/rateLimits/read', {});
 
     return toUsage(rateLimits);
+  }
+
+  /** Models show by their names, as in `/model`. */
+  async history(progress?: (done: number, total: number) => void) {
+    const names = new Map((await this.models().catch(() => [])).map((model) => [model.id, model.name]));
+
+    return codexHistory(this.connect(), names, progress);
   }
 
   skillPath(name: string) {

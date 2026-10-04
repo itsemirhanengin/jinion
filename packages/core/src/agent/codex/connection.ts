@@ -56,6 +56,21 @@ export class CodexConnection {
     return this.call(method, params) as Promise<T>;
   }
 
+  /** Every page of a listing Codex answers a page at a time. */
+  async all<T>(method: string, params: object) {
+    const all: T[] = [];
+    let cursor: string | null = null;
+
+    do {
+      const page: { data: T[]; nextCursor: string | null } = await this.request(method, { ...params, cursor });
+
+      all.push(...page.data);
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    return all;
+  }
+
   onNotification(listener: (notification: Notification) => void) {
     this.notificationListeners.add(listener);
 

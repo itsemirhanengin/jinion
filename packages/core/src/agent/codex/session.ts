@@ -362,17 +362,8 @@ export class CodexSession implements AgentSession {
   /** Every turn of the thread, oldest first, with what happened in each. */
   private async turns() {
     const threadId = await this.ensureThread();
-    const turns: Turn[] = [];
-    let cursor: string | null = null;
 
-    do {
-      const page: { data: Turn[]; nextCursor: string | null } = await this.request('thread/turns/list', { threadId, cursor, itemsView: 'full', sortDirection: 'asc' });
-
-      turns.push(...page.data);
-      cursor = page.nextCursor;
-    } while (cursor);
-
-    return turns;
+    return this.host.connect().all<Turn>('thread/turns/list', { threadId, itemsView: 'full', sortDirection: 'asc' });
   }
 
   /** Skills the prompt mentions with `$` go along as Codex's skill inputs, as Codex's own composer sends them. */
