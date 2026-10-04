@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { useEffect, useState } from 'react';
 import { fuzzyMatch } from '../lib/fuzzy.js';
 import { mention } from './mentions.js';
 import type { CompletionItem, CompletionSource } from './completion.js';
@@ -10,25 +9,6 @@ import type { CompletionItem, CompletionSource } from './completion.js';
 const IGNORED = new Set(['.git', 'node_modules', 'dist', 'build', 'out', 'coverage', '.turbo', '.next', '.cache', '.venv']);
 const LIMIT = 50_000;
 const SHOWN = 50;
-
-export function useProjectFiles(cwd: string, refresh: unknown) {
-  const [files, setFiles] = useState<string[]>([]);
-
-  useEffect(() => {
-    let current = true;
-
-    listProjectFiles(cwd).then(
-      (listed) => current && setFiles(listed),
-      () => {},
-    );
-
-    return () => {
-      current = false;
-    };
-  }, [cwd, refresh]);
-
-  return files;
-}
 
 /** Git decides what counts when it can, so ignored files stay out and untracked ones are in. */
 export async function listProjectFiles(cwd: string) {
