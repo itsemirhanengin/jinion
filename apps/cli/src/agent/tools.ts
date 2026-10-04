@@ -1,4 +1,5 @@
-import type { Question, QuestionAnswer, TodoGroup } from '@jinion/tui/chat';
+import type { Question, QuestionAnswer } from './questions.js';
+import type { TodoGroup } from './todos.js';
 
 export interface FileRef {
   path: string;

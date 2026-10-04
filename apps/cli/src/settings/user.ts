@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import type { ModelSelection } from '@jinion/tui/chat';
+import type { ModelSelection } from '../agent/models.js';
 import { readJson, writeJson } from '../lib/json-file.js';
 import { jinionHome } from '../lib/paths.js';
 import type { StatusItem } from '../status/line.js';

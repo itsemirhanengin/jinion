@@ -1,5 +1,6 @@
 import { fuzzyMatch } from '@jinion/tui';
-import { namedMention, type CompletionItem, type CompletionSource } from '@jinion/tui/chat';
+import { namedMention } from '@jinion/tui/chat';
+import type { CompletionItem, CompletionSource } from './completion.js';
 import type { AgentCommand } from '../agent/agent.js';
 
 const AT_CURSOR = /(?:^|\s)\$([\w.:-]*)$/;

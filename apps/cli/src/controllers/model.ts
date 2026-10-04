@@ -1,4 +1,4 @@
-import type { ModelOption, ModelSelection } from '@jinion/tui/chat';
+import type { ModelOption, ModelSelection } from '../agent/models.js';
 import { errorMessage } from '../lib/errors.js';
 import { saveModel } from '../settings/user.js';
 import { modelLabelAtom, modelsAtom, selectionAtom } from '../state/agent.js';

@@ -18,8 +18,8 @@ export function useScreen(): Screen {
       latest.current.panels.open({ id: dialog.id, placement: 'bottom', element: <DialogView dialog={dialog} /> }),
     focused: () => latest.current.terminal.focused(),
     notify: (title, body) => latest.current.terminal.notify(title, body),
-    get notificationMethod() {
-      return latest.current.terminal.method;
+    get notifications() {
+      return latest.current.terminal.method === 'bell' ? 'bell' : 'desktop';
     },
     toggleExpanded: () => latest.current.view.toggleExpanded(),
     exit: () => latest.current.app.exit(),

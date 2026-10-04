@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { getSessionMessages, type EffortLevel, type query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import type { ModelOption, ModelSelection } from '@jinion/tui/chat';
+import type { ModelOption, ModelSelection } from '../models.js';
 import type { DebugLog } from '../../lib/debug.js';
 import { errorMessage } from '../../lib/errors.js';
 import type { McpConfig } from '../../mcp/config.js';

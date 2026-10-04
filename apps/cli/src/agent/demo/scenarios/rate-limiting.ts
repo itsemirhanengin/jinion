@@ -1,4 +1,5 @@
-import type { QuestionAnswer, TodoGroup, TodoStatus } from '@jinion/tui/chat';
+import type { QuestionAnswer } from '../../questions.js';
+import type { TodoGroup, TodoStatus } from '../../todos.js';
 import type { Scenario } from '../types.js';
 import {
   AUTH_PATCH,

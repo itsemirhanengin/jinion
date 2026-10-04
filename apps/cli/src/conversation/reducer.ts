@@ -1,5 +1,5 @@
-import type { Status } from '@jinion/tui';
-import type { NoticeTone } from '@jinion/tui/chat';
+import type { Status } from './entries.js';
+import type { NoticeTone } from './entries.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { Worktree } from '../git/worktrees.js';
 import { applyEvent } from './apply-event.js';

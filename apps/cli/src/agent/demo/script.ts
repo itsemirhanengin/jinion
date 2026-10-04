@@ -1,4 +1,4 @@
-import type { Question, QuestionAnswer } from '@jinion/tui/chat';
+import type { Question, QuestionAnswer } from '../questions.js';
 import type { RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { ToolCall, ToolName, ToolResult, Tools } from '../tools.js';

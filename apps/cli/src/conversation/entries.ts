@@ -1,7 +1,9 @@
-import type { Status } from '@jinion/tui';
-import type { NoticeTone } from '@jinion/tui/chat';
 import type { BackgroundTask } from '../agent/tasks.js';
 import type { ToolRun } from '../agent/tools.js';
+
+export type Status = 'pending' | 'running' | 'done' | 'error' | 'cancelled';
+
+export type NoticeTone = 'muted' | 'success' | 'warning' | 'error';
 
 export type Entry =
   | { id: string; kind: 'banner' }

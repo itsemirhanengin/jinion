@@ -1,4 +1,4 @@
-import type { TodoGroup } from '@jinion/tui/chat';
+import type { TodoGroup } from '../agent/todos.js';
 import type { AgentResume } from '../agent/agent.js';
 import type { Usage } from '../agent/usage.js';
 import type { Worktree } from '../git/worktrees.js';

@@ -1,5 +1,5 @@
 import type { CanUseTool, HookCallback, PermissionResult } from '@anthropic-ai/claude-agent-sdk';
-import type { PermissionDecision } from '@jinion/tui/chat';
+import type { PermissionDecision } from '../permissions.js';
 import type { AgentMode, PlanDecision, RunContext } from '../agent.js';
 import { guardReason, readsRepositories } from './guard.js';
 import type { Input } from './input.js';

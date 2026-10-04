@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import type { CanUseTool, PermissionRuleValue } from '@anthropic-ai/claude-agent-sdk';
-import type { PermissionRequest } from '@jinion/tui/chat';
+import type { PermissionRequest } from '../permissions.js';
 import { readJson, writeJson } from '../../lib/json-file.js';
 import { projectDir } from '../../lib/paths.js';
 import { GUARD_REASONS } from './guard.js';

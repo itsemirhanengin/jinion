@@ -3,7 +3,8 @@ import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { useEffect, useState } from 'react';
 import { fuzzyMatch } from '@jinion/tui';
-import { mention, type CompletionItem, type CompletionSource } from '@jinion/tui/chat';
+import { mention } from '@jinion/tui/chat';
+import type { CompletionItem, CompletionSource } from './completion.js';
 
 /** Skipped when the project isn't a git repository and nothing says what to ignore. */
 const IGNORED = new Set(['.git', 'node_modules', 'dist', 'build', 'out', 'coverage', '.turbo', '.next', '.cache', '.venv']);

@@ -1,4 +1,4 @@
-import type { Status } from '@jinion/tui';
+import type { Status } from './entries.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { ToolRun } from '../agent/tools.js';
 import { nextId, noticeEntry, type Entry, type ToolCallEntry } from './entries.js';

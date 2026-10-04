@@ -1,5 +1,5 @@
 import { fuzzyFilter } from '@jinion/tui';
-import type { ModelOption } from '@jinion/tui/chat';
+import type { ModelOption } from '../agent/models.js';
 import type { Jinion } from '../controllers/jinion.js';
 import { ModelPicker } from '../panels/model.js';
 import { selectionAtom, modelNameAtom } from '../state/agent.js';

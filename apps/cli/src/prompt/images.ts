@@ -2,7 +2,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { extname, isAbsolute, join } from 'node:path';
-import type { ImageData } from '@jinion/tui/chat';
+import type { AgentImage } from '../agent/agent.js';
 
 const MEDIA_TYPES: Record<string, string> = {
   '.png': 'image/png',
@@ -18,7 +18,7 @@ const MAX_BYTES = 3_750_000;
 const SHRINK_TO = 2048;
 
 /** Terminals paste a dragged file's path quoted, with backslashes before spaces, or as a `file://` URL. */
-export function imageFromPaste(text: string): ImageData | undefined {
+export function imageFromPaste(text: string): AgentImage | undefined {
   const path = pastedPath(text);
   const mediaType = path && MEDIA_TYPES[extname(path).toLowerCase()];
   if (!path || !mediaType || !existsSync(path) || !statSync(path).isFile()) return undefined;
@@ -37,7 +37,7 @@ function pastedPath(text: string) {
   return isAbsolute(path) ? path : undefined;
 }
 
-export async function clipboardImage(): Promise<ImageData | undefined> {
+export async function clipboardImage(): Promise<AgentImage | undefined> {
   const png = await clipboardPng();
 
   return png && png.length > 0 ? fitting(png, 'image/png') : undefined;
@@ -81,7 +81,7 @@ function clipboardPng(): Promise<Buffer | undefined> {
   return Promise.resolve(undefined);
 }
 
-function fitting(bytes: Buffer, mediaType: string): ImageData {
+function fitting(bytes: Buffer, mediaType: string): AgentImage {
   if (bytes.length <= MAX_BYTES) return { mediaType, data: bytes.toString('base64') };
 
   const smaller = shrink(bytes);

@@ -1,4 +1,4 @@
-import type { ModelOption, ModelSelection } from '@jinion/tui/chat';
+import type { ModelOption, ModelSelection } from '../agent/models.js';
 import { atom } from 'jotai';
 import type { AgentAccount } from '../agent/accounts.js';
 import type { AgentCommand, AgentMode } from '../agent/agent.js';

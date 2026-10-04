@@ -1,5 +1,5 @@
 import { basename } from 'node:path';
-import type { NoticeTone } from '@jinion/tui/chat';
+import type { NoticeTone } from '../conversation/entries.js';
 import { createStore } from 'jotai';
 import type { Agent } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';

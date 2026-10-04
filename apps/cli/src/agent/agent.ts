@@ -1,4 +1,6 @@
-import type { ModelOption, ModelSelection, PermissionDecision, PermissionRequest, Question, QuestionAnswer } from '@jinion/tui/chat';
+import type { ModelOption, ModelSelection } from './models.js';
+import type { PermissionDecision, PermissionRequest } from './permissions.js';
+import type { Question, QuestionAnswer } from './questions.js';
 import type { AgentAccounts } from './accounts.js';
 import type { AgentEvent } from './events.js';
 import type { AgentMcp } from './mcp.js';

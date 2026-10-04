@@ -1,5 +1,5 @@
 import type { EffortLevel, Options } from '@anthropic-ai/claude-agent-sdk';
-import type { ModelSelection } from '@jinion/tui/chat';
+import type { ModelSelection } from '../models.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
 import type { AgentMode } from '../agent.js';

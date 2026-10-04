@@ -1,7 +1,9 @@
-import type { NotificationMethod, PanelSpec } from '@jinion/tui';
-import type { NoticeTone, PermissionDecision, PermissionRequest, PlanPanelDecision, Question, QuestionAnswer } from '@jinion/tui/chat';
+import type { PanelSpec } from '@jinion/tui';
+import type { NoticeTone } from '../conversation/entries.js';
+import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
+import type { Question, QuestionAnswer } from '../agent/questions.js';
 import type { Store } from 'jotai';
-import type { Agent, AgentMode } from '../agent/agent.js';
+import type { Agent, AgentMode, PlanDecision } from '../agent/agent.js';
 
 export interface AppInfo {
   version: string;
@@ -17,7 +19,8 @@ export interface Screen {
   showDialog(dialog: Dialog): void;
   focused(): boolean;
   notify(title: string, body: string): void;
-  readonly notificationMethod: NotificationMethod;
+  /** How this client tells the user something while they look elsewhere. */
+  readonly notifications: 'desktop' | 'bell';
   toggleExpanded(): void;
   exit(): void;
 }
@@ -25,7 +28,7 @@ export interface Screen {
 export type Dialog =
   | { id: 'ask'; questions: Question[]; onSubmit(answers: QuestionAnswer[]): void; onCancel(): void }
   | { id: 'permission'; request: PermissionRequest; onDecide(decision: PermissionDecision): void; onCancel(): void }
-  | { id: 'plan'; modes: AgentMode[]; onDecide(decision: PlanPanelDecision): void; onCancel(): void };
+  | { id: 'plan'; modes: AgentMode[]; onDecide(decision: PlanDecision): void; onCancel(): void };
 
 export interface Context {
   store: Store;

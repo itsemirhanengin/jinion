@@ -15,7 +15,7 @@ export const notifications: Command = {
     if (!on) return jinion.notice('Notifications are off. /notifications on turns them back on.', 'muted');
 
     const how =
-      jinion.screen.notificationMethod === 'bell'
+      jinion.screen.notifications === 'bell'
         ? 'the terminal bell rings, since this terminal has no desktop notifications jinion knows of'
         : 'your terminal shows a desktop notification';
 

@@ -1,5 +1,5 @@
 import { fuzzyFilter } from '@jinion/tui';
-import type { CompletionSource } from '@jinion/tui/chat';
+import type { CompletionSource } from '../prompt/completion.js';
 import type { Jinion } from '../controllers/jinion.js';
 
 export interface Command {

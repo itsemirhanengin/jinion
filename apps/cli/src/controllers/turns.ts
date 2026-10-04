@@ -1,4 +1,5 @@
-import type { PermissionDecision, PermissionRequest, Question, QuestionAnswer } from '@jinion/tui/chat';
+import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
+import type { Question, QuestionAnswer } from '../agent/questions.js';
 import type { AgentMode, PlanDecision, RunContext } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import { elapsed } from '../lib/format.js';
@@ -162,12 +163,8 @@ export class TurnController {
           id: 'plan',
           modes,
           onDecide: (decision) => {
-            if (!decision.approve) return done(decision);
-
-            const mode = decision.option as AgentMode;
-
-            this.hooks.planAccepted(mode);
-            done({ approve: true, mode });
+            if (decision.approve) this.hooks.planAccepted(decision.mode);
+            done(decision);
           },
           onCancel: cancel,
         })),

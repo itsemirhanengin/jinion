@@ -1,4 +1,4 @@
-import type { TodoItem } from '@jinion/tui/chat';
+import type { TodoItem } from '../todos.js';
 import type { AgentEvent } from '../events.js';
 import { type Input, text } from './input.js';
 

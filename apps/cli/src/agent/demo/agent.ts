@@ -1,4 +1,4 @@
-import type { ModelOption, ModelSelection } from '@jinion/tui/chat';
+import type { ModelOption, ModelSelection } from '../models.js';
 import type { Agent, AgentCommand, AgentMode, AgentPrompt, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { Usage } from '../usage.js';

@@ -1,4 +1,4 @@
-import type { NoticeTone } from '@jinion/tui/chat';
+import type { NoticeTone } from '../conversation/entries.js';
 import { promptCount } from '../conversation/entries.js';
 import type { SavedSession } from '../conversation/session.js';
 import { createWorktree, removeWorktree, type Worktree, worktreeExists, worktreeWork, type WorktreeWork } from '../git/worktrees.js';

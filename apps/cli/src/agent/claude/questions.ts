@@ -1,4 +1,4 @@
-import type { Question, QuestionAnswer } from '@jinion/tui/chat';
+import type { Question, QuestionAnswer } from '../questions.js';
 import { type Input, isObject } from './input.js';
 
 export interface ClaudeQuestion {

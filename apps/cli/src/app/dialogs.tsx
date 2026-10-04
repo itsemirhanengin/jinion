@@ -22,7 +22,7 @@ export function DialogView({ dialog }: { dialog: Dialog }) {
       return (
         <PlanPanel
           options={dialog.modes.map((mode) => ({ id: mode, label: PLAN_CHOICES[mode], description: MODES[mode].description }))}
-          onDecide={dialog.onDecide}
+          onDecide={(decision) => dialog.onDecide(decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision)}
           onCancel={dialog.onCancel}
         />
       );
