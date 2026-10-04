@@ -74,6 +74,8 @@ export type ThreadItem =
       id: string;
       command: string;
       cwd: string;
+      /** Its terminal, which keeps running in the background when the turn ends first. */
+      processId: string | null;
       status: 'inProgress' | 'completed' | 'failed' | 'declined';
       commandActions: CommandAction[];
       aggregatedOutput: string | null;

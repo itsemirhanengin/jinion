@@ -181,6 +181,28 @@ describe('CodexSession', () => {
     expect(fake.sent('thread/revert')[0]?.params).toEqual({ threadId: fake.thread, beforeTurnId: 'turn-1' });
   });
 
+  it('keeps a command running as its turn ends as a background task, with its output in a file, until it ends', async () => {
+    const { fake, session } = setup('background');
+    const between: AgentEvent[] = [];
+
+    session.subscribe((event) => between.push(event));
+
+    const events = await collect(session.run({ text: 'Start it in the background' }, context()));
+    const sent = events.find((event) => event.type === 'tool-end' && event.result && 'background' in event.result);
+    const started = events.findLast((event) => event.type === 'tasks');
+
+    expect(sent).toMatchObject({ ok: true, result: { background: expect.any(String) } });
+    expect(started).toMatchObject({ tasks: [{ kind: 'shell', status: 'running', title: expect.stringContaining('tick') }] });
+
+    await vi.waitFor(() => expect(between).toContainEqual(expect.objectContaining({ type: 'task-end' })));
+
+    const ended = between.find((event) => event.type === 'task-end');
+
+    expect(ended).toMatchObject({ task: { status: 'completed' } });
+    expect(readFileSync((ended as { task: { output: string } }).task.output, 'utf8')).toBe('tick 1\ntick 2\ntick 3\ntick 4\ntick 5\ntick 6\n');
+    expect(fake.sent('thread/backgroundTerminals/terminate')).toHaveLength(0);
+  });
+
   it('names a conversation in a thread that isn’t kept, told only to name it', async () => {
     const { fake, backend } = setup('title');
 

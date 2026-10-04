@@ -3,6 +3,7 @@ import type { TodoStatus } from '../todos.js';
 import type { ToolCall, ToolResult } from '../tools.js';
 import { MEMORY_TOOLS } from './memory.js';
 import { type Notification, type ThreadItem, threadOf } from './protocol.js';
+import { CodexTasks } from './tasks.js';
 import { commandCall, commandResult, contentText, editCall, outputLines, searchHits } from './tool-calls.js';
 import { limitWindows } from './usage.js';
 
@@ -30,12 +31,40 @@ export class CodexEvents {
   private contextTokens = 0;
   /** How full the context was as the running compaction began. */
   private compactedFrom?: number;
+  /** The conversation's own commands that run, with what they printed, in case its turn ends before they do. */
+  private readonly shells = new Map<string, { title: string; startedAt: number; processId?: string; output: string }>();
 
-  constructor(private readonly thread: () => string | undefined) {}
+  constructor(
+    private readonly thread: () => string | undefined,
+    readonly tasks = new CodexTasks(),
+  ) {}
 
   /** Whether a notification about `threadId` is this conversation's, its own or one of its subagents'. */
   owns(threadId: string) {
     return threadId === this.thread() || this.children.has(threadId);
+  }
+
+  /**
+   * A command still running as its turn ends goes on in one of Codex's background terminals: its call ends as sent to
+   * the background, and it becomes a task, as a command Claude runs in the background does.
+   */
+  turnEnded(completed: boolean): AgentEvent[] {
+    // A turn that failed or was interrupted shows its calls cut short.
+    const events = [...this.shells].filter(() => completed).flatMap(([id, shell]): AgentEvent[] => {
+      const rest = this.partial.get(id);
+
+      this.partial.delete(id);
+
+      return [
+        ...this.lines(id, rest ? [rest] : []),
+        ...this.end(id, true, { exitCode: 0, wallMs: Date.now() - shell.startedAt, background: id }, undefined),
+        this.tasks.start(id, shell),
+      ];
+    });
+
+    this.shells.clear();
+
+    return events;
   }
 
   /** The edits of a patch Codex asks to apply, by its item id: one a file, each a call of its own. */
@@ -67,7 +96,11 @@ export class CodexEvents {
         return params.summaryIndex > 0 ? this.stream('thinking', params.itemId, '\n\n') : [];
 
       case 'item/commandExecution/outputDelta':
-        return this.output(params.itemId, params.delta);
+        if (!this.tasks.has(params.itemId)) return this.output(params.itemId, params.delta);
+
+        this.tasks.output(params.itemId, params.delta);
+
+        return [];
 
       case 'turn/plan/updated': {
         const id = `todo-${params.turnId}-${++this.todos}`;
@@ -98,8 +131,15 @@ export class CodexEvents {
 
   private started(item: ThreadItem, parent: string | undefined): AgentEvent[] {
     switch (item.type) {
-      case 'commandExecution':
-        return this.start(item.id, commandCall(item), parent);
+      case 'commandExecution': {
+        const call = commandCall(item);
+
+        if (call.name === 'bash' && parent === undefined) {
+          this.shells.set(item.id, { title: call.input.command, startedAt: Date.now(), processId: item.processId ?? undefined, output: '' });
+        }
+
+        return this.start(item.id, call, parent);
+      }
 
       case 'fileChange':
         return item.changes.flatMap((change, index) => this.start(`${item.id}#${index}`, editCall(change), parent));
@@ -147,6 +187,9 @@ export class CodexEvents {
         const streamed = rest !== undefined;
         const shown = call.name === 'bash' ? (streamed ? (rest ? [rest] : []) : output) : ok ? [] : output;
 
+        if (this.tasks.has(item.id)) return this.tasks.end(item.id, ok, item.aggregatedOutput);
+
+        this.shells.delete(item.id);
         this.partial.delete(item.id);
 
         return [...this.lines(item.id, shown), ...this.end(item.id, ok, ok || call.name === 'bash' ? commandResult(call, item) : undefined, parent)];
@@ -244,6 +287,10 @@ export class CodexEvents {
   /** What a command prints shows as it comes, a whole line at a time; reads and searches show their result instead. */
   private output(id: string, delta: string): AgentEvent[] {
     if (this.calls.get(id)?.name !== 'bash') return [];
+
+    const shell = this.shells.get(id);
+
+    if (shell) shell.output += delta;
 
     const text = (this.partial.get(id) ?? '') + delta;
     const cut = text.lastIndexOf('\n');

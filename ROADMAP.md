@@ -68,8 +68,7 @@ Jinion's note tools as dynamic tools, Codex's questions); bumping it means runni
 --experimental`, comparing with `agent/codex/protocol.ts`, and recording the fixtures again (`pnpm --filter
 @jinion/core codex-fixture`). What Claude has and Codex doesn't yet:
 
-- **Background tasks.** Codex keeps long commands running (`thread/backgroundTerminals/*`, experimental); they could
-  show in `ctrl+t` as Claude's do.
+- **`ctrl+b`.** Codex decides itself which commands go on in the background, so there is nothing to send there.
 - **`/stats`.** Codex keeps its sessions in `~/.codex/sessions`; `history()` could read them.
 - **What always asks, in Auto.** Codex's reviewer answers for commits and writes outside the project there, so
   `/commit-approval` doesn't apply; the other modes ask through Codex's sandbox.

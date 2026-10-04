@@ -9,6 +9,7 @@ const command = (shell: string, actions: CommandItem['commandActions'], output =
   id: 'c1',
   command: shell,
   cwd: '/project',
+  processId: null,
   status: 'completed',
   commandActions: actions,
   aggregatedOutput: output,

@@ -165,11 +165,25 @@ export class CodexSession implements AgentSession {
     this.cwd = cwd;
   }
 
+  async stopTask(id: string) {
+    const processId = this.events.tasks.stop(id);
+
+    if (processId && this.thread) await this.request('thread/backgroundTerminals/terminate', { threadId: this.thread, processId });
+  }
+
+  /** Background tasks stop with it, as they do with Claude's process. */
   close() {
     const { thread } = this;
 
     this.turn?.inbox.push(new Error('The conversation was closed.'));
-    if (thread) void this.request('thread/unsubscribe', { threadId: thread }).catch(() => {});
+
+    if (thread) {
+      void this.request('thread/backgroundTerminals/clean', { threadId: thread })
+        .then(() => this.request('thread/unsubscribe', { threadId: thread }))
+        .catch(() => {});
+    }
+
+    this.stopTasks();
     this.host.closed(this);
   }
 
@@ -205,6 +219,13 @@ export class CodexSession implements AgentSession {
     this.resume = this.thread ?? this.resume;
     this.thread = undefined;
     this.turn?.inbox.push(error);
+    this.stopTasks();
+  }
+
+  private stopTasks() {
+    const stopped = this.events.tasks.stopAll();
+
+    if (stopped) this.emit(stopped);
   }
 
   /**
@@ -278,6 +299,7 @@ export class CodexSession implements AgentSession {
         }
       }
 
+      yield* this.events.turnEnded(ended?.status === 'completed' && !context.signal.aborted);
       context.signal.throwIfAborted();
       if (ended?.status === 'failed') throw new Error(ended.error?.message ?? 'Codex stopped with an error.');
       if (ended?.status === 'interrupted') throw new Error('Codex stopped the turn.');

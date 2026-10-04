@@ -118,7 +118,7 @@ export class FakeCodex {
   }
 }
 
-/** Each turn, from what came before its end; what comes after the last one goes with it. */
+/** Each turn, from what came before its end; what comes after the last one, such as a background command ending, goes with it. */
 function splitTurns(messages: Message[]) {
   const turns: Message[][] = [[]];
 
@@ -126,6 +126,10 @@ function splitTurns(messages: Message[]) {
     turns.at(-1)!.push(message);
     if (message.method === 'turn/completed') turns.push([]);
   }
+
+  const after = turns.pop()!;
+
+  turns.at(-1)?.push(...after);
 
   return turns.filter((turn) => turn.length > 0);
 }
