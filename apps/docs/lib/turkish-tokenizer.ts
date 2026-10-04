@@ -8,9 +8,11 @@ export const turkishTokenizer: Tokenizer = {
   normalizationCache: new Map(),
   tokenize: (raw) => {
     // `İ` alone becomes `i`; `I` stays an English `i`, as in API and CLI, rather than `ı`.
-    const words = raw.replace(/İ/g, 'i').toLowerCase().split(/[^a-z0-9çğıöşüâîû]+/);
+    const words = raw.replace(/İ/g, 'i').toLowerCase().split(/[^a-z0-9çğıöşüâîû]+/).filter(Boolean);
 
-    return [...new Set(words.filter(Boolean).map((word) => fold(stemmer(word))))];
+    // The word itself goes in beside its stem, since the stemmer cuts some too far: `izin` to `iz`, while `izinler`
+    // becomes `izin`.
+    return [...new Set(words.flatMap((word) => [fold(word), fold(stemmer(word))]))];
   },
 };
 
