@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
-import { useInput } from 'ink';
+import { Box, Text, useInput } from 'ink';
+import { useTheme } from '../runtime/theme.js';
 import { stepIndex } from './list-navigation.js';
 import { OptionRow, optionIndent } from './option-row.js';
 import { SelectList } from './select-list.js';
@@ -84,6 +85,8 @@ export function useChoiceList({
 
 export interface Choice {
   key: string;
+  /** Choices of a group come one after another, under its name. */
+  group?: string;
   label: ReactNode;
   description?: ReactNode;
   aside?: ReactNode;
@@ -99,6 +102,8 @@ export interface ChoiceListProps {
 }
 
 export function ChoiceList({ list, choices, limit = 8, empty }: ChoiceListProps) {
+  const theme = useTheme();
+
   return (
     <SelectList
       items={choices}
@@ -106,18 +111,27 @@ export function ChoiceList({ list, choices, limit = 8, empty }: ChoiceListProps)
       limit={limit}
       empty={empty}
       renderItem={(choice, state) => (
-        <OptionRow
-          number={state.index + 1}
-          count={choices.length}
-          label={choice.label}
-          description={choice.description}
-          focused={state.selected}
-          checked={list.mode === 'multiple' ? list.isChecked(choice.key) : undefined}
-          aside={choice.aside}
-          note={choice.note}
-        >
-          {state.selected ? choice.editor : undefined}
-        </OptionRow>
+        <>
+          {choice.group !== undefined && (state.first || choices[state.index - 1]?.group !== choice.group) && (
+            <Box marginTop={state.first ? 0 : 1}>
+              <Text color={theme.muted} bold>
+                {choice.group}
+              </Text>
+            </Box>
+          )}
+          <OptionRow
+            number={state.index + 1}
+            count={choices.length}
+            label={choice.label}
+            description={choice.description}
+            focused={state.selected}
+            checked={list.mode === 'multiple' ? list.isChecked(choice.key) : undefined}
+            aside={choice.aside}
+            note={choice.note}
+          >
+            {state.selected ? choice.editor : undefined}
+          </OptionRow>
+        </>
       )}
     />
   );
