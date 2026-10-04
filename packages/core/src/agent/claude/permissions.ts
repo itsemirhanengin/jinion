@@ -43,7 +43,7 @@ export function toPermissionRequest(
     command,
     subject: command ? undefined : target,
     description: description.length > 0 ? description.join(' · ') : undefined,
-    always: always.length > 0 ? always.map(ruleLabel).join(', ') : undefined,
+    always: always.length > 0 ? `${always.map(ruleLabel).join(', ')} in this project` : undefined,
     defaultToNo: options.defaultToNo,
   };
 }

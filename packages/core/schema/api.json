@@ -2328,8 +2328,7 @@
                 }
               },
               "required": [
-                "command",
-                "timeoutMs"
+                "command"
               ]
             },
             "result": {
@@ -4533,8 +4532,7 @@
                 }
               },
               "required": [
-                "command",
-                "timeoutMs"
+                "command"
               ]
             }
           },

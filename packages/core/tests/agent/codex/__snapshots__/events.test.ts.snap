@@ -1,0 +1,126 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CodexEvents replaying recorded conversations > maps the compact conversation as before 1`] = `
+[
+  "text: Hello, lovely to meet you.",
+  "usage 15744/258400 $0.0000",
+  "limits 5h, 7d",
+  "compaction running",
+  "usage 5556/258400 $0.0000",
+  "limits 5h, 7d",
+  "compaction auto 15744 -> 5556: undefined",
+]
+`;
+
+exports[`CodexEvents replaying recorded conversations > maps the interrupt conversation as before 1`] = `
+[
+  "start t1 bash {"command":"sleep 30"}",
+  "usage 15786/258400 $0.0000",
+  "limits 5h, 7d",
+]
+`;
+
+exports[`CodexEvents replaying recorded conversations > maps the memory conversation as before 1`] = `
+[
+  "start t1 memory {"action":"remember","detail":"project · Project Notes Location"}",
+  "output t1 ["Saved project/project-notes-location."]",
+  "end t1 ok {}",
+  "usage 15804/258400 $0.0000",
+  "limits 5h, 7d",
+  "start t2 memory {"action":"recall","detail":"every note"}",
+  "output t2 ["project/project-notes-location: Project notes live in notes.txt."]",
+  "end t2 ok {}",
+  "usage 15838/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: Saved the project note and recalled all notes.
+
+Current notes:
+- \`project/project-notes-location\`: Project notes live in notes.txt.",
+  "usage 15894/258400 $0.0000",
+  "limits 5h, 7d",
+]
+`;
+
+exports[`CodexEvents replaying recorded conversations > maps the plan conversation as before 1`] = `
+[
+  "thinking: **Planning initial exploration strategy**",
+  "text: I’ll do a tiny grounding pass first so the plan matches the actual repo state, then I’ll keep the plan to exactly two implementation steps as requested.",
+  "start t1 glob {"pattern":"rg --files -g CONTRIBUTING.md -g AGENTS.md -g 'README*' -g .gitignore"}",
+  "end t1 failed {}",
+  "usage 17431/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: No existing matching files turned up in that quick search, so this looks like a clean add rather than an update.",
+  "start t2 plan {"plan":"# Add CONTRIBUTING.md\\n\\n## Summary\\nAdd a new root-level \`CONTRIBUTING.md\` containing exactly one line: \`Be kind.\`\\n\\n## Two Steps\\n1. Create \`/project/CONTRIBUTING.md\` with the exact content \`Be kind.\` followed by a newline.\\n2. Verify the file content matches exactly and no unrelated files were changed.\\n\\n## Test Plan\\nConfirm with \`cat CONTRIBUTING.md\` or equivalent read-only inspection.\\n\\n## Assumptions\\nNo existing \`CONTRIBUTING.md\` needs to be preserved or merged.\\n"}",
+  "end t2 ok {}",
+  "usage 17642/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: I’ll add the root \`CONTRIBUTING.md\` exactly as planned, then read it back and check the worktree so we know the change is isolated.",
+  "start t3 edit {"path":"/project/CONTRIBUTING.md","patch":"@@ -0,0 +1,1 @@\\n+Be kind.","created":true}",
+  "end t3 ok {}",
+  "usage 20069/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: The file is in place. I’m doing the quick verification now: exact content plus git status for any unrelated movement.",
+  "start t4 read {"files":[{"path":"/project/CONTRIBUTING.md"}]}",
+  "end t4 ok {}",
+  "start t5 bash {"command":"git status --short"}",
+  "output t5 ["?? CONTRIBUTING.md"]",
+  "end t5 ok {"exitCode":0,"wallMs":0}",
+  "usage 20246/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: Implemented. Added [CONTRIBUTING.md](/tmp/cx-play/CONTRIBUTING.md:1) with exactly:
+
+\`\`\`text
+Be kind.
+\`\`\`
+
+Verified the content and \`git status --short\` shows only the new \`CONTRIBUTING.md\`.",
+  "usage 20404/258400 $0.0000",
+  "limits 5h, 7d",
+]
+`;
+
+exports[`CodexEvents replaying recorded conversations > maps the tools conversation as before 1`] = `
+[
+  "thinking: **Assessing update_plan tool availability**",
+  "text: I don’t have an \`update_plan\` tool in this environment, so I’ll do the closest visible thing: state the two-step plan, execute it, then report completion briefly.
+
+Plan:
+1. Read \`notes.txt\` and patch \`world\` to \`there\`.
+2. Run the requested command and verify both steps.",
+  "start t1 bash {"command":"pwd && rg --files | rg '^notes\\\\.txt$|notes\\\\.txt'"}",
+  "output t1 ["/private/project","notes.txt"]",
+  "end t1 ok {"exitCode":0,"wallMs":0}",
+  "usage 15825/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: Found the file. I’m reading it now so the patch is exactly scoped to the requested word change.",
+  "start t2 read {"files":[{"path":"/project/notes.txt"}]}",
+  "end t2 ok {}",
+  "usage 15960/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: I’m applying the tiny edit now: replacing the second line’s \`world\` with \`there\`.",
+  "start t3 edit {"path":"/project/notes.txt","patch":"@@ -1,2 +1,2 @@\\n hello\\n-world\\n+there"}",
+  "end t3 ok {}",
+  "usage 16075/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: The patch landed cleanly. I’m running the exact command you requested next.",
+  "start t4 bash {"command":"printf 'a\\\\nb\\\\n' && wc -l notes.txt"}",
+  "output t4 ["a","b","       2 notes.txt"]",
+  "end t4 ok {"exitCode":0,"wallMs":0}",
+  "usage 16195/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: Done.
+
+I couldn’t call \`update_plan\` because that tool isn’t available here, but both requested steps are complete:
+
+\`notes.txt\` now has \`there\` instead of \`world\`.
+
+Command output:
+\`\`\`text
+a
+b
+       2 notes.txt
+\`\`\`",
+  "usage 16312/258400 $0.0000",
+  "limits 5h, 7d",
+]
+`;

@@ -25,9 +25,9 @@ const TOOLS = {
     result: z.object({ matches: z.array(GrepMatch), files: z.array(z.string()).optional() }),
   },
   glob: { input: z.object({ pattern: z.string() }), result: z.object({ files: z.array(z.string()) }) },
-  /** The background task the command went on as, instead of an exit code. */
+  /** The background task the command went on as, instead of an exit code. Codex sets no timeout. */
   bash: {
-    input: z.object({ command: z.string(), timeoutMs: z.number() }),
+    input: z.object({ command: z.string(), timeoutMs: z.number().optional() }),
     result: z.object({ exitCode: z.number(), wallMs: z.number(), background: z.string().optional() }),
   },
   /** The input patch can be a preview; the result carries the applied one when it differs. */

@@ -87,6 +87,7 @@
                       "@jinion/core/memory/**",
                       "@jinion/core/mcp/**",
                       "@jinion/core/agent/claude/**",
+                      "@jinion/core/agent/codex/**",
                       "@jinion/core/agent/demo/**",
                       "@jinion/core/conversation/store",
                       "@jinion/core/commands/builtin",

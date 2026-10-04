@@ -1,6 +1,7 @@
 import type { AgentBackend } from '@jinion/core/agent/agent';
 import { ClaudeBackend } from '@jinion/core/agent/claude/backend';
 import { syncSkills } from '@jinion/core/agent/claude/synced-skills';
+import { CodexBackend } from '@jinion/core/agent/codex/backend';
 import { ScriptedBackend } from '@jinion/core/agent/demo/agent';
 import { demoCommands } from '@jinion/core/agent/demo/commands';
 import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
@@ -41,7 +42,10 @@ export function coreOptions(flags: CoreFlags) {
 
   const backends: AgentBackend[] = demo
     ? [new ScriptedBackend(scenarios, demoCommands)]
-    : [new ClaudeBackend({ cwd, account: settings.accounts?.Claude, memory, mcp: new McpConfig(cwd), debug, syncSkills })];
+    : [
+        new ClaudeBackend({ cwd, account: settings.accounts?.Claude, memory, mcp: new McpConfig(cwd), debug, syncSkills }),
+        new CodexBackend({ cwd, version, memory, debug }),
+      ];
 
   const backend = backends.find(({ name }) => name === settings.agent) ?? backends[0]!;
 

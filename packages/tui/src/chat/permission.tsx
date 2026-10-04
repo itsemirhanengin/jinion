@@ -13,6 +13,7 @@ export interface PermissionRequest {
   command?: string;
   subject?: string;
   description?: string;
+  /** What a yes for good covers, and where, e.g. `` `pnpm add:*` in this project ``. */
   always?: string;
   defaultToNo?: boolean;
 }
@@ -40,7 +41,7 @@ export function PermissionPanel({ request, agent, onDecide, onCancel }: Permissi
 
   const decisions = [
     { key: 'once', label: 'Yes' },
-    ...(request.always ? [{ key: 'always', label: `Yes, and don't ask again for ${request.always} in this project` }] : []),
+    ...(request.always ? [{ key: 'always', label: `Yes, and don't ask again for ${request.always}` }] : []),
     { key: 'deny', label: 'No', description: `Press n to tell ${agent} what to do instead` },
   ];
 

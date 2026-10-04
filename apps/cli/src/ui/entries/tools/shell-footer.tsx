@@ -12,12 +12,13 @@ export function ShellFooter({ entry }: { entry: ToolEntry }) {
   if (entry.run.name !== 'bash') return null;
   if (entry.run.result?.background) return <BackgroundState id={entry.run.result.background} />;
 
-  const timeout = `Timeout: ${preciseSeconds(entry.run.input.timeoutMs)}`;
-  if (running && entry.waiting) return <>[Waiting for your approval | {timeout}]</>;
+  const { timeoutMs } = entry.run.input;
+  const timeout = timeoutMs === undefined ? '' : ` | Timeout: ${preciseSeconds(timeoutMs)}`;
+  if (running && entry.waiting) return <>[Waiting for your approval{timeout}]</>;
 
   // A command asked about runs from when it was allowed.
   const started = entry.approvedAt ?? entry.startedAt;
-  if (running) return <>[Running: {preciseSeconds(Date.now() - started)} | {timeout}]</>;
+  if (running) return <>[Running: {preciseSeconds(Date.now() - started)}{timeout}]</>;
 
   const took = entry.approvedAt
     ? (entry.endedAt ?? Date.now()) - entry.approvedAt
@@ -31,7 +32,8 @@ export function ShellFooter({ entry }: { entry: ToolEntry }) {
   return (
     <>
       [{exitCode ? `Exit: ${exitCode} | ` : ''}
-      {wall} | {timeout}]
+      {wall}
+      {timeout}]
     </>
   );
 }

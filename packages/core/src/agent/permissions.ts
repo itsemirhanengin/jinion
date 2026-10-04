@@ -5,6 +5,7 @@ export const PermissionRequest = z.object({
   command: z.string().optional(),
   subject: z.string().optional(),
   description: z.string().optional(),
+  /** What a yes for good covers, and where, e.g. `` `pnpm add:*` in this project ``. */
   always: z.string().optional(),
   defaultToNo: z.boolean().optional(),
 });
