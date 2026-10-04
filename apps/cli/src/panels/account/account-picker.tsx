@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, PromptInput, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import type { AgentAccount } from '@jinion/core/agent/accounts';
-import { limitsKey } from '@jinion/core/settings/limits';
+import { limitsKey } from '@jinion/core/agent/usage';
 import { useApi } from '../../app/api.js';
 import { accountAtom, seenLimitsAtom } from '../../state/session.js';
 import { describeAccount } from './describe.js';

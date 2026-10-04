@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '@jinion/tui';
 import { atom, useAtomValue } from 'jotai';
-import type { GitStatus } from '@jinion/core/git/status';
-import { limitsKey } from '@jinion/core/settings/limits';
+import type { GitStatus } from '@jinion/core/api/protocol';
+import { limitsKey } from '@jinion/core/agent/usage';
 import { useApi } from '../app/api.js';
 import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom, sessionAtom } from '../state/session.js';
 import type { StatusData } from './segment.js';

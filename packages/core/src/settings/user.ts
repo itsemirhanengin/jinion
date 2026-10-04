@@ -3,18 +3,9 @@ import type { ModelSelection } from '../agent/models.js';
 import { readJson, writeJson } from '../lib/json-file.js';
 import { jinionHome } from '../lib/paths.js';
 
-export type StatusSide = 'left' | 'right';
-
-/** A segment of the TUI's status line; the client knows which ids exist. */
-export interface StatusItem {
-  id: string;
-  side: StatusSide;
-  style?: string;
-}
-
+/** What the core keeps in the user's settings file; a client may keep keys of its own there too, which stay as they are. */
 export interface Settings {
   models?: Record<string, ModelSelection>;
-  statusLine?: StatusItem[];
   accounts?: Record<string, string>;
   mcp?: { disabled?: string[] };
   notifications?: boolean;
@@ -36,8 +27,6 @@ export const saveModel = (agent: string, selection: ModelSelection) =>
 
 export const saveAccount = (agent: string, account: string) =>
   update((current) => ({ accounts: { ...current.accounts, [agent]: account } }));
-
-export const saveStatusLine = (statusLine: StatusItem[]) => update(() => ({ statusLine }));
 
 export const saveMcpSettings = (mcp: Settings['mcp']) => update(() => ({ mcp }));
 

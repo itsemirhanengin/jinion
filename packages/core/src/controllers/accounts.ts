@@ -1,7 +1,7 @@
 import type { SignInOptions } from '../agent/accounts.js';
 import type { LimitWindow } from '../agent/usage.js';
 import { errorMessage } from '../lib/errors.js';
-import { limitsKey } from '../settings/limits.js';
+import { limitsKey } from '../agent/usage.js';
 import { saveAccount } from '../settings/user.js';
 import { accountAtom, identityAtom, seenLimitsAtom } from '../state/agent.js';
 import { type AppContext, BUSY } from './context.js';

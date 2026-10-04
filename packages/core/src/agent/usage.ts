@@ -65,4 +65,14 @@ export interface LimitWindow {
   resetsAt?: number;
 }
 
+/** Kept per account, so `/account` can show how full the plans not in use were when last seen. */
+export type SeenLimits = Record<string, SeenLimit>;
+
+export interface SeenLimit {
+  windows: LimitWindow[];
+  at: number;
+}
+
+export const limitsKey = (agent: string, account = 'default') => `${agent}/${account}`;
+
 export const emptyTokens = (): ModelTokens => ({ input: 0, output: 0, cacheRead: 0, cacheWrite: 0 });

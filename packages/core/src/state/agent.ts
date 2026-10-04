@@ -4,7 +4,7 @@ import type { AgentAccount } from '../agent/accounts.js';
 import type { AgentCommand } from '../agent/agent.js';
 import { loadLimits, saveLimits } from '../settings/limits.js';
 import { skillMention } from '../prompt/skills.js';
-import { persistedAtom } from './persisted.js';
+import { persistedAtom } from '../lib/persisted.js';
 
 export const modelsAtom = atom<ModelOption[] | undefined>(undefined);
 

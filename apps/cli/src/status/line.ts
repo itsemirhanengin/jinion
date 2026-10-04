@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { StatusItem } from '@jinion/core/settings/user';
+import type { StatusItem } from './saved.js';
 import type { StatusData } from './segment.js';
 import { findSegment } from './segments/index.js';
 

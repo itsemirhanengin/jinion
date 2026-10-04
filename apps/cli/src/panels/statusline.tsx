@@ -3,7 +3,7 @@ import { ChoiceList, Panel, Text, useChoiceList, useInput, usePanel, useTheme, t
 import { useAtom, useSetAtom } from 'jotai';
 import { statusItemsAtom, statusPreviewAtom } from '../status/items.js';
 import { useStatusData } from '../status/data.js';
-import type { StatusItem, StatusSide } from '@jinion/core/settings/user';
+import type { StatusItem, StatusSide } from '../status/saved.js';
 import { DEFAULT_STATUS_LINE, styleOf } from '../status/line.js';
 import { findSegment, SEGMENTS } from '../status/segments/index.js';
 

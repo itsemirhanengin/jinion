@@ -1,6 +1,6 @@
 import { accountLabel, type AgentAccount } from '@jinion/core/agent/accounts';
 import { ago } from '@jinion/core/lib/format';
-import type { SeenLimit } from '@jinion/core/settings/limits';
+import type { SeenLimit } from '@jinion/core/agent/usage';
 
 export function describeAccount(account: AgentAccount, seen: SeenLimit | undefined) {
   if (!account.signedIn) return 'Not signed in; press enter to sign in';

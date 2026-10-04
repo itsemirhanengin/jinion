@@ -1,5 +1,5 @@
 import { loadSettings, saveNotifications, saveWorktrees } from '../settings/user.js';
-import { persistedAtom } from './persisted.js';
+import { persistedAtom } from '../lib/persisted.js';
 
 export const notificationsAtom = persistedAtom(() => loadSettings().notifications !== false, saveNotifications);
 
