@@ -1,4 +1,4 @@
-import { addDays, dayKey, parseDay } from '@jinion/tui';
+import { addDays, dayKey, parseDay } from '../../lib/dates.js';
 import type { AgentUsage, DayUsage, UsageHistory } from '../usage.js';
 
 const MODELS: [name: string, share: number][] = [

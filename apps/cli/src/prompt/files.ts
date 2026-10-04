@@ -2,8 +2,8 @@ import { execFile } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { useEffect, useState } from 'react';
-import { fuzzyMatch } from '@jinion/tui';
-import { mention } from '@jinion/tui/chat';
+import { fuzzyMatch } from '../lib/fuzzy.js';
+import { mention } from './mentions.js';
 import type { CompletionItem, CompletionSource } from './completion.js';
 
 /** Skipped when the project isn't a git repository and nothing says what to ignore. */

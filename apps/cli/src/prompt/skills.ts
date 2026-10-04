@@ -1,5 +1,5 @@
-import { fuzzyMatch } from '@jinion/tui';
-import { namedMention } from '@jinion/tui/chat';
+import { fuzzyMatch } from '../lib/fuzzy.js';
+import { namedMention } from './mentions.js';
 import type { CompletionItem, CompletionSource } from './completion.js';
 import type { AgentCommand } from '../agent/agent.js';
 

@@ -1,4 +1,4 @@
-import { addDays, dayKey, parseDay } from '@jinion/tui';
+import { addDays, dayKey, parseDay } from '../lib/dates.js';
 import type { DayUsage, ModelTokens, UsageHistory } from '../agent/usage.js';
 
 export type StatsRange = 'all' | 'month' | 'week';

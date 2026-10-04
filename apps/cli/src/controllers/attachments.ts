@@ -1,7 +1,8 @@
-import { PastedImages, PastedTexts } from '@jinion/tui/chat';
 import type { AgentPrompt } from '../agent/agent.js';
 import { errorMessage } from '../lib/errors.js';
 import { clipboardImage, imageFromPaste } from '../prompt/images.js';
+import { PastedImages } from '../prompt/pasted-images.js';
+import { PastedTexts } from '../prompt/pasted-texts.js';
 import type { Context } from './context.js';
 
 /** Kept for the whole run, so a message recalled from history still carries its pastes and images. */

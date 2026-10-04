@@ -1,4 +1,4 @@
-import { fuzzyFilter } from '@jinion/tui';
+import { fuzzyFilter } from '../lib/fuzzy.js';
 import type { CompletionSource } from '../prompt/completion.js';
 import type { Jinion } from '../controllers/jinion.js';
 

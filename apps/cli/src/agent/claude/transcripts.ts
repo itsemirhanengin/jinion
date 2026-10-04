@@ -1,6 +1,6 @@
 import { closeSync, openSync, readdirSync, readSync, realpathSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-import { dayKey } from '@jinion/tui';
+import { dayKey } from '../../lib/dates.js';
 import { readJson, writeJson } from '../../lib/json-file.js';
 import { jinionHome } from '../../lib/paths.js';
 

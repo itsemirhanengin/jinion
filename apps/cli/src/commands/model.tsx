@@ -1,4 +1,4 @@
-import { fuzzyFilter } from '@jinion/tui';
+import { fuzzyFilter } from '../lib/fuzzy.js';
 import type { ModelOption } from '../agent/models.js';
 import type { Jinion } from '../controllers/jinion.js';
 import { ModelPicker } from '../panels/model.js';
