@@ -9,6 +9,7 @@
     "./testing/*": {
       "development": "./tests/support/*.ts"
     },
+    "./schema/api.json": "./schema/api.json",
     "./*": {
       "development": "./src/*.ts",
       "types": "./dist/*.d.ts",
@@ -16,14 +17,16 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "schema"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",
-    "fixture": "tsx --tsconfig ../../tsconfig.json scripts/fixture.ts"
+    "fixture": "tsx --tsconfig ../../tsconfig.json scripts/fixture.ts",
+    "schema": "tsx --tsconfig ../../tsconfig.json scripts/schema.ts"
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.3.286",

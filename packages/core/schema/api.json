@@ -1,0 +1,5356 @@
+{
+  "title": "Jinion API",
+  "description": "JSON-RPC 2.0. Protocol version 1: what a client sends in initialize, and what the server answers with.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "requests": {
+      "type": "object",
+      "properties": {
+        "initialize": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "protocolVersion": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "client": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "version"
+                  ]
+                },
+                "notifications": {
+                  "type": "string",
+                  "enum": [
+                    "desktop",
+                    "bell"
+                  ]
+                }
+              },
+              "required": [
+                "protocolVersion",
+                "client"
+              ]
+            },
+            "result": {
+              "$ref": "#/$defs/Initialized"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "app/quit": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "sessions/open": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "resume": {
+                  "type": "string"
+                },
+                "worktree": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "sessions/replace": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "resume": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "sessions/activate": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "sessions/close": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "closed": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "closed"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "saved/list": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SavedSummary"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/subscribe": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "$ref": "#/$defs/SessionSnapshot"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/unsubscribe": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/submit": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "$ref": "#/$defs/AgentPrompt"
+                }
+              },
+              "required": [
+                "session",
+                "text"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/queue": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "$ref": "#/$defs/AgentPrompt"
+                }
+              },
+              "required": [
+                "session",
+                "text"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/interrupt": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/notice": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "tone": {
+                  "$ref": "#/$defs/NoticeTone"
+                }
+              },
+              "required": [
+                "session",
+                "text"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/model": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "selection": {
+                  "$ref": "#/$defs/ModelSelection"
+                }
+              },
+              "required": [
+                "session",
+                "selection"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/mode": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "mode": {
+                  "$ref": "#/$defs/AgentMode"
+                }
+              },
+              "required": [
+                "session",
+                "mode"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/worktree": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "on": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "session",
+                "on"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/stop-task": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "task": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "task"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/task-output": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "task": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "task"
+              ]
+            },
+            "result": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/background": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/context": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "$ref": "#/$defs/ContextUsage"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/open-rewind": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/rewind-preview": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "prompt"
+              ]
+            },
+            "result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/FileChanges"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "session/rewind": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "point": {
+                  "$ref": "#/$defs/RewindPoint"
+                },
+                "scope": {
+                  "$ref": "#/$defs/RewindScope"
+                }
+              },
+              "required": [
+                "session",
+                "point",
+                "scope"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "dialog/answer": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "string"
+                    },
+                    "dialog": {
+                      "type": "string",
+                      "const": "ask"
+                    },
+                    "answer": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/QuestionAnswer"
+                      }
+                    }
+                  },
+                  "required": [
+                    "session",
+                    "dialog",
+                    "answer"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "string"
+                    },
+                    "dialog": {
+                      "type": "string",
+                      "const": "permission"
+                    },
+                    "answer": {
+                      "$ref": "#/$defs/PermissionDecision"
+                    }
+                  },
+                  "required": [
+                    "session",
+                    "dialog",
+                    "answer"
+                  ]
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "session": {
+                      "type": "string"
+                    },
+                    "dialog": {
+                      "type": "string",
+                      "const": "plan"
+                    },
+                    "answer": {
+                      "$ref": "#/$defs/PlanDecision"
+                    }
+                  },
+                  "required": [
+                    "session",
+                    "dialog",
+                    "answer"
+                  ]
+                }
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "dialog/cancel": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/status": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/GitStatus"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/changes": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/RepoChanges"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/diff": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "file": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "file"
+              ]
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "files/list": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ]
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/list": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AgentAccount"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/select": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/remove": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/sign-in": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "signedIn": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "signedIn"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/sign-in-answer": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "text"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "accounts/sign-in-cancel": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "mcp/servers": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/McpServerInfo"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "mcp/save": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "enabled": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "enabled"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "memory/list": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/MemoryNote"
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "memory/forget": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "scope": {
+                  "$ref": "#/$defs/MemoryScope"
+                },
+                "id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "scope",
+                "id"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "usage/limits": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "drivers": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "result": {
+              "$ref": "#/$defs/AgentUsage"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "usage/history": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "$ref": "#/$defs/UsageHistory"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        }
+      },
+      "required": [
+        "initialize",
+        "app/quit",
+        "sessions/open",
+        "sessions/replace",
+        "sessions/activate",
+        "sessions/close",
+        "saved/list",
+        "session/subscribe",
+        "session/unsubscribe",
+        "session/submit",
+        "session/queue",
+        "session/interrupt",
+        "session/notice",
+        "session/model",
+        "session/mode",
+        "session/worktree",
+        "session/stop-task",
+        "session/task-output",
+        "session/background",
+        "session/context",
+        "session/open-rewind",
+        "session/rewind-preview",
+        "session/rewind",
+        "dialog/answer",
+        "dialog/cancel",
+        "git/status",
+        "git/changes",
+        "git/diff",
+        "files/list",
+        "accounts/list",
+        "accounts/select",
+        "accounts/remove",
+        "accounts/sign-in",
+        "accounts/sign-in-answer",
+        "accounts/sign-in-cancel",
+        "mcp/servers",
+        "mcp/save",
+        "memory/list",
+        "memory/forget",
+        "usage/limits",
+        "usage/history"
+      ]
+    },
+    "notificationsToClient": {
+      "type": "object",
+      "properties": {
+        "sessions/changed": {
+          "$ref": "#/$defs/Sessions"
+        },
+        "session/action": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "$ref": "#/$defs/Action"
+            },
+            "at": {
+              "type": "number"
+            },
+            "seq": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "session": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "action",
+            "at",
+            "seq",
+            "session"
+          ]
+        },
+        "session/field": {
+          "$ref": "#/$defs/SessionFieldChange"
+        },
+        "app/field": {
+          "$ref": "#/$defs/AppFieldChange"
+        },
+        "screen/view": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "$ref": "#/$defs/View"
+            }
+          },
+          "required": [
+            "view"
+          ]
+        },
+        "screen/fill-prompt": {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string"
+            },
+            "fill": {
+              "$ref": "#/$defs/PromptFill"
+            }
+          },
+          "required": [
+            "session",
+            "text",
+            "fill"
+          ]
+        },
+        "screen/notify": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string"
+            },
+            "body": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "title",
+            "body"
+          ]
+        },
+        "screen/expand": {
+          "type": "object",
+          "properties": {}
+        },
+        "screen/exit": {
+          "type": "object",
+          "properties": {}
+        },
+        "accounts/sign-in-link": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "url"
+          ]
+        },
+        "accounts/sign-in-prompt": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "problem": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "prompt"
+          ]
+        },
+        "usage/history-progress": {
+          "type": "object",
+          "properties": {
+            "done": {
+              "type": "number"
+            },
+            "total": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "done",
+            "total"
+          ]
+        }
+      },
+      "required": [
+        "sessions/changed",
+        "session/action",
+        "session/field",
+        "app/field",
+        "screen/view",
+        "screen/fill-prompt",
+        "screen/notify",
+        "screen/expand",
+        "screen/exit",
+        "accounts/sign-in-link",
+        "accounts/sign-in-prompt",
+        "usage/history-progress"
+      ]
+    },
+    "notificationsToServer": {
+      "type": "object",
+      "properties": {
+        "client/focus": {
+          "type": "object",
+          "properties": {
+            "focused": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "focused"
+          ]
+        }
+      },
+      "required": [
+        "client/focus"
+      ]
+    }
+  },
+  "required": [
+    "requests",
+    "notificationsToClient",
+    "notificationsToServer"
+  ],
+  "$defs": {
+    "Initialized": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SessionSummary"
+          }
+        },
+        "active": {
+          "type": "string"
+        },
+        "protocolVersion": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        },
+        "server": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ]
+        },
+        "info": {
+          "$ref": "#/$defs/AppInfo"
+        },
+        "agent": {
+          "$ref": "#/$defs/AgentInfo"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CommandInfo"
+          }
+        },
+        "app": {
+          "$ref": "#/$defs/AppFields"
+        }
+      },
+      "required": [
+        "sessions",
+        "protocolVersion",
+        "server",
+        "info",
+        "agent",
+        "commands",
+        "app"
+      ]
+    },
+    "SessionSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "working": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "working"
+      ]
+    },
+    "AppInfo": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "cwd"
+      ]
+    },
+    "AgentInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentMode"
+          }
+        },
+        "features": {
+          "$ref": "#/$defs/AgentFeatures"
+        }
+      },
+      "required": [
+        "name",
+        "modes",
+        "features"
+      ]
+    },
+    "AgentMode": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "edits",
+        "plan",
+        "auto"
+      ]
+    },
+    "AgentFeatures": {
+      "type": "object",
+      "properties": {
+        "accounts": {
+          "type": "boolean"
+        },
+        "mcp": {
+          "type": "boolean"
+        },
+        "usage": {
+          "type": "boolean"
+        },
+        "history": {
+          "type": "boolean"
+        },
+        "steer": {
+          "type": "boolean"
+        },
+        "rewind": {
+          "type": "boolean"
+        },
+        "context": {
+          "type": "boolean"
+        },
+        "background": {
+          "type": "boolean"
+        },
+        "compact": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "accounts",
+        "mcp",
+        "usage",
+        "history",
+        "steer",
+        "rewind",
+        "context",
+        "background",
+        "compact"
+      ]
+    },
+    "CommandInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "argumentHint": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description"
+      ]
+    },
+    "AppFields": {
+      "type": "object",
+      "properties": {
+        "models": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ModelOption"
+          }
+        },
+        "account": {
+          "type": "string"
+        },
+        "identity": {
+          "$ref": "#/$defs/AgentAccount"
+        },
+        "skills": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentCommand"
+          }
+        },
+        "seenLimits": {
+          "$ref": "#/$defs/SeenLimits"
+        },
+        "worktrees": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "skills",
+        "seenLimits",
+        "worktrees"
+      ]
+    },
+    "ModelOption": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "efforts": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "efforts"
+      ]
+    },
+    "AgentAccount": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "signedIn": {
+          "type": "boolean"
+        },
+        "email": {
+          "type": "string"
+        },
+        "plan": {
+          "type": "string"
+        },
+        "organization": {
+          "type": "string"
+        },
+        "own": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "signedIn"
+      ]
+    },
+    "AgentCommand": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "skill",
+            "mcp"
+          ]
+        },
+        "group": {
+          "type": "string"
+        },
+        "argumentHint": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "description",
+        "source",
+        "group"
+      ]
+    },
+    "SeenLimits": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/SeenLimit"
+      }
+    },
+    "SeenLimit": {
+      "type": "object",
+      "properties": {
+        "windows": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LimitWindow"
+          }
+        },
+        "at": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "windows",
+        "at"
+      ]
+    },
+    "LimitWindow": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "used": {
+          "type": "number"
+        },
+        "resetsAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "label",
+        "used"
+      ]
+    },
+    "SavedSummary": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "number"
+        },
+        "messages": {
+          "type": "number"
+        },
+        "firstPrompt": {
+          "type": "string"
+        },
+        "worktree": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "updatedAt",
+        "messages"
+      ]
+    },
+    "SessionSnapshot": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "$ref": "#/$defs/SessionState"
+        },
+        "fields": {
+          "$ref": "#/$defs/SessionFields"
+        },
+        "seq": {
+          "type": "integer",
+          "minimum": -9007199254740991,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "state",
+        "fields",
+        "seq"
+      ]
+    },
+    "SessionState": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "number"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Entry"
+          }
+        },
+        "todos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TodoGroup"
+          }
+        },
+        "usage": {
+          "$ref": "#/$defs/Usage"
+        },
+        "title": {
+          "type": "string"
+        },
+        "titled": {
+          "type": "object",
+          "properties": {
+            "by": {
+              "type": "string",
+              "enum": [
+                "agent",
+                "user"
+              ]
+            },
+            "turns": {
+              "type": "number"
+            },
+            "at": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "by",
+            "turns",
+            "at"
+          ]
+        },
+        "busySince": {
+          "type": "number"
+        },
+        "turnFrom": {
+          "type": "number"
+        },
+        "compacting": {
+          "type": "boolean"
+        },
+        "agentSession": {
+          "type": "string"
+        },
+        "worktree": {
+          "$ref": "#/$defs/Worktree"
+        },
+        "lastEntry": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "createdAt",
+        "entries",
+        "todos",
+        "usage"
+      ]
+    },
+    "Entry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "banner"
+            }
+          },
+          "required": [
+            "id",
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "user"
+            },
+            "text": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "steered": {
+              "type": "boolean"
+            },
+            "promptId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "thinking"
+            },
+            "text": {
+              "type": "string"
+            },
+            "startedAt": {
+              "type": "number"
+            },
+            "endedAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "text"
+            },
+            "text": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "notice"
+            },
+            "text": {
+              "type": "string"
+            },
+            "tone": {
+              "$ref": "#/$defs/NoticeTone"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "text",
+            "tone"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "compaction"
+            },
+            "trigger": {
+              "type": "string",
+              "enum": [
+                "manual",
+                "auto"
+              ]
+            },
+            "before": {
+              "type": "number"
+            },
+            "after": {
+              "type": "number"
+            },
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "trigger",
+            "before"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "task"
+            },
+            "task": {
+              "$ref": "#/$defs/BackgroundTask"
+            },
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "task"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "changes"
+            },
+            "turn": {
+              "type": "string"
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ChangedFile"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "turn",
+            "files"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string",
+              "const": "tool"
+            },
+            "run": {
+              "$ref": "#/$defs/ToolRun"
+            },
+            "status": {
+              "$ref": "#/$defs/Status"
+            },
+            "output": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "startedAt": {
+              "type": "number"
+            },
+            "endedAt": {
+              "type": "number"
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ToolCallEntry"
+              }
+            },
+            "waiting": {
+              "type": "boolean"
+            },
+            "approvedAt": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "id",
+            "kind",
+            "run",
+            "status",
+            "output",
+            "startedAt"
+          ]
+        }
+      ]
+    },
+    "NoticeTone": {
+      "type": "string",
+      "enum": [
+        "muted",
+        "success",
+        "warning",
+        "error"
+      ]
+    },
+    "BackgroundTask": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "shell",
+            "agent",
+            "other"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "running",
+            "completed",
+            "failed",
+            "stopped"
+          ]
+        },
+        "startedAt": {
+          "type": "number"
+        },
+        "endedAt": {
+          "type": "number"
+        },
+        "output": {
+          "type": "string"
+        },
+        "calls": {
+          "type": "number"
+        },
+        "lastCall": {
+          "type": "string"
+        },
+        "foreground": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "title",
+        "status",
+        "startedAt"
+      ]
+    },
+    "ChangedFile": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "created": {
+          "type": "boolean"
+        },
+        "added": {
+          "type": "number"
+        },
+        "removed": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "path",
+        "created",
+        "added",
+        "removed"
+      ]
+    },
+    "ToolRun": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "read"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/FileRef"
+                  }
+                }
+              },
+              "required": [
+                "files"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "grep"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pattern",
+                "path"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "matches": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/GrepMatch"
+                  }
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "matches"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "glob"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pattern"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "files"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "bash"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string"
+                },
+                "timeoutMs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "command",
+                "timeoutMs"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "exitCode": {
+                  "type": "number"
+                },
+                "wallMs": {
+                  "type": "number"
+                },
+                "background": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "exitCode",
+                "wallMs"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "edit"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "patch": {
+                  "type": "string"
+                },
+                "created": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "path",
+                "patch"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "patch": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "todo"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "groups": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/TodoGroup"
+                  }
+                }
+              },
+              "required": [
+                "groups"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "ask"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "questions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/Question"
+                  }
+                }
+              },
+              "required": [
+                "questions"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "answers": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/QuestionAnswer"
+                  }
+                }
+              },
+              "required": [
+                "answers"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "memory"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "remember",
+                    "recall",
+                    "forget"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "detail"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "plan"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "plan"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "fetch"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "prompt"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "bytes": {
+                  "type": "number"
+                },
+                "code": {
+                  "type": "number"
+                },
+                "codeText": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "search"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/SearchHit"
+                  }
+                },
+                "searches": {
+                  "type": "number"
+                },
+                "durationMs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "hits"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "mcp"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "server": {
+                  "type": "string"
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "server",
+                "tool"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "other"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {}
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "agent"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "description"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "background": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        }
+      ]
+    },
+    "FileRef": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "lines": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ]
+    },
+    "GrepMatch": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "line": {
+          "type": "number"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "line",
+        "text"
+      ]
+    },
+    "TodoGroup": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TodoItem"
+          }
+        }
+      },
+      "required": [
+        "title",
+        "items"
+      ]
+    },
+    "TodoItem": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TodoStatus"
+        }
+      },
+      "required": [
+        "text",
+        "status"
+      ]
+    },
+    "TodoStatus": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "active",
+        "done"
+      ]
+    },
+    "Question": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestionOption"
+          }
+        },
+        "multiple": {
+          "type": "boolean"
+        },
+        "other": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "prompt",
+        "options"
+      ]
+    },
+    "QuestionOption": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "recommended": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label"
+      ]
+    },
+    "QuestionAnswer": {
+      "type": "object",
+      "properties": {
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "text": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "options"
+      ]
+    },
+    "SearchHit": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "url"
+      ]
+    },
+    "Status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "running",
+        "done",
+        "error",
+        "cancelled"
+      ]
+    },
+    "ToolCallEntry": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "run": {
+          "$ref": "#/$defs/ToolRun"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "startedAt": {
+          "type": "number"
+        },
+        "endedAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "run",
+        "status",
+        "startedAt"
+      ]
+    },
+    "Usage": {
+      "type": "object",
+      "properties": {
+        "contextTokens": {
+          "type": "number"
+        },
+        "contextWindow": {
+          "type": "number"
+        },
+        "cost": {
+          "type": "number"
+        },
+        "compactAt": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "contextTokens",
+        "contextWindow",
+        "cost"
+      ]
+    },
+    "Worktree": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "folder": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string"
+        },
+        "base": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "branch",
+        "path",
+        "folder",
+        "repo",
+        "base"
+      ]
+    },
+    "SessionFields": {
+      "type": "object",
+      "properties": {
+        "selection": {
+          "$ref": "#/$defs/ModelSelection"
+        },
+        "mode": {
+          "$ref": "#/$defs/AgentMode"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/BackgroundTask"
+          }
+        },
+        "dialog": {
+          "$ref": "#/$defs/Dialog"
+        },
+        "queue": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Submission"
+          }
+        },
+        "wantsWorktree": {
+          "type": "boolean"
+        },
+        "working": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "selection",
+        "mode",
+        "tasks",
+        "queue",
+        "wantsWorktree",
+        "working"
+      ]
+    },
+    "ModelSelection": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string"
+        },
+        "effort": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "model"
+      ]
+    },
+    "Dialog": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "ask"
+            },
+            "questions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Question"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "questions"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "permission"
+            },
+            "request": {
+              "$ref": "#/$defs/PermissionRequest"
+            }
+          },
+          "required": [
+            "id",
+            "request"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "plan"
+            },
+            "modes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AgentMode"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "modes"
+          ]
+        }
+      ]
+    },
+    "PermissionRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "always": {
+          "type": "string"
+        },
+        "defaultToNo": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    },
+    "Submission": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "prompt": {
+          "$ref": "#/$defs/AgentPrompt"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "AgentPrompt": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentImage"
+          }
+        }
+      },
+      "required": [
+        "text"
+      ]
+    },
+    "AgentImage": {
+      "type": "object",
+      "properties": {
+        "mediaType": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "mediaType",
+        "data"
+      ]
+    },
+    "ContextUsage": {
+      "type": "object",
+      "properties": {
+        "used": {
+          "type": "number"
+        },
+        "window": {
+          "type": "number"
+        },
+        "compactAt": {
+          "type": "number"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "tokens": {
+                "type": "number"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "used",
+                  "free",
+                  "buffer",
+                  "deferred"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "tokens",
+              "kind"
+            ]
+          }
+        }
+      },
+      "required": [
+        "used",
+        "window",
+        "categories"
+      ]
+    },
+    "FileChanges": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "insertions": {
+          "type": "number"
+        },
+        "deletions": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "files",
+        "insertions",
+        "deletions"
+      ]
+    },
+    "RewindPoint": {
+      "type": "object",
+      "properties": {
+        "entry": {
+          "type": "string"
+        },
+        "promptId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "entry",
+        "promptId",
+        "text"
+      ]
+    },
+    "RewindScope": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "boolean"
+        },
+        "conversation": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "conversation"
+      ]
+    },
+    "PermissionDecision": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "boolean",
+              "const": true
+            },
+            "always": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "allow"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "boolean",
+              "const": false
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "allow"
+          ]
+        }
+      ]
+    },
+    "PlanDecision": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "approve": {
+              "type": "boolean",
+              "const": true
+            },
+            "mode": {
+              "$ref": "#/$defs/AgentMode"
+            }
+          },
+          "required": [
+            "approve",
+            "mode"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "approve": {
+              "type": "boolean",
+              "const": false
+            },
+            "note": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "approve"
+          ]
+        }
+      ]
+    },
+    "GitStatus": {
+      "type": "object",
+      "properties": {
+        "repos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "branch": {
+                "type": "string"
+              },
+              "changed": {
+                "type": "number"
+              },
+              "ahead": {
+                "type": "number"
+              },
+              "behind": {
+                "type": "number"
+              },
+              "repo": {
+                "$ref": "#/$defs/Repo"
+              }
+            },
+            "required": [
+              "branch",
+              "changed",
+              "ahead",
+              "behind",
+              "repo"
+            ]
+          }
+        }
+      },
+      "required": [
+        "repos"
+      ]
+    },
+    "Repo": {
+      "type": "object",
+      "properties": {
+        "root": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "root",
+        "path",
+        "label"
+      ]
+    },
+    "RepoChanges": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "$ref": "#/$defs/Repo"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          }
+        },
+        "since": {
+          "type": "object",
+          "properties": {
+            "base": {
+              "type": "string"
+            },
+            "against": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "base",
+            "against"
+          ]
+        }
+      },
+      "required": [
+        "repo",
+        "changes"
+      ]
+    },
+    "FileChange": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "absolute": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "modified",
+            "added",
+            "deleted",
+            "renamed",
+            "untracked"
+          ]
+        },
+        "insertions": {
+          "type": "number"
+        },
+        "deletions": {
+          "type": "number"
+        },
+        "binary": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "file",
+        "absolute",
+        "kind",
+        "insertions",
+        "deletions",
+        "binary"
+      ]
+    },
+    "McpServerInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "connected",
+            "pending",
+            "needs-auth",
+            "failed",
+            "off"
+          ]
+        },
+        "target": {
+          "type": "string"
+        },
+        "error": {
+          "type": "string"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "label",
+        "source",
+        "enabled",
+        "status",
+        "tools"
+      ]
+    },
+    "MemoryNote": {
+      "type": "object",
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/MemoryScope"
+        },
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "type": {
+          "$ref": "#/$defs/MemoryType"
+        },
+        "updated": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "id",
+        "title",
+        "description",
+        "type",
+        "updated",
+        "content",
+        "path"
+      ]
+    },
+    "MemoryScope": {
+      "type": "string",
+      "enum": [
+        "user",
+        "project"
+      ]
+    },
+    "MemoryType": {
+      "type": "string",
+      "enum": [
+        "preference",
+        "decision",
+        "fact",
+        "reference"
+      ]
+    },
+    "AgentUsage": {
+      "type": "object",
+      "properties": {
+        "session": {
+          "type": "object",
+          "properties": {
+            "cost": {
+              "type": "number"
+            },
+            "apiMs": {
+              "type": "number"
+            },
+            "wallMs": {
+              "type": "number"
+            },
+            "linesAdded": {
+              "type": "number"
+            },
+            "linesRemoved": {
+              "type": "number"
+            },
+            "models": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "input": {
+                    "type": "number"
+                  },
+                  "output": {
+                    "type": "number"
+                  },
+                  "cacheRead": {
+                    "type": "number"
+                  },
+                  "cacheWrite": {
+                    "type": "number"
+                  },
+                  "summarized": {
+                    "type": "number"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "cost": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "input",
+                  "output",
+                  "cacheRead",
+                  "cacheWrite",
+                  "name",
+                  "cost"
+                ]
+              }
+            }
+          },
+          "required": [
+            "cost",
+            "apiMs",
+            "wallMs",
+            "linesAdded",
+            "linesRemoved",
+            "models"
+          ]
+        },
+        "limits": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/LimitWindow"
+          }
+        },
+        "extra": {
+          "type": "object",
+          "properties": {
+            "used": {
+              "type": "number"
+            },
+            "limit": {
+              "type": "number"
+            },
+            "currency": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "used"
+          ]
+        },
+        "drivers": {
+          "type": "object",
+          "properties": {
+            "day": {
+              "$ref": "#/$defs/UsageDrivers"
+            },
+            "week": {
+              "$ref": "#/$defs/UsageDrivers"
+            }
+          },
+          "required": [
+            "day",
+            "week"
+          ]
+        }
+      },
+      "required": [
+        "limits"
+      ]
+    },
+    "UsageDrivers": {
+      "type": "object",
+      "properties": {
+        "requests": {
+          "type": "number"
+        },
+        "sessions": {
+          "type": "number"
+        },
+        "traits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "trait": {
+                "type": "string",
+                "enum": [
+                  "cache-misses",
+                  "long-context",
+                  "subagents",
+                  "parallel",
+                  "scheduled"
+                ]
+              },
+              "share": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "trait",
+              "share"
+            ]
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "skill",
+                  "agent",
+                  "plugin",
+                  "mcp"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "share": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "share"
+            ]
+          }
+        }
+      },
+      "required": [
+        "requests",
+        "sessions",
+        "traits",
+        "sources"
+      ]
+    },
+    "UsageHistory": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/DayUsage"
+          }
+        },
+        "sessions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "start": {
+                "type": "number"
+              },
+              "end": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "id",
+              "start",
+              "end"
+            ]
+          }
+        }
+      },
+      "required": [
+        "days",
+        "sessions"
+      ]
+    },
+    "DayUsage": {
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string"
+        },
+        "messages": {
+          "type": "number"
+        },
+        "sessions": {
+          "type": "number"
+        },
+        "toolCalls": {
+          "type": "number"
+        },
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/ModelTokens"
+          }
+        }
+      },
+      "required": [
+        "date",
+        "messages",
+        "sessions",
+        "toolCalls",
+        "models"
+      ]
+    },
+    "ModelTokens": {
+      "type": "object",
+      "properties": {
+        "input": {
+          "type": "number"
+        },
+        "output": {
+          "type": "number"
+        },
+        "cacheRead": {
+          "type": "number"
+        },
+        "cacheWrite": {
+          "type": "number"
+        },
+        "summarized": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "input",
+        "output",
+        "cacheRead",
+        "cacheWrite"
+      ]
+    },
+    "Sessions": {
+      "type": "object",
+      "properties": {
+        "sessions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SessionSummary"
+          }
+        },
+        "active": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "sessions"
+      ]
+    },
+    "Action": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "submit"
+            },
+            "text": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "agent-turn"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "approval"
+            },
+            "id": {
+              "type": "string"
+            },
+            "waiting": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "waiting"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "steer"
+            },
+            "text": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "retitle"
+            },
+            "session": {
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            },
+            "by": {
+              "type": "string",
+              "enum": [
+                "agent",
+                "user"
+              ]
+            },
+            "turns": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "session",
+            "title",
+            "by",
+            "turns"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "rewind"
+            },
+            "entry": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "entry"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "event"
+            },
+            "event": {
+              "$ref": "#/$defs/AgentEvent"
+            }
+          },
+          "required": [
+            "type",
+            "event"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "finish"
+            },
+            "outcome": {
+              "$ref": "#/$defs/TurnOutcome"
+            },
+            "message": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "outcome"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "notice"
+            },
+            "text": {
+              "type": "string"
+            },
+            "tone": {
+              "$ref": "#/$defs/NoticeTone"
+            }
+          },
+          "required": [
+            "type",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "worktree"
+            },
+            "worktree": {
+              "$ref": "#/$defs/Worktree"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        }
+      ]
+    },
+    "AgentEvent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "thinking"
+            },
+            "delta": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "delta"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "text"
+            },
+            "delta": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "delta"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tool-start"
+            },
+            "id": {
+              "type": "string"
+            },
+            "call": {
+              "$ref": "#/$defs/ToolCall"
+            },
+            "parent": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "call"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tool-output"
+            },
+            "id": {
+              "type": "string"
+            },
+            "lines": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "lines"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tool-end"
+            },
+            "id": {
+              "type": "string"
+            },
+            "ok": {
+              "type": "boolean"
+            },
+            "result": {
+              "$ref": "#/$defs/ToolResult"
+            },
+            "parent": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id",
+            "ok"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "usage"
+            },
+            "usage": {
+              "$ref": "#/$defs/Usage"
+            }
+          },
+          "required": [
+            "type",
+            "usage"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "session"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "limits"
+            },
+            "windows": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/LimitWindow"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "windows"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "mode"
+            },
+            "mode": {
+              "$ref": "#/$defs/AgentMode"
+            }
+          },
+          "required": [
+            "type",
+            "mode"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "commands"
+            },
+            "commands": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AgentCommand"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "commands"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "sent"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "tasks"
+            },
+            "tasks": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/BackgroundTask"
+              }
+            }
+          },
+          "required": [
+            "type",
+            "tasks"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "task-end"
+            },
+            "task": {
+              "$ref": "#/$defs/BackgroundTask"
+            },
+            "summary": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "task"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "turn-start"
+            },
+            "reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "oneOf": [
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "compaction"
+                },
+                "state": {
+                  "type": "string",
+                  "const": "running"
+                }
+              },
+              "required": [
+                "type",
+                "state"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "compaction"
+                },
+                "state": {
+                  "type": "string",
+                  "const": "done"
+                },
+                "trigger": {
+                  "type": "string",
+                  "enum": [
+                    "manual",
+                    "auto"
+                  ]
+                },
+                "before": {
+                  "type": "number"
+                },
+                "after": {
+                  "type": "number"
+                },
+                "summary": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "state",
+                "trigger",
+                "before"
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "compaction"
+                },
+                "state": {
+                  "type": "string",
+                  "const": "failed"
+                },
+                "error": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "type",
+                "state",
+                "error"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "ToolCall": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "read"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/FileRef"
+                  }
+                }
+              },
+              "required": [
+                "files"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "grep"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pattern",
+                "path"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "glob"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "pattern": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pattern"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "bash"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "command": {
+                  "type": "string"
+                },
+                "timeoutMs": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "command",
+                "timeoutMs"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "edit"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string"
+                },
+                "patch": {
+                  "type": "string"
+                },
+                "created": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "path",
+                "patch"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "todo"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "groups": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/TodoGroup"
+                  }
+                }
+              },
+              "required": [
+                "groups"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "ask"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "questions": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/Question"
+                  }
+                }
+              },
+              "required": [
+                "questions"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "memory"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": [
+                    "remember",
+                    "recall",
+                    "forget"
+                  ]
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "action",
+                "detail"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "plan"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "plan": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "plan"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "fetch"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "prompt"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "search"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "query": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "query"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "mcp"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "server": {
+                  "type": "string"
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "arguments": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "server",
+                "tool"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "other"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "detail": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "agent"
+            },
+            "input": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "description"
+              ]
+            }
+          },
+          "required": [
+            "name",
+            "input"
+          ]
+        }
+      ]
+    },
+    "ToolResult": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {
+            "matches": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/GrepMatch"
+              }
+            },
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "matches"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "files": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "files"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "exitCode": {
+              "type": "number"
+            },
+            "wallMs": {
+              "type": "number"
+            },
+            "background": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "exitCode",
+            "wallMs"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "patch": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {
+            "answers": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/QuestionAnswer"
+              }
+            }
+          },
+          "required": [
+            "answers"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {
+            "bytes": {
+              "type": "number"
+            },
+            "code": {
+              "type": "number"
+            },
+            "codeText": {
+              "type": "string"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "properties": {
+            "hits": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/SearchHit"
+              }
+            },
+            "searches": {
+              "type": "number"
+            },
+            "durationMs": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "hits"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {}
+        },
+        {
+          "type": "object",
+          "properties": {
+            "background": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "TurnOutcome": {
+      "type": "string",
+      "enum": [
+        "done",
+        "interrupted",
+        "failed"
+      ]
+    },
+    "SessionFieldChange": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "selection"
+            },
+            "value": {
+              "$ref": "#/$defs/ModelSelection"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "mode"
+            },
+            "value": {
+              "$ref": "#/$defs/AgentMode"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "tasks"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/BackgroundTask"
+              }
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "dialog"
+            },
+            "value": {
+              "$ref": "#/$defs/Dialog"
+            }
+          },
+          "required": [
+            "session",
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "queue"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Submission"
+              }
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "wantsWorktree"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "working"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        }
+      ]
+    },
+    "AppFieldChange": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "models"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ModelOption"
+              }
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "account"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "identity"
+            },
+            "value": {
+              "$ref": "#/$defs/AgentAccount"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "skills"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/AgentCommand"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "seenLimits"
+            },
+            "value": {
+              "$ref": "#/$defs/SeenLimits"
+            }
+          },
+          "required": [
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "worktrees"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "name",
+            "value"
+          ]
+        }
+      ]
+    },
+    "View": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "help"
+            },
+            "topic": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "model"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "mode"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "account"
+            },
+            "signIn": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "mcp"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "resume"
+            },
+            "query": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "memory"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "rewind"
+            },
+            "points": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/RewindPoint"
+              }
+            }
+          },
+          "required": [
+            "id",
+            "points"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "diff"
+            },
+            "turn": {
+              "type": "string"
+            },
+            "file": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "context"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "usage"
+            },
+            "tab": {
+              "type": "string",
+              "enum": [
+                "usage",
+                "stats"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "tab"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "tasks"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "const": "statusline"
+            }
+          },
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "PromptFill": {
+      "type": "string",
+      "enum": [
+        "replace",
+        "prepend"
+      ]
+    }
+  }
+}
