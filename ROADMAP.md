@@ -138,8 +138,9 @@ Steps, each one leaving Jinion working as it does today:
      names every method's params and result and every notification, and `schema/api.json` is made from it, with 71
      named definitions. Every API test checks what the server sends against it. A version is raised only for a change
      that breaks a client: adding keeps it.
-5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
-   opening into a new tab.
+5. **Tabs in the TUI** (done). A session per tab; the bar shows from two tabs on, with a spinner on one that works and
+   `?` on one that waits on the user, and takes clicks. `ctrl+n` or `/tab` opens a tab, `alt+1..9` goes to one,
+   `/close` closes it, and `/resume` opens into a new tab. A worktree per tab only when worktrees are on.
 6. **Panes in the TUI.** Splits in `@jinion/tui`; then the changes and git panel beside the conversation, with commits
    and comments on a diff line that go to the agent; a file tree; a terminal pane (a pseudo-terminal and an emulator);
    an editor of Jinion's own, reading first, then editing.

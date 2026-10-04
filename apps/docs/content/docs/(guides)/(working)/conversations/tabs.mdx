@@ -1,0 +1,51 @@
+---
+title: Tabs
+description: Keep several conversations open at once, each in a tab of its own, and move between them.
+---
+
+Each tab is a conversation of its own: its messages, its draft, its tasks and its agent. A tab you aren't looking at
+keeps working.
+
+## Open a tab
+
+Press `ctrl+n`, or type `/tab`. A new conversation opens beside the one you were in, and a row of tabs shows above the
+conversation:
+
+```terminal
+ {muted|1} Fix the flaky checkout test {border|\|} {muted|2} {accent,bold|New conversation}
+```
+
+The row shows once there are two tabs, so a single conversation keeps all the room.
+
+`/resume` opens a saved conversation in a tab too. If that conversation is already open, its tab comes to the front.
+
+## Move between tabs
+
+`alt+1` to `alt+9` go to that tab. A click on a tab does too.
+
+<Callout title="On macOS">
+  `alt+1` needs Option to send Meta. In iTerm2, set it in Settings, Profiles, Keys, Left Option key, `Esc+`. In
+  Ghostty, add `macos-option-as-alt = true` to its config. In Terminal, check "Use Option as Meta key" in Settings,
+  Profiles, Keyboard. Clicks and `/resume` work without it.
+</Callout>
+
+## What a tab tells you
+
+| Mark       | Means                                                     |
+| ---------- | --------------------------------------------------------- |
+| a spinner  | The conversation is working                               |
+| `?`        | It waits on you: a question, a permission or a plan       |
+
+When a tab you aren't looking at waits on you, Jinion also [notifies](/notifications) you.
+
+## Close a tab
+
+`/close` saves the conversation and closes its tab; what it ran in the [background](/background-tasks) stops. Closing the
+last tab leaves a new conversation, as `/clear` does.
+
+`/clear` stays as it is: it saves the conversation and starts a new one in the same tab.
+
+## Worktrees
+
+A new tab gets a [worktree](/worktrees) of its own only when worktrees are on (`ctrl+g`), so you choose per tab. Each tab
+works in its own folder: its worktree, or the project.

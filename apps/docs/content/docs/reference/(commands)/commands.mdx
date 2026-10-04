@@ -30,7 +30,9 @@ that needs an argument is put in the prompt for you to finish.
 | Command            | Does                                                                            |
 | ------------------ | ------------------------------------------------------------------------------- |
 | `/clear`, `/new`   | Saves this conversation and starts a new one                                     |
-| `/resume [search]` | Lists this project's conversations to pick one up                               |
+| `/resume [search]` | Lists this project's conversations to pick one up, in a [tab](/conversations/tabs) of its own |
+| `/tab`             | Starts a new conversation in a [tab](/conversations/tabs) of its own (`ctrl+n`) |
+| `/close`           | Saves this conversation and closes its tab                                      |
 | `/rename [name]`   | Names this conversation, to find it in `/resume`; without a name, Jinion names it from what it is about |
 | `/rewind`          | Goes back to before an earlier message: code, conversation or both (`esc esc`)  |
 | `/worktree [on \| off]` | Gives each new conversation a [git worktree](/worktrees) of its own, or stops (`ctrl+g`) |
