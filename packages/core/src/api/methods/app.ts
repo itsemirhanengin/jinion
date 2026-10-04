@@ -35,7 +35,11 @@ export const appMethods: Methods = (connection) => {
   });
 
   connection.answer('app/quit', () => app.quit());
-  connection.answer('saved/list', () => app.saved.list().map(summary));
+
+  connection.answer('saved/list', () =>
+    app.saved.list().map((session) => ({ ...summary(session), openElsewhere: app.saved.openElsewhere(session.id) !== undefined || undefined })),
+  );
+
   connection.answer('memory/list', () => app.memory.list().map((memory) => ({ ...memory, path: app.memory.path(memory) })));
 
   connection.answer('memory/forget', ({ scope, id }) => {

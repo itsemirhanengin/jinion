@@ -42,6 +42,8 @@ export const ApiCode = {
   dialogGone: -32004,
   unsupported: -32005,
   unknownFile: -32006,
+  /** Another Jinion has the conversation open; `data.pid` is that process. */
+  openElsewhere: -32007,
 } as const;
 
 const empty = z.object({});

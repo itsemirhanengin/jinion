@@ -84,6 +84,6 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   );
 }
 
-function describe({ worktree, messages, firstPrompt = '' }: SavedSummary) {
-  return `${worktree ? `worktree ${worktree} · ` : ''}${messages} messages · "${firstPrompt}"`;
+function describe({ openElsewhere, worktree, messages, firstPrompt = '' }: SavedSummary) {
+  return `${openElsewhere ? 'open in another jinion · ' : ''}${worktree ? `worktree ${worktree} · ` : ''}${messages} messages · "${firstPrompt}"`;
 }

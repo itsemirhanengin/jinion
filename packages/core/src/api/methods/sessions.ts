@@ -1,3 +1,4 @@
+import { OpenElsewhere } from '../../controllers/jinion.js';
 import type { Methods } from '../connection.js';
 import { ApiCode } from '../protocol.js';
 import { RpcError } from '../rpc.js';
@@ -15,25 +16,39 @@ export const sessionsMethods: Methods = (connection) => {
     return found;
   };
 
-  connection.answer('sessions/open', ({ resume, worktree, activate }) => {
-    const session = app.openSession(saved(resume), { worktree });
+  connection.answer('sessions/open', ({ resume, worktree, activate }) =>
+    opening(() => {
+      const session = app.openSession(saved(resume), { worktree });
 
-    if (activate) app.activate(session);
+      if (activate) app.activate(session);
 
-    return { session: session.id };
-  });
+      return { session: session.id };
+    }),
+  );
 
   // `/clear` and `/resume` replace the session the user looks at, so it becomes that one first.
-  connection.answer('sessions/replace', async ({ session, resume }) => {
-    const target = connection.find(session);
-    const conversation = saved(resume);
+  connection.answer('sessions/replace', ({ session, resume }) =>
+    opening(async () => {
+      const target = connection.find(session);
+      const conversation = saved(resume);
 
-    if (app.session !== target) app.activate(target);
-    await (conversation ? app.resume(conversation) : app.newSession());
-  });
+      if (app.session !== target) app.activate(target);
+      await (conversation ? app.resume(conversation) : app.newSession());
+    }),
+  );
 
   connection.answer('sessions/activate', ({ session }) => app.activate(connection.find(session)));
   connection.answer('sessions/close', async ({ session }) => ({ closed: await app.close(connection.find(session)) }));
   connection.answer('session/subscribe', ({ session }) => connection.follow(connection.find(session)));
   connection.answer('session/unsubscribe', ({ session }) => connection.unfollow(session));
 };
+
+async function opening<T>(open: () => T | Promise<T>) {
+  try {
+    return await open();
+  } catch (error) {
+    if (error instanceof OpenElsewhere) throw new RpcError(ApiCode.openElsewhere, error.message, { pid: error.pid });
+
+    throw error;
+  }
+}

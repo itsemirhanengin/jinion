@@ -34,11 +34,18 @@ Her başlığın altında mesaj sayısı ve ilk mesajınız yer alır. `/resume 
 Bir [worktree](/tr/worktrees) içinde çalışmış bir konuşma `worktree swift-running-fox` gösterir ve o worktree'ye geri
 döner.
 
+İkinci bir terminaldeki gibi başka bir Jinion'da açık olan konuşma `open in another jinion` gösterir. Bir konuşma aynı
+anda tek bir Jinion'da açılır; böylece ikisi birbirinin turlarını silmez. Onu seçmek nerede açık olduğunu söyler. Orada
+kapatın ya da o Jinion'dan çıkın, burada açılır. `jinion serve` içinde açık bir konuşmayı bunun yerine
+`jinion --attach` ile takip edebilirsiniz.
+
 Son konuşmayı doğrudan açmak için Jinion'u `-c` ya da `--continue` ile başlatın:
 
 ```sh
 jinion -c
 ```
+
+O konuşma başka bir Jinion'da açıksa yeni bir konuşma başlar ve bunu söyler.
 
 ## Başlıklar [#titles]
 

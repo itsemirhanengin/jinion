@@ -33,11 +33,17 @@ Under each title are the number of messages and your first message. `/resume oid
 
 A conversation that worked in a [worktree](/worktrees) shows `worktree swift-running-fox` and goes back into it.
 
+A conversation open in another Jinion, such as in a second terminal, shows `open in another jinion`. It opens in one
+Jinion at a time, so that neither undoes the other's turns: picking it says where it is open. Close it there, or quit
+that Jinion, and it opens here. One open in `jinion serve` can be followed with `jinion --attach` instead.
+
 To open the last conversation straight away, start Jinion with `-c` or `--continue`:
 
 ```sh
 jinion -c
 ```
+
+If another Jinion has that conversation open, a new one starts and says so.
 
 ## Titles
 

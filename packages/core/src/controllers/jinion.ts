@@ -1,4 +1,5 @@
 import { basename } from 'node:path';
+import { isServer } from '../api/server-file.js';
 import type { NoticeTone } from '../conversation/entries.js';
 import { createStore } from 'jotai/vanilla';
 import type { AgentBackend, AgentMode } from '../agent/agent.js';
@@ -77,7 +78,7 @@ export class Jinion {
 
     this.mcp = new McpController(context, () => this.reloadSkills());
     this.store.set(accountAtom, this.backend.accounts?.current);
-    this.activate(this.openSession(options.initial));
+    this.activate(this.openFirst(options.initial));
   }
 
   /** The session the user looks at. */
@@ -103,8 +104,8 @@ export class Jinion {
 
   /**
    * Opens a new conversation, or `saved` where it left off, in its worktree if that is still there. A conversation
-   * already open isn't opened twice: its session comes back instead. New sessions start with the model and mode of
-   * the one the user looks at.
+   * already open isn't opened twice: its session comes back instead, and one open in another Jinion throws
+   * `OpenElsewhere`. New sessions start with the model and mode of the one the user looks at.
    */
   openSession(saved?: SavedSession, { worktree }: OpenOptions = {}) {
     const already = saved && this.open.find((session) => session.id === saved.id);
@@ -113,6 +114,9 @@ export class Jinion {
     const { store, active } = this;
     const gone = saved?.worktree && !worktreeExists(saved.worktree) ? saved.worktree : undefined;
     const contextWindow = active ? store.get(active.atoms.state).usage.contextWindow : DEFAULT_CONTEXT_WINDOW;
+    const state = saved ? fromSaved(gone ? { ...saved, worktree: undefined } : saved) : createSessionState(contextWindow);
+
+    this.claim(state.id, saved?.title);
 
     const agent = this.backend.session({
       cwd: (!gone && saved?.worktree?.folder) || this.info.cwd,
@@ -122,7 +126,7 @@ export class Jinion {
     });
 
     const session = new Session(this, agent, {
-      state: saved ? fromSaved(gone ? { ...saved, worktree: undefined } : saved) : createSessionState(contextWindow),
+      state,
       selection: agent.selection,
       mode: agent.mode,
       worktree: worktree ?? store.get(worktreesAtom),
@@ -194,14 +198,19 @@ export class Jinion {
   async quit() {
     const kept = await Promise.all(this.open.map((session) => session.quit()));
 
+    for (const session of this.open) this.saved.release(session.id);
     this.screen.exit();
     for (const message of kept) if (message) this.onExit?.(message);
   }
 
   private async replace(saved?: SavedSession) {
+    // Before the session shown closes, so a conversation open in another Jinion leaves it as it is.
+    if (saved) this.claim(saved.id, saved.title);
+
     const notices = await this.end(this.session);
 
     if (notices) this.show(this.openSession(saved), notices);
+    else if (saved) this.saved.release(saved.id);
   }
 
   /** `undefined` when the session stays open. */
@@ -210,10 +219,32 @@ export class Jinion {
 
     if (notices) {
       this.open.splice(this.open.indexOf(session), 1);
+      this.saved.release(session.id);
       this.sessionsChanged();
     }
 
     return notices;
+  }
+
+  /** `initial` unless another Jinion has it open, as `--continue` may find; a new conversation then. */
+  private openFirst(initial?: SavedSession) {
+    try {
+      return this.openSession(initial);
+    } catch (error) {
+      if (!(error instanceof OpenElsewhere)) throw error;
+
+      const session = this.openSession();
+
+      session.notice(`${error.message} This is a new conversation.`, 'warning');
+
+      return session;
+    }
+  }
+
+  private claim(id: string, title?: string) {
+    const owner = this.saved.claim(id);
+
+    if (owner !== undefined) throw new OpenElsewhere(owner, title);
   }
 
   private sessionsChanged() {
@@ -239,6 +270,20 @@ export class Jinion {
     this.backend.commands().then(
       (skills) => this.store.set(skillsAtom, skills),
       () => {},
+    );
+  }
+}
+
+/** Two processes writing one conversation would undo each other's turns. */
+export class OpenElsewhere extends Error {
+  constructor(
+    readonly pid: number,
+    title = 'This conversation',
+  ) {
+    super(
+      isServer(pid)
+        ? `“${title}” is open in jinion serve (pid ${pid}); jinion --attach shows it.`
+        : `“${title}” is open in another jinion (pid ${pid}). Close it there to open it here.`,
     );
   }
 }

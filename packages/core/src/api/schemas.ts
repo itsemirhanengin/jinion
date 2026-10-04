@@ -94,6 +94,8 @@ export const SavedSummary = z.object({
   messages: z.number(),
   firstPrompt: z.string().optional(),
   worktree: z.string().optional(),
+  /** Another Jinion has it open, so opening it here fails with `ApiCode.openElsewhere`. */
+  openElsewhere: z.boolean().optional(),
 });
 
 export type SavedSummary = z.infer<typeof SavedSummary>;

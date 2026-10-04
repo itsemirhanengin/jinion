@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { jinionHome } from '../lib/paths.js';
+import { isRunning } from '../lib/processes.js';
 
 /** How to reach a running `jinion serve`. It holds the token, so only the user can read it. */
 export interface ServerFile {
@@ -41,7 +42,7 @@ export function findServer(cwd: string): ServerFile | undefined {
       const path = join(folder(), name);
       const server = read(path);
 
-      if (server && running(server.pid)) return [server];
+      if (server && isRunning(server.pid)) return [server];
 
       removeServerFile(path);
 
@@ -51,21 +52,13 @@ export function findServer(cwd: string): ServerFile | undefined {
   return servers.filter((server) => server.cwd === cwd).at(-1);
 }
 
+/** Whether `pid` is a `jinion serve`, so a client can attach to it. */
+export const isServer = (pid: number) => existsSync(join(folder(), `${pid}.json`));
+
 function read(path: string) {
   try {
     return JSON.parse(readFileSync(path, 'utf8')) as ServerFile;
   } catch {
     return undefined;
-  }
-}
-
-function running(pid: number) {
-  try {
-    process.kill(pid, 0);
-
-    return true;
-  } catch (error) {
-    // EPERM: it runs, as another user.
-    return (error as NodeJS.ErrnoException).code === 'EPERM';
   }
 }
