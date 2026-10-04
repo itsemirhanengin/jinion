@@ -115,10 +115,12 @@ Steps, each one leaving Jinion working as it does today:
 2. **Move into `packages/core`** (done). `@jinion/core` holds `agent/`, `commands/`, `controllers/`, `conversation/`,
    `state/`, `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` and `lib/` with their tests; `apps/cli` keeps
    `main.tsx`, `app/`, `panels/`, `ui/` and `status/`, and imports the core by module.
-3. **Sessions.** `Jinion` splits into the app and its sessions; `Agent` into what the backend shares (models,
-   accounts, MCP, usage, history, titles) and a session (run, steer, rewind, tasks, compact). Shared data stops coming
-   through a conversation's process. Dialogs and notices carry their session, and a session that is open can't be
-   opened twice.
+3. **Sessions** (done). `Jinion` is the app, holding the sessions open in it; `Session` is one conversation with its
+   own atoms and controllers, and `state/active.ts` follows the one the user looks at. `AgentBackend` holds what the
+   backend shares and asks for it through the process of a session that runs, so no process is started for it alone;
+   `AgentSession` is one conversation's. Dialogs are a session's data, answered through it; a session the user isn't
+   looking at still notifies. A conversation is never open twice, and a worktree is a choice made as a session opens,
+   the setting being only the default. `/clear` and `/resume` replace the session the user looks at.
 4. **The API**, with the in-process transport, and the TUI moved onto it; then stdio, WebSocket and `jinion serve`.
 5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
    opening into a new tab.
