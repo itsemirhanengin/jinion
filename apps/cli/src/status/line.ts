@@ -1,14 +1,7 @@
 import type { ReactNode } from 'react';
+import type { StatusItem } from '../settings/user.js';
 import type { StatusData } from './segment.js';
 import { findSegment } from './segments/index.js';
-
-export type StatusSide = 'left' | 'right';
-
-export interface StatusItem {
-  id: string;
-  side: StatusSide;
-  style?: string;
-}
 
 export const DEFAULT_STATUS_LINE: StatusItem[] = [
   { id: 'brand', side: 'left' },

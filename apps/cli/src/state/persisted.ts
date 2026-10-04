@@ -1,5 +1,5 @@
-import { atom, type SetStateAction, type WritableAtom } from 'jotai';
-import { atomWithLazy } from 'jotai/utils';
+import { atom, type SetStateAction, type WritableAtom } from 'jotai/vanilla';
+import { atomWithLazy } from 'jotai/vanilla/utils';
 
 /** Loaded once per store, on first read, so each run (and each test's sandbox) reads its own files. */
 export function persistedAtom<T>(load: () => T, save: (value: T) => void): WritableAtom<T, [SetStateAction<T>], void> {

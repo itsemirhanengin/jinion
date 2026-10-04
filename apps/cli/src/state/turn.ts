@@ -1,4 +1,4 @@
-import { atom } from 'jotai';
+import { atom } from 'jotai/vanilla';
 import { busyAtom } from './session.js';
 
 /** Set from the moment a turn starts, before the render that shows it, until it ends. */

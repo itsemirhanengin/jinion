@@ -2,7 +2,7 @@ import type { PanelSpec } from '@jinion/tui';
 import type { NoticeTone } from '../conversation/entries.js';
 import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
 import type { Question, QuestionAnswer } from '../agent/questions.js';
-import type { Store } from 'jotai';
+import type { Store } from 'jotai/vanilla';
 import type { Agent, AgentMode, PlanDecision } from '../agent/agent.js';
 
 export interface AppInfo {

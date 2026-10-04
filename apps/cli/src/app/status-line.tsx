@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StatusBar } from '@jinion/tui/chat';
 import { useAtomValue, useSetAtom } from 'jotai';
-import { shownStatusItemsAtom } from '../state/preferences.js';
+import { shownStatusItemsAtom } from '../status/items.js';
 import { busyAtom } from '../state/session.js';
 import { gitStatusAtom, useNow, useStatusData } from '../status/data.js';
 import { useGitStatus } from '../status/git.js';

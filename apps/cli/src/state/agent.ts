@@ -1,5 +1,5 @@
 import type { ModelOption, ModelSelection } from '../agent/models.js';
-import { atom } from 'jotai';
+import { atom } from 'jotai/vanilla';
 import type { AgentAccount } from '../agent/accounts.js';
 import type { AgentCommand, AgentMode } from '../agent/agent.js';
 import type { BackgroundTask } from '../agent/tasks.js';

@@ -1,5 +1,5 @@
-import { atom } from 'jotai';
-import { atomWithLazy } from 'jotai/utils';
+import { atom } from 'jotai/vanilla';
+import { atomWithLazy } from 'jotai/vanilla/utils';
 import { editTurns } from '../conversation/edits.js';
 import { reduce, type Action } from '../conversation/reducer.js';
 import { createSession } from '../conversation/session.js';

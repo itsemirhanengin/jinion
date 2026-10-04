@@ -1,6 +1,6 @@
 import { basename } from 'node:path';
 import type { NoticeTone } from '../conversation/entries.js';
-import { createStore } from 'jotai';
+import { createStore } from 'jotai/vanilla';
 import type { Agent } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { CommandRegistry } from '../commands/registry.js';

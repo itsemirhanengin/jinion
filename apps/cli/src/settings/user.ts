@@ -2,7 +2,15 @@ import { join } from 'node:path';
 import type { ModelSelection } from '../agent/models.js';
 import { readJson, writeJson } from '../lib/json-file.js';
 import { jinionHome } from '../lib/paths.js';
-import type { StatusItem } from '../status/line.js';
+
+export type StatusSide = 'left' | 'right';
+
+/** A segment of the TUI's status line; the client knows which ids exist. */
+export interface StatusItem {
+  id: string;
+  side: StatusSide;
+  style?: string;
+}
 
 export interface Settings {
   models?: Record<string, ModelSelection>;

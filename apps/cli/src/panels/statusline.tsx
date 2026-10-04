@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { ChoiceList, Panel, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useAtom, useSetAtom } from 'jotai';
-import { statusItemsAtom, statusPreviewAtom } from '../state/preferences.js';
+import { statusItemsAtom, statusPreviewAtom } from '../status/items.js';
 import { useStatusData } from '../status/data.js';
-import { DEFAULT_STATUS_LINE, styleOf, type StatusItem, type StatusSide } from '../status/line.js';
+import type { StatusItem, StatusSide } from '../settings/user.js';
+import { DEFAULT_STATUS_LINE, styleOf } from '../status/line.js';
 import { findSegment, SEGMENTS } from '../status/segments/index.js';
 
 const VISIBLE = 6;
