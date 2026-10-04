@@ -5,7 +5,7 @@ import type { AgentAccount } from '../agent/accounts.js';
 import type { AgentMode } from '../agent/agent.js';
 import type { LimitWindow } from '../agent/usage.js';
 import type { Session } from '../conversation/session.js';
-import type { GitStatus } from './git.js';
+import type { GitStatus } from '../git/status.js';
 
 export interface StatusData {
   version: string;

@@ -5,7 +5,7 @@ import { useJinion } from '../app/context.js';
 import { limitsKey } from '../settings/limits.js';
 import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom } from '../state/agent.js';
 import { sessionAtom } from '../state/session.js';
-import type { GitStatus } from './git.js';
+import type { GitStatus } from '../git/status.js';
 import type { StatusData } from './segment.js';
 
 /** Set by the status line, which runs `git status` only while a shown segment needs it. */

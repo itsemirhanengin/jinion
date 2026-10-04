@@ -1,20 +1,13 @@
 import { resolve } from 'node:path';
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
-import { branchBase, fileDiff, findRepos, repoChanges, repoState, type FileChange, type Repo } from '../../git/repos.js';
+import { readChanges, type RepoChanges } from '../../git/changes.js';
+import { fileDiff } from '../../git/repos.js';
 import { plural } from '../../lib/format.js';
 import { editTurnsAtom } from '../../state/session.js';
 import { useAsync } from '../../ui/use-async.js';
 import { useWorkdir } from '../../ui/use-workdir.js';
 import { totals, type ChangeRow, type View } from './views.js';
-
-interface RepoView {
-  repo: Repo;
-  branch?: string;
-  changes: FileChange[];
-  /** With nothing uncommitted, what the branch adds on top of the default branch. */
-  since?: { base: string; against: string };
-}
 
 export function useCurrentView(): View {
   const cwd = useWorkdir();
@@ -22,7 +15,7 @@ export function useCurrentView(): View {
 
   const edited = useMemo(() => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(cwd, change.path)))), [turns, cwd]);
 
-  const read = useAsync(() => Promise.all(findRepos(cwd).map(readRepo)), []);
+  const read = useAsync(() => readChanges(cwd), []);
 
   if (read.state !== 'done') return { label: 'Current', empty: 'Looking for changes…' };
 
@@ -31,7 +24,7 @@ export function useCurrentView(): View {
 
   const [only] = repos;
   const grouped = repos.length > 1 || only!.repo.path !== '';
-  const what = (repo: RepoView) => (repo.since ? `${repo.branch} · what it adds to ${repo.since.against}` : repo.branch);
+  const what = (repo: RepoChanges) => (repo.since ? `${repo.branch} · what it adds to ${repo.since.against}` : repo.branch);
 
   const rows = repos.flatMap((repo) =>
     repo.changes.map(
@@ -61,14 +54,4 @@ export function useCurrentView(): View {
     empty: `No changes since the last commit in ${grouped ? repositories : 'this repository'}.`,
     note: clean.length > 0 ? `No changes in ${clean.map((repo) => repo.repo.label).join(', ')}.` : undefined,
   };
-}
-
-async function readRepo(repo: Repo): Promise<RepoView> {
-  const [state, changes] = await Promise.all([repoState(repo), repoChanges(repo).catch(() => [])]);
-  if (changes.length > 0) return { repo, branch: state?.branch, changes };
-
-  const since = await branchBase(repo).catch(() => undefined);
-  if (!since) return { repo, branch: state?.branch, changes };
-
-  return { repo, branch: state?.branch, changes: await repoChanges(repo, since.base).catch(() => []), since };
 }
