@@ -127,8 +127,10 @@ Steps, each one leaving Jinion working as it does today:
    - **4a** (done): the protocol, a JSON-RPC peer both sides use, the in-process transport, `JinionServer` and
      `JinionClient`, tested end to end on the demo backend: a client following a turn holds the conversation the
      server holds, and starts over from a snapshot when a change goes missing.
-   - **4b**: the TUI moved onto `JinionClient` with its own store, the methods it needs for models, modes, rewind,
-     tasks and worktrees, and a lint rule that it imports nothing from the core but the API and pure data.
+   - **4b** (done): the TUI is a client of the core, in process: `main.tsx` starts a `JinionServer` and the app draws
+     from a `JinionClient`'s store, following every open session. The draft, the history, pastes and the status line's
+     layout are the app's; everything else, from git and files to sign-in and task output, comes over the API, and
+     `biome.jsonc` keeps it that way.
    - **4c**: stdio and WebSocket transports and `jinion serve`.
    - **4d**: zod schemas for results and notifications too, a JSON Schema from them, and the rules for versions.
 5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
