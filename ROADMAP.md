@@ -95,10 +95,12 @@ Codex's app-server, Zed's ACP and Goose:
 
 - **One core holds many sessions.** A session is a conversation with its own agent process, store, queue, dialogs and
   worktree; the app holds what they share: settings, accounts, models, skills, MCP servers, memory, the session store.
-- **The API is JSON-RPC 2.0 in both directions**, after Codex's app-server and LSP: the client sends requests, the
-  core sends events as notifications with a sequence number per session, and asks the client for permissions and
-  answers as requests of its own. Every message is defined once in zod; the TypeScript types and a JSON Schema come
-  from it. `initialize` carries a protocol version and capabilities.
+- **The API is JSON-RPC 2.0 in both directions**, after Codex's app-server and LSP, with ACP-like method names
+  (`session/submit`, `dialog/answer`). A client follows a session from a snapshot, then gets each action the reducer
+  takes, numbered per session, and replays it with the same pure reducer; what isn't the conversation (dialog, tasks,
+  mode, queue, ...) comes as named field changes. A dialog is session data any client can answer, so one that
+  reconnects still sees it. The client is thin: slash commands run in the core, and the `Screen` port becomes
+  notifications to the client that asked. `initialize` carries a protocol version.
 - **Three transports, one message layer.** In process for the TUI, so it stays as fast as today; stdio for a child
   process; WebSocket on 127.0.0.1 with a random token in a 0600 file and an Origin check for the desktop app (OpenCode's
   open server became CVE-2026-22812). Terminal panes get a stream of their own.
@@ -121,7 +123,14 @@ Steps, each one leaving Jinion working as it does today:
    `AgentSession` is one conversation's. Dialogs are a session's data, answered through it; a session the user isn't
    looking at still notifies. A conversation is never open twice, and a worktree is a choice made as a session opens,
    the setting being only the default. `/clear` and `/resume` replace the session the user looks at.
-4. **The API**, with the in-process transport, and the TUI moved onto it; then stdio, WebSocket and `jinion serve`.
+4. **The API**, in four parts:
+   - **4a** (done): the protocol, a JSON-RPC peer both sides use, the in-process transport, `JinionServer` and
+     `JinionClient`, tested end to end on the demo backend: a client following a turn holds the conversation the
+     server holds, and starts over from a snapshot when a change goes missing.
+   - **4b**: the TUI moved onto `JinionClient` with its own store, the methods it needs for models, modes, rewind,
+     tasks and worktrees, and a lint rule that it imports nothing from the core but the API and pure data.
+   - **4c**: stdio and WebSocket transports and `jinion serve`.
+   - **4d**: zod schemas for results and notifications too, a JSON Schema from them, and the rules for versions.
 5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
    opening into a new tab.
 6. **Panes in the TUI.** Splits in `@jinion/tui`; then the changes and git panel beside the conversation, with commits
