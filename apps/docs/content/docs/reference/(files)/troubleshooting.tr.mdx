@@ -1,0 +1,95 @@
+---
+title: Sorun giderme
+description: Sık karşılaşılan sorunların çözümleri ve --debug ile nasıl hata ayıklama kaydı alınacağı.
+---
+
+## jinion: command not found [#jinion-command-not-found]
+
+npm, Jinion'u `PATH`'inizde olmayan bir klasöre kurmuş. Klasörü bulun:
+
+```sh
+npm prefix -g
+```
+
+Onun `bin` klasörünü `~/.zshrc` gibi kabuk profilinizde `PATH`'inize ekleyin, sonra yeni bir terminal açın:
+
+```sh
+export PATH="$(npm prefix -g)/bin:$PATH"
+```
+
+`jinion --version` artık sürümü yazmalıdır.
+
+## Claude'a giriş yapılmamış [#you-arent-signed-in-to-claude]
+
+`/account` açın, "Not signed in" yazan hesaba gidin ve `enter`'a basın. Jinion girişi tarayıcınızda açar; tarayıcının
+gösterdiği kodu yapıştırın. Bir hesaba, örneğin girişinin süresi dolduktan sonra, yeniden giriş yapmak için üzerinde
+`l`'ye basın.
+
+## Mesaj alanının altındaki çizgi Auto yerine Manual gösteriyor [#the-rule-under-the-prompt-shows-manual-instead-of-auto]
+
+Auto mod, Opus ya da Sonnet gibi onu destekleyen bir model ister. `/model` ile geçiş yapın; proje Auto'yu hatırlar ve
+desteklenen bir modelle yeniden geçerli olur.
+
+## Renkler zor okunuyor [#colors-are-hard-to-read]
+
+Jinion terminalinizin arka planını yanlış tahmin etmiş. Kendiniz ayarlayın:
+
+```sh
+jinion --theme dark
+```
+
+Kalıcı olması için kabuk profilinize `export JINION_THEME=dark` ekleyin.
+
+## Hiç bildirim gelmiyor [#no-notifications-show-up]
+
+- Terminalinizin bildirimleri desteklediğini kontrol edin; [Bildirim alın](/tr/notifications#terminal-support)
+  sayfasına bakın.
+- Bildirimler yalnızca pencere odakta değilken gelir.
+- tmux ya da screen içinde zile dönüşürler. tmux ayrıca `focus-events on` ister;
+  [Jinion'u tmux içinde kullanın](/tr/how-to/use-tmux) sayfasına bakın.
+- Açık olduklarını kontrol edin: `/notifications on`.
+
+## Görsel yapıştırmak hiçbir şey yapmıyor [#pasting-an-image-does-nothing]
+
+- Linux'ta `wl-paste` (Wayland) ya da `xclip` (X11) kurun.
+- macOS dışında 3,7 MB'den büyük görseller reddedilir. Bunun yerine daha küçük bir dosyayı sürükleyin.
+
+## shift+enter mesajı gönderiyor [#shiftenter-sends-the-message]
+
+Terminaliniz `shift+enter` ve `enter` için aynı tuşu gönderiyor. `alt+enter` kullanın ya da satırı `\` ile bitirin.
+
+## Metin seçemiyorum [#i-cant-select-text]
+
+Seçmek için sürükleyin; Jinion metni bıraktığınızda kopyalar. Teker ve tıklamalar da bir şey yapmıyorsa terminaliniz
+fare olaylarını göndermiyordur: iTerm2'de Settings → Profiles → Terminal → Enable mouse reporting seçeneğini açın.
+
+## Seçilen metin panoya ulaşmıyor [#selected-text-doesnt-reach-the-clipboard]
+
+SSH üzerinden Jinion terminaliniz aracılığıyla kopyalar (OSC 52). iTerm2'de Settings → General → Selection →
+Applications in terminal may access clipboard seçeneğini açın. Linux'ta `wl-copy`, `xclip` ya da `xsel` kurun.
+Terminalinizin kendi seçimi için sürüklerken `shift`'e basılı tutun (iTerm2'de `option`).
+
+## Bir MCP sunucusu başarısız görünüyor [#an-mcp-server-shows-as-failed]
+
+`/mcp` açın ve sunucuya gidin: hatası listenin altında görünür. Projenin `.mcp.json` dosyasından gelen sunucular siz
+orada açana kadar kapalı kalır. "not signed in" gösteren bir claude.ai bağlayıcısı claude.ai ayarlarınızdan bağlanır.
+
+## Hata ayıklama kaydı alın [#record-a-debug-log]
+
+Bir şeyler ters gittiğinde ve bunu bildirmek istediğinizde oturumu `--debug` ile yeniden çalıştırın:
+
+```sh
+jinion --debug
+```
+
+Jinion modele gönderdiklerini ve gelenleri, kayıt başına bir JSON satırı olarak `~/.jinion/logs/<time>.jsonl` içine
+yazar ve çıktığınızda yolunu yazdırır.
+
+<Callout type="warn">
+  Kayıt mesajlarınızı, ajanın cevaplarını ve okuduğu kodu içerir. Paylaşmadan önce okuyun.
+</Callout>
+
+## Yardım alın [#get-help]
+
+[GitHub](https://github.com/itsemirhanengin/jinion/issues) üzerinde ne yaptığınızı, ne beklediğinizi ve ne olduğunu
+anlatan bir issue açın. Yapabiliyorsanız bir hata ayıklama kaydı ekleyin.

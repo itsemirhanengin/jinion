@@ -1,0 +1,70 @@
+---
+title: Klavye kısayolları
+description: Jinion'un mesaj alanında, panellerde ve konuşmada karşılık verdiği her tuş.
+---
+
+`/help` bunları bir oturumda da gösterir.
+
+## Mesaj alanı [#prompt]
+
+| Tuş                                      | Ne yapar                                                |
+| ---------------------------------------- | ------------------------------------------------------- |
+| `enter`                                  | Mesajı gönderir; ajan çalışırken onu yönlendirir        |
+| `ctrl+q`                                 | Ajan çalışırken mesajı turdan sonrası için sıraya alır  |
+| `shift+enter`, `alt+enter`, sondaki `\`  | Yeni satır                                              |
+| `up` / `down`                            | Gönderdiğiniz mesajlar arasında gezinir                 |
+| `/`                                      | Komut listesini açar                                    |
+| `$`                                      | Bir skill ya da MCP prompt'u seçer                      |
+| `@`                                      | Bir dosya ya da klasörü anar                            |
+| `ctrl+v`                                 | Panodaki görseli ekler                                  |
+
+## Düzenleme [#editing]
+
+| Tuş                                                  | Ne yapar                    |
+| ---------------------------------------------------- | --------------------------- |
+| `ctrl+a` / `ctrl+e`, `home` / `end`                  | Satırın başı ya da sonu     |
+| `alt+left` / `alt+right`, `ctrl+left` / `ctrl+right`, `alt+b` / `alt+f` | Kelime kelime gider |
+| `ctrl+w`, `alt+backspace`                            | Önceki kelimeyi siler       |
+| `ctrl+u` / `ctrl+k`                                  | Başa ya da sona kadar siler |
+
+## Ajan çalışırken [#while-the-agent-works]
+
+| Tuş       | Ne yapar                                                     |
+| --------- | ------------------------------------------------------------ |
+| `esc`     | Turu yarıda keser                                            |
+| `ctrl+b`  | Çalışan komutu ya da alt ajanı arka plana gönderir           |
+| `ctrl+t`  | Arka plan görevlerini açar                                   |
+| `ctrl+o`  | Bütün uzun çıktıları, düşünmeleri ve yapıştırılmış metinleri açar ya da katlar |
+
+## Konuşma [#conversation]
+
+| Tuş                          | Ne yapar                                                             |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `esc` `esc`                  | Önceki bir mesajın öncesine geri sarar; mesaj alanında metin varsa önce onu temizler |
+| `shift+tab`                  | İzin modunu değiştirir                                               |
+| `ctrl+g`                     | Yeni konuşmalar için [worktree'leri](/tr/worktrees) açar ya da kapatır |
+| `ctrl+n`                     | Bir [sekmede](/tr/conversations/tabs) yeni bir konuşma başlatır      |
+| `alt+1..9`                   | O sekmeye gider; macOS'ta Option'ın Meta göndermesi gerekir ([Sekmeler](/tr/conversations/tabs) sayfasına bakın) |
+| Fare tekeri, `pgup` / `pgdn` | Konuşmayı kaydırır                                                   |
+| Tıklama                      | İmlecin altında parlayanı açar ya da katlar: çıktı, düşünme, bir alt ajan, uzun bir düzenleme |
+| Sürükleme                    | Metin seçer ve bıraktığınızda kopyalar                               |
+| Çift tıklama, üç tıklama     | Bir kelimeyi (yol ya da URL tek kelime sayılır) ya da bir satırı seçer ve kopyalar |
+| Metin seçiliyken `ctrl+c`    | Yarıda kesmek ya da çıkmak yerine metni yeniden kopyalar             |
+| `shift` + sürükleme          | Terminalinizin kendi seçimi (iTerm2'de `option`, Terminal.app'te `fn`) |
+| `ctrl+c`                     | Yarıda keser, bir paneli kapatır, mesaj alanını temizler ya da çıkar |
+
+## Paneller [#panels]
+
+`/model`, `/resume` ya da bir soru gibi paneller aynı tuşları paylaşır:
+
+| Tuş              | Ne yapar                                        |
+| ---------------- | ----------------------------------------------- |
+| `up` / `down`    | Gezinir                                         |
+| `enter`          | Seçer                                           |
+| `space`          | Birden fazla seçilebilen yerde bir seçeneği işaretler |
+| `n`              | Üzerinde durduğunuz seçeneğe bir not ekler      |
+| `left` / `right` | Sekmeler arasında ya da `/model` içinde çaba seviyeleri arasında geçer |
+| `shift+up` / `shift+down`, teker | Bir izin sorusundaki uzun komutu kaydırır |
+| `l`              | `/account` içinde hesaba yeniden giriş yapar    |
+| `d`              | `/account` içinde hesabı kaldırır; iki kez basın |
+| `esc`            | Kapatır ya da soruyu iptal eder                 |

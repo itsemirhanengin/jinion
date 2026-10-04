@@ -1,0 +1,28 @@
+---
+title: Durum satırı bölümleri
+description: Durum satırının gösterebildiği her bölüm, bir örnek ve stilleriyle.
+---
+
+Hangilerinin görüneceğini `/statusline` ile seçin. [Durum satırını özelleştirin](/tr/status-line) sayfasına bakın.
+Bölüm ve stil adları, panelde göründükleri gibi İngilizce bırakılmıştır.
+
+| Bölüm        | Gösterir                                                    | Stiller                                       |
+| ------------ | ----------------------------------------------------------- | --------------------------------------------- |
+| Jinion       | `jinion`                                                    |                                               |
+| Model        | `[M] Opus 5.5 · high`                                       | with effort, name only                        |
+| Account      | `[A] me@example.com · Max` ya da `[A] work`                 | organization or email, and plan; account name |
+| Mode         | `Auto`                                                      |                                               |
+| Directory    | `[D] code/api`                                              | last two folders, full path, folder name      |
+| Worktree     | `[W] swift-running-fox`; [worktree](/tr/worktrees)'si olan bir konuşmada |                  |
+| Git          | `[G] main *3 ↑1`, birkaç repo içeren bir klasörde `[G] 4 repos *7` | with changes and commits ahead or behind, branch only |
+| Context      | `ctx [====------] 41%`                                      | tokens, percent, meter                        |
+| Plan limits  | `5h 92% left · 7d 80% left`; her pencereden kalan           | 5h and 7d, 5h with reset time, 7d, 5h meter   |
+| Cost         | `$0.12`, API fiyatlarıyla                                   |                                               |
+| Changes      | Bu konuşmadaki `+42 -7` satır                               |                                               |
+| Tasks        | `tasks 2/5`                                                 |                                               |
+| Title        | Konuşmanın konusu: Jinion'un verdiği başlık ya da `/rename` ile verilen |                       |
+| Duration     | Konuşmanın ne kadar önce başladığı                          |                                               |
+| Turns        | `3 turns`; gönderdiğiniz mesajlar                           |                                               |
+| Clock        | Günün saati                                                 |                                               |
+| Agent        | Kullanılan ajan                                             |                                               |
+| Version      | `v0.1.0`                                                    |                                               |

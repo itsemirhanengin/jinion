@@ -1,0 +1,84 @@
+---
+title: CLI
+description: jinion komutunun her flag'i ve okuduğu ortam değişkenleri.
+---
+
+```sh
+jinion [options]
+jinion serve [--port <port>] [--stdio] [--origin <origin>]...
+```
+
+Çalışmak istediğiniz klasörde çalıştırın. Seçenek verilmezse en son kullandığınız model ve hesapla yeni bir konuşma
+başlatır.
+
+## Flag'ler [#flags]
+
+| Flag                   | Ne yapar                                                                       | Örnek                       |
+| ---------------------- | ------------------------------------------------------------------------------ | --------------------------- |
+| `-c`, `--continue`     | Bu klasördeki son konuşmayı açar                                               | `jinion -c`                 |
+| `-m`, `--model <model>` | Bu çalıştırma için bu modeli kullanır: `opus` ya da `sonnet` gibi bir takma ad ya da tam bir kimlik | `jinion -m sonnet` |
+| `-e`, `--effort <level>` | Bu çalıştırma için bu çabayı kullanır: `low`, `medium`, `high`, `xhigh` ya da `max` | `jinion -e high`    |
+| `--theme <light\|dark>` | Terminalin arka planını algılamayı atlar                                      | `jinion --theme light`      |
+| `--debug`              | Oturumun kaydını `~/.jinion/logs` içine yazar; çıkışta yolunu yazdırır         | `jinion --debug`            |
+| `--demo`               | Model olmadan hazır bir oturum oynatır                                         | `jinion --demo`             |
+| `--attach`             | Bu klasörde çalışan `jinion serve`'ün konuşmalarını gösterir                   | `jinion --attach`           |
+| `-v`, `--version`      | Sürümü yazdırır                                                                | `jinion -v`                 |
+| `-h`, `--help`         | Yardımı gösterir                                                               | `jinion -h`                 |
+
+`--model` ve `--effort` tek bir çalıştırma için geçerlidir. Varsayılanı değiştirmek için bir oturumda
+[`/model`](/tr/models-and-accounts) kullanın.
+
+## jinion serve [#jinion-serve]
+
+`jinion serve`, başka uygulamalar onu yönetebilsin diye Jinion'u ekransız çalıştırır. `--demo` ya da `-m` gibi
+`jinion` ile aynı flag'leri ve şunları alır:
+
+| Flag                | Ne yapar                                                                     | Örnek                                    |
+| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
+| `--port <port>`     | Bu portta hizmet verir; verilmezse boş bir port seçer                        | `jinion serve --port 4747`               |
+| `--stdio`           | Onu başlatan programa stdin ve stdout üzerinden hizmet verir                 | `jinion serve --stdio`                   |
+| `--origin <origin>` | Bir masaüstü uygulamasınınki gibi bu origin'den gelen bir web sayfasını içeri alır; daha fazlası için tekrarlayın | `jinion serve --origin app://jinion` |
+
+`--stdio` olmadan `127.0.0.1` üzerinde hizmet verir, yani ona yalnızca sizin makineniz ulaşır, ve adresi yazdırır:
+
+```sh
+$ jinion serve
+jinion serves ~/code/shop at ws://127.0.0.1:53942
+Clients find its token in ~/.jinion/servers/38262.json, which only you can read. jinion --attach shows it here; ctrl+c stops it.
+```
+
+Bir istemcinin bağlanmak için o dosyadaki token'a ihtiyacı vardır. Aynı klasörde `jinion --attach` onu kendisi bulur
+ve sunucunun tuttuğu konuşmaları gösterir; ctrl+c onları çalışır halde bırakır. `jinion serve` içindeki ctrl+c onu
+durdurur ve konuşmalarını, `jinion`'dan çıktığınızdaki gibi kaydeder.
+
+## Ortam değişkenleri [#environment-variables]
+
+| Değişken          | Ne yapar                                                | Varsayılan    |
+| ----------------- | ------------------------------------------------------- | ------------- |
+| `JINION_MODEL`    | `--model` ile aynı                                      | En son `/model` seçiminiz, yoksa `opus` |
+| `JINION_EFFORT`   | `--effort` ile aynı                                     | Modelin varsayılanı |
+| `JINION_THEME`    | `--theme` ile aynı                                      | Algılanır     |
+| `JINION_DEBUG`    | `1`, `--debug` ile aynı işi yapar                       | Kapalı        |
+| `JINION_HOME`     | Jinion'un verilerini tuttuğu yer                        | `~/.jinion`   |
+
+Flag'ler ortam değişkenlerinin önüne geçer, ikisi de kayıtlı seçimin önüne geçer.
+
+## Örnekler [#examples]
+
+Dün kaldığınız yerden başlayın:
+
+```sh
+jinion -c
+```
+
+Hızlı bir model ile kısa bir soru:
+
+```sh
+jinion -m haiku
+```
+
+Bir test hesabı gibi ayrı bir kurulumun verilerini ayrı tutun:
+
+```sh
+JINION_HOME=~/.jinion-test jinion
+```

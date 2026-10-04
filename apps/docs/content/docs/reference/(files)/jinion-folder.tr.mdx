@@ -1,0 +1,53 @@
+---
+title: ~/.jinion klasörü
+description: Jinion'un ayarlarını, konuşmalarını, belleğini, hesaplarını ve kayıtlarını tuttuğu yer.
+---
+
+Jinion her şeyi makinenizde, `~/.jinion` içinde tutar. Başka bir klasör kullanmak için `JINION_HOME` ayarlayın.
+
+```text
+~/.jinion/
+|-- settings.json          son model ve hesap, durum satırı, kapatılan sunucular, worktree'ler, commit'ler
+|-- limits.json            hesap başına en son görülen plan limitleri
+|-- mcp.json               Jinion'un kendi MCP sunucuları
+|-- memory/                kullanıcı notları, her biri bir Markdown dosyası
+|-- accounts/              /account ile eklenen girişler
+|-- plugins/               ajana verilen skill'ler
+|-- usage/                 /stats'ın şimdiye kadar okudukları
+|-- logs/                  --debug'ın hata ayıklama kayıtları
+'-- projects/
+    '-- -Users-me-code-api/
+        |-- settings.json      mod, açılan .mcp.json sunucuları, commit'ler
+        |-- permissions.json   "bir daha sorma" kuralları
+        |-- memory/            proje notları
+        |-- plugins/           projenin ajana verilen skill'leri
+        |-- sessions/          konuşma başına bir JSON dosyası
+        '-- worktrees/         konuşmaların git worktree'leri
+```
+
+Bir projenin klasörü yolundan adlandırılır; harf ve rakam dışındaki her karakter `-` olur.
+
+## Dosyalar [#files]
+
+| Yol                                | Ne tutar                                                                               |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| `settings.json`                    | En son seçtiğiniz model ve hesap, durum satırı, kapattığınız MCP sunucuları, [worktree'lerin](/tr/worktrees) açık olup olmadığı ve Jinion'un [commit'lerden önce sorup sormadığı](/tr/permission-modes#stop-asking-before-commits) |
+| `limits.json`                      | Her hesabın en son kullanıldığındaki plan limitleri; `/account` içinde gösterilir      |
+| `mcp.json`                         | Yalnızca Jinion'un kullandığı MCP sunucuları, `.mcp.json` ile aynı biçimde             |
+| `memory/`                          | Düzenleyebileceğiniz Markdown dosyaları olarak [kullanıcı notları](/tr/memory)         |
+| `accounts/claude/<name>/`          | Her ek [hesabın](/tr/models-and-accounts#switch-accounts) girişi                       |
+| `plugins/`                         | Ajan yükleyebilsin diye bağlanmış skill'leriniz                                        |
+| `usage/claude.json`                | `/stats`'ın saydığı günler; böylece yalnızca eklenenleri okur                          |
+| `logs/<time>.jsonl`                | Her `--debug` oturumu için bir [hata ayıklama kaydı](/tr/reference/troubleshooting#record-a-debug-log) |
+| `projects/<project>/settings.json` | Projenin [modu](/tr/permission-modes), açtığınız `.mcp.json` sunucuları ve Jinion'un burada commit'lerden önce sorup sormadığı |
+| `projects/<project>/permissions.json` | "Bir daha sorma" ile kaydettiğiniz kurallar                                         |
+| `projects/<project>/memory/`       | [Proje notları](/tr/memory)                                                            |
+| `projects/<project>/plugins/`      | Ajan yükleyebilsin diye bağlanmış proje skill'leri                                     |
+| `projects/<project>/sessions/`     | Projenin [konuşmaları](/tr/conversations/resume)                                       |
+| `projects/<project>/worktrees/`    | Konuşmalarının çalıştığı [worktree'ler](/tr/worktrees)                                 |
+
+## Yedekleyin ya da taşıyın [#back-up-or-move]
+
+Konuşmalarınızı, belleği ve ayarları saklamak için klasörü kopyalayın. Sıfırdan başlamak için silin; Jinion bir
+sonraki çalıştırmada onu yeniden oluşturur. Claude girişiniz, `/account` ile eklediğiniz hesaplar dışında, bu
+klasörde değildir.

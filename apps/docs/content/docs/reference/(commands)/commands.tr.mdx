@@ -1,0 +1,82 @@
+---
+title: Komutlar
+description: Her slash komutu, ne yaptığı ve argümanları.
+---
+
+Komutları görmek için mesaj alanına `/` yazın. Liste yazdıkça süzülür. `tab` tamamlar, `enter` çalıştırır. Argüman
+gerektiren bir komut, tamamlamanız için mesaj alanına konur.
+
+```terminal
+{border|--------------------------------------------------------------------------------------------}
+ /
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {code|>} {code,bold|/model} {muted,bold|[model]}                    {muted|Switch the model and its effort}
+   /effort {muted|[level]                   Change how hard the model thinks}
+   /help {muted|[tab]                       Shortcuts, commands, skills and MCP prompts}
+   /resume {muted|[search]                  Pick up a previous conversation}
+   /mode {muted|[mode]                      How freely the agent acts: manual, accept edits, plan…}
+   /account {muted|[name | add <name> | r…  Switch between your logins, sign one in (again) with …}
+   /remember {muted|<note>                  Save a note the agent keeps in later conversations (r…}
+   /memory {muted|[import]                  The notes the agent keeps; memory import brings in Cl…}
+   {muted|… 15 more}
+   Tab {muted|complete ·} Enter {muted|run ·} Esc {muted|dismiss}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+```
+
+`<argument>` zorunlu, `[argument]` isteğe bağlıdır.
+
+## Konuşma [#conversation]
+
+| Komut              | Ne yapar                                                                        |
+| ------------------ | ------------------------------------------------------------------------------- |
+| `/clear`, `/new`   | Bu konuşmayı kaydeder ve yenisini başlatır                                      |
+| `/resume [search]` | Devam etmek üzere bu projenin konuşmalarını listeler; seçilen kendi [sekmesinde](/tr/conversations/tabs) açılır |
+| `/tab`             | Kendi [sekmesinde](/tr/conversations/tabs) yeni bir konuşma başlatır (`ctrl+n`) |
+| `/close`           | Bu konuşmayı kaydeder ve sekmesini kapatır                                      |
+| `/rename [name]`   | `/resume` içinde bulmak için bu konuşmayı adlandırır; ad verilmezse Jinion onu konusuna göre adlandırır |
+| `/rewind`          | Önceki bir mesajın öncesine döner: kod, konuşma ya da ikisi (`esc esc`)         |
+| `/worktree [on \| off]` | Her yeni konuşmaya kendi [git worktree'sini](/tr/worktrees) verir ya da bunu bırakır (`ctrl+g`) |
+| `/compact [focus]` | Bağlamda yer açmak için konuşmayı o ana kadar özetler; `focus`'u her şeyden önce korur |
+| `/context`         | Bağlam penceresini neyin doldurduğunu ve ajanın ne zaman kendisi sıkıştıracağını gösterir |
+| `/expand`          | Bütün uzun çıktıları açar ya da katlar (`ctrl+o`)                               |
+
+## Ajanla çalışmak [#working-with-the-agent]
+
+| Komut                          | Ne yapar                                                                |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `/model [model]`               | Modeli ve çabasını seçer ya da doğrudan `model`'e geçer                 |
+| `/effort [level]`              | Çabayı seçer ya da hemen ayarlar; `default` kararı modele bırakır       |
+| `/mode [mode]`                 | Modu seçer: `manual`, `edits`, `plan` ya da `auto` (`shift+tab`)        |
+| `/diff`                        | Buradaki her repoda son commit'ten beri neyin değiştiğini, ajanın değişikliklerini işaretleyerek gösterir |
+| `/tasks`                       | Arka plan görevlerini ve çıktılarını gösterir; `x` birini durdurur (`ctrl+t`) |
+| `/mcp`                         | MCP sunucularını durumlarıyla listeler; `space` birini açar ya da kapatır |
+
+## Bellek [#memory]
+
+| Komut                      | Ne yapar                                                                 |
+| -------------------------- | ------------------------------------------------------------------------ |
+| `/remember [user] <note>`  | Bu proje için, `user` ile her proje için bir not kaydeder                |
+| `/memory [import]`         | Açmak ya da silmek için notları listeler; `import` Claude Code'unkileri getirir |
+
+## Hesap ve kullanım [#account-and-usage]
+
+| Komut                            | Ne yapar                                                 |
+| -------------------------------- | -------------------------------------------------------- |
+| `/account [name \| add <name> \| remove <name>]` | Başka bir girişe geçer, bir hesaba (yeniden) giriş yapar ya da birini kaldırır |
+| `/usage`                         | Plan limitlerini, bu oturumu ve limitlere neyin eklendiğini gösterir |
+| `/stats`                         | Bu makinedeki her kullanım gününü seriler ve modellerle birlikte bir takvim olarak gösterir |
+
+## Jinion [#jinion]
+
+| Komut                           | Ne yapar                                                   |
+| ------------------------------- | ---------------------------------------------------------- |
+| `/help [tab]`                   | Kısayolları, komutları, skill'leri ve MCP prompt'larını gösterir |
+| `/statusline`                   | Durum satırının neyi göstereceğini seçer                   |
+| `/notifications [on \| off]`    | Bildirimleri her projede açar ya da kapatır                |
+| `/commit-approval [on \| off] [global]` | [Her commit'ten önce sormayı](/tr/permission-modes#what-always-asks) bu projede, `global` ile her projede açar ya da kapatır |
+| `/exit`, `/quit`                | Çıkar                                                      |
+
+## Skill'ler ve MCP prompt'ları [#skills-and-mcp-prompts]
+
+Skill'ler ve MCP prompt'ları `/` ile değil, `$` ile seçilir. [Skill'leri ve MCP sunucularını kullanın](/tr/skills-and-mcp)
+sayfasına bakın.
