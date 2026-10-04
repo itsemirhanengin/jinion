@@ -1,77 +1,98 @@
-export interface Usage {
-  contextTokens: number;
-  contextWindow: number;
-  cost: number;
-  compactAt?: number;
-}
+import { z } from 'zod';
 
-export interface ContextUsage {
-  used: number;
+export const Usage = z.object({
+  contextTokens: z.number(),
+  contextWindow: z.number(),
+  cost: z.number(),
+  compactAt: z.number().optional(),
+});
+
+export type Usage = z.infer<typeof Usage>;
+
+export const ContextUsage = z.object({
+  used: z.number(),
   /** Can be smaller than the model's, e.g. a compaction policy's. */
-  window: number;
-  compactAt?: number;
+  window: z.number(),
+  compactAt: z.number().optional(),
   /** `buffer` is what compaction keeps in reserve; `deferred` only loads when used, e.g. MCP tools, and takes no room. */
-  categories: { name: string; tokens: number; kind: 'used' | 'free' | 'buffer' | 'deferred' }[];
-}
+  categories: z.array(z.object({ name: z.string(), tokens: z.number(), kind: z.enum(['used', 'free', 'buffer', 'deferred']) })),
+});
 
-export interface ModelTokens {
-  input: number;
-  output: number;
-  cacheRead: number;
-  cacheWrite: number;
+export type ContextUsage = z.infer<typeof ContextUsage>;
+
+export const ModelTokens = z.object({
+  input: z.number(),
+  output: z.number(),
+  cacheRead: z.number(),
+  cacheWrite: z.number(),
   /** Known only as a total, e.g. from a summary of days whose records are gone. */
-  summarized?: number;
-}
+  summarized: z.number().optional(),
+});
 
-export interface AgentUsage {
-  session?: {
-    cost: number;
-    apiMs: number;
-    wallMs: number;
-    linesAdded: number;
-    linesRemoved: number;
-    models: (ModelTokens & { name: string; cost: number })[];
-  };
-  limits: LimitWindow[];
-  extra?: { used: number; limit?: number; currency?: string };
-  drivers?: { day: UsageDrivers; week: UsageDrivers };
-}
+export type ModelTokens = z.infer<typeof ModelTokens>;
 
-export interface UsageDrivers {
-  requests: number;
-  sessions: number;
-  /** They overlap: each share is of the whole, so they don't add up to 100. */
-  traits: { trait: 'cache-misses' | 'long-context' | 'subagents' | 'parallel' | 'scheduled'; share: number }[];
-  sources: { kind: 'skill' | 'agent' | 'plugin' | 'mcp'; name: string; share: number }[];
-}
-
-export interface UsageHistory {
-  days: DayUsage[];
-  sessions: { id: string; start: number; end: number }[];
-}
-
-export interface DayUsage {
-  date: string;
-  messages: number;
-  sessions: number;
-  toolCalls: number;
-  models: Record<string, ModelTokens>;
-}
-
-export interface LimitWindow {
-  label: string;
+export const LimitWindow = z.object({
+  label: z.string(),
   /** From 0 to 1. */
-  used: number;
-  resetsAt?: number;
-}
+  used: z.number(),
+  resetsAt: z.number().optional(),
+});
+
+export type LimitWindow = z.infer<typeof LimitWindow>;
+
+export const UsageDrivers = z.object({
+  requests: z.number(),
+  sessions: z.number(),
+  /** They overlap: each share is of the whole, so they don't add up to 100. */
+  traits: z.array(z.object({ trait: z.enum(['cache-misses', 'long-context', 'subagents', 'parallel', 'scheduled']), share: z.number() })),
+  sources: z.array(z.object({ kind: z.enum(['skill', 'agent', 'plugin', 'mcp']), name: z.string(), share: z.number() })),
+});
+
+export type UsageDrivers = z.infer<typeof UsageDrivers>;
+
+export const AgentUsage = z.object({
+  session: z
+    .object({
+      cost: z.number(),
+      apiMs: z.number(),
+      wallMs: z.number(),
+      linesAdded: z.number(),
+      linesRemoved: z.number(),
+      models: z.array(ModelTokens.extend({ name: z.string(), cost: z.number() })),
+    })
+    .optional(),
+  limits: z.array(LimitWindow),
+  extra: z.object({ used: z.number(), limit: z.number().optional(), currency: z.string().optional() }).optional(),
+  drivers: z.object({ day: UsageDrivers, week: UsageDrivers }).optional(),
+});
+
+export type AgentUsage = z.infer<typeof AgentUsage>;
+
+export const DayUsage = z.object({
+  date: z.string(),
+  messages: z.number(),
+  sessions: z.number(),
+  toolCalls: z.number(),
+  models: z.record(z.string(), ModelTokens),
+});
+
+export type DayUsage = z.infer<typeof DayUsage>;
+
+export const UsageHistory = z.object({
+  days: z.array(DayUsage),
+  sessions: z.array(z.object({ id: z.string(), start: z.number(), end: z.number() })),
+});
+
+export type UsageHistory = z.infer<typeof UsageHistory>;
+
+export const SeenLimit = z.object({ windows: z.array(LimitWindow), at: z.number() });
+
+export type SeenLimit = z.infer<typeof SeenLimit>;
 
 /** Kept per account, so `/account` can show how full the plans not in use were when last seen. */
-export type SeenLimits = Record<string, SeenLimit>;
+export const SeenLimits = z.record(z.string(), SeenLimit);
 
-export interface SeenLimit {
-  windows: LimitWindow[];
-  at: number;
-}
+export type SeenLimits = z.infer<typeof SeenLimits>;
 
 export const limitsKey = (agent: string, account = 'default') => `${agent}/${account}`;
 

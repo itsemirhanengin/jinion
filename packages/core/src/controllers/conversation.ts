@@ -6,13 +6,7 @@ import type { SessionStore } from '../conversation/store.js';
 import { conversationDigest, titleDue } from '../conversation/titles.js';
 import { errorMessage } from '../lib/errors.js';
 import { quote } from '../lib/text.js';
-import { BUSY, type SessionContext } from './context.js';
-
-export interface RewindPoint {
-  entry: string;
-  promptId: string;
-  text: string;
-}
+import { BUSY, type RewindPoint, type SessionContext } from './context.js';
 
 export class ConversationController {
   private naming = false;

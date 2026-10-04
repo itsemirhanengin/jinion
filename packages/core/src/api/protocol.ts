@@ -8,22 +8,19 @@ import type { QuestionAnswer } from '../agent/questions.js';
 import type { AgentUsage, ContextUsage, UsageHistory } from '../agent/usage.js';
 import type { CommandInfo } from '../commands/registry.js';
 import type { AppInfo, PromptFill, View } from '../controllers/context.js';
-import type { RewindPoint } from '../controllers/conversation.js';
+import type { RewindPoint } from '../controllers/context.js';
 import type { SentAction } from '../controllers/session.js';
 import type { NoticeTone } from '../conversation/entries.js';
 import type { SessionState } from '../conversation/session.js';
-import type { RepoChanges } from '../git/changes.js';
-import type { GitStatus } from '../git/status.js';
-import type { Memory } from '../memory/store.js';
+import type { GitStatus, RepoChanges } from '../git/types.js';
+import type { Memory } from '../memory/types.js';
 import type { Submission } from '../prompt/submission.js';
 import type { AppFields, FieldChange, SessionFields } from './fields.js';
 
 /** The core's types that come over the API, so a client imports them from it rather than from where the core keeps them. */
 export type { AppInfo, PromptFill, View } from '../controllers/context.js';
-export type { RewindPoint } from '../controllers/conversation.js';
-export type { RepoChanges } from '../git/changes.js';
-export type { FileChange } from '../git/repos.js';
-export type { GitStatus } from '../git/status.js';
+export type { RewindPoint } from '../controllers/context.js';
+export type { FileChange, GitStatus, RepoChanges } from '../git/types.js';
 
 /** Raised when a change would break a client written for the one before. */
 export const PROTOCOL_VERSION = 1;

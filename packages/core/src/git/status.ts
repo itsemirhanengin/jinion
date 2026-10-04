@@ -1,8 +1,5 @@
-import { findRepos, repoState, type Repo, type RepoState } from './repos.js';
-
-export interface GitStatus {
-  repos: (RepoState & { repo: Repo })[];
-}
+import { findRepos, repoState } from './repos.js';
+import type { GitStatus } from './types.js';
 
 /** Every repository in `cwd` or in the folders below it; `undefined` when there is none. */
 export async function readGitStatus(cwd: string): Promise<GitStatus | undefined> {

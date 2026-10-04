@@ -5,21 +5,9 @@ import { promisify } from 'node:util';
 import { errorMessage } from '../lib/errors.js';
 import { projectDir } from '../lib/paths.js';
 import { findRepos } from './repos.js';
+import type { Worktree } from './types.js';
 
 const exec = promisify(execFile);
-
-export interface Worktree {
-  name: string;
-  branch: string;
-  /** The worktree's root. */
-  path: string;
-  /** The project's folder in it, deeper than `path` when Jinion was started below the repository's root. */
-  folder: string;
-  /** The checkout it was made from, which runs the commands that remove it. */
-  repo: string;
-  /** The commit it started from, to tell the commits made in it. */
-  base: string;
-}
 
 export interface WorktreeWork {
   changed: number;

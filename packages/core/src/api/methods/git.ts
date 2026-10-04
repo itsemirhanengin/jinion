@@ -1,6 +1,7 @@
-import { readChanges, type RepoChanges } from '../../git/changes.js';
+import { readChanges } from '../../git/changes.js';
 import { fileDiff } from '../../git/repos.js';
 import { readGitStatus } from '../../git/status.js';
+import type { RepoChanges } from '../../git/types.js';
 import { listProjectFiles } from '../../prompt/files.js';
 import type { Methods } from '../connection.js';
 import { ApiCode } from '../protocol.js';

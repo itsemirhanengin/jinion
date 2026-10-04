@@ -1,6 +1,7 @@
 import { createSdkMcpServer, tool } from '@anthropic-ai/claude-agent-sdk';
 import { z } from 'zod';
-import { MEMORY_SCOPES, MEMORY_TYPES, type Memory, type MemoryStore } from '../../memory/store.js';
+import type { MemoryStore } from '../../memory/store.js';
+import { type Memory, MemoryScope, MemoryType } from '../../memory/types.js';
 
 export const MEMORY_SERVER = 'jinion';
 
@@ -17,10 +18,10 @@ export function memoryServer(store: MemoryStore) {
         'remember',
         'Saves a note for later conversations, or updates the note with `id`.',
         {
-          scope: z.enum(MEMORY_SCOPES).describe('user: about the user, in every project. project: this project only.'),
+          scope: MemoryScope.describe('user: about the user, in every project. project: this project only.'),
           title: z.string().describe('A few words.'),
           description: z.string().describe('One line, shown in the index of every later conversation.'),
-          type: z.enum(MEMORY_TYPES),
+          type: MemoryType,
           content: z.string().describe('The fact, with the reason behind it when there is one.'),
           id: z.string().optional().describe('The id of a note in the same scope to update instead of adding one.'),
         },

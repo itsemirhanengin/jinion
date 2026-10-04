@@ -1,13 +1,20 @@
+import { z } from 'zod';
+import type { Jinion } from '../controllers/jinion.js';
 import { fuzzyFilter } from '../lib/fuzzy.js';
 import type { CompletionSource } from '../prompt/completion.js';
-import type { Jinion } from '../controllers/jinion.js';
 
-export interface Command {
-  name: string;
-  description: string;
-  aliases?: string[];
+/** What a command is, without running it, as a client lists it. */
+export const CommandInfo = z.object({
+  name: z.string(),
+  description: z.string(),
+  aliases: z.array(z.string()).optional(),
   /** `<required>` or `[optional]`; a required argument makes Enter in the palette insert instead of run. */
-  argumentHint?: string;
+  argumentHint: z.string().optional(),
+});
+
+export type CommandInfo = z.infer<typeof CommandInfo>;
+
+export interface Command extends CommandInfo {
   run(jinion: Jinion, args: string): void;
 }
 
@@ -34,9 +41,6 @@ export class CommandRegistry {
     return commandCompletion(this.commands);
   }
 }
-
-/** What a command is, without running it, as a client lists it. */
-export type CommandInfo = Omit<Command, 'run'>;
 
 export const requiresArgument = (command: CommandInfo) => command.argumentHint?.startsWith('<') === true;
 

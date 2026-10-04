@@ -1,6 +1,7 @@
 import type { NoticeTone } from '../conversation/entries.js';
 import { promptCount } from '../conversation/entries.js';
-import { createWorktree, removeWorktree, type Worktree, worktreeWork, type WorktreeWork } from '../git/worktrees.js';
+import type { Worktree } from '../git/types.js';
+import { createWorktree, removeWorktree, worktreeWork, type WorktreeWork } from '../git/worktrees.js';
 import { errorMessage } from '../lib/errors.js';
 import { plural } from '../lib/format.js';
 import { tildify } from '../lib/paths.js';

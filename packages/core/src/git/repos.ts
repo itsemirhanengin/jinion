@@ -2,15 +2,9 @@ import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
+import type { FileChange, Repo, RepoState } from './types.js';
 
 const git = promisify(execFile);
-
-export interface Repo {
-  root: string;
-  /** `''` when the project is in this repository. */
-  path: string;
-  label: string;
-}
 
 const SKIPPED = new Set(['node_modules', 'dist', 'build', 'out', 'coverage', 'vendor', 'target', '.turbo', '.next', '.cache', '.venv']);
 
@@ -52,14 +46,6 @@ export function findRepos(cwd: string): Repo[] {
   return repos.slice(0, MAX_REPOS).sort((a, b) => a.path.localeCompare(b.path));
 }
 
-export interface RepoState {
-  /** The short commit when HEAD is detached. */
-  branch: string;
-  changed: number;
-  ahead: number;
-  behind: number;
-}
-
 export async function repoState(repo: Repo): Promise<RepoState | undefined> {
   try {
     const { stdout } = await git('git', ['status', '--porcelain=v2', '--branch'], { cwd: repo.root, timeout: 5_000 });
@@ -88,15 +74,6 @@ export function parseGitStatus(output: string): RepoState {
   if (status.branch === '(detached)') status.branch = commit.slice(0, 7);
 
   return status;
-}
-
-export interface FileChange {
-  file: string;
-  absolute: string;
-  kind: 'modified' | 'added' | 'deleted' | 'renamed' | 'untracked';
-  insertions: number;
-  deletions: number;
-  binary: boolean;
 }
 
 /** With `since`, a commit, what the commits after it changed instead, e.g. a branch's own. */

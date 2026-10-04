@@ -1,28 +1,31 @@
-import type { TodoGroup } from '../agent/todos.js';
+import { z } from 'zod';
 import type { AgentResume } from '../agent/agent.js';
-import type { Usage } from '../agent/usage.js';
-import type { Worktree } from '../git/worktrees.js';
-import type { Entry, NewEntry, ToolEntry } from './entries.js';
+import { TodoGroup } from '../agent/todos.js';
+import { Usage } from '../agent/usage.js';
+import { Worktree } from '../git/types.js';
+import { Entry, type NewEntry, type ToolEntry } from './entries.js';
 
-export interface SessionState {
-  id: string;
-  createdAt: number;
-  entries: Entry[];
-  todos: TodoGroup[];
-  usage: Usage;
-  title?: string;
+export const SessionState = z.object({
+  id: z.string(),
+  createdAt: z.number(),
+  entries: z.array(Entry),
+  todos: z.array(TodoGroup),
+  usage: Usage,
+  title: z.string().optional(),
   /** `turns` is how many prompts there were when it was titled; a title the user chose is kept. */
-  titled?: { by: 'agent' | 'user'; turns: number; at: number };
-  busySince?: number;
+  titled: z.object({ by: z.enum(['agent', 'user']), turns: z.number(), at: z.number() }).optional(),
+  busySince: z.number().optional(),
   /** Where the running turn begins in `entries`; what follows stays open until it ends. */
-  turnFrom?: number;
-  compacting?: boolean;
-  agentSession?: string;
+  turnFrom: z.number().optional(),
+  compacting: z.boolean().optional(),
+  agentSession: z.string().optional(),
   /** Where the conversation works, when it has a worktree of its own. */
-  worktree?: Worktree;
+  worktree: Worktree.optional(),
   /** The last id the conversation gave an entry of its own; saved, so a resumed one goes on from it. */
-  lastEntry?: number;
-}
+  lastEntry: z.number().optional(),
+});
+
+export type SessionState = z.infer<typeof SessionState>;
 
 export type SavedSession = Omit<SessionState, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };
 

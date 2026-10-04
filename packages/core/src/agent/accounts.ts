@@ -1,12 +1,16 @@
-export interface AgentAccount {
-  name: string;
-  signedIn: boolean;
-  email?: string;
-  plan?: string;
-  organization?: string;
+import { z } from 'zod';
+
+export const AgentAccount = z.object({
+  name: z.string(),
+  signedIn: z.boolean(),
+  email: z.string().optional(),
+  plan: z.string().optional(),
+  organization: z.string().optional(),
   /** The backend's own login: it can sign in again, but isn't removed. */
-  own?: boolean;
-}
+  own: z.boolean().optional(),
+});
+
+export type AgentAccount = z.infer<typeof AgentAccount>;
 
 export function accountLabel(account: AgentAccount) {
   const shared = account.plan === 'Team' || account.plan === 'Enterprise';

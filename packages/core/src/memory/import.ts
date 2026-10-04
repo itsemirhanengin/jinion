@@ -3,7 +3,8 @@ import { basename, join } from 'node:path';
 import { claudeConfigDir } from '../agent/claude/paths.js';
 import { projectSlug, tildify } from '../lib/paths.js';
 import { truncate } from '../lib/text.js';
-import type { MemoryScope, MemoryStore, MemoryType, NewMemory } from './store.js';
+import type { MemoryStore } from './store.js';
+import type { MemoryScope, MemoryType, NewMemory } from './types.js';
 
 const TYPES: Record<string, { scope: MemoryScope; type: MemoryType }> = {
   user: { scope: 'user', type: 'preference' },

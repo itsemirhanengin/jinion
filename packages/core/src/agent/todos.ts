@@ -1,11 +1,13 @@
-export type TodoStatus = 'pending' | 'active' | 'done';
+import { z } from 'zod';
 
-export interface TodoItem {
-  text: string;
-  status: TodoStatus;
-}
+export const TodoStatus = z.enum(['pending', 'active', 'done']);
 
-export interface TodoGroup {
-  title: string;
-  items: TodoItem[];
-}
+export type TodoStatus = z.infer<typeof TodoStatus>;
+
+export const TodoItem = z.object({ text: z.string(), status: TodoStatus });
+
+export type TodoItem = z.infer<typeof TodoItem>;
+
+export const TodoGroup = z.object({ title: z.string(), items: z.array(TodoItem) });
+
+export type TodoGroup = z.infer<typeof TodoGroup>;

@@ -1,10 +1,19 @@
-export interface PermissionRequest {
-  title: string;
-  command?: string;
-  subject?: string;
-  description?: string;
-  always?: string;
-  defaultToNo?: boolean;
-}
+import { z } from 'zod';
 
-export type PermissionDecision = { allow: true; always?: boolean } | { allow: false; note?: string };
+export const PermissionRequest = z.object({
+  title: z.string(),
+  command: z.string().optional(),
+  subject: z.string().optional(),
+  description: z.string().optional(),
+  always: z.string().optional(),
+  defaultToNo: z.boolean().optional(),
+});
+
+export type PermissionRequest = z.infer<typeof PermissionRequest>;
+
+export const PermissionDecision = z.union([
+  z.object({ allow: z.literal(true), always: z.boolean().optional() }),
+  z.object({ allow: z.literal(false), note: z.string().optional() }),
+]);
+
+export type PermissionDecision = z.infer<typeof PermissionDecision>;

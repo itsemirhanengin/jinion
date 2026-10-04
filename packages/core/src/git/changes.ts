@@ -1,12 +1,5 @@
-import { branchBase, findRepos, repoChanges, repoState, type FileChange, type Repo } from './repos.js';
-
-export interface RepoChanges {
-  repo: Repo;
-  branch?: string;
-  changes: FileChange[];
-  /** With nothing uncommitted, what the branch adds on top of the default branch. */
-  since?: { base: string; against: string };
-}
+import { branchBase, findRepos, repoChanges, repoState } from './repos.js';
+import type { Repo, RepoChanges } from './types.js';
 
 /** What `/diff` shows as Current, for every repository in `cwd` or in the folders below it. */
 export const readChanges = (cwd: string) => Promise.all(findRepos(cwd).map(readRepo));

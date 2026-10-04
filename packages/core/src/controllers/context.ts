@@ -1,18 +1,23 @@
+import type { Store } from 'jotai/vanilla';
+import { z } from 'zod';
+import type { AgentBackend, AgentSession } from '../agent/agent.js';
 import type { NoticeTone } from '../conversation/entries.js';
 import type { Action } from '../conversation/reducer.js';
-import type { Store } from 'jotai/vanilla';
-import type { AgentBackend, AgentSession } from '../agent/agent.js';
 import type { SessionAtoms } from '../state/session.js';
-import type { RewindPoint } from './conversation.js';
 
-export interface AppInfo {
-  version: string;
-  cwd: string;
-  examples?: string[];
-}
+export const AppInfo = z.object({ version: z.string(), cwd: z.string(), examples: z.array(z.string()).optional() });
+
+export type AppInfo = z.infer<typeof AppInfo>;
 
 /** Whether text put in a prompt replaces what is there, or goes before it, as queued messages coming back do. */
-export type PromptFill = 'replace' | 'prepend';
+export const PromptFill = z.enum(['replace', 'prepend']);
+
+export type PromptFill = z.infer<typeof PromptFill>;
+
+/** A message the conversation can go back to, as `/rewind` lists them. */
+export const RewindPoint = z.object({ entry: z.string(), promptId: z.string(), text: z.string() });
+
+export type RewindPoint = z.infer<typeof RewindPoint>;
 
 /** Implemented by each client, so controllers draw nothing. */
 export interface Screen {
@@ -28,20 +33,23 @@ export interface Screen {
 }
 
 /** What a command asks to see; each client draws it its own way. */
-export type View =
-  | { id: 'help'; topic?: string }
-  | { id: 'model' }
-  | { id: 'mode' }
-  | { id: 'account'; signIn?: string }
-  | { id: 'mcp' }
-  | { id: 'resume'; query?: string }
-  | { id: 'memory' }
-  | { id: 'rewind'; points: RewindPoint[] }
-  | { id: 'diff'; turn?: string; file?: string }
-  | { id: 'context' }
-  | { id: 'usage'; tab: 'usage' | 'stats' }
-  | { id: 'tasks' }
-  | { id: 'statusline' };
+export const View = z.discriminatedUnion('id', [
+  z.object({ id: z.literal('help'), topic: z.string().optional() }),
+  z.object({ id: z.literal('model') }),
+  z.object({ id: z.literal('mode') }),
+  z.object({ id: z.literal('account'), signIn: z.string().optional() }),
+  z.object({ id: z.literal('mcp') }),
+  z.object({ id: z.literal('resume'), query: z.string().optional() }),
+  z.object({ id: z.literal('memory') }),
+  z.object({ id: z.literal('rewind'), points: z.array(RewindPoint) }),
+  z.object({ id: z.literal('diff'), turn: z.string().optional(), file: z.string().optional() }),
+  z.object({ id: z.literal('context') }),
+  z.object({ id: z.literal('usage'), tab: z.enum(['usage', 'stats']) }),
+  z.object({ id: z.literal('tasks') }),
+  z.object({ id: z.literal('statusline') }),
+]);
+
+export type View = z.infer<typeof View>;
 
 /** What the app's controllers work with. */
 export interface AppContext {

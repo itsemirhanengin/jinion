@@ -2,24 +2,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync
 import { join } from 'node:path';
 import { jinionHome, projectDir } from '../lib/paths.js';
 import { frontmatter } from '../lib/text.js';
-
-export const MEMORY_SCOPES = ['user', 'project'] as const;
-export const MEMORY_TYPES = ['preference', 'decision', 'fact', 'reference'] as const;
-
-export type MemoryScope = (typeof MEMORY_SCOPES)[number];
-export type MemoryType = (typeof MEMORY_TYPES)[number];
-
-export interface Memory {
-  scope: MemoryScope;
-  id: string;
-  title: string;
-  description: string;
-  type: MemoryType;
-  updated: string;
-  content: string;
-}
-
-export type NewMemory = Omit<Memory, 'id' | 'updated'> & { id?: string };
+import { type Memory, MemoryScope, MemoryType, type NewMemory } from './types.js';
 
 /** One markdown file per note, so they can be read and edited by hand. */
 export class MemoryStore {
@@ -34,7 +17,7 @@ export class MemoryStore {
   }
 
   list(): Memory[] {
-    return MEMORY_SCOPES.flatMap((scope) => {
+    return MemoryScope.options.flatMap((scope) => {
       const dir = this.dir(scope);
       if (!existsSync(dir)) return [];
 
@@ -96,7 +79,7 @@ function parse(scope: MemoryScope, id: string, text: string): Memory | undefined
   if (!parsed) return undefined;
 
   const { fields, body } = parsed;
-  const type = (MEMORY_TYPES as readonly string[]).includes(fields.type ?? '') ? (fields.type as MemoryType) : 'fact';
+  const type = MemoryType.safeParse(fields.type).data ?? 'fact';
 
   return {
     scope,

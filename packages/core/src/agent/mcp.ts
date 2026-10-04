@@ -1,16 +1,20 @@
+import { z } from 'zod';
+
 export interface AgentMcp {
   servers(): Promise<McpServerInfo[]>;
   /** From the next turn on; the conversation carries on. */
   setEnabled(changes: Record<string, boolean>): Promise<void>;
 }
 
-export interface McpServerInfo {
-  name: string;
-  label: string;
-  source: string;
-  enabled: boolean;
-  status: 'connected' | 'pending' | 'needs-auth' | 'failed' | 'off';
-  target?: string;
-  error?: string;
-  tools: string[];
-}
+export const McpServerInfo = z.object({
+  name: z.string(),
+  label: z.string(),
+  source: z.string(),
+  enabled: z.boolean(),
+  status: z.enum(['connected', 'pending', 'needs-auth', 'failed', 'off']),
+  target: z.string().optional(),
+  error: z.string().optional(),
+  tools: z.array(z.string()),
+});
+
+export type McpServerInfo = z.infer<typeof McpServerInfo>;

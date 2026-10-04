@@ -1,32 +1,36 @@
-import type { NewEntry, NoticeTone, Status } from './entries.js';
-import type { AgentEvent } from '../agent/events.js';
-import type { Worktree } from '../git/worktrees.js';
+import { z } from 'zod';
+import { AgentEvent } from '../agent/events.js';
+import { Worktree } from '../git/types.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
-import { isBackground, lastToolRun, noticeEntry, type Entry } from './entries.js';
+import { isBackground, lastToolRun, noticeEntry, NoticeTone, type Entry, type NewEntry, type Status } from './entries.js';
 import { addNewEntries, updateTool, type SessionState } from './session.js';
 import { titleOf } from './titles.js';
 
-export type Action =
-  | { type: 'submit'; text: string; prompt?: string }
-  | { type: 'agent-turn' }
-  | { type: 'approval'; id: string; waiting: boolean }
-  | { type: 'steer'; text: string; prompt?: string; id?: string }
+export const TurnOutcome = z.enum(['done', 'interrupted', 'failed']);
+
+export type TurnOutcome = z.infer<typeof TurnOutcome>;
+
+export const Action = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('submit'), text: z.string(), prompt: z.string().optional() }),
+  z.object({ type: z.literal('agent-turn') }),
+  z.object({ type: z.literal('approval'), id: z.string(), waiting: z.boolean() }),
+  z.object({ type: z.literal('steer'), text: z.string(), prompt: z.string().optional(), id: z.string().optional() }),
   /** `session` may have been switched away from meanwhile. */
-  | { type: 'retitle'; session: string; title: string; by: 'agent' | 'user'; turns: number }
-  | { type: 'rewind'; entry: string }
-  | { type: 'event'; event: AgentEvent }
-  | { type: 'finish'; outcome: TurnOutcome; message?: string }
-  | { type: 'notice'; text: string; tone?: NoticeTone }
-  | { type: 'worktree'; worktree?: Worktree };
+  z.object({ type: z.literal('retitle'), session: z.string(), title: z.string(), by: z.enum(['agent', 'user']), turns: z.number() }),
+  z.object({ type: z.literal('rewind'), entry: z.string() }),
+  z.object({ type: z.literal('event'), event: AgentEvent }),
+  z.object({ type: z.literal('finish'), outcome: TurnOutcome, message: z.string().optional() }),
+  z.object({ type: z.literal('notice'), text: z.string(), tone: NoticeTone.optional() }),
+  z.object({ type: z.literal('worktree'), worktree: Worktree.optional() }),
+]);
+
+export type Action = z.infer<typeof Action>;
 
 /** An action with the time it happened, stamped once where it is dispatched. */
-export interface StampedAction {
-  action: Action;
-  at: number;
-}
+export const StampedAction = z.object({ action: Action, at: z.number() });
 
-export type TurnOutcome = 'done' | 'interrupted' | 'failed';
+export type StampedAction = z.infer<typeof StampedAction>;
 
 /**
  * Pure: the same conversation and the same action, at the same time, give the same conversation anywhere. So a client

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import type { ModelOption, ModelSelection } from './models.js';
 import type { PermissionDecision, PermissionRequest } from './permissions.js';
 import type { Question, QuestionAnswer } from './questions.js';
@@ -72,7 +73,9 @@ export interface AgentSession {
 }
 
 /** `edits` changes project files without asking; `auto` lets the backend's own safety review decide what to ask. */
-export type AgentMode = 'manual' | 'edits' | 'plan' | 'auto';
+export const AgentMode = z.enum(['manual', 'edits', 'plan', 'auto']);
+
+export type AgentMode = z.infer<typeof AgentMode>;
 
 export interface RunContext {
   signal: AbortSignal;
@@ -82,41 +85,46 @@ export interface RunContext {
   approvePlan(modes: AgentMode[]): Promise<PlanDecision>;
 }
 
-export type PlanDecision = { approve: true; mode: AgentMode } | { approve: false; note?: string };
+export const PlanDecision = z.union([
+  z.object({ approve: z.literal(true), mode: AgentMode }),
+  z.object({ approve: z.literal(false), note: z.string().optional() }),
+]);
+
+export type PlanDecision = z.infer<typeof PlanDecision>;
+
+export const AgentImage = z.object({
+  mediaType: z.string(),
+  /** Base64. */
+  data: z.string(),
+});
+
+export type AgentImage = z.infer<typeof AgentImage>;
 
 /** The text refers to its images as `[Image #1]`, in the order of `images`. */
-export interface AgentPrompt {
-  text: string;
-  images?: AgentImage[];
-}
+export const AgentPrompt = z.object({ text: z.string(), images: z.array(AgentImage).optional() });
 
-export interface AgentImage {
-  mediaType: string;
-  /** Base64. */
-  data: string;
-}
+export type AgentPrompt = z.infer<typeof AgentPrompt>;
 
-export interface AgentCommand {
+export const AgentCommand = z.object({
   /** Unique; `vercel:nextjs` when another skill already has the short name. */
-  name: string;
-  description: string;
-  source: 'skill' | 'mcp';
-  group: string;
-  argumentHint?: string;
-}
+  name: z.string(),
+  description: z.string(),
+  source: z.enum(['skill', 'mcp']),
+  group: z.string(),
+  argumentHint: z.string().optional(),
+});
+
+export type AgentCommand = z.infer<typeof AgentCommand>;
 
 export interface AgentResume {
   sessionId: string;
   cost: number;
 }
 
-export interface RewindScope {
-  code: boolean;
-  conversation: boolean;
-}
+export const RewindScope = z.object({ code: z.boolean(), conversation: z.boolean() });
 
-export interface FileChanges {
-  files: string[];
-  insertions: number;
-  deletions: number;
-}
+export type RewindScope = z.infer<typeof RewindScope>;
+
+export const FileChanges = z.object({ files: z.array(z.string()), insertions: z.number(), deletions: z.number() });
+
+export type FileChanges = z.infer<typeof FileChanges>;
