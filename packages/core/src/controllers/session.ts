@@ -17,6 +17,11 @@ import { TaskController } from './tasks.js';
 import { TurnController } from './turns.js';
 import { WorktreeController } from './worktrees.js';
 
+/** An action as its session took it: stamped, and numbered in the order they came. */
+export interface SentAction extends StampedAction {
+  seq: number;
+}
+
 export interface Notice {
   text: string;
   tone?: NoticeTone;
@@ -36,7 +41,8 @@ export class Session {
   readonly tasks: TaskController;
   readonly worktrees: WorktreeController;
   private readonly unsubscribe: () => void;
-  private readonly listeners = new Set<(stamped: StampedAction) => void>();
+  private readonly listeners = new Set<(sent: SentAction) => void>();
+  private sent = 0;
 
   constructor(
     private readonly app: Jinion,
@@ -95,8 +101,13 @@ export class Session {
     this.dispatch({ type: 'notice', text, tone });
   }
 
+  /** How many actions its conversation has taken since it opened; the next one is `seq + 1`. */
+  get seq() {
+    return this.sent;
+  }
+
   /** Follows every change to its conversation, in order, as a client replaying them needs. */
-  onAction(listener: (stamped: StampedAction) => void) {
+  onAction(listener: (sent: SentAction) => void) {
     this.listeners.add(listener);
 
     return () => void this.listeners.delete(listener);
@@ -144,10 +155,10 @@ export class Session {
 
   /** The one way its conversation changes: stamped once, so replaying it anywhere gives the same result. */
   private dispatch(action: Action) {
-    const stamped = { action, at: Date.now() };
+    const sent = { action, at: Date.now(), seq: ++this.sent };
 
-    this.app.store.set(this.atoms.dispatch, stamped);
-    for (const listener of this.listeners) listener(stamped);
+    this.app.store.set(this.atoms.dispatch, sent);
+    for (const listener of this.listeners) listener(sent);
   }
 
   private end() {

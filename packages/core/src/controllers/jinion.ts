@@ -54,6 +54,7 @@ export class Jinion {
   private readonly open: Session[] = [];
   private active?: Session;
   private readonly onExit?: (message: string) => void;
+  private readonly sessionListeners = new Set<() => void>();
 
   constructor(
     private readonly options: JinionOptions,
@@ -130,6 +131,7 @@ export class Jinion {
     });
 
     this.open.push(session);
+    this.sessionsChanged();
 
     if (gone) {
       session.notice(`Your worktree ${tildify(gone.path)} no longer exists. The conversation continues in the project folder.`, 'warning');
@@ -141,6 +143,14 @@ export class Jinion {
   activate(session: Session) {
     this.active = session;
     this.store.set(activeSessionAtom, session.atoms);
+    this.sessionsChanged();
+  }
+
+  /** Each time a session opens or closes, or another becomes the one the user looks at. */
+  onSessionsChange(listener: () => void) {
+    this.sessionListeners.add(listener);
+
+    return () => void this.sessionListeners.delete(listener);
   }
 
   /** Closes `session`, unless the user keeps it, and shows another; a new conversation when it was the last. */
@@ -192,9 +202,16 @@ export class Jinion {
   private async end(session: Session) {
     const notices = await session.close();
 
-    if (notices) this.open.splice(this.open.indexOf(session), 1);
+    if (notices) {
+      this.open.splice(this.open.indexOf(session), 1);
+      this.sessionsChanged();
+    }
 
     return notices;
+  }
+
+  private sessionsChanged() {
+    for (const listener of this.sessionListeners) listener();
   }
 
   private show(session: Session, notices: Notice[]) {

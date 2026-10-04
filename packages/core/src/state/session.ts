@@ -42,6 +42,7 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     /** Written only by the session, which stamps each action once and tells whoever follows it. */
     dispatch: atom(null, (get, set, { action, at }: StampedAction) => set(state, reduce(get(state), action, at))),
     entries,
+    title: atom((get) => get(state).title),
     todos: atom((get) => get(state).todos),
     worktree: atom((get) => get(state).worktree),
     wantsWorktree: atom(worktree),
