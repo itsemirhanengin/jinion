@@ -43,6 +43,16 @@ The repository is private, and `@jinion/cli` isn't on npm yet, so the docs' inst
 fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, publish from
 `apps/cli` with `npm publish --access public`, since scoped packages are private by default.
 
+- **claude.ai login stays, knowingly.** The Agent SDK's overview says Anthropic doesn't allow third-party products,
+  agents built on the SDK included, to offer claude.ai login or its rate limits unless it approved them. Jinion offers
+  it without approval, as a decision taken knowing the risk: Anthropic could block such clients or act on the accounts.
+  The docs and `/account` say plainly that it is a subscription login.
+- **Signing in with an API key** comes first as the fallback, so Jinion keeps working if claude.ai login is closed:
+  `ANTHROPIC_API_KEY` (and Bedrock or Vertex), which the SDK supports, picked in `/account`.
+- **Later, paid plans.** Jinion may close claude.ai login and sell usage itself, as Cursor does, with requests going
+  through a provider layer such as the Vercel AI SDK or OpenRouter. That is a second backend behind `Agent`, which the
+  core's split into shared and per-session parts makes room for.
+
 ## Next
 
 ### A Codex adapter
@@ -59,6 +69,7 @@ history. Optional parts of the interface stay optional, so the UI already copes 
   with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
+
 ## Later: a system prompt sized to the request
 
 Most of the quota a small request spends goes to the frame around it: a long system prompt, then lint, typecheck,
@@ -74,23 +85,56 @@ the full frame with its checks. What is known so far:
 - The classification itself is a call; it has to be quick and cheap enough to be worth it on every request.
 - Measure before and after on the same tasks with `/usage`, so the saving is a number rather than a feeling.
 
-## Later: Jinion as a full IDE
+## Core and clients
 
-The end goal is an IDE in the terminal: the agent, a code editor and a shell side by side, in tabs, over more than one
-project at once. It isn't one step but the direction the items above lead to, so the work before it should leave room
-for it rather than build it early. What it takes:
+The goal: a headless `packages/core` that holds everything but drawing, with the TUI as its first client and a desktop
+app (Monaco, LSP, a real terminal) as its second. In the TUI: tabs, several conversations at once, a git panel, a
+terminal and an editor of Jinion's own. Decided after mapping `apps/cli/src` and looking at OpenCode, Claude Code's SDK,
+Codex's app-server, Zed's ACP and Goose:
 
-- **Tabs.** Several conversations, editors and shells open at once, each in its own tab, with a tab bar and shortcuts
-  to move between them. Today the app is one conversation on the whole screen, with panels on top of it.
-- **More than one project.** Each tab belongs to a project folder, with its own session store, `/diff`, git state and
-  instruction files. Worktrees, turned on with `ctrl+g`, are the first step: several conversations on one repository.
-- **An editor.** Open a file from the conversation, from `/diff` or from a file tree, move around it, change it and save
-  it, with syntax colors from the theme. The prompt's editor (`packages/tui/src/chat/prompt/`) and `/diff`'s
-  file view are the pieces closest to it today.
-- **A terminal.** A real shell in a tab or a split, running in a pseudo-terminal and drawn through a terminal emulator
-  inside Jinion, so full-screen programs like `vim` or `htop` work in it too.
-- **Splits.** A conversation next to the file it is changing, or next to a shell, like Claude Code's live diff panel
-  beside the conversation (in Smaller items).
+- **One core holds many sessions.** A session is a conversation with its own agent process, store, queue, dialogs and
+  worktree; the app holds what they share: settings, accounts, models, skills, MCP servers, memory, the session store.
+- **The API is JSON-RPC 2.0 in both directions**, after Codex's app-server and LSP: the client sends requests, the
+  core sends events as notifications with a sequence number per session, and asks the client for permissions and
+  answers as requests of its own. Every message is defined once in zod; the TypeScript types and a JSON Schema come
+  from it. `initialize` carries a protocol version and capabilities.
+- **Three transports, one message layer.** In process for the TUI, so it stays as fast as today; stdio for a child
+  process; WebSocket on 127.0.0.1 with a random token in a 0600 file and an Origin check for the desktop app (OpenCode's
+  open server became CVE-2026-22812). Terminal panes get a stream of their own.
+- **ACP comes as an adapter, not the core API.** Its sessions, prompts and permissions map onto ours, so `jinion acp`
+  can reach Zed and JetBrains later; it has nothing for settings, git, memory or MCP.
+- **`@jinion/tui` stays independent of core.** Core has its own types; they are shaped like the chat kit's, so the CLI
+  passes one to the other without mapping.
+
+Steps, each one leaving Jinion working as it does today:
+
+1. **Untangle in place.** Core-side code stops importing `@jinion/tui` (its own types for models, questions,
+   permissions, todos, notices and statuses; its own fuzzy matching, dates, mentions and pastes) and loads jotai from
+   `jotai/vanilla`. Logic that lives in panels and hooks moves into controllers: signing in, reading a repository's
+   changes, git status, task output, turning MCP servers on, the rewind guards. `StatusItem` and its defaults move to
+   settings. `Screen.openPanel` takes a view as data (`{ id: 'model' }`, `{ id: 'resume', query }`) that the TUI maps to
+   its panels, so commands lose their JSX; dialogs close by their own id.
+2. **Move into `packages/core`.** `agent/`, `conversation/`, `controllers/`, `state/`, `settings/`, `memory/`, `mcp/`,
+   `git/`, `prompt/`, `usage/`, `lib/` and the commands, with their tests. `apps/cli` keeps `main.tsx`, `app/`,
+   `panels/`, `ui/` and `status/`.
+3. **Sessions.** `Jinion` splits into the app and its sessions; `Agent` into what the backend shares (models,
+   accounts, MCP, usage, history, titles) and a session (run, steer, rewind, tasks, compact). Shared data stops coming
+   through a conversation's process. Dialogs and notices carry their session, and a session that is open can't be
+   opened twice.
+4. **The API**, with the in-process transport, and the TUI moved onto it; then stdio, WebSocket and `jinion serve`.
+5. **Tabs in the TUI.** A tab bar, a session per tab, shortcuts, a mark on a tab that waits for an answer, `/resume`
+   opening into a new tab.
+6. **Panes in the TUI.** Splits in `@jinion/tui`; then the changes and git panel beside the conversation, with commits
+   and comments on a diff line that go to the agent; a file tree; a terminal pane (a pseudo-terminal and an emulator);
+   an editor of Jinion's own, reading first, then editing.
+7. **The desktop app.** Electron, since the core runs on Node: the core in a utility process, Monaco, language servers,
+   xterm.js. An editor core of Jinion's own may replace Monaco later.
+
+Known before starting:
+
+- **Several Jinions at once** write the same `settings.json`, `permissions.json` and session folder with read, change
+  and write; a single core per user would remove the race.
+- **claude.ai login** is offered without Anthropic's approval; see Going public.
 
 ## Known and left as they are
 
