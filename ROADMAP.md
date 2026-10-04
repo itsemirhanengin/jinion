@@ -40,8 +40,9 @@ missing from the reference pages. What is left:
 ## Going public
 
 The repository is private, and `@jinion/cli` isn't on npm yet, so the docs' install command and their links to GitHub
-fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, publish from
-`apps/cli` with `npm publish --access public`, since scoped packages are private by default.
+fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, publish
+`packages/core`, then `apps/cli` (which depends on it), each with `npm publish --access public`, since scoped packages
+are private by default; `@jinion/tui` and `@jinion/virtualization` too, unless they get bundled into the CLI.
 
 - **claude.ai login stays, knowingly.** The Agent SDK's overview says Anthropic doesn't allow third-party products,
   agents built on the SDK included, to offer claude.ai login or its rate limits unless it approved them. Jinion offers
@@ -108,15 +109,12 @@ Codex's app-server, Zed's ACP and Goose:
 
 Steps, each one leaving Jinion working as it does today:
 
-1. **Untangle in place.** Core-side code stops importing `@jinion/tui` (its own types for models, questions,
-   permissions, todos, notices and statuses; its own fuzzy matching, dates, mentions and pastes) and loads jotai from
-   `jotai/vanilla`. Logic that lives in panels and hooks moves into controllers: signing in, reading a repository's
-   changes, git status, task output, turning MCP servers on, the rewind guards. `StatusItem` and its defaults move to
-   settings. `Screen.openPanel` takes a view as data (`{ id: 'model' }`, `{ id: 'resume', query }`) that the TUI maps to
-   its panels, so commands lose their JSX; dialogs close by their own id.
-2. **Move into `packages/core`.** `agent/`, `conversation/`, `controllers/`, `state/`, `settings/`, `memory/`, `mcp/`,
-   `git/`, `prompt/`, `usage/`, `lib/` and the commands, with their tests. `apps/cli` keeps `main.tsx`, `app/`,
-   `panels/`, `ui/` and `status/`.
+1. **Untangle in place** (done). The core has its own types and helpers, loads jotai from `jotai/vanilla`, and opens
+   views and dialogs as data; signing in, git status, a repository's changes, task output, MCP servers and the rewind
+   guards moved out of panels and hooks.
+2. **Move into `packages/core`** (done). `@jinion/core` holds `agent/`, `commands/`, `controllers/`, `conversation/`,
+   `state/`, `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` and `lib/` with their tests; `apps/cli` keeps
+   `main.tsx`, `app/`, `panels/`, `ui/` and `status/`, and imports the core by module.
 3. **Sessions.** `Jinion` splits into the app and its sessions; `Agent` into what the backend shares (models,
    accounts, MCP, usage, history, titles) and a session (run, steer, rewind, tasks, compact). Shared data stops coming
    through a conversation's process. Dialogs and notices carry their session, and a session that is open can't be

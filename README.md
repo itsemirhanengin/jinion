@@ -22,7 +22,8 @@ servers, every command and shortcut.
 ## Develop
 
 ```text
-apps/cli                 @jinion/cli              the `jinion` command
+packages/core            @jinion/core             Jinion without a screen: the agent, conversations, settings
+apps/cli                 @jinion/cli              the `jinion` command, a terminal app on the core
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React

@@ -11,39 +11,41 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 # Jinion
 
-A coding agent in the terminal. `apps/cli` is the app (`jinion`), `packages/tui` the terminal UI framework it is built
-on (Ink and React), `packages/virtualization` the list virtualizer under its scroll view, `packages/spacing` the checker for the vertical
-layout below, `apps/docs` the docs site, `apps/website` the page at jinion.co.
-`ROADMAP.md` has what is left to build.
+A coding agent in the terminal. `packages/core` is Jinion without a screen, `apps/cli` the terminal app (`jinion`) that
+drives it, `packages/tui` the terminal UI framework the app is built on (Ink and React), `packages/virtualization` the
+list virtualizer under its scroll view, `packages/spacing` the checker for the vertical layout below, `apps/docs` the
+docs site, `apps/website` the page at jinion.co. `ROADMAP.md` has what is left to build, including the API that will
+let a desktop app drive the core too.
 
-## Architecture of `apps/cli/src`
+## Architecture
 
-Dependencies point down this list; nothing lower imports from higher up.
+Dependencies point down this list; nothing lower imports from higher up. The app imports the core by module, as
+`@jinion/core/controllers/jinion`.
 
 | Folder | What lives there |
 | --- | --- |
-| `main.tsx` | Flags, picking the agent, `run(<App />)`. |
-| `app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs controllers ask for. |
-| `commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
-| `panels/` | One component per panel, a folder for one with several parts. A new panel gets a `View` in `controllers/context.ts` and a case in `app/views.tsx`. |
-| `ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
-| `status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
-| `controllers/` | What the app does, as plain classes with no React: turns and the queue, the conversation, models, modes, accounts, tasks, input. `jinion.ts` is the composition root. They reach the screen only through the `Screen` port in `context.ts`. |
-| `state/` | Jotai atoms, the single source of truth for what changes. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
-| `conversation/` | The conversation as data: entry types, the pure reducer, edits and titles, the session store. No React, unit-tested. |
-| `agent/` | The backend contract (`agent.ts`, `events.ts`, `tools.ts`, ...) and its implementations: `claude/` drives Claude Code headless, `demo/` plays scripted scenarios for `--demo` and the app tests. |
-| `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` | Files on disk and outside tools, each behind a small module. |
-| `lib/` | Generic helpers: formatting (`format.ts`), text, errors, JSON files, paths. |
+| `apps/cli/src/main.tsx` | Flags, picking the agent, `run(<App />)`. |
+| `apps/cli/src/app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs controllers ask for. |
+| `apps/cli/src/panels/` | One component per panel, a folder for one with several parts. A new panel gets a `View` in the core's `controllers/context.ts` and a case in `app/views.tsx`. |
+| `apps/cli/src/ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
+| `apps/cli/src/status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
+| `packages/core/src/commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
+| `packages/core/src/controllers/` | What the app does, as plain classes: turns and the queue, the conversation, models, modes, accounts, MCP, tasks, input. `jinion.ts` is the composition root. They reach the screen only through the `Screen` port in `context.ts`. |
+| `packages/core/src/state/` | Jotai atoms, the single source of truth for what changes. Derived values are derived atoms; choices that outlive a run are `persistedAtom`s. |
+| `packages/core/src/conversation/` | The conversation as data: entry types, the pure reducer, edits and titles, the session store. No React, unit-tested. |
+| `packages/core/src/agent/` | The backend contract (`agent.ts`, `events.ts`, `tools.ts`, ...) and its implementations: `claude/` drives Claude Code headless, `demo/` plays scripted scenarios for `--demo` and the app tests. |
+| `packages/core/src/` `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` | Files on disk and outside tools, each behind a small module. |
+| `packages/core/src/lib/` | Generic helpers: formatting (`format.ts`), text, errors, JSON files, paths, fuzzy matching, dates. |
 
 Rules that keep it that way:
 
 - **State lives in atoms; behavior lives in controllers.** Components read atoms with `useAtomValue` and call the
   `Jinion` from `useJinion()`, which never changes, so reading it never redraws. Don't put app state in `useState` when
   more than one component or a controller needs it.
-- **What will be `packages/core` draws nothing.** `agent/`, `commands/`, `controllers/`, `conversation/`, `state/`,
-  `settings/`, `memory/`, `mcp/`, `git/`, `prompt/`, `usage/` and `lib/` import no React, Ink, `@jinion/tui` or
-  jotai's root entry (`jotai/vanilla` instead), and nothing from the TUI's folders; `biome.jsonc` checks it. What they
-  need from the screen goes through `Screen`, as data: views (`View`) and dialogs (`Dialog`) that each client draws.
+- **`@jinion/core` draws nothing.** It imports no React, Ink, `@jinion/tui` or jotai's root entry (`jotai/vanilla`
+  instead); `biome.jsonc` checks it. What it needs from the screen goes through `Screen`, as data: views (`View`) and
+  dialogs (`Dialog`) that each client draws. Its types are its own; the chat kit's are shaped the same, so the app passes
+  one to the other as they are.
 - **Backends stay behind `Agent`.** The app only uses `agent/agent.ts` and its sibling contract files; anything Claude
   Code specific stays in `agent/claude/`. Optional members are feature-detected, with a notice when missing.
 - **`@jinion/tui` knows nothing about Jinion.** Generic pieces come from `@jinion/tui`, the chat kit (messages, tool
@@ -91,14 +93,14 @@ What the checker can't judge, keep by hand:
 
 - Tests live in each package's `tests/` folder, mirroring `src/`: the tests of `src/agent/claude/events.ts` are in
   `tests/agent/claude/events.test.ts`, with their fixtures and snapshots beside them. Shared helpers (`sandbox`,
-  `FakeClaude`, `git`) are in `tests/support/`. Nothing in `src/` imports from `tests/`. `@jinion/tui/testing` stays in
-  `src/testing`, since it is a public entry of the package.
+  `FakeClaude`, `git`) are in the core's `tests/support/`, which the app's tests import as `@jinion/core/testing/sandbox`.
+  Nothing in `src/` imports from `tests/`. `@jinion/tui/testing` stays in `src/testing`, since it is a public entry of
+  the package.
 - Vitest. Run with `NODE_ENV=development` if your shell sets it to production, or `@jinion/tui/testing` won't resolve.
 - Screens: `renderTerminal` from `@jinion/tui/testing`, against the demo agent (`tests/app/app.test.tsx`). Tests read the
   screen as the user would; keep its text stable or update them on purpose.
-- Claude Code's messages: recorded fixtures in `tests/agent/claude/fixtures` (`pnpm fixture`, in `scripts/fixture.ts`,
-  turns a `--debug` log into one)
-  and `FakeClaude` for the process.
+- Claude Code's messages: recorded fixtures in the core's `tests/agent/claude/fixtures` (`pnpm --filter @jinion/core
+  fixture`, in `scripts/fixture.ts`, turns a `--debug` log into one) and `FakeClaude` for the process.
 - Before calling something done: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`, then a real check through
   the installed `jinion`, which runs `apps/cli/dist`.
 
