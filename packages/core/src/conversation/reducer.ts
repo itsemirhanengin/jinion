@@ -5,7 +5,7 @@ import type { Worktree } from '../git/worktrees.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
 import { isBackground, lastToolRun, nextId, noticeEntry, type Entry } from './entries.js';
-import { addEntries, createSession, fromSaved, updateTool, type SavedSession, type Session } from './session.js';
+import { addEntries, createSessionState, fromSaved, updateTool, type SavedSession, type SessionState } from './session.js';
 import { titleOf } from './titles.js';
 
 export type Action =
@@ -26,11 +26,11 @@ export type Action =
 export type TurnOutcome = 'done' | 'interrupted' | 'failed';
 
 /** Pure, so everything that happens on screen can be tested without React. */
-export function reduce(session: Session, action: Action): Session {
+export function reduce(session: SessionState, action: Action): SessionState {
   return endThinking(session, next(session, action));
 }
 
-function endThinking(before: Session, after: Session): Session {
+function endThinking(before: SessionState, after: SessionState): SessionState {
   const open = before.entries.at(-1);
   if (open?.kind !== 'thinking' || open.endedAt !== undefined) return after;
 
@@ -42,7 +42,7 @@ function endThinking(before: Session, after: Session): Session {
   return { ...after, entries };
 }
 
-function next(session: Session, action: Action): Session {
+function next(session: SessionState, action: Action): SessionState {
   switch (action.type) {
     case 'submit':
       return {
@@ -85,7 +85,7 @@ function next(session: Session, action: Action): Session {
       return addEntries(session, noticeEntry(action.text, action.tone ?? 'muted'));
 
     case 'clear':
-      return createSession(session.usage.contextWindow);
+      return createSessionState(session.usage.contextWindow);
 
     case 'load':
       return fromSaved(action.session);
@@ -105,7 +105,7 @@ function next(session: Session, action: Action): Session {
   }
 }
 
-function finish(session: Session, outcome: TurnOutcome, message?: string): Session {
+function finish(session: SessionState, outcome: TurnOutcome, message?: string): SessionState {
   const cancel = <T extends { status: Status; endedAt?: number }>(call: T): T =>
     call.status === 'running' ? { ...call, status: 'cancelled', endedAt: Date.now() } : call;
 

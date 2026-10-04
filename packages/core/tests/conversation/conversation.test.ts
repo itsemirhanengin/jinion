@@ -3,17 +3,17 @@ import type { AgentEvent } from '../../src/agent/events.js';
 import { editTurns } from '../../src/conversation/edits.js';
 import type { Entry } from '../../src/conversation/entries.js';
 import { reduce } from '../../src/conversation/reducer.js';
-import { createSession, inRunningTurn, type Session } from '../../src/conversation/session.js';
+import { createSessionState, inRunningTurn, type SessionState } from '../../src/conversation/session.js';
 import { conversationDigest, titleDue } from '../../src/conversation/titles.js';
 
-const events = (session: Session, ...list: AgentEvent[]) =>
+const events = (session: SessionState, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
 
-const kinds = (session: Session) => session.entries.map((entry) => (entry.kind === 'tool' ? `tool:${entry.status}` : entry.kind));
+const kinds = (session: SessionState) => session.entries.map((entry) => (entry.kind === 'tool' ? `tool:${entry.status}` : entry.kind));
 
 describe('reduce', () => {
   it('starts a turn with the user’s text, titled after it', () => {
-    const session = reduce(createSession(200_000), { type: 'submit', text: 'fix the build', prompt: 'fix the build\nfully' });
+    const session = reduce(createSessionState(200_000), { type: 'submit', text: 'fix the build', prompt: 'fix the build\nfully' });
 
     expect(session.entries.at(-1)).toMatchObject({ kind: 'user', text: 'fix the build', prompt: 'fix the build\nfully' });
     expect(session.title).toBe('fix the build');
@@ -22,7 +22,7 @@ describe('reduce', () => {
 
   it('joins streamed text into one entry until something else comes in between', () => {
     const session = events(
-      createSession(200_000),
+      createSessionState(200_000),
       { type: 'text', delta: '  Hello' },
       { type: 'text', delta: ' there' },
       { type: 'thinking', delta: 'hmm' },
@@ -33,7 +33,7 @@ describe('reduce', () => {
   });
 
   it('times thinking from its first text until something follows it, or until the turn ends', () => {
-    const turn = reduce(createSession(200_000), { type: 'submit', text: 'go' });
+    const turn = reduce(createSessionState(200_000), { type: 'submit', text: 'go' });
     const thinking = events(turn, { type: 'thinking', delta: 'hmm' }, { type: 'thinking', delta: ' and more' });
 
     expect(thinking.entries.at(-1)).toMatchObject({ kind: 'thinking', text: 'hmm and more', startedAt: expect.any(Number) });
@@ -50,7 +50,7 @@ describe('reduce', () => {
 
   it('tells the entries of the turn still running from earlier ones, which fold', () => {
     const bash = (id: string): AgentEvent => ({ type: 'tool-start', id, call: { name: 'bash', input: { command: 'ls', timeoutMs: 1000 } } });
-    const first = reduce(events(reduce(createSession(200_000), { type: 'submit', text: 'one' }), bash('t1')), { type: 'finish', outcome: 'done' });
+    const first = reduce(events(reduce(createSessionState(200_000), { type: 'submit', text: 'one' }), bash('t1')), { type: 'finish', outcome: 'done' });
     const earlier = first.entries.length - 1;
 
     expect(inRunningTurn(first, earlier)).toBe(false);
@@ -63,7 +63,7 @@ describe('reduce', () => {
 
   it('runs tools from start to end, with their output', () => {
     const session = events(
-      createSession(200_000),
+      createSessionState(200_000),
       { type: 'tool-start', id: 't1', call: { name: 'bash', input: { command: 'ls', timeoutMs: 1000 } } },
       { type: 'tool-output', id: 't1', lines: ['a.ts'] },
       { type: 'tool-end', id: 't1', ok: true, result: { exitCode: 0, wallMs: 5 } },
@@ -73,7 +73,7 @@ describe('reduce', () => {
   });
 
   it('marks a call that waits for permission, and times it from when it was allowed', () => {
-    const started = events(createSession(200_000), { type: 'tool-start', id: 't1', call: { name: 'bash', input: { command: 'rm a', timeoutMs: 1000 } } });
+    const started = events(createSessionState(200_000), { type: 'tool-start', id: 't1', call: { name: 'bash', input: { command: 'rm a', timeoutMs: 1000 } } });
     const waiting = reduce(started, { type: 'approval', id: 't1', waiting: true });
 
     expect(waiting.entries.at(-1)).toMatchObject({ waiting: true });
@@ -85,7 +85,7 @@ describe('reduce', () => {
   });
 
   it('marks the conversation compacting, then where it was compacted, or why it couldn’t be', () => {
-    const running = events(createSession(200_000), { type: 'compaction', state: 'running' });
+    const running = events(createSessionState(200_000), { type: 'compaction', state: 'running' });
 
     expect(running.compacting).toBe(true);
 
@@ -105,7 +105,7 @@ describe('reduce', () => {
       { type: 'tool-end', id, ok, result: {} },
     ];
 
-    let session = reduce(createSession(200_000), { type: 'submit', text: 'fix the build' });
+    let session = reduce(createSessionState(200_000), { type: 'submit', text: 'fix the build' });
 
     session = events(session, ...edit('e1', 'src/a.ts'), ...edit('e2', 'src/b.ts', false));
     session = reduce(session, { type: 'steer', text: 'and the docs', id: 's1' });
@@ -132,7 +132,7 @@ describe('reduce', () => {
       { type: 'tool-end', id, ok: true, result: {} },
     ];
 
-    let session = reduce(createSession(200_000), { type: 'submit', text: 'add the limiter' });
+    let session = reduce(createSessionState(200_000), { type: 'submit', text: 'add the limiter' });
     const prompt = session.entries.at(-1)!.id;
 
     session = events(
@@ -165,7 +165,7 @@ describe('reduce', () => {
       call: { name: 'todo', input: { groups: [{ title: 'Tasks', items: [{ text, status: 'pending' }] }] } },
     });
 
-    const session = events(createSession(200_000), todo('one'), todo('two'));
+    const session = events(createSessionState(200_000), todo('one'), todo('two'));
 
     expect(kinds(session).filter((kind) => kind.startsWith('tool'))).toHaveLength(1);
     expect(session.todos[0]!.items[0]!.text).toBe('two');
@@ -178,7 +178,7 @@ describe('reduce', () => {
       call: { name: 'todo', input: { groups: [{ title: 'Tasks', items: [{ text, status: 'pending' }] }] } },
     });
 
-    let session = reduce(createSession(200_000), { type: 'submit', text: 'first' });
+    let session = reduce(createSessionState(200_000), { type: 'submit', text: 'first' });
 
     session = events(session, { type: 'sent', id: 'p1' }, todo('one'));
     session = reduce(session, { type: 'submit', text: 'second' });
@@ -197,7 +197,7 @@ describe('reduce', () => {
   });
 
   it('keeps a subagent’s tool calls under its agent call, and cancels them with the turn', () => {
-    let session = reduce(createSession(200_000), { type: 'submit', text: 'look around' });
+    let session = reduce(createSessionState(200_000), { type: 'submit', text: 'look around' });
 
     session = events(
       session,
@@ -218,7 +218,7 @@ describe('reduce', () => {
   });
 
   it('cancels tools still running when the turn ends, and says why it ended', () => {
-    let session = reduce(createSession(200_000), { type: 'submit', text: 'go' });
+    let session = reduce(createSessionState(200_000), { type: 'submit', text: 'go' });
 
     session = events(session, { type: 'tool-start', id: 't1', call: { name: 'glob', input: { pattern: '*' } } });
     session = reduce(session, { type: 'finish', outcome: 'interrupted' });
@@ -232,13 +232,13 @@ describe('reduce', () => {
 
 describe('titles', () => {
   const sent = (...prompts: string[]) =>
-    prompts.reduce((session, text) => reduce(reduce(session, { type: 'submit', text }), { type: 'finish', outcome: 'done' }), createSession(200_000));
+    prompts.reduce((session, text) => reduce(reduce(session, { type: 'submit', text }), { type: 'finish', outcome: 'done' }), createSessionState(200_000));
 
-  const titled = (session: Session, by: 'agent' | 'user', title = 'Fix the build') =>
+  const titled = (session: SessionState, by: 'agent' | 'user', title = 'Fix the build') =>
     reduce(session, { type: 'retitle', session: session.id, title, by, turns: session.entries.filter((entry) => entry.kind === 'user').length });
 
   it('names a conversation after its first message, again when its messages double or after a while, never over the user’s name', () => {
-    expect(titleDue(createSession(200_000))).toBe(false);
+    expect(titleDue(createSessionState(200_000))).toBe(false);
 
     const first = sent('hello');
 

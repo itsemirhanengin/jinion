@@ -4,7 +4,7 @@ import type { ModelSelection } from '@jinion/tui/chat';
 import type { AgentAccount } from '@jinion/core/agent/accounts';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import type { LimitWindow } from '@jinion/core/agent/usage';
-import type { Session } from '@jinion/core/conversation/session';
+import type { SessionState } from '@jinion/core/conversation/session';
 import type { GitStatus } from '@jinion/core/git/status';
 
 export interface StatusData {
@@ -14,7 +14,7 @@ export interface StatusData {
   model: { name: string; selection: ModelSelection };
   mode: AgentMode;
   account?: AgentAccount;
-  session: Session;
+  session: SessionState;
   git?: GitStatus;
   limits?: LimitWindow[];
   now: number;

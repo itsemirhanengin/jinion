@@ -4,7 +4,7 @@ import type { Usage } from '../agent/usage.js';
 import type { Worktree } from '../git/worktrees.js';
 import { nextId, type Entry, type ToolEntry } from './entries.js';
 
-export interface Session {
+export interface SessionState {
   id: string;
   createdAt: number;
   entries: Entry[];
@@ -22,9 +22,9 @@ export interface Session {
   worktree?: Worktree;
 }
 
-export type SavedSession = Omit<Session, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };
+export type SavedSession = Omit<SessionState, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };
 
-export function createSession(contextWindow: number): Session {
+export function createSessionState(contextWindow: number): SessionState {
   return {
     id: `session_${Date.now().toString(36)}_${nextId()}`,
     createdAt: Date.now(),
@@ -34,11 +34,11 @@ export function createSession(contextWindow: number): Session {
   };
 }
 
-export const firstPrompt = (session: Pick<Session, 'entries'>) =>
+export const firstPrompt = (session: Pick<SessionState, 'entries'>) =>
   session.entries.find((entry) => entry.kind === 'user')?.text;
 
 /** `undefined` when nothing was asked yet, so empty sessions are not kept. */
-export function toSaved(session: Session): SavedSession | undefined {
+export function toSaved(session: SessionState): SavedSession | undefined {
   const prompt = firstPrompt(session);
   if (prompt === undefined) return undefined;
 
@@ -47,7 +47,7 @@ export function toSaved(session: Session): SavedSession | undefined {
   return { ...rest, title: title ?? prompt, updatedAt: Date.now() };
 }
 
-export function fromSaved(saved: SavedSession): Session {
+export function fromSaved(saved: SavedSession): SessionState {
   const { updatedAt: _, ...session } = saved;
 
   return session;
@@ -57,15 +57,15 @@ export const resumeOf = (saved: SavedSession): AgentResume | undefined =>
   saved.agentSession ? { sessionId: saved.agentSession, cost: saved.usage.cost } : undefined;
 
 /** A command's output stays open until its turn ends. */
-export const inRunningTurn = (session: Pick<Session, 'busySince' | 'turnFrom'>, index: number) =>
+export const inRunningTurn = (session: Pick<SessionState, 'busySince' | 'turnFrom'>, index: number) =>
   session.busySince !== undefined && index >= (session.turnFrom ?? 0);
 
-export const addEntries = (session: Session, ...entries: Entry[]): Session => ({
+export const addEntries = (session: SessionState, ...entries: Entry[]): SessionState => ({
   ...session,
   entries: [...session.entries, ...entries],
 });
 
-export function updateTool(session: Session, id: string, update: (entry: ToolEntry) => Entry): Session {
+export function updateTool(session: SessionState, id: string, update: (entry: ToolEntry) => Entry): SessionState {
   return {
     ...session,
     entries: session.entries.map((entry) => (entry.kind === 'tool' && entry.id === id ? update(entry) : entry)),

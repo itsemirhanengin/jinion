@@ -5,7 +5,7 @@ import type { AgentBackend, AgentMode, AgentSession } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { ModelSelection } from '../agent/models.js';
 import type { CommandRegistry } from '../commands/registry.js';
-import { fromSaved, createSession, resumeOf, type SavedSession } from '../conversation/session.js';
+import { fromSaved, createSessionState, resumeOf, type SavedSession } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
 import type { MemoryStore } from '../memory/store.js';
 import { accountAtom, modeAtom, selectionAtom, skillsAtom, tasksAtom } from '../state/agent.js';
@@ -100,7 +100,7 @@ export class Jinion {
 
     this.input = new InputController(context, this, this.commands, this.attachments, this.turns);
 
-    this.store.set(sessionAtom, options.initial ? fromSaved(options.initial) : createSession(DEFAULT_CONTEXT_WINDOW));
+    this.store.set(sessionAtom, options.initial ? fromSaved(options.initial) : createSessionState(DEFAULT_CONTEXT_WINDOW));
     if (options.initial) this.agent.reset?.(resumeOf(options.initial), this.worktrees.folderOf(options.initial));
     this.store.set(selectionAtom, this.agent.selection);
     this.store.set(modeAtom, this.agent.mode);

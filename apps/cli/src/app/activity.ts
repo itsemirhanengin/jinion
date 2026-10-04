@@ -2,7 +2,7 @@ import type { TodoGroup } from '@jinion/tui/chat';
 import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import type { ToolRun } from '@jinion/core/agent/tools';
 import type { Usage } from '@jinion/core/agent/usage';
-import type { Session } from '@jinion/core/conversation/session';
+import type { SessionState } from '@jinion/core/conversation/session';
 import { clip } from '@jinion/core/lib/text';
 
 const CONTEXT_WARNING = 0.2;
@@ -19,7 +19,7 @@ export function contextWarning({ contextTokens, compactAt }: Usage) {
   return left <= CONTEXT_WARNING ? left : undefined;
 }
 
-export function activity(session: Session, panel: string | undefined, tasks: BackgroundTask[]) {
+export function activity(session: SessionState, panel: string | undefined, tasks: BackgroundTask[]) {
   if (panel === 'permission' || panel === 'plan') return 'Waiting for your approval';
   if (session.compacting) return 'Compacting the conversation';
 

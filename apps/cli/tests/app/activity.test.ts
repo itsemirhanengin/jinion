@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import { activity } from '../../src/app/activity.js';
-import { createSession } from '@jinion/core/conversation/session';
+import { createSessionState } from '@jinion/core/conversation/session';
 
 describe('activity', () => {
   it('names the command that runs, and offers ctrl+b once it is listed as a task', () => {
-    const session = createSession(200_000);
+    const session = createSessionState(200_000);
     const command = 'pnpm test --run --reporter verbose && pnpm build && pnpm lint --max-diagnostics 200';
 
     session.entries.push({

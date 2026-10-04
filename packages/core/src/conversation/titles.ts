@@ -1,14 +1,14 @@
 import { clip, firstLine, truncate } from '../lib/text.js';
 import { editTurns } from './edits.js';
 import { lastToolRun, promptCount, type Entry } from './entries.js';
-import type { Session } from './session.js';
+import type { SessionState } from './session.js';
 
 export const titleOf = (text: string) => truncate(firstLine(text.trim()), 60);
 
 const RETITLE_AFTER_MS = 20 * 60_000;
 
 /** After the first prompt, then each time the prompts double or after a while; a title the user chose stays. */
-export function titleDue(session: Pick<Session, 'entries' | 'titled'>, now = Date.now()) {
+export function titleDue(session: Pick<SessionState, 'entries' | 'titled'>, now = Date.now()) {
   const turns = promptCount(session.entries);
   const { titled } = session;
   if (turns === 0 || titled?.by === 'user') return false;

@@ -2,11 +2,11 @@ import { atom } from 'jotai/vanilla';
 import { atomWithLazy } from 'jotai/vanilla/utils';
 import { editTurns } from '../conversation/edits.js';
 import { reduce, type Action } from '../conversation/reducer.js';
-import { createSession } from '../conversation/session.js';
+import { createSessionState } from '../conversation/session.js';
 
 export const DEFAULT_CONTEXT_WINDOW = 200_000;
 
-export const sessionAtom = atomWithLazy(() => createSession(DEFAULT_CONTEXT_WINDOW));
+export const sessionAtom = atomWithLazy(() => createSessionState(DEFAULT_CONTEXT_WINDOW));
 
 export const worktreeAtom = atom((get) => get(sessionAtom).worktree);
 

@@ -2,9 +2,9 @@ import type { Status } from './entries.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { ToolRun } from '../agent/tools.js';
 import { nextId, noticeEntry, type Entry, type ToolCallEntry } from './entries.js';
-import { addEntries, updateTool, type Session } from './session.js';
+import { addEntries, updateTool, type SessionState } from './session.js';
 
-export function applyEvent(session: Session, event: AgentEvent): Session {
+export function applyEvent(session: SessionState, event: AgentEvent): SessionState {
   switch (event.type) {
     case 'thinking':
     case 'text':
@@ -59,7 +59,7 @@ export function applyEvent(session: Session, event: AgentEvent): Session {
   }
 }
 
-function streamed(session: Session, kind: 'thinking' | 'text', delta: string): Session {
+function streamed(session: SessionState, kind: 'thinking' | 'text', delta: string): SessionState {
   const last = session.entries.at(-1);
 
   if (last?.kind === kind) {
@@ -72,7 +72,7 @@ function streamed(session: Session, kind: 'thinking' | 'text', delta: string): S
   return addEntries(session, entry);
 }
 
-function toolStart(session: Session, event: Extract<AgentEvent, { type: 'tool-start' }>): Session {
+function toolStart(session: SessionState, event: Extract<AgentEvent, { type: 'tool-start' }>): SessionState {
   if (event.parent) {
     const child: ToolCallEntry = { id: event.id, run: event.call, status: 'running', startedAt: Date.now() };
 
@@ -89,7 +89,7 @@ function toolStart(session: Session, event: Extract<AgentEvent, { type: 'tool-st
   return { ...session, entries: [...kept, entry], todos: event.call.input.groups };
 }
 
-function toolEnd(session: Session, event: Extract<AgentEvent, { type: 'tool-end' }>): Session {
+function toolEnd(session: SessionState, event: Extract<AgentEvent, { type: 'tool-end' }>): SessionState {
   const end = <T extends { run: ToolRun; status: Status }>(call: T): T => ({
     ...call,
     run: { ...call.run, result: event.result } as ToolRun,
