@@ -30,9 +30,9 @@ Every English page is written and checked against the code, and the README point
 `tests/commands/builtin.test.ts` and `tests/app/shortcuts.test.ts` in `apps/cli` fail when a command or shortcut is
 missing from the reference pages. What is left:
 
-- **The Turkish pages.** Search matches whole Turkish words only (`bellek` doesn't find `belleği`), since the search
-  engine Fumadocs ships stems English alone; Turkish needs a stemmer passed to `createFromSource` in
-  `app/api/search/route.ts`.
+- **The Turkish pages.** Get started is translated, addressing the reader as "siz"; headings keep the English anchors
+  (`## Kurulum [#install]`) and links go to `/tr/...`. Search stems Turkish with a tokenizer of its own
+  (`lib/turkish-tokenizer.ts`), since zbsearch's folds ğ, ı and ş away before the stemmer sees them.
 - **Screens that refresh themselves.** The screens in the pages were captured from the demo app in the test terminal,
   with each cell's color turned into the theme's name; that capture could become a script to run when the TUI changes.
 - **Developer docs**, in their own tab.
@@ -66,8 +66,6 @@ history. Optional parts of the interface stay optional, so the UI already copes 
 
 - **Rewind's "Summarize from here" and "Summarize up to here".** Claude Code's rewind menu has them, but the Agent SDK
   (0.3.286) has no call for them. Add them to `panels/rewind/` once it does.
-- **A real second account.** Switching accounts mid-conversation is built (`/account`) but was never checked end to end
-  with a second signed-in login.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
 
