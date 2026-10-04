@@ -1,45 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { JinionClient, type ScreenHandlers } from '../../src/api/client.js';
+import type { JinionClient } from '../../src/api/client.js';
 import { ApiCode, type ClientContract, PROTOCOL_VERSION, type ServerContract } from '../../src/api/protocol.js';
 import { RpcPeer } from '../../src/api/rpc.js';
-import { JinionServer } from '../../src/api/server.js';
-import { inProcessTransports, type Transport } from '../../src/api/transport.js';
-import { ScriptedBackend } from '../../src/agent/demo/agent.js';
-import { demoCommands } from '../../src/agent/demo/commands.js';
-import { scenarios } from '../../src/agent/demo/scenarios/index.js';
-import { demoSessions } from '../../src/agent/demo/sessions.js';
-import { builtinCommands } from '../../src/commands/builtin.js';
-import { CommandRegistry } from '../../src/commands/registry.js';
-import { MemorySessionStore } from '../../src/conversation/store.js';
-import { MemoryStore } from '../../src/memory/store.js';
+import type { JinionServer } from '../../src/api/server.js';
+import { inProcessTransports } from '../../src/api/transport.js';
+import { serve } from '../support/api.js';
 import { sandboxEach } from '../support/sandbox.js';
 
 const box = sandboxEach();
 
-function setup() {
-  const saved = new MemorySessionStore(demoSessions());
-
-  const server = new JinionServer({
-    backend: new ScriptedBackend(scenarios, demoCommands, 0),
-    info: { version: '1.2.3', cwd: box.project },
-    saved,
-    memory: new MemoryStore(box.project),
-    commands: new CommandRegistry(builtinCommands),
-  });
-
-  const connect = async (wire: (transport: Transport) => Transport = (transport) => transport) => {
-    const [serverSide, clientSide] = inProcessTransports();
-    const screen: ScreenHandlers = { view: vi.fn(), fillPrompt: vi.fn(), notify: vi.fn(), expand: vi.fn(), exit: vi.fn() };
-    const client = new JinionClient(wire(clientSide), { name: 'test', version: '0.0.0', screen });
-
-    server.connect(serverSide);
-    await client.initialize();
-
-    return { client, screen };
-  };
-
-  return { server, saved, connect };
-}
+const setup = () => serve(box.project);
 
 /** The conversation as the server holds it, and as the client following it does. */
 function both(server: JinionServer, client: JinionClient) {

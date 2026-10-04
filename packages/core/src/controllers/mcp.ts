@@ -9,19 +9,23 @@ export class McpController {
     private readonly changed: () => void,
   ) {}
 
-  async save(servers: McpServerInfo[], checked: string[]) {
+  /** `enabled` names the servers to have on; the others go off. */
+  async save(enabled: string[]) {
     const { backend, notice } = this.context;
-    const changes = servers.filter((server) => checked.includes(server.name) !== server.enabled);
-    if (!backend.mcp || changes.length === 0) return;
+    if (!backend.mcp) return;
 
-    const labels = (on: boolean) => changes.filter((server) => !server.enabled === on).map((server) => server.label);
+    let changes: McpServerInfo[];
 
     try {
+      changes = (await backend.mcp.servers()).filter((server) => enabled.includes(server.name) !== server.enabled);
+      if (changes.length === 0) return;
+
       await backend.mcp.setEnabled(Object.fromEntries(changes.map((server) => [server.name, !server.enabled])));
     } catch (error) {
       return notice(`Couldn't change the MCP servers: ${errorMessage(error)}`, 'error');
     }
 
+    const labels = (on: boolean) => changes.filter((server) => !server.enabled === on).map((server) => server.label);
     const parts = [labels(true).length > 0 && `turned on ${labels(true).join(', ')}`, labels(false).length > 0 && `turned off ${labels(false).join(', ')}`];
     const done = parts.filter(Boolean).join('; ');
 

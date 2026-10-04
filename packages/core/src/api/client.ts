@@ -89,6 +89,11 @@ export class JinionClient {
     return this.peer.request(method, params);
   }
 
+  /** What comes with a request of this client's, such as a sign-in link or how far `usage/history` got. */
+  on<M extends keyof ClientContract['notifications']>(method: M, listener: (params: ClientContract['notifications'][M]) => void) {
+    return this.peer.on(method, listener);
+  }
+
   /** The session as this client holds it; `undefined` until it is followed. */
   session(id: string) {
     const known = this.followed.get(id);

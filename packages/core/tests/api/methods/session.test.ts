@@ -1,0 +1,68 @@
+import { describe, expect, it, vi } from 'vitest';
+import { serve } from '../../support/api.js';
+import { sandboxEach } from '../../support/sandbox.js';
+
+const box = sandboxEach();
+
+describe('session methods', () => {
+  it('changes the model, and says so when the backend has no such mode', async () => {
+    const { server, connect } = serve(box.project);
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+
+    await client.request('session/model', { session, selection: { model: 'scripted-demo', effort: 'high' } });
+    await client.request('session/mode', { session, mode: 'plan' });
+
+    expect(store.get(atoms.selection)).toEqual({ model: 'scripted-demo', effort: 'high' });
+    expect(store.get(atoms.mode)).toBe('edits');
+    expect(store.get(atoms.entries).at(-1)).toMatchObject({ kind: 'notice', text: 'Demo has no Plan mode.', tone: 'warning' });
+  });
+
+  it('turns worktrees on for new sessions and for this one while it hasn’t started', async () => {
+    const { server, connect } = serve(box.project);
+    const { client, session } = await connect();
+
+    await client.request('session/worktree', { session, on: true });
+
+    expect(client.store.get(client.appAtom)?.worktrees).toBe(true);
+    expect(server.app.store.get(server.app.session.atoms.wantsWorktree)).toBe(true);
+  });
+
+  it('sends a queued message at once when nothing runs, and adds a line from the client', async () => {
+    const { server, connect } = serve(box.project);
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+
+    await client.request('session/notice', { session, text: 'There is no image on the clipboard.', tone: 'muted' });
+    await client.request('session/queue', { session, text: 'hi' });
+
+    expect(store.get(atoms.entries).map((entry) => entry.kind)).toEqual(['banner', 'notice', 'user']);
+    await vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
+  });
+
+  it('opens the rewind on the client that asked, or says there is nothing to go back to', async () => {
+    const { server, connect } = serve(box.project);
+    const { client, screen, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+
+    await client.request('session/open-rewind', { session });
+
+    expect(store.get(atoms.entries).at(-1)).toMatchObject({ kind: 'notice', text: 'There is nothing to rewind yet.' });
+
+    await client.request('session/submit', { session, text: 'hi' });
+    await vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
+    await client.request('session/open-rewind', { session });
+
+    await vi.waitFor(() => expect(screen.view).toHaveBeenCalledWith({ id: 'rewind', points: [expect.objectContaining({ text: 'hi' })] }));
+    await expect(client.request('session/rewind-preview', { session, prompt: 'prompt_1' })).resolves.toBeNull();
+  });
+
+  it('tells what fills the context', async () => {
+    const { client, session } = await serve(box.project).connect();
+
+    await expect(client.request('session/context', { session })).resolves.toMatchObject({ window: expect.any(Number) });
+  });
+});

@@ -1,8 +1,14 @@
 import type { Jinion } from '../controllers/jinion.js';
 import type { Session } from '../controllers/session.js';
-import { readFields, sessionFields, appFields, watchFields } from './fields.js';
-import { ApiCode, type ClientContract, clientSchemas, PROTOCOL_VERSION, type ServerContract, type Sessions } from './protocol.js';
-import { type Params, type Result, RpcCode, RpcError, RpcPeer } from './rpc.js';
+import { readFields, sessionFields, watchFields } from './fields.js';
+import { accountMethods } from './methods/accounts.js';
+import { appMethods } from './methods/app.js';
+import { dialogMethods } from './methods/dialogs.js';
+import { gitMethods } from './methods/git.js';
+import { sessionMethods } from './methods/session.js';
+import { sessionsMethods } from './methods/sessions.js';
+import { ApiCode, type ClientContract, clientSchemas, type ServerContract, type Sessions } from './protocol.js';
+import { type Params, type Result, RpcError, RpcPeer } from './rpc.js';
 import type { Transport } from './transport.js';
 
 type Method = keyof ServerContract['requests'];
@@ -15,6 +21,11 @@ export interface Host {
   answering<T>(connection: Connection, answer: () => T): T;
 }
 
+/** The methods of one area, such as accounts, registered on each connection. */
+export type Methods = (connection: Connection) => void;
+
+const METHODS: Methods[] = [appMethods, sessionsMethods, sessionMethods, dialogMethods, gitMethods, accountMethods];
+
 /** One client: what it asks of the app, and the sessions it follows. */
 export class Connection {
   readonly peer: RpcPeer<ServerContract, ClientContract>;
@@ -26,77 +37,22 @@ export class Connection {
 
   constructor(
     transport: Transport,
-    private readonly host: Host,
+    readonly host: Host,
   ) {
     this.peer = new RpcPeer(transport, clientSchemas);
     this.peer.on('client/focus', ({ focused }) => (this.focused = focused));
-
-    this.answer('initialize', ({ protocolVersion, notifications }) => {
-      if (this.ready) throw new RpcError(RpcCode.invalidRequest, 'The client is already initialized.');
-
-      if (protocolVersion !== PROTOCOL_VERSION) {
-        throw new RpcError(ApiCode.unsupportedVersion, `jinion speaks protocol ${PROTOCOL_VERSION}, the client ${protocolVersion}.`, {
-          supported: [PROTOCOL_VERSION],
-        });
-      }
-
-      const { app } = host;
-
-      this.ready = true;
-      this.notifications = notifications ?? this.notifications;
-
-      return {
-        protocolVersion: PROTOCOL_VERSION,
-        server: { name: 'jinion', version: app.info.version },
-        info: app.info,
-        app: readFields(app.store, appFields),
-        ...host.sessions(),
-      };
-    });
-
-    this.answer('sessions/open', ({ resume, worktree }) => {
-      const saved = resume === undefined ? undefined : host.app.saved.list().find((session) => session.id === resume);
-      if (resume !== undefined && !saved) throw new RpcError(ApiCode.unknownSession, `There is no saved conversation ${resume}.`);
-
-      return { session: host.app.openSession(saved, { worktree }).id };
-    });
-
-    this.answer('sessions/activate', ({ session }) => host.app.activate(this.find(session)));
-    this.answer('sessions/close', async ({ session }) => ({ closed: await host.app.close(this.find(session)) }));
-    this.answer('session/subscribe', ({ session }) => this.follow(this.find(session)));
-    this.answer('session/unsubscribe', ({ session }) => this.unfollow(session));
-
-    // A command acts on the session the user looks at, and one types into the session they look at.
-    this.answer('session/submit', ({ session, ...submission }) => {
-      const target = this.find(session);
-
-      if (host.app.session !== target) host.app.activate(target);
-      target.input.submit(submission);
-    });
-
-    this.answer('session/interrupt', ({ session }) => this.find(session).turns.interrupt());
-
-    this.answer('dialog/answer', ({ session, dialog, answer }) => {
-      const target = this.find(session);
-      if (host.app.store.get(target.atoms.dialog)?.id !== dialog) throw new RpcError(ApiCode.dialogGone, 'That dialog is no longer open.');
-
-      target.dialogs.answer(answer);
-    });
-
-    this.answer('dialog/cancel', ({ session }) => this.find(session).dialogs.cancel());
+    for (const register of METHODS) register(this);
   }
 
-  /** Stops following sessions that are no longer open. */
-  prune(open: Set<string>) {
-    for (const id of this.following.keys()) if (!open.has(id)) this.unfollow(id);
-  }
-
-  closed() {
-    for (const id of this.following.keys()) this.unfollow(id);
+  get app() {
+    return this.host.app;
   }
 
   /** Answered once the client is initialized; `undefined` goes back as `null`, as JSON-RPC wants a result. */
-  private answer<M extends Method>(method: M, handler: (params: Params<ServerContract, M>) => Result<ServerContract, M> | void | Promise<Result<ServerContract, M>>) {
+  answer<M extends Method>(
+    method: M,
+    handler: (params: Params<ServerContract, M>) => Result<ServerContract, M> | void | Promise<Result<ServerContract, M> | void>,
+  ) {
     this.peer.handle(method, (params) => {
       if (!this.ready && method !== 'initialize') throw new RpcError(ApiCode.notInitialized, `Send initialize before ${method}.`);
 
@@ -104,16 +60,16 @@ export class Connection {
     });
   }
 
-  private find(id: string) {
-    const session = this.host.app.sessions.find((open) => open.id === id);
+  find(id: string) {
+    const session = this.app.sessions.find((open) => open.id === id);
     if (!session) throw new RpcError(ApiCode.unknownSession, `There is no open session ${id}.`);
 
     return session;
   }
 
   /** Follows again from a fresh snapshot when it already did, e.g. after the client missed a change. */
-  private follow(session: Session) {
-    const { store } = this.host.app;
+  follow(session: Session) {
+    const { store } = this.app;
     const { id } = session;
     const fields = sessionFields(session.atoms);
 
@@ -130,8 +86,17 @@ export class Connection {
     return { state: store.get(session.atoms.state), fields: readFields(store, fields), seq: session.seq };
   }
 
-  private unfollow(id: string) {
+  unfollow(id: string) {
     this.following.get(id)?.();
     this.following.delete(id);
+  }
+
+  /** Stops following sessions that are no longer open. */
+  prune(open: Set<string>) {
+    for (const id of this.following.keys()) if (!open.has(id)) this.unfollow(id);
+  }
+
+  closed() {
+    for (const id of this.following.keys()) this.unfollow(id);
   }
 }

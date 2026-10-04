@@ -29,7 +29,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     onToggle: (name) => void touched.current.add(name),
     onSubmit: (checked) => {
       close();
-      void jinion.mcp.save(servers ?? [], checked);
+      void jinion.mcp.save(checked);
     },
   });
 

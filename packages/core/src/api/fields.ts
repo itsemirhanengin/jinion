@@ -1,5 +1,6 @@
 import type { Atom, ExtractAtomValue, Store } from 'jotai/vanilla';
-import { accountAtom, identityAtom, modelsAtom, skillsAtom } from '../state/agent.js';
+import { accountAtom, identityAtom, modelsAtom, seenLimitsAtom, skillsAtom } from '../state/agent.js';
+import { worktreesAtom } from '../state/preferences.js';
 import type { SessionAtoms } from '../state/session.js';
 
 type Fields = Record<string, Atom<unknown>>;
@@ -9,8 +10,15 @@ export type FieldValues<F extends Fields> = { [K in keyof F]: ExtractAtomValue<F
 /** One field's new value, named, since a value gone to `undefined` would vanish from an object sent as JSON. */
 export type FieldChange<V> = { [K in keyof V]: { name: K; value: V[K] } }[keyof V];
 
-/** What every session shares that a client shows. */
-export const appFields = { models: modelsAtom, account: accountAtom, identity: identityAtom, skills: skillsAtom };
+/** What every session shares that a client shows. `worktrees` is the default for new sessions. */
+export const appFields = {
+  models: modelsAtom,
+  account: accountAtom,
+  identity: identityAtom,
+  skills: skillsAtom,
+  seenLimits: seenLimitsAtom,
+  worktrees: worktreesAtom,
+};
 
 export type AppFields = FieldValues<typeof appFields>;
 

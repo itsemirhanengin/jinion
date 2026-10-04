@@ -95,6 +95,11 @@ export class Session {
     return this.app.store.get(this.atoms.working);
   }
 
+  /** Where it works: its worktree, or the project. */
+  get folder() {
+    return this.app.store.get(this.atoms.worktree)?.folder ?? this.app.info.cwd;
+  }
+
   notice(text: string, tone?: NoticeTone) {
     this.dispatch({ type: 'notice', text, tone });
   }
