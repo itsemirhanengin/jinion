@@ -1,4 +1,4 @@
-// `pnpm --filter @jinion/cli fixture <log> <name>` writes `tests/agent/claude/fixtures/<name>.jsonl` from a `--debug` log.
+// `pnpm --filter @jinion/core fixture <log> <name>` writes `tests/agent/claude/fixtures/<name>.jsonl` from a `--debug` log.
 // Fixtures are committed, so paths and names are replaced and the init message drops what is installed on this machine.
 import { readFileSync, realpathSync, writeFileSync } from 'node:fs';
 import { homedir, userInfo } from 'node:os';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { readGitStatus, type GitStatus } from '../git/status.js';
+import { readGitStatus, type GitStatus } from '@jinion/core/git/status';
 
 /** The last status stays shown while it is read again. */
 export function useGitStatus(cwd: string, enabled: boolean, refresh: unknown) {

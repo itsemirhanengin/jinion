@@ -1,9 +1,9 @@
 import { basename } from 'node:path';
 import { Text } from '@jinion/tui';
 import { Tag } from '@jinion/tui/chat';
-import { accountLabel } from '../../agent/accounts.js';
-import { MODES } from '../../agent/modes.js';
-import { tildify } from '../../lib/paths.js';
+import { accountLabel } from '@jinion/core/agent/accounts';
+import { MODES } from '@jinion/core/agent/modes';
+import { tildify } from '@jinion/core/lib/paths';
 import { modeColor } from '../../ui/modes.js';
 import type { Segment } from '../segment.js';
 

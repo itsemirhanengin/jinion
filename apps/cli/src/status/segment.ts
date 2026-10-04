@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import type { Theme } from '@jinion/tui';
 import type { ModelSelection } from '@jinion/tui/chat';
-import type { AgentAccount } from '../agent/accounts.js';
-import type { AgentMode } from '../agent/agent.js';
-import type { LimitWindow } from '../agent/usage.js';
-import type { Session } from '../conversation/session.js';
-import type { GitStatus } from '../git/status.js';
+import type { AgentAccount } from '@jinion/core/agent/accounts';
+import type { AgentMode } from '@jinion/core/agent/agent';
+import type { LimitWindow } from '@jinion/core/agent/usage';
+import type { Session } from '@jinion/core/conversation/session';
+import type { GitStatus } from '@jinion/core/git/status';
 
 export interface StatusData {
   version: string;

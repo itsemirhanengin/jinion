@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Box, Text, useTheme } from '@jinion/tui';
-import type { ModelTokens } from '../../agent/usage.js';
-import { compact } from '../../lib/format.js';
+import type { ModelTokens } from '@jinion/core/agent/usage';
+import { compact } from '@jinion/core/lib/format';
 
 export function Section({ title, aside, children }: { title: string; aside?: string; children: ReactNode }) {
   const theme = useTheme();

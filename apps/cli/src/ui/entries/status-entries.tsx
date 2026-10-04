@@ -1,10 +1,10 @@
 import { Box, Markdown, printable, Text, useHovered, useTheme, useView } from '@jinion/tui';
 import { ToolLine, UserMessage } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
-import type { EntryOf } from '../../conversation/entries.js';
-import { compact, preciseSeconds } from '../../lib/format.js';
-import { firstLine } from '../../lib/text.js';
-import { mentionAtom } from '../../state/agent.js';
+import type { EntryOf } from '@jinion/core/conversation/entries';
+import { compact, preciseSeconds } from '@jinion/core/lib/format';
+import { firstLine } from '@jinion/core/lib/text';
+import { mentionAtom } from '@jinion/core/state/agent';
 import { TASK_MARKS } from '../task-marks.js';
 
 export function UserEntry({ text, steered }: { text: string; steered?: boolean }) {

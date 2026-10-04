@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { listProjectFiles } from '../prompt/files.js';
+import { listProjectFiles } from '@jinion/core/prompt/files';
 
 export function useProjectFiles(cwd: string, refresh: unknown) {
   const [files, setFiles] = useState<string[]>([]);

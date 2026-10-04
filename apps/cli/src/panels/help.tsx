@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { Box, ListRow, Panel, Prose, SelectList, Tabs, Text, useInput, useListNavigation, usePanel, useTabs, useTheme, type KeyHint } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { AgentCommand } from '../agent/agent.js';
+import type { AgentCommand } from '@jinion/core/agent/agent';
 import { useJinion } from '../app/context.js';
 import { SHORTCUTS } from '../app/shortcuts.js';
-import { requiresArgument } from '../commands/registry.js';
-import type { Jinion } from '../controllers/jinion.js';
-import { skillGroup, sortSkills } from '../prompt/skills.js';
-import { skillsAtom } from '../state/agent.js';
+import { requiresArgument } from '@jinion/core/commands/registry';
+import type { Jinion } from '@jinion/core/controllers/jinion';
+import { skillGroup, sortSkills } from '@jinion/core/prompt/skills';
+import { skillsAtom } from '@jinion/core/state/agent';
 
 const SHORTCUT_COLUMNS = 3;
 

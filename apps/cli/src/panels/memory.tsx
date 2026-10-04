@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Prose, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useJinion } from '../app/context.js';
-import { plural } from '../lib/format.js';
-import { tildify } from '../lib/paths.js';
+import { plural } from '@jinion/core/lib/format';
+import { tildify } from '@jinion/core/lib/paths';
 
 const PREVIEW_LINES = 12;
 

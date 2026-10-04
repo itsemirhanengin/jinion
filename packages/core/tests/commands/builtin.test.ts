@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { builtinCommands } from '../../src/commands/builtin.js';
 
-const PAGE = join(import.meta.dirname, '../../../docs/content/docs/reference/(commands)/commands.mdx');
+const PAGE = join(import.meta.dirname, '../../../../apps/docs/content/docs/reference/(commands)/commands.mdx');
 
 describe('builtinCommands', () => {
   it('are all on the docs’ commands page, with their aliases', () => {

@@ -1,7 +1,7 @@
 import { relative } from 'node:path';
 import { Box, Text, useTheme } from '@jinion/tui';
-import type { FileChanges } from '../../agent/agent.js';
-import { plural } from '../../lib/format.js';
+import type { FileChanges } from '@jinion/core/agent/agent';
+import { plural } from '@jinion/core/lib/format';
 import { useAsync } from '../../ui/use-async.js';
 import { useWorkdir } from '../../ui/use-workdir.js';
 

@@ -1,20 +1,20 @@
 import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
-import { ClaudeAgent } from './agent/claude/agent.js';
-import { syncSkills } from './agent/claude/synced-skills.js';
-import { demoCommands } from './agent/demo/commands.js';
-import { scenarios } from './agent/demo/scenarios/index.js';
-import { ScriptedAgent } from './agent/demo/agent.js';
-import type { Agent } from './agent/agent.js';
+import { ClaudeAgent } from '@jinion/core/agent/claude/agent';
+import { syncSkills } from '@jinion/core/agent/claude/synced-skills';
+import { demoCommands } from '@jinion/core/agent/demo/commands';
+import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
+import { ScriptedAgent } from '@jinion/core/agent/demo/agent';
+import type { Agent } from '@jinion/core/agent/agent';
 import { App } from './app/app.js';
-import { DebugLog } from './lib/debug.js';
-import { McpConfig } from './mcp/config.js';
-import { MemoryStore } from './memory/store.js';
-import { loadProjectSettings } from './settings/project.js';
-import { loadSettings } from './settings/user.js';
-import { demoSessions } from './agent/demo/sessions.js';
-import { FileSessionStore, MemorySessionStore, type SessionStore } from './conversation/store.js';
+import { DebugLog } from '@jinion/core/lib/debug';
+import { McpConfig } from '@jinion/core/mcp/config';
+import { MemoryStore } from '@jinion/core/memory/store';
+import { loadProjectSettings } from '@jinion/core/settings/project';
+import { loadSettings } from '@jinion/core/settings/user';
+import { demoSessions } from '@jinion/core/agent/demo/sessions';
+import { FileSessionStore, MemorySessionStore, type SessionStore } from '@jinion/core/conversation/store';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 

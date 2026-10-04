@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { changedFiles, type EditTurn } from '../../conversation/edits.js';
-import type { FileChange } from '../../git/repos.js';
-import { plural } from '../../lib/format.js';
-import { firstFilledLine, truncate } from '../../lib/text.js';
+import { changedFiles, type EditTurn } from '@jinion/core/conversation/edits';
+import type { FileChange } from '@jinion/core/git/repos';
+import { plural } from '@jinion/core/lib/format';
+import { firstFilledLine, truncate } from '@jinion/core/lib/text';
 
 const TURN_LABEL = 24;
 

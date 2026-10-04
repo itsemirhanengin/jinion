@@ -34,21 +34,8 @@
   },
   "overrides": [
     {
-      // What moves into packages/core draws nothing, so a desktop app can drive it too.
-      "includes": [
-        "apps/cli/src/agent/**",
-        "apps/cli/src/commands/**",
-        "apps/cli/src/controllers/**",
-        "apps/cli/src/conversation/**",
-        "apps/cli/src/git/**",
-        "apps/cli/src/lib/**",
-        "apps/cli/src/mcp/**",
-        "apps/cli/src/memory/**",
-        "apps/cli/src/prompt/**",
-        "apps/cli/src/settings/**",
-        "apps/cli/src/state/**",
-        "apps/cli/src/usage/**"
-      ],
+      // The core draws nothing, so a desktop app can drive it too.
+      "includes": ["packages/core/src/**"],
       "linter": {
         "rules": {
           "style": {

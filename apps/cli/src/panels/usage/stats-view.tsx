@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import { BarList, Box, dayKey, Heatmap, parseDay, StatGrid, Text, useDayCursor, useInput, useTheme, useWindowSize } from '@jinion/tui';
-import type { UsageHistory } from '../../agent/usage.js';
+import type { UsageHistory } from '@jinion/core/agent/usage';
 import { useJinion } from '../../app/context.js';
-import { compact, grouped, plural, shortDate, span } from '../../lib/format.js';
-import { RANGES, totalOf, usageStats, type StatsRange } from '../../usage/stats.js';
+import { compact, grouped, plural, shortDate, span } from '@jinion/core/lib/format';
+import { RANGES, totalOf, usageStats, type StatsRange } from '@jinion/core/usage/stats';
 import { tokenLine } from './section.js';
 
 const SHARE_BAR = 16;

@@ -1,7 +1,7 @@
 import { ExpandHint, printable, Text, useTheme, useView, type Status, type TreeNode } from '@jinion/tui';
 import { ToolLine } from '@jinion/tui/chat';
-import type { ToolRun } from '../../../agent/tools.js';
-import { bytes, elapsed, plural } from '../../../lib/format.js';
+import type { ToolRun } from '@jinion/core/agent/tools';
+import { bytes, elapsed, plural } from '@jinion/core/lib/format';
 import { previewTree } from './result-preview.js';
 
 export const PREVIEW_HITS = 5;

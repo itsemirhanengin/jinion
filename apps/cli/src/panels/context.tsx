@@ -1,9 +1,9 @@
 import { Box, Panel, Text, useInput, usePanel, useTheme, Waffle, type Theme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { ContextUsage } from '../agent/usage.js';
+import type { ContextUsage } from '@jinion/core/agent/usage';
 import { useJinion } from '../app/context.js';
-import { compact, percent } from '../lib/format.js';
-import { modelNameAtom } from '../state/agent.js';
+import { compact, percent } from '@jinion/core/lib/format';
+import { modelNameAtom } from '@jinion/core/state/agent';
 import { useAsync } from '../ui/use-async.js';
 
 export function ContextPanel() {

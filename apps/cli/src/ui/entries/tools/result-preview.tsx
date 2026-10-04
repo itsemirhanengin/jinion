@@ -1,5 +1,5 @@
 import { Box, ExpandHint, printable, Text, useView, type TreeNode } from '@jinion/tui';
-import { plural } from '../../../lib/format.js';
+import { plural } from '@jinion/core/lib/format';
 
 const PREVIEW_LINES = 3;
 

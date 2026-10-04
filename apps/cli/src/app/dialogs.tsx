@@ -1,7 +1,7 @@
 import { AskPanel, PermissionPanel, PlanPanel } from '@jinion/tui/chat';
-import type { AgentMode } from '../agent/agent.js';
-import { MODES } from '../agent/modes.js';
-import type { Dialog } from '../controllers/context.js';
+import type { AgentMode } from '@jinion/core/agent/agent';
+import { MODES } from '@jinion/core/agent/modes';
+import type { Dialog } from '@jinion/core/controllers/context';
 
 const PLAN_CHOICES: Record<AgentMode, string> = {
   auto: 'Yes, and use auto mode',

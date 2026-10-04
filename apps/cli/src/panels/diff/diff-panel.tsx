@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAtomValue } from 'jotai';
-import { editTurnsAtom } from '../../state/session.js';
+import { editTurnsAtom } from '@jinion/core/state/session';
 import { ChangeList } from './change-list.js';
 import { useCurrentView } from './current-view.js';
 import { FileDiff } from './file-diff.js';

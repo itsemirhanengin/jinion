@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import { Box, Frame, Text, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { accountLabel } from '../agent/accounts.js';
+import { accountLabel } from '@jinion/core/agent/accounts';
 import { useJinion } from '../app/context.js';
-import { tildify } from '../lib/paths.js';
-import { identityAtom, modelLabelAtom } from '../state/agent.js';
-import { worktreeAtom } from '../state/session.js';
+import { tildify } from '@jinion/core/lib/paths';
+import { identityAtom, modelLabelAtom } from '@jinion/core/state/agent';
+import { worktreeAtom } from '@jinion/core/state/session';
 
 export function Banner() {
   const theme = useTheme();

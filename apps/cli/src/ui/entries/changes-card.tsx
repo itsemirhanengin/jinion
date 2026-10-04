@@ -1,7 +1,7 @@
 import { Box, Clickable, ExpandHint, FRAME_INSET, Frame, Text, useContentWidth, useTheme } from '@jinion/tui';
 import { useJinion } from '../../app/context.js';
-import type { ChangedFile, EntryOf } from '../../conversation/entries.js';
-import { plural } from '../../lib/format.js';
+import type { ChangedFile, EntryOf } from '@jinion/core/conversation/entries';
+import { plural } from '@jinion/core/lib/format';
 
 const CARD_FILES = 8;
 

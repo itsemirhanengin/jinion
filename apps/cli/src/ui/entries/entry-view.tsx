@@ -1,8 +1,8 @@
 import { memo } from 'react';
 import { Box, Expandable, Markdown, parsePatch, useView } from '@jinion/tui';
 import { Notice, Thinking } from '@jinion/tui/chat';
-import type { Entry } from '../../conversation/entries.js';
-import { elapsed } from '../../lib/format.js';
+import type { Entry } from '@jinion/core/conversation/entries';
+import { elapsed } from '@jinion/core/lib/format';
 import { Banner } from '../banner.js';
 import { ChangesCard } from './changes-card.js';
 import { Compaction, TaskEnd, UserEntry } from './status-entries.js';

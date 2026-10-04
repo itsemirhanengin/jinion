@@ -1,8 +1,8 @@
 import { useRef } from 'react';
 import { useInput, usePanels, useSelection } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { draftAtom } from '../state/prompt.js';
-import { busyAtom } from '../state/session.js';
+import { draftAtom } from '@jinion/core/state/prompt';
+import { busyAtom } from '@jinion/core/state/session';
 import { useJinion } from './context.js';
 
 const DOUBLE_ESCAPE_MS = 600;

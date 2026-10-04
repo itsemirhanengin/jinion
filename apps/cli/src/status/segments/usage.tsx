@@ -1,6 +1,6 @@
 import { Meter, Text } from '@jinion/tui';
-import type { LimitWindow } from '../../agent/usage.js';
-import { minutes, thousands } from '../../lib/format.js';
+import type { LimitWindow } from '@jinion/core/agent/usage';
+import { minutes, thousands } from '@jinion/core/lib/format';
 import { levelColor, type Segment } from '../segment.js';
 
 export const context: Segment = {

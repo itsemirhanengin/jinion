@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { BarList, Box, Meter, Text, useInput, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { AgentUsage, UsageDrivers } from '../../agent/usage.js';
+import type { AgentUsage, UsageDrivers } from '@jinion/core/agent/usage';
 import { useJinion } from '../../app/context.js';
-import { grouped, money, plural, resetTime, span } from '../../lib/format.js';
-import { identityAtom } from '../../state/agent.js';
+import { grouped, money, plural, resetTime, span } from '@jinion/core/lib/format';
+import { identityAtom } from '@jinion/core/state/agent';
 import { Section, tokenLine } from './section.js';
 
 const LIMIT_BAR = 28;

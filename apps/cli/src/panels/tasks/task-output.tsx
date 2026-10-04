@@ -1,8 +1,8 @@
 import { Panel, printable, Text, useInput, usePanel, useTheme, type KeyHint } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import { useJinion } from '../../app/context.js';
-import { firstLine } from '../../lib/text.js';
-import { tasksAtom } from '../../state/agent.js';
+import { firstLine } from '@jinion/core/lib/text';
+import { tasksAtom } from '@jinion/core/state/agent';
 import { PAGER_HINTS, usePager } from '../../ui/use-pager.js';
 import { useOutput } from './output.js';
 

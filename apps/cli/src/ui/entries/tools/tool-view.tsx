@@ -1,6 +1,6 @@
 import { Frame, Markdown, printable, Text, toneOf, useTheme, useView } from '@jinion/tui';
 import { AskResult, EditBlock, ShellBlock, TodoBlock, ToolLine } from '@jinion/tui/chat';
-import type { ToolEntry } from '../../../conversation/entries.js';
+import type { ToolEntry } from '@jinion/core/conversation/entries';
 import { AgentView } from './agent-view.js';
 import { MEMORY_VERBS } from './call-summary.js';
 import { McpView } from './mcp-view.js';

@@ -1,9 +1,9 @@
 import type { TodoGroup } from '@jinion/tui/chat';
-import type { BackgroundTask } from '../agent/tasks.js';
-import type { ToolRun } from '../agent/tools.js';
-import type { Usage } from '../agent/usage.js';
-import type { Session } from '../conversation/session.js';
-import { clip } from '../lib/text.js';
+import type { BackgroundTask } from '@jinion/core/agent/tasks';
+import type { ToolRun } from '@jinion/core/agent/tools';
+import type { Usage } from '@jinion/core/agent/usage';
+import type { Session } from '@jinion/core/conversation/session';
+import { clip } from '@jinion/core/lib/text';
 
 const CONTEXT_WARNING = 0.2;
 const COMMAND_LENGTH = 60;

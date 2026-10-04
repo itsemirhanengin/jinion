@@ -1,6 +1,6 @@
 import { printable, Text, useTheme, type Status } from '@jinion/tui';
 import { ToolLine } from '@jinion/tui/chat';
-import type { ToolRun } from '../../../agent/tools.js';
+import type { ToolRun } from '@jinion/core/agent/tools';
 import { previewTree } from './result-preview.js';
 
 export function McpView({ run, status, output }: { run: Extract<ToolRun, { name: 'mcp' }>; status: Status; output: string[] }) {

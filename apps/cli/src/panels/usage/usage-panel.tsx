@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Panel, Tabs, useInput, usePanel, useTabs, type KeyHint } from '@jinion/tui';
-import type { AgentUsage, UsageHistory } from '../../agent/usage.js';
+import type { AgentUsage, UsageHistory } from '@jinion/core/agent/usage';
 import { useJinion } from '../../app/context.js';
-import { errorMessage } from '../../lib/errors.js';
+import { errorMessage } from '@jinion/core/lib/errors';
 import { StatsView } from './stats-view.js';
 import { UsageView } from './usage-view.js';
 

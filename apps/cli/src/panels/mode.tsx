@@ -1,9 +1,9 @@
 import { ChoiceList, Panel, Text, useChoiceList, usePanel, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { AgentMode } from '../agent/agent.js';
-import { MODES } from '../agent/modes.js';
+import type { AgentMode } from '@jinion/core/agent/agent';
+import { MODES } from '@jinion/core/agent/modes';
 import { useJinion } from '../app/context.js';
-import { modeAtom } from '../state/agent.js';
+import { modeAtom } from '@jinion/core/state/agent';
 import { modeColor } from '../ui/modes.js';
 
 export function ModePicker() {

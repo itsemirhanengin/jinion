@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '@jinion/tui';
 import { atom, useAtomValue } from 'jotai';
 import { useJinion } from '../app/context.js';
-import { limitsKey } from '../settings/limits.js';
-import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom } from '../state/agent.js';
-import { sessionAtom } from '../state/session.js';
-import type { GitStatus } from '../git/status.js';
+import { limitsKey } from '@jinion/core/settings/limits';
+import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom } from '@jinion/core/state/agent';
+import { sessionAtom } from '@jinion/core/state/session';
+import type { GitStatus } from '@jinion/core/git/status';
 import type { StatusData } from './segment.js';
 
 /** Set by the status line, which runs `git status` only while a shown segment needs it. */

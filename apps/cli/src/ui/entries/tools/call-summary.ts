@@ -1,6 +1,6 @@
-import type { ToolRun } from '../../../agent/tools.js';
-import { plural } from '../../../lib/format.js';
-import { firstLine } from '../../../lib/text.js';
+import type { ToolRun } from '@jinion/core/agent/tools';
+import { plural } from '@jinion/core/lib/format';
+import { firstLine } from '@jinion/core/lib/text';
 
 export const MEMORY_VERBS = { remember: 'Remember', recall: 'Recall', forget: 'Forget' } as const;
 

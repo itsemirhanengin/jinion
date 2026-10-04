@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import type { BackgroundTask } from '../../src/agent/tasks.js';
+import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import { activity } from '../../src/app/activity.js';
-import { createSession } from '../../src/conversation/session.js';
+import { createSession } from '@jinion/core/conversation/session';
 
 describe('activity', () => {
   it('names the command that runs, and offers ctrl+b once it is listed as a task', () => {

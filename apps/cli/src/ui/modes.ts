@@ -1,5 +1,5 @@
 import type { Theme } from '@jinion/tui';
-import type { AgentMode } from '../agent/agent.js';
+import type { AgentMode } from '@jinion/core/agent/agent';
 
 /** Auto stands out the most, since it acts on its own. */
 export function modeColor(theme: Theme, mode: AgentMode) {

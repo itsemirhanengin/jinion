@@ -1,10 +1,10 @@
 import { resolve } from 'node:path';
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
-import { readChanges, type RepoChanges } from '../../git/changes.js';
-import { fileDiff } from '../../git/repos.js';
-import { plural } from '../../lib/format.js';
-import { editTurnsAtom } from '../../state/session.js';
+import { readChanges, type RepoChanges } from '@jinion/core/git/changes';
+import { fileDiff } from '@jinion/core/git/repos';
+import { plural } from '@jinion/core/lib/format';
+import { editTurnsAtom } from '@jinion/core/state/session';
 import { useAsync } from '../../ui/use-async.js';
 import { useWorkdir } from '../../ui/use-workdir.js';
 import { totals, type ChangeRow, type View } from './views.js';

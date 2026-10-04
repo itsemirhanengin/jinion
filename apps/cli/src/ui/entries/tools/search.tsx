@@ -1,7 +1,7 @@
 import { extension, printable, Text, useTheme, type Status, type TreeNode } from '@jinion/tui';
 import { ToolLine } from '@jinion/tui/chat';
-import type { FileRef, ToolRun } from '../../../agent/tools.js';
-import { plural } from '../../../lib/format.js';
+import type { FileRef, ToolRun } from '@jinion/core/agent/tools';
+import { plural } from '@jinion/core/lib/format';
 
 const MAX_TREE_ITEMS = 6;
 

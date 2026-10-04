@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, PromptInput, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { AgentAccount, AgentAccounts } from '../../agent/accounts.js';
+import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
 import { useJinion } from '../../app/context.js';
-import { limitsKey } from '../../settings/limits.js';
-import { accountAtom, seenLimitsAtom } from '../../state/agent.js';
+import { limitsKey } from '@jinion/core/settings/limits';
+import { accountAtom, seenLimitsAtom } from '@jinion/core/state/agent';
 import { describeAccount } from './describe.js';
 import { SignInView } from './sign-in-view.js';
 import { useSignIn } from './use-sign-in.js';

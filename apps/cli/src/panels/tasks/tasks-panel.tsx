@@ -16,11 +16,11 @@ import {
   type KeyHint,
 } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { BackgroundTask } from '../../agent/tasks.js';
+import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import { useJinion } from '../../app/context.js';
-import { elapsed, plural } from '../../lib/format.js';
-import { firstLine } from '../../lib/text.js';
-import { backgroundTasksAtom } from '../../state/agent.js';
+import { elapsed, plural } from '@jinion/core/lib/format';
+import { firstLine } from '@jinion/core/lib/text';
+import { backgroundTasksAtom } from '@jinion/core/state/agent';
 import { TASK_MARKS } from '../../ui/task-marks.js';
 import { useOutput } from './output.js';
 import { TaskOutput } from './task-output.js';

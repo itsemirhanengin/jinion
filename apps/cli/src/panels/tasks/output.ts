@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { printable } from '@jinion/tui';
-import { readTail } from '../../lib/tail.js';
+import { readTail } from '@jinion/core/lib/tail';
 
 const POLL_MS = 500;
 /** A dev server can write a lot. */

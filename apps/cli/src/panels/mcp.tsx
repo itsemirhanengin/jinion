@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Text, useChoiceList, usePanel, useTheme, type Choice, type Theme } from '@jinion/tui';
-import type { AgentMcp, McpServerInfo } from '../agent/mcp.js';
+import type { AgentMcp, McpServerInfo } from '@jinion/core/agent/mcp';
 import { useJinion } from '../app/context.js';
-import { errorMessage } from '../lib/errors.js';
-import { plural } from '../lib/format.js';
-import { truncate } from '../lib/text.js';
+import { errorMessage } from '@jinion/core/lib/errors';
+import { plural } from '@jinion/core/lib/format';
+import { truncate } from '@jinion/core/lib/text';
 
 const VISIBLE = 10;
 const LABEL_WIDTH = 18;

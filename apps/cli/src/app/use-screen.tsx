@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useApp, usePanels, useTerminal, useView } from '@jinion/tui';
-import type { Screen } from '../controllers/context.js';
+import type { Screen } from '@jinion/core/controllers/context';
 import { DialogView } from './dialogs.js';
 import { viewPanel } from './views.js';
 

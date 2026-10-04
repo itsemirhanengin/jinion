@@ -1,9 +1,9 @@
 import { Box, printable, StatusMark, Text, useAnimation, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { elapsed } from '../lib/format.js';
-import { firstLine } from '../lib/text.js';
+import { elapsed } from '@jinion/core/lib/format';
+import { firstLine } from '@jinion/core/lib/text';
 import { TASK_MARKS } from '../ui/task-marks.js';
-import { backgroundTasksAtom } from '../state/agent.js';
+import { backgroundTasksAtom } from '@jinion/core/state/agent';
 
 const RECENT_MS = 60_000;
 

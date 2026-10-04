@@ -2,7 +2,7 @@ import { usePanel } from '@jinion/tui';
 import { ModelPanel } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
 import { useJinion } from '../app/context.js';
-import { modelsAtom, selectionAtom } from '../state/agent.js';
+import { modelsAtom, selectionAtom } from '@jinion/core/state/agent';
 
 export function ModelPicker() {
   const jinion = useJinion();

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { errorMessage } from '../lib/errors.js';
+import { errorMessage } from '@jinion/core/lib/errors';
 
 export type Async<T> = { state: 'pending' } | { state: 'done'; value: T } | { state: 'failed'; error: string };
 

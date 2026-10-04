@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { Jinion } from '../controllers/jinion.js';
+import type { Jinion } from '@jinion/core/controllers/jinion';
 
 export const JinionContext = createContext<Jinion | undefined>(undefined);
 

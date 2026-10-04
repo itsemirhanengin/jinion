@@ -1,6 +1,6 @@
 import { countChanges, parsePatch, Text } from '@jinion/tui';
-import type { Entry } from '../../conversation/entries.js';
-import { clockTime, minutes, plural } from '../../lib/format.js';
+import type { Entry } from '@jinion/core/conversation/entries';
+import { clockTime, minutes, plural } from '@jinion/core/lib/format';
 import type { Segment } from '../segment.js';
 
 export const changes: Segment = {
