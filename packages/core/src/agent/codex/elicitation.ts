@@ -61,7 +61,7 @@ export async function elicit(request: Elicitation, turn: RunContext | undefined)
 
     const answers = await turn.ask(questions);
 
-    return { action: 'accept', content: Object.fromEntries(fields.map((field, index) => [field.key, valueOf(field, answers[index])])), _meta: null };
+    return { action: 'accept', content: Object.fromEntries(fields.map((field, index) => [field.key, answered(field, answers[index])])), _meta: null };
   } catch {
     return { action: 'cancel', content: null, _meta: null };
   }
@@ -78,7 +78,7 @@ function choicesOf(field: Field) {
   return values.map((value, index) => ({ title: field.enumNames?.[index] ?? value, value }));
 }
 
-function valueOf({ field, choices }: { field: Field; choices: { value: unknown }[] }, answer: QuestionAnswer | undefined) {
+function answered({ field, choices }: { field: Field; choices: { value: unknown }[] }, answer: QuestionAnswer | undefined) {
   const picked = (answer?.options ?? []).map((option) => choices[option]?.value);
 
   if (field.type === 'array') return picked;

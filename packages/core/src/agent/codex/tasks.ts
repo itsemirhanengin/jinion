@@ -45,7 +45,7 @@ export class CodexTasks {
   /** The process to terminate for it; a task stopped this way ends as stopped rather than failed. */
   stop(id: string) {
     const task = this.tasks.get(id);
-    if (!task || task.status !== 'running') return undefined;
+    if (task?.status !== 'running') return undefined;
 
     task.stopping = true;
 
@@ -55,7 +55,7 @@ export class CodexTasks {
   /** `output` is all it printed, as Codex reports it at the end, which has what came before it was sent here too. */
   end(id: string, ok: boolean, output?: string | null): AgentEvent[] {
     const task = this.tasks.get(id);
-    if (!task || task.status !== 'running') return [];
+    if (task?.status !== 'running') return [];
 
     if (output && task.output) writeFileSync(task.output, output);
     Object.assign(task, { status: task.stopping ? 'stopped' : ok ? 'completed' : 'failed', endedAt: Date.now() });
