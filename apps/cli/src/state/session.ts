@@ -26,6 +26,29 @@ export const shownAtom = atom((get) => {
 
 export const sessionAtom = atom((get) => get(shownAtom).state);
 
+export interface Tab {
+  id: string;
+  title?: string;
+  working: boolean;
+  /** A question, permission or plan waits on the user. */
+  waiting: boolean;
+  shown: boolean;
+}
+
+/** Every open session, in the order they opened; the client follows them all. */
+export const tabsAtom = atom((get): Tab[] => {
+  const following = client(get);
+  const shown = get(following.shownAtom);
+
+  return get(following.sessionsAtom).sessions.map(({ id, title, working }) => ({
+    id,
+    title,
+    working,
+    waiting: get(following.session(id))?.fields.dialog !== undefined,
+    shown: id === shown,
+  }));
+});
+
 export const entriesAtom = atom((get) => get(sessionAtom).entries);
 
 export const todosAtom = atom((get) => get(sessionAtom).todos);

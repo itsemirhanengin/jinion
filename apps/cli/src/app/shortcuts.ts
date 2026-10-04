@@ -15,6 +15,8 @@ export const SHORTCUTS: [keys: string, action: string][] = [
   ['ctrl+t', 'background tasks'],
   ['ctrl+b', 'send the running command to the background'],
   ['ctrl+g', 'worktrees on or off for new conversations'],
+  ['ctrl+n', 'new conversation in a tab'],
+  ['alt+1..9', 'go to a tab'],
   ['wheel', 'scroll the conversation'],
   ['pgup/pgdn', 'scroll by page'],
   ['drag', 'select text and copy it'],

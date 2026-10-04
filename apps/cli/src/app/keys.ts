@@ -4,7 +4,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { nextMode } from '@jinion/core/agent/modes';
 import { draftAtom } from '../prompt/draft.js';
 import { usePrompt } from '../prompt/use-prompt.js';
-import { busyAtom, modeAtom, worktreesAtom } from '../state/session.js';
+import { busyAtom, dialogAtom, modeAtom, tabsAtom, worktreesAtom } from '../state/session.js';
 import { useApi } from './api.js';
 import { useOpenView } from './use-screen.js';
 
@@ -21,15 +21,27 @@ export function useKeys() {
   const busy = useAtomValue(busyAtom);
   const mode = useAtomValue(modeAtom);
   const worktrees = useAtomValue(worktreesAtom);
+  const dialog = useAtomValue(dialogAtom);
+  const tabs = useAtomValue(tabsAtom);
   const [draft, setDraft] = useAtom(draftAtom);
 
   const lastEscape = useRef(0);
 
   const free = !panels.top;
+  // A dialog stays with its tab, so going to another one while it waits is fine; a picker would act on the wrong one.
+  const tabsFree = free || (dialog !== undefined && panels.top?.id === dialog.id);
   const { modes } = api.initialized.agent;
   const interrupt = () => api.act(api.inSession('session/interrupt', {}));
 
   useInput((input, key) => {
+    if (key.ctrl && input === 'n' && tabsFree) return api.act(api.request('sessions/open', { activate: true }));
+
+    if (key.meta && /^[1-9]$/.test(input) && tabsFree) {
+      const tab = tabs[Number(input) - 1];
+
+      return tab && api.act(api.request('sessions/activate', { session: tab.id }));
+    }
+
     if (key.ctrl && input === 'o') return view.toggleExpanded();
     if (key.ctrl && input === 't' && free) return openView({ id: 'tasks' });
     if (key.ctrl && input === 'b' && busy && free) return api.act(api.inSession('session/background', {}));

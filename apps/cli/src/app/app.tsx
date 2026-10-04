@@ -14,6 +14,7 @@ import { useDialogs } from './dialogs.js';
 import { useKeys } from './keys.js';
 import { PromptArea } from './prompt-area.js';
 import { StatusLine } from './status-line.js';
+import { TabBar } from './tab-bar.js';
 import { useScreen } from './use-screen.js';
 
 export interface AppProps {
@@ -90,7 +91,7 @@ function Layout() {
   useKeys();
   useDialogs();
 
-  return <Shell content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
+  return <Shell header={<TabBar />} content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
 }
 
 function Conversation() {

@@ -36,7 +36,8 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
     if (!match) return;
 
     close();
-    api.act(api.inSession('sessions/replace', { resume: match.item.id }));
+    // The conversation shown stays open in its tab.
+    api.act(api.request('sessions/open', { resume: match.item.id, activate: true }));
   };
 
   return (

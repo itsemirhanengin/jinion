@@ -97,6 +97,46 @@ describe('App', () => {
     expect(folded).not.toContain('Step 10');
   });
 
+  it('keeps conversations in tabs: ctrl+n opens one, alt+number goes to one, and each keeps its draft and its question', async () => {
+    const bar = (screen: string) => screen.split('\n').find((line) => /^ 1 .* \| 2 /.test(line))?.trim();
+
+    await terminal.waitFor('Ask jinion anything');
+    expect(bar(await terminal.screen())).toBeUndefined();
+
+    await terminal.type('half a thought');
+    await terminal.press('\x0e');
+    expect(bar(await terminal.waitFor('2 New conversation'))).toBe('1 New conversation | 2 New conversation');
+
+    await terminal.type('add rate limiting to the api');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Where should the limiter keep its counters?');
+    await terminal.press('\x1b1');
+
+    const first = await terminal.waitFor('half a thought');
+
+    expect(bar(first)).toBe('1 New conversation | 2 add rate limiting to the api ?');
+    expect(first).not.toContain('Where should the limiter keep its counters?');
+
+    await terminal.press('\x1b2');
+    await terminal.waitFor('Where should the limiter keep its counters?');
+  });
+
+  it('opens a saved conversation from /resume in a tab of its own', async () => {
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor(/I'm \*?\*?Jinion[\s\S]*Ask jinion anything/);
+    await terminal.type('/clear');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('/resume');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('1 conversations');
+    await terminal.press(KEYS.enter);
+
+    expect(await terminal.waitFor(/1 New conversation \| 2 \S/)).toContain('> hello');
+  });
+
   it('opens on the banner and the prompt', async () => {
     const screen = await terminal.waitFor('Ask jinion anything');
 
