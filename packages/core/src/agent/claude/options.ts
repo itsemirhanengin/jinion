@@ -66,6 +66,7 @@ export function claudeOptions({ cwd, project, selection, mode, account, resume, 
     includePartialMessages: true,
     // The tasks panel stops background tasks one at a time, so esc only stops the turn and leaves them running.
     perTaskStopAffordance: true,
-    env: { ...env, ...accountEnv(account) },
+    // Claude Code's bash-first experiment tells the model, in auto mode, to read and edit through Bash instead of the file tools.
+    env: { ...env, ...accountEnv(account), CLAUDE_CODE_THRIFTY_SONIC: '0' },
   };
 }
