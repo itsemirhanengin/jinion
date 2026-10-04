@@ -1,0 +1,74 @@
+---
+title: Giriş
+description: Jinion, terminaliniz için bir kodlama ajanıdır. Kurun ve ilk oturumunuzu üç adımda başlatın.
+---
+
+Jinion kodunuzu okur, dosyaları düzenler ve komutları çalıştırır, hepsini doğrudan terminalinizde. Ne istediğinizi
+kendi sözcüklerinizle anlatırsınız. Jinion adımları kendisi çıkarır, karar sizin olduğunda sorar ve yaptığı her
+değişikliği gösterir.
+
+```terminal title="~/code/api"
+{border|+-} {accent,bold|jinion} {muted|v0.1.0} {border|------------------------------------+}
+{border||} {muted|model}    {accent|Opus 5.5 · high}   {muted|/model to change}        {border||}
+{border||} {muted|account}  {accent|me@example.com · Max}   {muted|/account to change} {border||}
+{border||} {muted|cwd}      {code|~/code/api}                                {border||}
+{border|+----------------------------------------------------+}
+
+{border|--------------------------------------------------------------------------------------------}
+ {accent|A}{muted|sk jinion anything · / commands · $ skills · @ files}
+{border|---} {accent|Accept edits} {muted|· shift+tab} {border|---------------------------------------------------------------}
+ {muted|jinion · [M]} {accent|Opus 5.5 · high} {muted|· [D]} {code|code/api} {muted|·} ctx: 0/200K {muted|·} {cost|$0.00}
+```
+
+## Başlayın [#get-started]
+
+<Steps>
+<Step>
+
+### Jinion'u kurun [#install-jinion]
+
+Jinion, Node.js 22 veya üstünü gerektirir.
+
+```npm
+npm i -g @jinion/cli
+```
+
+`jinion --version` kurduğunuz sürümü yazar.
+
+</Step>
+<Step>
+
+### Projenizde bir oturum başlatın [#start-a-session-in-your-project]
+
+```sh
+cd ~/code/api
+jinion
+```
+
+Modelinizi, hesabınızı ve klasörünüzü gösteren karşılama ekranını, en altta da mesaj yazdığınız alanı görürsünüz.
+
+</Step>
+<Step>
+
+### Claude'a giriş yapın [#sign-in-to-claude]
+
+Jinion, Pro veya Max gibi bir abonelikteki Claude hesabınızla çalışır. Bu makinede daha önce Claude'a giriş
+yaptıysanız karşılama ekranı hesabınızı gösterir ve Jinion hazırdır.
+
+Yapmadıysanız `/account` yazın, "Not signed in" yazan hesaba gidin ve `enter`'a basın. Jinion girişi tarayıcınızda
+açar; tarayıcının gösterdiği kodu yapıştırın. Bunu yalnızca bir kez yaparsınız.
+
+</Step>
+</Steps>
+
+## Daha fazlası [#learn-more]
+
+<Cards>
+  <Card title="İlk göreviniz" href="/tr/first-task" description="Jinion'un bir isteği sorudan test edilmiş koda nasıl taşıdığını izleyin." />
+  <Card title="Ajana yön verin" href="/tr/prompting" description="Çalışırken yönlendirin, dosyaları anın, skill'leri kullanın." />
+  <Card title="İzin modunu seçin" href="/tr/permission-modes" description="Neyin sormadan çalışacağına siz karar verin." />
+  <Card title="Değişiklikleri inceleyin" href="/tr/review-changes" description="/diff ile her değişikliği tur tur görün." />
+  <Card title="Geri sarın" href="/tr/conversations/rewind" description="Kodu, konuşmayı ya da ikisini birden geri alın." />
+  <Card title="Worktree'lerle paralel çalışın" href="/tr/worktrees" description="Her konuşmaya kendi dalını ve çalışma kopyasını verin." />
+  <Card title="Belleği kullanın" href="/tr/memory" description="Ajanın konuşmalar arasında tuttuğu notlar." />
+</Cards>

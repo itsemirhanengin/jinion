@@ -1,0 +1,55 @@
+---
+title: İlk göreviniz
+description: Jinion'un bir isteği sorudan test edilmiş koda nasıl taşıdığını izleyin.
+---
+
+<Callout>
+  Ajanın değişikliklerini kendi çalışma kopyanızdan uzak tutmak için ilk mesajı göndermeden önce `ctrl+g`'ye basın.
+  Konuşma böylece kendi dalı olan bir git worktree'sinde çalışır. [Worktree'lerle paralel
+  çalışın](/tr/worktrees) sayfasına bakın.
+</Callout>
+
+Ne yapılmasını istediğinizi yazın ve `enter`'a basın:
+
+```text
+add rate limiting to the api
+```
+
+Jinion önce koda bakar. Seçim size kaldığında tahmin etmek yerine sorar:
+
+```terminal
+ {success|[x]} {bold|Glob:} {code|src/middleware/*.ts} {muted|4 files}
+ {border||--} {muted|ts} src/middleware/index.ts
+ {border||--} {muted|ts} src/middleware/cors.ts
+ {border||--} {muted|ts} src/middleware/request-id.ts
+ {border|'--} {muted|ts} src/middleware/error-handler.ts
+
+ {thinking,italic|Thought for 6s}
+
+ {accent|[-] Waiting for your answer…} {muted|0s · esc to interrupt}
+
+{accent|+- Ask} {muted|1/3 · storage} {accent|----------------------------------------------------------------------+}
+{accent||} {bold|Where should the limiter keep its counters?}                                              {accent||}
+{accent||                                                                                          |}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} {code|> 1.} {code,bold|In-memory}                                                                           {accent||}
+{accent||}      {muted|single process, zero dependencies}                                                   {accent||}
+{accent||}   2. Redis                                                                               {accent||}
+{accent||}      {muted|shared across instances, needs REDIS_URL}                                            {accent||}
+{accent||}   3. In-memory behind a store seam                                                       {accent||}
+{accent||}      {muted|Redis can be added later}                                                            {accent||}
+{accent||}   4. Other (type your own)                                                               {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+{accent||} Enter {muted|select ·} n {muted|note ·} Up/Down {muted|move ·} Esc {muted|cancel}                                        {accent||}
+{accent|+------------------------------------------------------------------------------------------+}
+```
+
+Düşünmesi geldikçe görünür, sonra devam ettiğinde `Thought for 6s` gibi tek bir satıra katlanır. `ctrl+o` onu
+çıktının geri kalanıyla birlikte yeniden açar.
+
+Ardından dosyaları düzenler, testleri çalıştırır ve başarısız olanları düzeltir. Her düzenleme konuşmada bir diff
+olarak görünür. Sonunda neyin değiştiğini ve nasıl kontrol edildiğini anlatan kısa bir özet alırsınız.
+
+İlk tur bittiğinde Jinion konuşmaya birkaç kelimelik bir başlık verir. Başlık durum satırının sağında ve `/resume`
+içinde görünür. Kendi başlığınızı vermek için `/rename` ve ardından başlığı yazın.
+[Bir konuşmaya devam edin](/tr/conversations/resume#titles) sayfasına bakın.

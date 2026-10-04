@@ -1,0 +1,91 @@
+---
+title: Kurulum
+description: Jinion'un neye ihtiyaç duyduğu, nasıl kurulup güncellendiği ve hangi terminallerde en iyi çalıştığı.
+---
+
+## Gereksinimler [#requirements]
+
+| Ne       | Gereken                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------- |
+| Node.js  | 22 veya üstü                                                                                |
+| Sistem   | macOS veya Linux                                                                            |
+| Hesap    | Pro veya Max gibi bir abonelikteki Claude hesabı                                            |
+| Terminal | Herhangi bir modern terminal; en uygunları için [önerilen terminallere](#recommended-terminals) bakın |
+
+## Kurun [#install]
+
+```npm
+npm i -g @jinion/cli
+```
+
+Çalıştığını kontrol edin:
+
+```sh
+jinion --version
+```
+
+Sürümü yazar, örneğin `0.1.0`. Kabuğunuz `command not found` derse
+[Sorun giderme](/tr/reference/troubleshooting#jinion-command-not-found) sayfasına bakın.
+
+## Giriş yapın [#sign-in]
+
+Jinion'u herhangi bir projede başlatın:
+
+```sh
+cd ~/code/my-project
+jinion
+```
+
+Bu makinede daha önce Claude'a giriş yaptıysanız karşılama ekranı hesabı gösterir ve işiniz biter. Yapmadıysanız
+`/account` yazın, "Not signed in" yazan hesaba gidin ve `enter`'a basın. Jinion girişi tarayıcınızda açar;
+tarayıcının gösterdiği kodu yapıştırın.
+
+Bir girişin süresi dolduğunda aynı panelden yeniden giriş yapın; [Yeniden giriş yapın](/tr/models-and-accounts#sign-in-again)
+bölümüne bakın. Birden fazla hesap kullanmak için [Modelleri ve hesapları değiştirin](/tr/models-and-accounts#switch-accounts)
+sayfasına bakın.
+
+## Model olmadan deneyin [#try-it-without-a-model]
+
+`jinion --demo`, bir modele hiçbir şey göndermeden hazır bir oturum oynatır: sorular, düzenlemeler, test
+çalıştırmaları ve arka plan görevleri. Etrafa göz atmanın hızlı bir yolu.
+
+```sh
+jinion --demo
+```
+
+Turun tamamı için `add rate limiting to the api`, kısa bir tur için `hello` yazın.
+
+## Güncelleyin [#update]
+
+```npm
+npm i -g @jinion/cli@latest
+```
+
+Yeni sürüme geçmek için çalışan oturumları yeniden başlatın. Konuşmalarınız ve ayarlarınız yerinde kalır.
+
+## Kaldırın [#uninstall]
+
+```npm
+npm rm -g @jinion/cli
+```
+
+Jinion'un verileri `~/.jinion` içinde kalır. Konuşmalarınızı, belleği ve ayarlarınızı da silmek için bu klasörü
+silin. `/account` ile hesap eklediyseniz, oturumları kapansın diye önce [onları kaldırın](/tr/models-and-accounts#remove-an-account).
+[~/.jinion klasörü](/tr/reference/jinion-folder) sayfasına bakın.
+
+## Önerilen terminaller [#recommended-terminals]
+
+Jinion, renkleri ve fareyi destekleyen her terminalde çalışır. Aşağıdakiler ayrıca masaüstü bildirimi gösterir ve
+pencerenin odakta olup olmadığını bildirir; böylece Jinion size yalnızca başka bir yere baktığınızda haber verir:
+
+| Terminal | Bildirimler |
+| -------- | ----------- |
+| Ghostty  | Evet        |
+| iTerm2   | Evet        |
+| kitty    | Evet        |
+| WezTerm  | Evet        |
+| Warp     | Evet        |
+| foot     | Evet        |
+
+tmux veya screen içinde ve diğer terminallerde Jinion bunun yerine zil çalar.
+[Terminalinizi ayarlayın](/tr/terminal-setup) sayfasına bakın.
