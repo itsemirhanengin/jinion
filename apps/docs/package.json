@@ -12,6 +12,7 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
+    "@zbsearch/stemmers": "4.0.1",
     "cn": "^0.3.0",
     "fumadocs-core": "16.15.18",
     "fumadocs-mdx": "15.4.6",
@@ -19,7 +20,8 @@
     "lucide-react": "^1.47.0",
     "next": "16.3.5",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "zbsearch": "4.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

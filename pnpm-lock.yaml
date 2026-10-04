@@ -51,6 +51,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@zbsearch/stemmers':
+        specifier: 4.0.1
+        version: 4.0.1
       cn:
         specifier: ^0.3.0
         version: 0.3.3
@@ -75,6 +78,9 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+      zbsearch:
+        specifier: 4.0.1
+        version: 4.0.1
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
@@ -1502,6 +1508,10 @@ packages:
 
   '@yuku-toolchain/types@0.10.2':
     resolution: {integrity: sha512-sSeo4SSSToiS+sSD+bwn/s94EEcaLJ7tG5LCp8gFYC1G5VzxzX7fqB6m9RU1yMD8KTpu6zdU/I1NlQf8hVBJ9Q==}
+
+  '@zbsearch/stemmers@4.0.1':
+    resolution: {integrity: sha512-PsdI8ebSg+NArqfbcp+NLez7i0sWH5C4lkvyca2DcNmnqQWSiYu0pSuELvz8HVfCHglllBhgWHX7umpKWQ1BIw==}
+    engines: {node: '>= 20.0.0'}
 
   accepts@2.0.0:
     resolution: {integrity: sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==}
@@ -4100,6 +4110,8 @@ snapshots:
     optional: true
 
   '@yuku-toolchain/types@0.10.2': {}
+
+  '@zbsearch/stemmers@4.0.1': {}
 
   accepts@2.0.0:
     dependencies:
