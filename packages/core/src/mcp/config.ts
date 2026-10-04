@@ -2,8 +2,8 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { readJson } from '../lib/json-file.js';
 import { jinionHome } from '../lib/paths.js';
-import { loadProjectSettings, saveProjectSettings } from '../settings/project.js';
-import { loadSettings, saveMcpSettings } from '../settings/user.js';
+import { loadProjectSettings, updateProjectSettings } from '../settings/project.js';
+import { loadSettings, updateSettings } from '../settings/user.js';
 
 export type McpTransport =
   | { type?: 'stdio'; command: string; args?: string[]; env?: Record<string, string> }
@@ -57,21 +57,20 @@ export class McpConfig {
   }
 
   setEnabled(server: Pick<McpServerConfig, 'name'> & { source?: string }, enabled: boolean) {
-    const disabled = new Set(this.disabled());
-
-    if (enabled) disabled.delete(server.name);
-    else disabled.add(server.name);
-
-    saveMcpSettings({ disabled: [...disabled].sort() });
+    updateSettings(({ mcp }) => ({ mcp: { ...mcp, disabled: toggled(mcp?.disabled, server.name, !enabled) } }));
     if (server.source !== 'project') return;
 
-    const approved = new Set(loadProjectSettings(this.cwd).mcp?.approved ?? []);
-
-    if (enabled) approved.add(server.name);
-    else approved.delete(server.name);
-
-    saveProjectSettings(this.cwd, { mcp: { approved: [...approved].sort() } });
+    updateProjectSettings(this.cwd, ({ mcp }) => ({ mcp: { ...mcp, approved: toggled(mcp?.approved, server.name, enabled) } }));
   }
+}
+
+function toggled(names: string[] = [], name: string, included: boolean) {
+  const set = new Set(names);
+
+  if (included) set.add(name);
+  else set.delete(name);
+
+  return [...set].sort();
 }
 
 const claudeConfigFile = () =>

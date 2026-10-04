@@ -1,7 +1,7 @@
 import { join } from 'node:path';
 import type { CanUseTool, PermissionRuleValue } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionRequest } from '../permissions.js';
-import { readJson, writeJson } from '../../lib/json-file.js';
+import { readJson, updateJson } from '../../lib/json-file.js';
 import { projectDir } from '../../lib/paths.js';
 import { GUARD_REASONS } from './guard.js';
 import type { Input } from './input.js';
@@ -82,6 +82,6 @@ export class ProjectPermissions {
   }
 
   add(rules: string[]) {
-    writeJson(this.file, [...new Set([...this.list(), ...rules])]);
+    updateJson<string[]>(this.file, [], (saved) => [...new Set([...saved, ...rules])]);
   }
 }
