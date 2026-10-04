@@ -45,9 +45,10 @@ Rules that keep it that way:
 - **A session keeps to its own atoms.** Its controllers read and write `context.atoms`, never `state/active.ts`, so one
   running in the background never touches another; `biome.jsonc` checks it.
 - **`@jinion/core` draws nothing.** It imports no React, Ink, `@jinion/tui` or jotai's root entry (`jotai/vanilla`
-  instead); `biome.jsonc` checks it. What it needs from the screen goes through `Screen`, as data: views (`View`) and
-  dialogs (`Dialog`) that each client draws. Its types are its own; the chat kit's are shaped the same, so the app passes
-  one to the other as they are.
+  instead); `biome.jsonc` checks it. Views a command opens go through `Screen` as data (`View`). What a session asks the
+  user is data too: the dialog it waits on is in its atoms (`atoms.dialog`), a client draws the active session's, and
+  answers through `session.dialogs`. Its types are its own; the chat kit's are shaped the same, so the app passes one to
+  the other as they are.
 - **Backends stay behind `AgentBackend` and `AgentSession`.** A backend holds what its conversations share (models,
   accounts, MCP servers, skills, usage); `backend.session()` opens one conversation, with its own process. The app only
   uses `agent/agent.ts` and its sibling contract files; anything Claude Code specific stays in `agent/claude/`. Optional
