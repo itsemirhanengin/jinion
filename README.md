@@ -6,7 +6,7 @@ A coding agent for your terminal. It reads your project, changes the code and ch
 
 ## Install
 
-You need Node.js 22 or later and a Claude account on a subscription, such as Pro or Max.
+You need Node.js 22 or later and a Claude account on a subscription, such as Pro or Max, or a ChatGPT login for Codex.
 
 ```sh
 npm i -g @jinion/cli

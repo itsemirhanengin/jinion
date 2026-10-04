@@ -1,23 +1,26 @@
 ---
 title: Modelleri ve hesapları değiştirin
-description: Modeli ve ne kadar çaba harcayacağını seçin; Claude hesapları ekleyin, aralarında geçin, yeniden giriş yapın ve kaldırın.
+description: Claude'un ya da Codex'in modelini ve ne kadar çaba harcayacağını seçin; hesap ekleyin, aralarında geçin, yeniden giriş yapın ve kaldırın.
 ---
 
 ## Bir model seçin [#pick-a-model]
 
-`/model`, hesabınızın kullanabildiği modelleri listeler. `up` ve `down` modeli, `left` ve `right` çabasını seçer,
-`enter` geçiş yapar.
+`/model`, Claude'un ve Codex'in modellerini her birinin adı altında listeler. `up` ve `down` modeli, `left` ve `right`
+çabasını seçer, `enter` geçiş yapar.
 
 ```terminal
-{accent|+- Model} {muted|Claude} {accent|---------------------------------------------------------------------------+}
+{accent|+- Model} {accent|-----------------------------------------------------------------------------------+}
 {accent||} {muted|effort  default   low   medium}   {accent,bold|high}   {muted|xhigh   max}                                      {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
+{accent||} {muted,bold|Claude}                                                                                   {accent||}
 {accent||} {code|> 1.} {code,bold|Opus 5.5}                                                                    {muted|current} {accent||}
 {accent||}      {muted|Most capable, for complex work}                                                      {accent||}
 {accent||}   2. Sonnet 5                                                                            {accent||}
 {accent||}      {muted|Fast and capable, for everyday work}                                                 {accent||}
-{accent||}   3. Haiku 4.5                                                                           {accent||}
-{accent||}      {muted|Fastest, for quick answers}                                                          {accent||}
+{accent||}                                                                                          {accent||}
+{accent||} {muted,bold|Codex}                                                                                    {accent||}
+{accent||}   3. GPT-6.1-Sol                                                                         {accent||}
+{accent||}      {muted|Latest workhorse model for coding and everyday work.}                                {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} Enter {muted|select ·} Up/Down {muted|model ·} Left/Right {muted|effort ·} Esc {muted|cancel}                            {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
@@ -31,6 +34,28 @@ Doğrudan geçmek için:
 ```text
 /model sonnet
 ```
+
+## Codex ile çalışın [#work-with-codex]
+
+Codex ile devam etmek için `/model` içinde bir Codex modeli seçin ya da adını yazın:
+
+```text
+/model gpt-6.1-sol
+```
+
+Konuşma oraya taşınır ve Jinion
+`Switched to GPT-6.1-Sol on Codex. It reads the conversation so far with your next message.` der. Codex, sizin ve
+Claude'un o ana kadar söylediklerini ve yaptıklarını bu mesajla birlikte alır; böylece kaldığınız yerden devam
+edersiniz. Yeniden bir Claude modeli seçmek konuşmayı aynı şekilde geri taşır. Geçiş turlar arasında olur ve arka planda
+çalışanlar durur.
+
+Codex, `codex` komutunun kullandığı ChatGPT girişinizle çalışır. Jinion, Codex'i kendisiyle birlikte getirir; ayrıca
+kurmanız gerekmez. Giriş yapmadıysanız bir Codex modeline geçip `/account` yazın;
+[Yeniden giriş yapın](#sign-in-again) bölümüne bakın.
+
+Codex, Jinion'da Claude'un çalıştığı gibi çalışır: aynı [izin modları](/tr/permission-modes), plan onayı, sorular,
+`/compact`, `/context`, hafıza ve skill'ler. `AGENTS.md` dosyasını, `AGENTS.md` yoksa `CLAUDE.md` dosyasını okur. Bazı
+özellikler şimdilik yalnızca Claude'da var: `/rewind`, arka plan görevleri, konuşmalara ad verme ve `/stats`.
 
 ## Çabayı ayarlayın [#set-the-effort]
 
@@ -60,6 +85,7 @@ jinion --model sonnet --effort low
 ## Hesap değiştirin [#switch-accounts]
 
 Kişisel ve iş hesabı gibi birden fazla Claude girişiniz varsa `/account` onları listeler ve aralarında geçiş yapar.
+`/account`, konuşmanın üzerinde çalıştığı ajanın hesaplarını gösterir; Codex'in tek hesabı vardır, ChatGPT girişiniz.
 
 ```terminal
 {accent|+- Account} {muted|Claude} {accent|-------------------------------------------------------------------------+}
@@ -130,4 +156,4 @@ tutmak için başka bir tuşa basın. Jinion hesaptan çıkış yapar, onu kald�
 İki hesap kaldırılamaz:
 
 - kullanımda olan; `in use; switch to another account first` gösterir;
-- `default`; `Claude's own login stays; l signs in again` gösterir.
+- ajanın kendi girişi olan `default`; `Claude's own login stays; l signs in again` gösterir.

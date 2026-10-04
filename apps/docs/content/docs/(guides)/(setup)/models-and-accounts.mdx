@@ -1,23 +1,26 @@
 ---
 title: Switch models and accounts
-description: Pick the model and how much effort it puts in, and add, switch, sign in again and remove Claude accounts.
+description: Pick the model, Claude's or Codex's, and how much effort it puts in, and add, switch, sign in again and remove accounts.
 ---
 
 ## Pick a model
 
-`/model` lists the models your account can use. `up` and `down` pick the model, `left` and `right` its effort, and
-`enter` switches.
+`/model` lists the models of Claude and of Codex, each under its name. `up` and `down` pick the model, `left` and
+`right` its effort, and `enter` switches.
 
 ```terminal
-{accent|+- Model} {muted|Claude} {accent|---------------------------------------------------------------------------+}
+{accent|+- Model} {accent|-----------------------------------------------------------------------------------+}
 {accent||} {muted|effort  default   low   medium}   {accent,bold|high}   {muted|xhigh   max}                                      {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
+{accent||} {muted,bold|Claude}                                                                                   {accent||}
 {accent||} {code|> 1.} {code,bold|Opus 5.5}                                                                    {muted|current} {accent||}
 {accent||}      {muted|Most capable, for complex work}                                                      {accent||}
 {accent||}   2. Sonnet 5                                                                            {accent||}
 {accent||}      {muted|Fast and capable, for everyday work}                                                 {accent||}
-{accent||}   3. Haiku 4.5                                                                           {accent||}
-{accent||}      {muted|Fastest, for quick answers}                                                          {accent||}
+{accent||}                                                                                          {accent||}
+{accent||} {muted,bold|Codex}                                                                                    {accent||}
+{accent||}   3. GPT-6.1-Sol                                                                         {accent||}
+{accent||}      {muted|Latest workhorse model for coding and everyday work.}                                {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
 {accent||} Enter {muted|select ·} Up/Down {muted|model ·} Left/Right {muted|effort ·} Esc {muted|cancel}                            {accent||}
 {accent|+------------------------------------------------------------------------------------------+}
@@ -31,6 +34,27 @@ To switch straight away:
 ```text
 /model sonnet
 ```
+
+## Work with Codex
+
+Pick a Codex model in `/model`, or type its name, to go on with Codex:
+
+```text
+/model gpt-6.1-sol
+```
+
+The conversation moves there, and Jinion says
+`Switched to GPT-6.1-Sol on Codex. It reads the conversation so far with your next message.` Codex gets what you and
+Claude said and did with that message, so you can carry on where you were. Picking a Claude model again moves it back
+the same way. A switch happens between turns, and what ran in the background stops.
+
+Codex works with your ChatGPT login, the one the `codex` command uses. Jinion brings Codex along, so you don't need to
+install it. If you aren't signed in, switch to a Codex model and type `/account`; see
+[Sign in again](#sign-in-again).
+
+Codex works the way Claude does in Jinion: the same [permission modes](/permission-modes), plan approval, questions,
+`/compact`, `/context`, memory and skills. It reads `AGENTS.md`, and `CLAUDE.md` when there is no `AGENTS.md`. Some
+things are Claude's only for now: `/rewind`, background tasks, naming conversations, and `/stats`.
 
 ## Set the effort
 
@@ -60,7 +84,7 @@ jinion --model sonnet --effort low
 ## Switch accounts
 
 If you have more than one Claude login, such as a personal and a work one, `/account` lists them and switches between
-them.
+them. `/account` shows the accounts of the agent the conversation is on; Codex has one, your ChatGPT login.
 
 ```terminal
 {accent|+- Account} {muted|Claude} {accent|-------------------------------------------------------------------------+}
@@ -131,4 +155,4 @@ key to keep it. Jinion signs the account out and removes it, and says
 Two accounts can't be removed:
 
 - the one in use, which shows `in use; switch to another account first`;
-- `default`, which shows `Claude's own login stays; l signs in again`.
+- `default`, the agent's own login, which shows `Claude's own login stays; l signs in again`.

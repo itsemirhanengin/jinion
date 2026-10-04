@@ -60,11 +60,30 @@ are private by default; `@jinion/tui` and `@jinion/virtualization` too, unless t
 
 ## Next
 
-### A Codex adapter
+### Codex, the rest
 
-A second `Agent` (`apps/cli/src/agent/agent.ts`) proves the interface holds. `agent/claude/` is the reference: models
-with effort levels, modes, the event stream in and between turns, steering, background tasks, compaction, usage and
-history. Optional parts of the interface stay optional, so the UI already copes with an agent that lacks them.
+The Codex adapter (`agent/codex/`) works through `codex app-server`, which every conversation shares, each as a
+thread. `@openai/codex` is a pinned dependency, since the adapter uses the protocol's experimental parts (plan mode,
+Jinion's note tools as dynamic tools, Codex's questions); bumping it means running `codex app-server generate-ts
+--experimental`, comparing with `agent/codex/protocol.ts`, and recording the fixtures again (`pnpm --filter
+@jinion/core codex-fixture`). What Claude has and Codex doesn't yet:
+
+- **Rewind.** `thread/revert` takes the conversation back but not the files; the code part needs the turn's diff
+  (`turn/diff/updated`) undone by Jinion.
+- **Background tasks.** Codex keeps long commands running (`thread/backgroundTerminals/*`, experimental); they could
+  show in `ctrl+t` as Claude's do.
+- **Titles.** A short ephemeral thread on a small model could name conversations, as `agent/claude/title.ts` does.
+- **`/stats`.** Codex keeps its sessions in `~/.codex/sessions`; `history()` could read them.
+- **What always asks, in Auto.** Codex's reviewer answers for commits and writes outside the project there, so
+  `/commit-approval` doesn't apply; the other modes ask through Codex's sandbox.
+- **MCP elicitations** are declined for now; they could become questions.
+- **A model or mode change during a turn** applies from the next one (`turn/settings/update` could do it at once).
+
+### More backends
+
+`/model` lists every backend's models under its name, and a model of another moves the conversation there with a
+handover: the new backend gets the conversation so far as text with its next prompt (`conversation/handoff.ts`). Kimi,
+OpenCode's models or local ones would come in the same way, as an `AgentBackend` added in `apps/cli/src/host.ts`.
 
 ## Smaller items
 
@@ -176,4 +195,5 @@ release; web fetches, searches and MCP calls shown with what came back; a git wo
 `ctrl+g`; a fuller system prompt after Claude Code's; the codebase restructured into controllers over a jotai store,
 with its conventions in `AGENTS.md`; the docs at docs.jinion.co and the page at jinion.co, on Railway; signing in with
 the `claude` that comes with the SDK, so Jinion needs no Claude Code installed; claude.ai's skills, synced per account
-by a short process of their own (`agent/claude/synced-skills.ts`). `git log` has the details.
+by a short process of their own (`agent/claude/synced-skills.ts`); Codex as a second backend, picked in `/model`, with
+the conversation handed over between them. `git log` has the details.

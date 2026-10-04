@@ -114,6 +114,20 @@ Bu isteklerde "bir daha sorma" seçeneği yoktur. `/tmp` gibi geçici klasörler
 [worktree](/tr/worktrees) içinde proje worktree'nin kendisidir; bu yüzden kendi çalışma kopyanızdaki bir değişiklik de
 sorulur.
 
+## Codex ile [#with-codex]
+
+Codex aynı dört modu kendi sandbox'ı üzerinden uygular:
+
+| Mod          | Codex'te                                                                                            |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| Manual       | Okumalar çalışır; her düzenleme ve yazan her komut sorar                                            |
+| Accept edits | Düzenlemeler ve komutlar proje içinde çalışır; commit, projenin dışına yazmak ya da ağ sorar        |
+| Plan         | Codex'in plan modu: okur, bir plan yazar ve başlamadan önce sorar                                   |
+| Auto         | Soracak olanları Codex'in kendi incelemecisi yanıtlar ve isteğinizin ötesine geçeni durdurur        |
+
+Codex'te "bir daha sorma" konuşma boyunca geçerlidir. Auto modda commit'lere ve projenin dışına yazmaya Jinion değil
+Codex'in incelemecisi karar verir; bu yüzden `/commit-approval` orada geçerli değildir.
+
 ### Commit'lerden önce sormayı kapatın [#stop-asking-before-commits]
 
 ```text

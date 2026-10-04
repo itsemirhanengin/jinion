@@ -110,6 +110,20 @@ In every mode, Jinion asks before:
 These requests have no "don't ask again" choice. Temporary folders such as `/tmp` don't count as outside. In a
 [worktree](/worktrees), the project is the worktree, so a change to your own checkout asks too.
 
+## With Codex
+
+Codex keeps the same four modes, through its own sandbox:
+
+| Mode         | On Codex                                                                                            |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| Manual       | Reads run; every edit and every command that writes asks                                            |
+| Accept edits | Edits and commands run inside the project; a commit, a write outside it or the network asks         |
+| Plan         | Codex's plan mode: it reads, writes a plan, and asks before it starts                               |
+| Auto         | Codex's own reviewer answers what would ask, and stops what goes beyond your request                |
+
+"Don't ask again" on Codex lasts for the conversation. In Auto mode Codex's reviewer, not Jinion, decides about commits
+and writes outside the project, so `/commit-approval` doesn't apply there.
+
 ### Stop asking before commits
 
 ```text
