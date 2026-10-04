@@ -79,6 +79,37 @@ Verified the content and \`git status --short\` shows only the new \`CONTRIBUTIN
 ]
 `;
 
+exports[`CodexEvents replaying recorded conversations > maps the subagent conversation as before 1`] = `
+[
+  "thinking: **Deciding to use multi-agent tools search**",
+  "text: I’ll spin up a single subagent for the file count and wait for its result, keeping this tidy.",
+  "usage 17664/258400 $0.0000",
+  "limits 5h, 7d",
+  "start t1 agent {"description":"In workspace /project, count the number of lines in notes.txt. Report only the count and mention the command or method used. Do not edit any files."}",
+  "end t1 ok {}",
+  "usage 19616/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: Faraday is on the count now. Since the request is specifically to wait for the subagent, I’m waiting for that report before answering.",
+  "start t2 other {"title":"Wait for subagents"}",
+  "start t3 bash {"command":"wc -l notes.txt"} in t1",
+  "output t3 ["       3 notes.txt"]",
+  "end t3 ok {"exitCode":0,"wallMs":0} in t1",
+  "limits 5h, 7d",
+  "limits 5h, 7d",
+  "output t2 ["3 lines, using \`wc -l notes.txt\`"]",
+  "end t2 ok {}",
+  "usage 19747/258400 $0.0000",
+  "limits 5h, 7d",
+  "start t4 other {"title":"Close a subagent"}",
+  "end t4 ok {}",
+  "usage 19894/258400 $0.0000",
+  "limits 5h, 7d",
+  "text: \`notes.txt\` has **3 lines**. Faraday counted it with \`wc -l notes.txt\`.",
+  "usage 19952/258400 $0.0000",
+  "limits 5h, 7d",
+]
+`;
+
 exports[`CodexEvents replaying recorded conversations > maps the tools conversation as before 1`] = `
 [
   "thinking: **Assessing update_plan tool availability**",

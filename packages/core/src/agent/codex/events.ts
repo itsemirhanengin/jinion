@@ -111,7 +111,7 @@ export class CodexEvents {
         return this.start(item.id, dynamicCall(item.tool, item.arguments), parent);
 
       case 'collabAgentToolCall':
-        for (const child of item.receiverThreadIds) this.children.set(child, item.id);
+        this.adopt(item);
 
         return this.start(item.id, collabCall(item), parent);
 
@@ -167,8 +167,14 @@ export class CodexEvents {
         return [...this.lines(item.id, lines), ...this.end(item.id, item.success === true, undefined, parent)];
       }
 
-      case 'collabAgentToolCall':
-        return this.end(item.id, item.status === 'completed', item.tool === 'spawnAgent' ? {} : undefined, parent);
+      case 'collabAgentToolCall': {
+        this.adopt(item);
+
+        // What the subagents said, where Codex waited for it; closing them reports it again.
+        const said = item.tool === 'wait' ? Object.values(item.agentsStates ?? {}).flatMap((state) => (state?.message ? outputLines(state.message) : [])) : [];
+
+        return [...this.lines(item.id, said), ...this.end(item.id, item.status === 'completed', item.tool === 'spawnAgent' ? {} : undefined, parent)];
+      }
 
       case 'webSearch': {
         const call: ToolCall =
@@ -209,6 +215,16 @@ export class CodexEvents {
       default:
         return [];
     }
+  }
+
+  /**
+   * A subagent's calls show under the call that started it. Codex names its thread once that call completes, and again
+   * in each call that waits for it or messages it, which mustn't take it over.
+   */
+  private adopt(item: Extract<ThreadItem, { type: 'collabAgentToolCall' }>) {
+    if (item.tool !== 'spawnAgent') return;
+
+    for (const child of item.receiverThreadIds) this.children.set(child, item.id);
   }
 
   private start(id: string, call: ToolCall, parent: string | undefined): AgentEvent[] {

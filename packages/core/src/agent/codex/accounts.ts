@@ -44,7 +44,10 @@ export class CodexAccounts implements AgentAccounts {
 
     try {
       const { success, error } = await done;
-      if (!success && !signal.aborted) throw new Error(error ?? 'the sign-in didn’t finish');
+
+      // A sign-in the user cancelled says nothing, as Claude's doesn't.
+      signal.throwIfAborted();
+      if (!success) throw new Error(error ?? 'the sign-in didn’t finish');
     } finally {
       signal.removeEventListener('abort', cancel);
     }

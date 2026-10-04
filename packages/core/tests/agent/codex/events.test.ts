@@ -8,7 +8,7 @@ import { started, transcript } from '../../support/transcript.js';
 
 /** Real conversations recorded with `--debug` and made fixtures with `pnpm codex-fixture`; `/project` stands in for the folder. */
 describe('CodexEvents replaying recorded conversations', () => {
-  for (const name of ['tools', 'plan', 'compact', 'interrupt', 'memory']) {
+  for (const name of ['tools', 'plan', 'compact', 'interrupt', 'memory', 'subagent']) {
     it(`maps the ${name} conversation as before`, () => {
       expect(transcript(replay(name).events)).toMatchSnapshot();
     });
@@ -59,6 +59,17 @@ describe('CodexEvents replaying recorded conversations', () => {
       { action: 'remember', detail: expect.stringMatching(/^project · /) },
       { action: 'recall', detail: 'every note' },
     ]);
+  });
+
+  it('shows a subagent’s calls under the call that started it, and what it said where Codex waited for it', () => {
+    const { events } = replay('subagent');
+    const spawn = events.find((event) => event.type === 'tool-start' && event.call.name === 'agent') as { id: string };
+    const children = events.filter((event) => event.type === 'tool-start' && event.parent !== undefined);
+    const wait = events.find((event) => event.type === 'tool-start' && event.call.name === 'other' && event.call.input.title === 'Wait for subagents') as { id: string };
+
+    expect(children.length).toBeGreaterThan(0);
+    expect(children.every((event) => event.type === 'tool-start' && event.parent === spawn.id)).toBe(true);
+    expect(events).toContainEqual({ type: 'tool-output', id: wait.id, lines: [expect.stringContaining('wc -l')] });
   });
 
   it('shows a command’s output a whole line at a time', () => {

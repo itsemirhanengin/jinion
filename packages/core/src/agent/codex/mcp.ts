@@ -29,7 +29,8 @@ export function codexMcp(connect: () => CodexConnection, liveThread: () => strin
 
       return data.map((server): McpServerInfo => {
         const enabled = configured[server.name]?.enabled !== false;
-        const status = !enabled ? 'off' : server.authStatus === 'notLoggedIn' ? 'needs-auth' : server.runtimeStatus ? STATUS[server.runtimeStatus] : 'pending';
+        // Only the connection says a login is missing: Codex calls a server with a key in its headers not logged in.
+        const status = !enabled ? 'off' : server.runtimeStatus ? STATUS[server.runtimeStatus] : 'pending';
 
         return {
           name: server.name,

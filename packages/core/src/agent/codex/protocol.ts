@@ -105,6 +105,8 @@ export type ThreadItem =
       status: 'inProgress' | 'completed' | 'failed';
       receiverThreadIds: string[];
       prompt: string | null;
+      /** Each subagent's state by its thread, with what it said once it is done. */
+      agentsStates?: Record<string, { status: string; message: string | null } | undefined>;
     }
   | {
       type: 'webSearch';
@@ -155,7 +157,6 @@ export interface McpServerStatus {
   pluginId: string | null;
   runtimeStatus: 'notStarted' | 'starting' | 'connected' | 'authenticationRequired' | 'failed' | 'cancelled' | 'disabled' | null;
   tools: Record<string, unknown>;
-  authStatus: 'unknown' | 'unsupported' | 'notLoggedIn' | 'bearerToken' | 'oAuth';
 }
 
 /** Each notification Jinion follows, by method; the rest are ignored. */
