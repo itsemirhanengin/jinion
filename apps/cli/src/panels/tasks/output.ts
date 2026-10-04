@@ -1,26 +1,35 @@
 import { useEffect, useState } from 'react';
 import { printable } from '@jinion/tui';
-import { readTail } from '@jinion/core/lib/tail';
+import { useApi } from '../../app/api.js';
 
 const POLL_MS = 500;
-/** A dev server can write a lot. */
-const MAX_BYTES = 256 * 1024;
 
-export function useOutput(path: string | undefined, live: boolean) {
+/** The end of what task `id` wrote, read again while it runs; nothing for a task that writes none. */
+export function useOutput(id: string | undefined, live: boolean) {
+  const api = useApi();
+
   const [lines, setLines] = useState<string[]>();
 
   useEffect(() => {
-    if (!path) return;
+    if (id === undefined) return;
 
-    const read = () => setLines(printable(readTail(path, MAX_BYTES).join('\n')).split('\n'));
+    let open = true;
 
-    read();
-    if (!live) return;
+    const read = () =>
+      api.inSession('session/task-output', { task: id }).then(
+        (tail) => open && tail && setLines(printable(tail.join('\n')).split('\n')),
+        () => {},
+      );
 
-    const timer = setInterval(read, POLL_MS);
+    void read();
 
-    return () => clearInterval(timer);
-  }, [path, live]);
+    const timer = live ? setInterval(read, POLL_MS) : undefined;
+
+    return () => {
+      open = false;
+      clearInterval(timer);
+    };
+  }, [id, live]);
 
   return lines;
 }

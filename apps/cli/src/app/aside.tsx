@@ -1,4 +1,4 @@
-import { dialogAtom, tasksAtom, queueAtom, sessionAtom, todosAtom } from '@jinion/core/state/active';
+import { dialogAtom, tasksAtom, queueAtom, sessionAtom, todosAtom } from '../state/session.js';
 import { Box, Text, useTheme } from '@jinion/tui';
 import { TodoPanel, Working } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';

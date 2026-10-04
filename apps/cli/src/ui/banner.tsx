@@ -1,15 +1,14 @@
 import type { ReactNode } from 'react';
 import { Box, Frame, Text, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { modelLabelAtom, worktreeAtom } from '@jinion/core/state/active';
 import { accountLabel } from '@jinion/core/agent/accounts';
-import { useJinion } from '../app/context.js';
 import { tildify } from '@jinion/core/lib/paths';
-import { identityAtom } from '@jinion/core/state/agent';
+import { useApi } from '../app/api.js';
+import { identityAtom, modelLabelAtom, worktreeAtom } from '../state/session.js';
 
 export function Banner() {
   const theme = useTheme();
-  const { backend, info } = useJinion();
+  const { agent, info } = useApi().initialized;
   const model = useAtomValue(modelLabelAtom);
   const identity = useAtomValue(identityAtom);
   const worktree = useAtomValue(worktreeAtom);
@@ -33,7 +32,7 @@ export function Banner() {
         <Text color={theme.status.model}>{model}</Text>
       </Row>
       {identity && (
-        <Row label="account" hint={backend.accounts && '/account to change'}>
+        <Row label="account" hint={agent.features.accounts && '/account to change'}>
           <Text color={theme.accent}>{accountLabel(identity)}</Text>
           {identity.name !== 'default' && <Text color={theme.muted}> ({identity.name})</Text>}
         </Row>

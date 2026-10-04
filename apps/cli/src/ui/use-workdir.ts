@@ -1,10 +1,10 @@
-import { worktreeAtom } from '@jinion/core/state/active';
 import { useAtomValue } from 'jotai';
-import { useJinion } from '../app/context.js';
+import { useApi } from '../app/api.js';
+import { worktreeAtom } from '../state/session.js';
 
 /** Where the conversation works: its worktree, or the project. */
 export function useWorkdir() {
-  const { info } = useJinion();
+  const { initialized } = useApi();
 
-  return useAtomValue(worktreeAtom)?.folder ?? info.cwd;
+  return useAtomValue(worktreeAtom)?.folder ?? initialized.info.cwd;
 }

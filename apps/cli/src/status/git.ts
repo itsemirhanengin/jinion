@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { readGitStatus, type GitStatus } from '@jinion/core/git/status';
+import type { GitStatus } from '@jinion/core/git/status';
+import { useApi } from '../app/api.js';
 
-/** The last status stays shown while it is read again. */
-export function useGitStatus(cwd: string, enabled: boolean, refresh: unknown) {
+/** Of the folder the shown session works in, read again as `folder` or `refresh` changes; the last one stays shown meanwhile. */
+export function useGitStatus(folder: string, enabled: boolean, refresh: unknown) {
+  const api = useApi();
+
   const [status, setStatus] = useState<GitStatus>();
 
   useEffect(() => {
@@ -10,12 +13,15 @@ export function useGitStatus(cwd: string, enabled: boolean, refresh: unknown) {
 
     let current = true;
 
-    void readGitStatus(cwd).then((found) => current && setStatus(found));
+    api.inSession('git/status', {}).then(
+      (found) => current && setStatus(found ?? undefined),
+      () => {},
+    );
 
     return () => {
       current = false;
     };
-  }, [cwd, enabled, refresh]);
+  }, [folder, enabled, refresh]);
 
   return enabled ? status : undefined;
 }

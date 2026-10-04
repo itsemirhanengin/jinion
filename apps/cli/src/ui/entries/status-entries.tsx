@@ -4,7 +4,7 @@ import { useAtomValue } from 'jotai';
 import type { EntryOf } from '@jinion/core/conversation/entries';
 import { compact, preciseSeconds } from '@jinion/core/lib/format';
 import { firstLine } from '@jinion/core/lib/text';
-import { mentionAtom } from '@jinion/core/state/agent';
+import { mentionAtom } from '../../state/session.js';
 import { TASK_MARKS } from '../task-marks.js';
 
 export function UserEntry({ text, steered }: { text: string; steered?: boolean }) {

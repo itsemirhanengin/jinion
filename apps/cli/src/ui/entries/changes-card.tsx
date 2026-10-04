@@ -1,13 +1,13 @@
 import { Box, Clickable, ExpandHint, FRAME_INSET, Frame, Text, useContentWidth, useTheme } from '@jinion/tui';
-import { useJinion } from '../../app/context.js';
 import type { ChangedFile, EntryOf } from '@jinion/core/conversation/entries';
 import { plural } from '@jinion/core/lib/format';
+import { useOpenView } from '../../app/use-screen.js';
 
 const CARD_FILES = 8;
 
 /** As Cursor shows it. */
 export function ChangesCard({ entry }: { entry: EntryOf<'changes'> }) {
-  const jinion = useJinion();
+  const openView = useOpenView();
   const theme = useTheme();
   const width = useContentWidth();
 
@@ -23,7 +23,7 @@ export function ChangesCard({ entry }: { entry: EntryOf<'changes'> }) {
 
   const pathWidth = Math.min(Math.max(...shown.map((file) => file.path.length)) + 2, Math.max(10, width - FRAME_INSET - 16));
 
-  const open = (file?: string) => jinion.screen.openView({ id: 'diff', turn: entry.turn, file });
+  const open = (file?: string) => openView({ id: 'diff', turn: entry.turn, file });
 
   return (
     <Frame

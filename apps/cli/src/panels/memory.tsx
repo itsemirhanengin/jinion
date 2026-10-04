@@ -1,19 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Prose, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
-import { useJinion } from '../app/context.js';
+import type { MemoryNote } from '@jinion/core/api/protocol';
 import { plural } from '@jinion/core/lib/format';
 import { tildify } from '@jinion/core/lib/paths';
+import { useApi } from '../app/api.js';
 
 const PREVIEW_LINES = 12;
 
 export function MemoryPanel() {
-  const jinion = useJinion();
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
 
-  const [notes, setNotes] = useState(() => jinion.memory.list());
+  const [notes, setNotes] = useState<MemoryNote[]>([]);
   const [open, setOpen] = useState<string>();
   const [forgetting, setForgetting] = useState<string>();
+
+  const refresh = () => api.request('memory/list', {}).then(setNotes, () => setNotes([]));
+
+  useEffect(() => void refresh(), []);
 
   const keys = notes.map((memory) => `${memory.scope}/${memory.id}`);
 
@@ -38,7 +43,7 @@ export function MemoryPanel() {
           <Box flexDirection="column" paddingLeft={choiceIndent(list)} marginBottom={1}>
             <Prose>{lines.slice(0, PREVIEW_LINES).join('\n')}</Prose>
             {lines.length > PREVIEW_LINES && <Text color={theme.muted}>… {lines.length - PREVIEW_LINES} more lines</Text>}
-            <Text color={theme.muted}>{tildify(jinion.memory.path(memory))}</Text>
+            <Text color={theme.muted}>{tildify(memory.path)}</Text>
           </Box>
         ) : undefined,
     };
@@ -48,11 +53,15 @@ export function MemoryPanel() {
     if (input !== 'd' || !list.focus) return setForgetting(undefined);
     if (forgetting !== list.focus) return setForgetting(list.focus);
 
-    const memory = jinion.memory.remove(list.focus);
+    const memory = notes.find((note) => `${note.scope}/${note.id}` === list.focus);
 
     setForgetting(undefined);
-    setNotes(jinion.memory.list());
-    if (memory) jinion.notice(`Forgot ${memory.scope}/${memory.id}: ${memory.title}`);
+    if (!memory) return;
+
+    const forgotten = api.request('memory/forget', { scope: memory.scope, id: memory.id });
+
+    api.act(forgotten);
+    void forgotten.finally(refresh);
   });
 
   return (

@@ -1,4 +1,4 @@
-import { busyAtom } from '@jinion/core/state/active';
+import { busyAtom } from '../state/session.js';
 import { useEffect } from 'react';
 import { StatusBar } from '@jinion/tui/chat';
 import { useAtomValue, useSetAtom } from 'jotai';

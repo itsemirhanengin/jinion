@@ -1,24 +1,26 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Box, fuzzyFilter, Highlight, ListRow, Panel, PromptInput, SelectList, Text, useInput, useListNavigation, usePanel, useTheme, useWindowSize } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { useJinion } from '../app/context.js';
-import { sessionAtom } from '@jinion/core/state/active';
-import { firstPrompt, type SavedSession } from '@jinion/core/conversation/session';
+import type { SavedSummary } from '@jinion/core/api/protocol';
 import { ago } from '@jinion/core/lib/format';
+import { useApi } from '../app/api.js';
+import { sessionAtom } from '../state/session.js';
+import { useAsync } from '../ui/use-async.js';
 
 const CHROME_ROWS = 9;
 const ROWS_PER_SESSION = 2;
 
 export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   const theme = useTheme();
-  const jinion = useJinion();
+  const api = useApi();
   const { close } = usePanel();
   const { rows } = useWindowSize();
   const { id: current } = useAtomValue(sessionAtom);
 
   const [query, setQuery] = useState(initialQuery.trim());
 
-  const sessions = useMemo(() => jinion.saved.list().filter((session) => session.id !== current), [current]);
+  const saved = useAsync(() => api.request('saved/list', {}), [current]);
+  const sessions = useMemo(() => (saved.state === 'done' ? saved.value.filter((session) => session.id !== current) : []), [saved, current]);
   const matches = useMemo(() => fuzzyFilter(sessions, query, (session) => session.title), [sessions, query]);
   const limit = Math.max(1, Math.floor((rows - CHROME_ROWS) / ROWS_PER_SESSION));
   const [selected, setSelected] = useListNavigation(matches.length, { wrap: false, pageSize: limit });
@@ -34,7 +36,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
     if (!match) return;
 
     close();
-    void jinion.resume(match.item);
+    api.act(api.inSession('sessions/replace', { resume: match.item.id }));
   };
 
   return (
@@ -59,7 +61,15 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
         items={matches}
         selected={selected}
         limit={limit}
-        empty={sessions.length === 0 ? 'No saved conversations yet' : 'No conversations match'}
+        empty={
+          saved.state === 'pending'
+            ? 'Reading saved conversations…'
+            : saved.state === 'failed'
+              ? `Couldn't read saved conversations: ${saved.error}`
+              : sessions.length === 0
+                ? 'No saved conversations yet'
+                : 'No conversations match'
+        }
         renderItem={({ item, positions }, state) => (
           <ListRow
             selected={state.selected}
@@ -73,10 +83,6 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
   );
 }
 
-function describe(session: SavedSession) {
-  const messages = session.entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
-
-  const worktree = session.worktree ? `worktree ${session.worktree.name} · ` : '';
-
-  return `${worktree}${messages} messages · "${firstPrompt(session) ?? ''}"`;
+function describe({ worktree, messages, firstPrompt = '' }: SavedSummary) {
+  return `${worktree ? `worktree ${worktree} · ` : ''}${messages} messages · "${firstPrompt}"`;
 }

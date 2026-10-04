@@ -9,6 +9,7 @@ import { ScriptedBackend } from '@jinion/core/agent/demo/agent';
 import type { AgentBackend } from '@jinion/core/agent/agent';
 import type { ModelSelection } from '@jinion/core/agent/models';
 import { App } from './app/app.js';
+import { startCore } from './host.js';
 import { DebugLog } from '@jinion/core/lib/debug';
 import { McpConfig } from '@jinion/core/mcp/config';
 import { MemoryStore } from '@jinion/core/memory/store';
@@ -91,19 +92,11 @@ const info = {
   examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
 };
 
-const instance = await run(
-  <App
-    backend={backend}
-    selection={selection}
-    mode={mode}
-    info={info}
-    saved={saved}
-    memory={memory}
-    initial={initial}
-    onExit={(message) => farewells.push(message)}
-  />,
-  { scheme: theme as ColorScheme | undefined },
-);
+const core = startCore({ backend, selection, mode, info, saved, memory, initial, onExit: (message) => farewells.push(message) });
+
+core.server.app.start();
+
+const instance = await run(<App connect={core.connect} version={version} />, { scheme: theme as ColorScheme | undefined });
 
 await instance.waitUntilExit();
 backend.close?.();

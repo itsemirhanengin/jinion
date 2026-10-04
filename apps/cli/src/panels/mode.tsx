@@ -1,18 +1,18 @@
 import { ChoiceList, Panel, Text, useChoiceList, usePanel, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { modeAtom } from '@jinion/core/state/active';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
-import { useJinion } from '../app/context.js';
+import { useApi } from '../app/api.js';
+import { modeAtom } from '../state/session.js';
 import { modeColor } from '../ui/modes.js';
 
 export function ModePicker() {
-  const jinion = useJinion();
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
   const current = useAtomValue(modeAtom);
 
-  const available = jinion.backend.modes;
+  const { modes: available, name } = api.initialized.agent;
 
   const list = useChoiceList({
     keys: available,
@@ -21,14 +21,14 @@ export function ModePicker() {
     onCancel: close,
     onSubmit: ([mode]) => {
       close();
-      if (mode) jinion.session.modes.select(mode as AgentMode);
+      if (mode) api.act(api.inSession('session/mode', { mode: mode as AgentMode }));
     },
   });
 
   return (
     <Panel
       title="Mode"
-      subtitle={jinion.backend.name}
+      subtitle={name}
       hints={[
         ['Enter', 'select'],
         ['Up/Down', 'move'],

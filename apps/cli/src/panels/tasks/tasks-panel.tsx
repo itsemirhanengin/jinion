@@ -16,9 +16,9 @@ import {
   type KeyHint,
 } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { backgroundTasksAtom } from '@jinion/core/state/active';
+import { backgroundTasksAtom } from '../../state/session.js';
 import type { BackgroundTask } from '@jinion/core/agent/tasks';
-import { useJinion } from '../../app/context.js';
+import { useApi } from '../../app/api.js';
 import { elapsed, plural } from '@jinion/core/lib/format';
 import { firstLine } from '@jinion/core/lib/text';
 import { TASK_MARKS } from '../../ui/task-marks.js';
@@ -29,7 +29,7 @@ const VISIBLE = 8;
 const TAIL_LINES = 6;
 
 export function TasksPanel() {
-  const jinion = useJinion();
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
   const panels = usePanels();
@@ -72,7 +72,7 @@ export function TasksPanel() {
   const running = tasks.filter((task) => task.status === 'running').length;
 
   useInput((input) => {
-    if (input === 'x' && focused?.status === 'running') jinion.session.tasks.stop(focused.id);
+    if (input === 'x' && focused?.status === 'running') api.act(api.inSession('session/stop-task', { task: focused.id }));
   });
 
   return (
@@ -107,7 +107,7 @@ function TaskTime({ task }: { task: BackgroundTask }) {
 function TaskDetails({ task, indent }: { task: BackgroundTask; indent: number }) {
   const theme = useTheme();
 
-  const lines = useOutput(task.output, task.status === 'running');
+  const lines = useOutput(task.output === undefined ? undefined : task.id, task.status === 'running');
 
   if (task.kind === 'agent') {
     return (

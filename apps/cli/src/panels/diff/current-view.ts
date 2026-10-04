@@ -1,21 +1,22 @@
 import { resolve } from 'node:path';
 import { useMemo } from 'react';
 import { useAtomValue } from 'jotai';
-import { editTurnsAtom } from '@jinion/core/state/active';
-import { readChanges, type RepoChanges } from '@jinion/core/git/changes';
-import { fileDiff } from '@jinion/core/git/repos';
+import type { RepoChanges } from '@jinion/core/git/changes';
 import { plural } from '@jinion/core/lib/format';
+import { useApi } from '../../app/api.js';
+import { editTurnsAtom } from '../../state/session.js';
 import { useAsync } from '../../ui/use-async.js';
 import { useWorkdir } from '../../ui/use-workdir.js';
 import { totals, type ChangeRow, type View } from './views.js';
 
 export function useCurrentView(): View {
+  const api = useApi();
   const cwd = useWorkdir();
   const turns = useAtomValue(editTurnsAtom);
 
   const edited = useMemo(() => new Set(turns.flatMap((turn) => turn.edits.map((change) => resolve(cwd, change.path)))), [turns, cwd]);
 
-  const read = useAsync(() => readChanges(cwd), []);
+  const read = useAsync(() => api.inSession('git/changes', {}), []);
 
   if (read.state !== 'done') return { label: 'Current', empty: 'Looking for changes…' };
 
@@ -38,7 +39,7 @@ export function useCurrentView(): View {
         binary: change.binary,
         agent: edited.has(change.absolute),
         where: `${repo.repo.path ? `${repo.repo.path}/` : ''}${change.file}`,
-        patch: () => fileDiff(repo.repo, change, repo.since?.base),
+        patch: () => api.inSession('git/diff', { file: change.absolute }),
       }),
     ),
   );

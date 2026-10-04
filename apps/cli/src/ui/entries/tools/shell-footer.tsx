@@ -1,6 +1,6 @@
 import { useAnimation } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { tasksAtom } from '@jinion/core/state/active';
+import { tasksAtom } from '../../../state/session.js';
 import type { ToolEntry } from '@jinion/core/conversation/entries';
 import { preciseSeconds } from '@jinion/core/lib/format';
 

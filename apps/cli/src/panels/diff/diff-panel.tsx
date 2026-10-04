@@ -1,4 +1,4 @@
-import { editTurnsAtom } from '@jinion/core/state/active';
+import { editTurnsAtom } from '../../state/session.js';
 import { useState } from 'react';
 import { useAtomValue } from 'jotai';
 import { ChangeList } from './change-list.js';

@@ -1,31 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from '@jinion/tui';
 import { atom, useAtomValue } from 'jotai';
-import { useJinion } from '../app/context.js';
-import { modeAtom, modelNameAtom, selectionAtom, sessionAtom } from '@jinion/core/state/active';
-import { limitsKey } from '@jinion/core/settings/limits';
-import { accountAtom, identityAtom, seenLimitsAtom } from '@jinion/core/state/agent';
 import type { GitStatus } from '@jinion/core/git/status';
+import { limitsKey } from '@jinion/core/settings/limits';
+import { useApi } from '../app/api.js';
+import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom, sessionAtom } from '../state/session.js';
 import type { StatusData } from './segment.js';
 
 /** Set by the status line, which runs `git status` only while a shown segment needs it. */
 export const gitStatusAtom = atom<GitStatus | undefined>(undefined);
 
 export function useStatusData(now = Date.now()): StatusData {
-  const { backend, info } = useJinion();
+  const { agent, info } = useApi().initialized;
   const account = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
 
   return {
     version: info.version,
     cwd: info.cwd,
-    agent: backend.name,
+    agent: agent.name,
     model: { name: useAtomValue(modelNameAtom), selection: useAtomValue(selectionAtom) },
     mode: useAtomValue(modeAtom),
     account: useAtomValue(identityAtom),
     session: useAtomValue(sessionAtom),
     git: useAtomValue(gitStatusAtom),
-    limits: seen[limitsKey(backend.name, account)]?.windows,
+    limits: seen[limitsKey(agent.name, account)]?.windows,
     now,
     theme: useTheme(),
   };

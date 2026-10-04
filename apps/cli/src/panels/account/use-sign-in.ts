@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useJinion } from '../../app/context.js';
+import { useApi } from '../../app/api.js';
 
 export interface Signing {
   name: string;
@@ -9,45 +9,58 @@ export interface Signing {
   sent: boolean;
 }
 
+/** Signing in runs in the core; its link and what to type come back as notifications while it waits. */
 export function useSignIn(ended: (name: string, signedIn: boolean) => void) {
-  const jinion = useJinion();
+  const api = useApi();
 
   const [signing, setSigning] = useState<Signing>();
-  const login = useRef<AbortController>(undefined);
+  const current = useRef<string>(undefined);
 
-  useEffect(() => () => login.current?.abort(), []);
+  const update = (name: string, patch: Partial<Signing>) => setSigning((now) => (now?.name === name ? { ...now, ...patch } : now));
 
-  const update = (patch: Partial<Signing>) => setSigning((now) => now && { ...now, ...patch });
+  useEffect(() => {
+    const stopLink = api.client.on('accounts/sign-in-link', ({ name, url }) => update(name, { link: url }));
+
+    const stopPrompt = api.client.on('accounts/sign-in-prompt', ({ name, prompt, problem }) => {
+      const answer = (text: string) => api.act(api.request('accounts/sign-in-answer', { name, text }));
+
+      update(name, { prompt: { text: prompt, answer, problem }, code: '', sent: false });
+    });
+
+    return () => {
+      stopLink();
+      stopPrompt();
+      if (current.current) api.act(api.request('accounts/sign-in-cancel', { name: current.current }));
+    };
+  }, []);
 
   const start = (name: string) => {
-    const abort = new AbortController();
-
-    login.current = abort;
+    current.current = name;
     setSigning({ name, code: '', sent: false });
 
-    void jinion.accounts
-      .signIn(name, {
-        signal: abort.signal,
-        onLink: (link) => update({ link }),
-        onPrompt: (text, answer, problem) => update({ prompt: { text, answer, problem }, code: '', sent: false }),
-      })
-      .then((signedIn) => {
-        login.current = undefined;
-        setSigning(undefined);
-        ended(name, signedIn);
-      });
+    void api.request('accounts/sign-in', { name }).then(
+      ({ signedIn }) => finish(name, signedIn),
+      () => finish(name, false),
+    );
+  };
+
+  const finish = (name: string, signedIn: boolean) => {
+    if (current.current === name) current.current = undefined;
+
+    setSigning(undefined);
+    ended(name, signedIn);
   };
 
   return {
     signing,
     start,
-    cancel: () => login.current?.abort(),
-    type: (code: string) => update({ code }),
+    cancel: () => current.current && api.act(api.request('accounts/sign-in-cancel', { name: current.current })),
+    type: (code: string) => signing && update(signing.name, { code }),
     send: (code: string) => {
       if (!code.trim() || !signing?.prompt) return;
 
       signing.prompt.answer(code);
-      update({ sent: true });
+      update(signing.name, { sent: true });
     },
   };
 }

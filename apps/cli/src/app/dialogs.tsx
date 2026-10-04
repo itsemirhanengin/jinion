@@ -5,9 +5,8 @@ import { useAtomValue } from 'jotai';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import type { Dialog } from '@jinion/core/conversation/dialogs';
-import type { DialogController } from '@jinion/core/controllers/dialogs';
-import { dialogAtom } from '@jinion/core/state/active';
-import { useJinion } from './context.js';
+import { dialogAtom } from '../state/session.js';
+import { useApi } from './api.js';
 
 const PLAN_CHOICES: Record<AgentMode, string> = {
   auto: 'Yes, and use auto mode',
@@ -18,36 +17,50 @@ const PLAN_CHOICES: Record<AgentMode, string> = {
 
 /** Shows the dialog the session the user looks at waits on, in place of the prompt, and puts it away once answered. */
 export function useDialogs() {
-  const jinion = useJinion();
   const panels = usePanels();
   const dialog = useAtomValue(dialogAtom);
 
   useEffect(() => {
     if (!dialog) return;
 
-    const { dialogs } = jinion.session;
-
-    panels.open({ id: dialog.id, placement: 'bottom', element: <DialogView dialog={dialog} dialogs={dialogs} /> });
+    panels.open({ id: dialog.id, placement: 'bottom', element: <DialogView dialog={dialog} /> });
 
     return () => panels.close(dialog.id);
   }, [dialog]);
 }
 
-function DialogView({ dialog, dialogs }: { dialog: Dialog; dialogs: DialogController }) {
-  const cancel = () => dialogs.cancel();
+/** Each answer names its dialog, so one meant for a dialog that is gone answers nothing else. */
+function DialogView({ dialog }: { dialog: Dialog }) {
+  const api = useApi();
+
+  const cancel = () => api.act(api.inSession('dialog/cancel', {}));
 
   switch (dialog.id) {
     case 'ask':
-      return <AskPanel questions={dialog.questions} onSubmit={(answers) => dialogs.answer(answers)} onCancel={cancel} />;
+      return <AskPanel questions={dialog.questions} onSubmit={(answer) => api.act(api.inSession('dialog/answer', { dialog: 'ask', answer }))} onCancel={cancel} />;
 
     case 'permission':
-      return <PermissionPanel request={dialog.request} agent="jinion" onDecide={(decision) => dialogs.answer(decision)} onCancel={cancel} />;
+      return (
+        <PermissionPanel
+          request={dialog.request}
+          agent="jinion"
+          onDecide={(answer) => api.act(api.inSession('dialog/answer', { dialog: 'permission', answer }))}
+          onCancel={cancel}
+        />
+      );
 
     case 'plan':
       return (
         <PlanPanel
           options={dialog.modes.map((mode) => ({ id: mode, label: PLAN_CHOICES[mode], description: MODES[mode].description }))}
-          onDecide={(decision) => dialogs.answer(decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision)}
+          onDecide={(decision) =>
+            api.act(
+              api.inSession('dialog/answer', {
+                dialog: 'plan',
+                answer: decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision,
+              }),
+            )
+          }
           onCancel={cancel}
         />
       );

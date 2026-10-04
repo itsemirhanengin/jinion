@@ -1,20 +1,20 @@
 import { Box, Panel, Text, useInput, usePanel, useTheme, Waffle, type Theme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import { modelNameAtom } from '@jinion/core/state/active';
 import type { ContextUsage } from '@jinion/core/agent/usage';
-import { useJinion } from '../app/context.js';
 import { compact, percent } from '@jinion/core/lib/format';
+import { useApi } from '../app/api.js';
+import { modelNameAtom } from '../state/session.js';
 import { useAsync } from '../ui/use-async.js';
 
 export function ContextPanel() {
-  const { backend, session } = useJinion();
-  const { agent } = session;
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
   const modelName = useAtomValue(modelNameAtom);
 
-  const read = agent.context?.bind(agent);
-  const usage = useAsync(() => read?.(), []);
+  const { name, features } = api.initialized.agent;
+  const read = features.context;
+  const usage = useAsync(() => (read ? api.inSession('session/context', {}) : undefined), []);
   const loaded = usage.state === 'done' ? usage.value : undefined;
 
   useInput((_, key) => {
@@ -30,13 +30,13 @@ export function ContextPanel() {
       hints={[['Esc', 'close']]}
     >
       {!read ? (
-        <Text color={theme.muted}>{backend.name} doesn't say what fills its context.</Text>
+        <Text color={theme.muted}>{name} doesn't say what fills its context.</Text>
       ) : usage.state === 'failed' ? (
         <Text color={theme.error}>
-          Couldn't ask {backend.name} about its context: {usage.error}
+          Couldn't ask {name} about its context: {usage.error}
         </Text>
       ) : !loaded ? (
-        <Text color={theme.muted}>Asking {backend.name} what fills its context…</Text>
+        <Text color={theme.muted}>Asking {name} what fills its context…</Text>
       ) : (
         <ContextChart usage={loaded} />
       )}

@@ -13,7 +13,7 @@ import { RewindPanel } from '../panels/rewind/rewind-panel.js';
 import { StatusLinePanel } from '../panels/statusline.js';
 import { TasksPanel } from '../panels/tasks/tasks-panel.js';
 import { UsagePanel } from '../panels/usage/usage-panel.js';
-import { useJinion } from './context.js';
+import { useApi } from './api.js';
 
 const FULLSCREEN = new Set<View['id']>(['resume', 'diff', 'usage']);
 
@@ -24,7 +24,7 @@ export const viewPanel = (view: View): PanelSpec => ({
 });
 
 function ViewPanel({ view }: { view: View }) {
-  const jinion = useJinion();
+  const api = useApi();
 
   switch (view.id) {
     case 'help':
@@ -37,10 +37,10 @@ function ViewPanel({ view }: { view: View }) {
       return <ModePicker />;
 
     case 'account':
-      return <AccountPicker accounts={jinion.backend.accounts!} signIn={view.signIn} />;
+      return <AccountPicker signIn={view.signIn} />;
 
     case 'mcp':
-      return <McpPanel mcp={jinion.backend.mcp!} />;
+      return <McpPanel />;
 
     case 'resume':
       return <ResumePanel query={view.query} />;
@@ -52,8 +52,8 @@ function ViewPanel({ view }: { view: View }) {
       return (
         <RewindPanel
           points={view.points}
-          preview={(point) => jinion.session.agent.rewindPreview?.(point.promptId) ?? Promise.resolve(undefined)}
-          onRewind={(point, scope) => void jinion.session.conversation.rewindTo(point, scope)}
+          preview={async (point) => (await api.inSession('session/rewind-preview', { prompt: point.promptId })) ?? undefined}
+          onRewind={(point, scope) => api.act(api.inSession('session/rewind', { point, scope }))}
         />
       );
 

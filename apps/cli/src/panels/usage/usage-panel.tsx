@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Panel, Tabs, useInput, usePanel, useTabs, type KeyHint } from '@jinion/tui';
 import type { AgentUsage, UsageHistory } from '@jinion/core/agent/usage';
-import { useJinion } from '../../app/context.js';
 import { errorMessage } from '@jinion/core/lib/errors';
+import { useApi } from '../../app/api.js';
 import { StatsView } from './stats-view.js';
 import { UsageView } from './usage-view.js';
 
@@ -24,7 +24,7 @@ const HINTS: Record<UsageTab, KeyHint[]> = {
 };
 
 export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
-  const { backend } = useJinion();
+  const { agent } = useApi().initialized;
   const { close } = usePanel();
 
   const [active] = useTabs(TABS.length, { initial: tab === 'stats' ? 1 : 0, arrows: false });
@@ -35,11 +35,11 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
   });
 
   return (
-    <Panel title="Usage" subtitle={backend.name} header={<Tabs tabs={[...TABS]} active={active} />} grow hints={HINTS[active === 0 ? 'usage' : 'stats']}>
+    <Panel title="Usage" subtitle={agent.name} header={<Tabs tabs={[...TABS]} active={active} />} grow hints={HINTS[active === 0 ? 'usage' : 'stats']}>
       {active === 0 ? (
-        <UsageView usage={loaded.usage} error={loaded.usageError} available={backend.usage !== undefined} />
+        <UsageView usage={loaded.usage} error={loaded.usageError} available={agent.features.usage} />
       ) : (
-        <StatsView history={loaded.history} progress={loaded.progress} error={loaded.historyError} available={backend.history !== undefined} />
+        <StatsView history={loaded.history} progress={loaded.progress} error={loaded.historyError} available={agent.features.history} />
       )}
     </Panel>
   );
@@ -47,7 +47,7 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
 
 /** Both tabs load at once, so switching shows what is already there. */
 function useUsage() {
-  const { backend } = useJinion();
+  const api = useApi();
 
   const [usage, setUsage] = useState<AgentUsage>();
   const [usageError, setUsageError] = useState<string>();
@@ -58,25 +58,29 @@ function useUsage() {
   useEffect(() => {
     let open = true;
     const failed = (set: (message: string) => void) => (error: unknown) => open && set(errorMessage(error));
-    const current = backend.usage?.bind(backend);
+    const { features } = api.initialized.agent;
 
     // The limits come quickly; what adds to them takes a look through the week's conversations.
-    current?.({ drivers: false })
-      .then((quick) => {
-        if (!open) return;
+    if (features.usage) {
+      api
+        .request('usage/limits', { drivers: false })
+        .then((quick) => {
+          if (!open) return;
 
-        setUsage(quick);
+          setUsage(quick);
 
-        return current({ drivers: true }).then((full) => open && setUsage(full));
-      })
-      .catch(failed(setUsageError));
+          return api.request('usage/limits', { drivers: true }).then((full) => open && setUsage(full));
+        })
+        .catch(failed(setUsageError));
+    }
 
-    backend.history
-      ?.((done, total) => open && setProgress([done, total]))
-      .then((days) => open && setHistory(days), failed(setHistoryError));
+    const stopProgress = api.client.on('usage/history-progress', ({ done, total }) => open && setProgress([done, total]));
+
+    if (features.history) api.request('usage/history', {}).then((days) => open && setHistory(days), failed(setHistoryError));
 
     return () => {
       open = false;
+      stopProgress();
     };
   }, []);
 

@@ -1,13 +1,18 @@
 import { useEffect, useState } from 'react';
-import { listProjectFiles } from '@jinion/core/prompt/files';
+import { useApi } from '../app/api.js';
+import { useWorkdir } from './use-workdir.js';
 
-export function useProjectFiles(cwd: string, refresh: unknown) {
+/** The files of the folder the shown session works in, read again each time `refresh` changes. */
+export function useProjectFiles(refresh: unknown) {
+  const api = useApi();
+  const folder = useWorkdir();
+
   const [files, setFiles] = useState<string[]>([]);
 
   useEffect(() => {
     let current = true;
 
-    listProjectFiles(cwd).then(
+    api.inSession('files/list', {}).then(
       (listed) => current && setFiles(listed),
       () => {},
     );
@@ -15,7 +20,7 @@ export function useProjectFiles(cwd: string, refresh: unknown) {
     return () => {
       current = false;
     };
-  }, [cwd, refresh]);
+  }, [folder, refresh]);
 
   return files;
 }

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, PromptInput, Text, useChoiceList, useInput, usePanel, useTheme, type Choice } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
-import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
-import { useJinion } from '../../app/context.js';
+import type { AgentAccount } from '@jinion/core/agent/accounts';
 import { limitsKey } from '@jinion/core/settings/limits';
-import { accountAtom, seenLimitsAtom } from '@jinion/core/state/agent';
+import { useApi } from '../../app/api.js';
+import { accountAtom, seenLimitsAtom } from '../../state/session.js';
 import { describeAccount } from './describe.js';
 import { SignInView } from './sign-in-view.js';
 import { useSignIn } from './use-sign-in.js';
@@ -13,8 +13,8 @@ const ADD = '+add';
 
 type Removing = { name: string; refused?: string; running?: boolean };
 
-export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAccounts; signIn?: string }) {
-  const jinion = useJinion();
+export function AccountPicker({ signIn: initial }: { signIn?: string }) {
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
   const current = useAtomValue(accountAtom);
@@ -24,7 +24,8 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
   const [naming, setNaming] = useState<string>();
   const [removing, setRemoving] = useState<Removing>();
 
-  const refresh = () => accounts.list().then(setList, () => setList([]));
+  const agent = api.initialized.agent.name;
+  const refresh = () => api.request('accounts/list', {}).then(setList, () => setList([]));
 
   const login = useSignIn((name, signedIn) => {
     if (signedIn) choices.setFocus(name);
@@ -50,7 +51,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
       if (!account.signedIn) return login.start(account.name);
 
       close();
-      if (account.name !== current) jinion.accounts.select(account.name);
+      if (account.name !== current) api.act(api.request('accounts/select', { name: account.name }));
     },
   });
 
@@ -64,7 +65,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
       if (input !== 'd') return setRemoving(undefined);
 
       const refused = account.own
-        ? `${jinion.backend.name}'s own login stays; l signs in again`
+        ? `${agent}'s own login stays; l signs in again`
         : name === current
           ? 'in use; switch to another account first'
           : undefined;
@@ -72,7 +73,11 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
 
       setRemoving({ name, running: true });
 
-      void jinion.accounts.remove(name).then(async () => {
+      const removed = api.request('accounts/remove', { name });
+
+      api.act(removed);
+
+      void removed.finally(async () => {
         await refresh();
         setRemoving(undefined);
       });
@@ -96,7 +101,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
     ...(list ?? []).map((account) => ({
       key: account.name,
       label: account.name,
-      description: describeAccount(account, seen[limitsKey(jinion.backend.name, account.name)]),
+      description: describeAccount(account, seen[limitsKey(agent, account.name)]),
       aside:
         removing?.name === account.name ? (
           <Text color={removing.refused ? theme.warning : theme.error}>
@@ -134,7 +139,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
   return (
     <Panel
       title="Account"
-      subtitle={jinion.backend.name}
+      subtitle={agent}
       hints={
         naming !== undefined
           ? [

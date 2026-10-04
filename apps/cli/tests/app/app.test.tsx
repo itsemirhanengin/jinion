@@ -8,8 +8,10 @@ import { demoCommands } from '@jinion/core/agent/demo/commands';
 import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
 import { ScriptedBackend, ScriptedSession } from '@jinion/core/agent/demo/agent';
 import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
+import type { AgentBackend } from '@jinion/core/agent/agent';
 import { contextWarning, hasWorkLeft } from '../../src/app/activity.js';
 import { App } from '../../src/app/app.js';
+import { startCore } from '../../src/host.js';
 import { MemoryStore } from '@jinion/core/memory/store';
 import { MemorySessionStore } from '@jinion/core/conversation/store';
 import { git, repo } from '@jinion/core/testing/git';
@@ -18,18 +20,18 @@ import { sandbox, type Sandbox } from '@jinion/core/testing/sandbox';
 let box: Sandbox;
 let terminal: TestTerminal;
 
+/** The app as `jinion` runs it: the core started in this process, and the app as its client. */
+function app(backend: AgentBackend, examples: string[] = []) {
+  const core = startCore({ backend, info: { version: '0.0.0', cwd: box.project, examples }, saved: new MemorySessionStore(), memory: new MemoryStore(box.project) });
+
+  core.server.app.start();
+
+  return <App connect={core.connect} version="0.0.0" />;
+}
+
 function start(pace: number, rows = 40) {
   terminal?.unmount();
-
-  terminal = renderTerminal(
-    <App
-      backend={new ScriptedBackend(scenarios, demoCommands, pace)}
-      info={{ version: '0.0.0', cwd: box.project, examples: ['hello'] }}
-      saved={new MemorySessionStore()}
-      memory={new MemoryStore(box.project)}
-    />,
-    { columns: 120, rows },
-  );
+  terminal = renderTerminal(app(new ScriptedBackend(scenarios, demoCommands, pace), ['hello']), { columns: 120, rows });
 }
 
 beforeEach(() => {
@@ -690,10 +692,7 @@ describe('App', () => {
 
     terminal.unmount();
 
-    terminal = renderTerminal(
-      <App backend={backend} info={{ version: '0.0.0', cwd: box.project, examples: [] }} saved={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
-      { columns: 120, rows: 40 },
-    );
+    terminal = renderTerminal(app(backend), { columns: 120, rows: 40 });
 
     await terminal.waitFor('Ask jinion anything');
     await terminal.type('/account');

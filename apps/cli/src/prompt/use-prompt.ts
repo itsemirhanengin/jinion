@@ -1,11 +1,11 @@
 import { useStore } from 'jotai';
-import { useJinion } from '../app/context.js';
+import { useApi } from '../app/api.js';
 import { useAttachments } from './attachments.js';
 import { draftAtom, historyAtom } from './draft.js';
 
 /** Sends the draft of the session the user looks at; what is sent goes to the history and leaves the prompt. */
 export function usePrompt() {
-  const jinion = useJinion();
+  const api = useApi();
   const attachments = useAttachments();
   const store = useStore();
 
@@ -23,12 +23,12 @@ export function usePrompt() {
     submit(value: string) {
       const submission = take(value);
 
-      if (submission) jinion.session.input.submit(submission);
+      if (submission) api.act(api.inSession('session/submit', submission));
     },
     queue() {
       const submission = take();
 
-      if (submission) jinion.session.input.queue(submission);
+      if (submission) api.act(api.inSession('session/queue', submission));
     },
     /** Kept in the history, so `up` brings it back. */
     clear() {

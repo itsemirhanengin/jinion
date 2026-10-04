@@ -20,12 +20,13 @@ let a desktop app drive the core too.
 ## Architecture
 
 Dependencies point down this list; nothing lower imports from higher up. The app imports the core by module, as
-`@jinion/core/controllers/jinion`.
+`@jinion/core/api/client`, and reaches it only through the API, as any client does.
 
 | Folder | What lives there |
 | --- | --- |
-| `apps/cli/src/main.tsx` | Flags, picking the agent, `run(<App />)`. |
-| `apps/cli/src/app/` | The React shell: `App` creates the `Jinion` once and provides it with the jotai store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs controllers ask for. |
+| `apps/cli/src/main.tsx`, `host.ts` | Flags, picking the agent, starting the core in this process (`startCore`), `run(<App />)`. The only files of the app that build the core. |
+| `apps/cli/src/app/` | The React shell: `App` connects a `JinionClient` (following every open session), initializes it and provides it as `useApi()` with the client's store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs the core asks for. |
+| `apps/cli/src/state/` | The app's atoms, derived from the client's store: the shown session's conversation and fields, and the app's fields. |
 | `apps/cli/src/panels/` | One component per panel, a folder for one with several parts. A new panel gets a `View` in the core's `controllers/context.ts` and a case in `app/views.tsx`. |
 | `apps/cli/src/prompt/` | What the user types, which is the client's: each session's draft and the history (`draft.ts`; the core only puts text in a draft, through `Screen.fillPrompt`), pasted text and images (`attachments.ts`), and `usePrompt`, which sends them as a `Submission`. |
 | `apps/cli/src/ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
@@ -41,9 +42,13 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 
 Rules that keep it that way:
 
-- **State lives in atoms; behavior lives in controllers.** Components read atoms with `useAtomValue` and call the
-  `Jinion` from `useJinion()`, which never changes, so reading it never redraws; `jinion.session` is the session the
-  user looks at. Don't put app state in `useState` when more than one component or a controller needs it.
+- **State lives in atoms; behavior lives in controllers.** Components read the app's atoms with `useAtomValue` and call
+  the core through `useApi()`, which never changes, so reading it never redraws: `api.inSession(method, params)` for the
+  session shown, `api.request` for the app, and `api.act(call)` for a call nothing waits on, so a failure shows as a
+  notice. Don't put app state in `useState` when more than one component needs it.
+- **The app is a client.** Whatever another client would need, a desktop app or a phone, goes through the API, so a
+  panel never reads the core's files, git or settings itself; what only this app needs, such as the draft or the
+  status line's layout, stays in the app.
 - **A session keeps to its own atoms.** Its controllers read and write `context.atoms`, never `state/active.ts`, so one
   running in the background never touches another; `biome.jsonc` checks it.
 - **`@jinion/core` draws nothing.** It imports no React, Ink, `@jinion/tui` or jotai's root entry (`jotai/vanilla`

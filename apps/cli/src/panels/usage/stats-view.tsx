@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { BarList, Box, dayKey, Heatmap, parseDay, StatGrid, Text, useDayCursor, useInput, useTheme, useWindowSize } from '@jinion/tui';
 import type { UsageHistory } from '@jinion/core/agent/usage';
-import { useJinion } from '../../app/context.js';
+import { useApi } from '../../app/api.js';
 import { compact, grouped, plural, shortDate, span } from '@jinion/core/lib/format';
 import { RANGES, totalOf, usageStats, type StatsRange } from '@jinion/core/usage/stats';
 import { tokenLine } from './section.js';
@@ -17,7 +17,7 @@ interface StatsViewProps {
 }
 
 export function StatsView({ history, progress, error, available }: StatsViewProps) {
-  const { backend } = useJinion();
+  const backend = useApi().initialized.agent;
   const theme = useTheme();
   const { rows } = useWindowSize();
 

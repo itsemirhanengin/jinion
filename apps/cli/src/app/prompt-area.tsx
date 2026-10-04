@@ -2,24 +2,23 @@ import { useMemo } from 'react';
 import { Text, useTheme } from '@jinion/tui';
 import { Composer } from '@jinion/tui/chat';
 import { atom, useAtom, useAtomValue } from 'jotai';
-import { modeAtom, busyAtom, sessionAtom } from '@jinion/core/state/active';
 import { MODES } from '@jinion/core/agent/modes';
+import { commandCompletion } from '@jinion/core/commands/registry';
 import { fileCompletion } from '@jinion/core/prompt/files';
-import { useProjectFiles } from '../ui/use-project-files.js';
 import { skillCompletion } from '@jinion/core/prompt/skills';
-import { mentionAtom, skillsAtom } from '@jinion/core/state/agent';
 import { useAttachments } from '../prompt/attachments.js';
 import { draftAtom, historyAtom } from '../prompt/draft.js';
 import { usePrompt } from '../prompt/use-prompt.js';
+import { busyAtom, mentionAtom, modeAtom, sessionAtom, skillsAtom } from '../state/session.js';
 import { modeColor } from '../ui/modes.js';
+import { useProjectFiles } from '../ui/use-project-files.js';
 import { contextWarning } from './activity.js';
-import { useJinion } from './context.js';
-import { useWorkdir } from '../ui/use-workdir.js';
+import { useApi } from './api.js';
 
 const contextLeftAtom = atom((get) => contextWarning(get(sessionAtom).usage));
 
 export function PromptArea() {
-  const jinion = useJinion();
+  const { initialized } = useApi();
   const attachments = useAttachments();
   const prompt = usePrompt();
   const [draft, setDraft] = useAtom(draftAtom);
@@ -28,12 +27,13 @@ export function PromptArea() {
   const skills = useAtomValue(skillsAtom);
   const mention = useAtomValue(mentionAtom);
   const contextLeft = useAtomValue(contextLeftAtom);
-  const files = useProjectFiles(useWorkdir(), !busy);
+  const files = useProjectFiles(busy);
 
-  const footer = jinion.backend.modes.length > 1 || contextLeft !== undefined;
+  const { agent, commands } = initialized;
+  const footer = agent.modes.length > 1 || contextLeft !== undefined;
 
   const completions = useMemo(
-    () => [jinion.commands.completion(), skillCompletion(skills), fileCompletion(files)],
+    () => [commandCompletion(commands), skillCompletion(skills), fileCompletion(files)],
     [skills, files],
   );
 
@@ -51,7 +51,7 @@ export function PromptArea() {
       placeholder={
         !busy
           ? 'Ask jinion anything · / commands · $ skills · @ files'
-          : jinion.session.agent.steer
+          : agent.features.steer
             ? 'Type to steer · ctrl+q to queue · esc to interrupt'
             : 'Type to queue · esc to interrupt'
       }
@@ -61,12 +61,12 @@ export function PromptArea() {
 }
 
 function PromptFooter() {
-  const { backend } = useJinion();
+  const { initialized } = useApi();
   const theme = useTheme();
   const mode = useAtomValue(modeAtom);
   const left = useAtomValue(contextLeftAtom);
 
-  const modes = backend.modes.length > 1;
+  const modes = initialized.agent.modes.length > 1;
 
   return (
     <Text>

@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import { Box, ListRow, Panel, Prose, SelectList, Tabs, Text, useInput, useListNavigation, usePanel, useTabs, useTheme, type KeyHint } from '@jinion/tui';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { AgentCommand } from '@jinion/core/agent/agent';
-import { useJinion } from '../app/context.js';
-import { SHORTCUTS } from '../app/shortcuts.js';
-import { draftAtom } from '../prompt/draft.js';
 import { requiresArgument } from '@jinion/core/commands/registry';
 import { skillGroup, sortSkills } from '@jinion/core/prompt/skills';
-import { skillsAtom } from '@jinion/core/state/agent';
+import { useApi } from '../app/api.js';
+import { SHORTCUTS } from '../app/shortcuts.js';
+import { draftAtom } from '../prompt/draft.js';
+import { skillsAtom } from '../state/session.js';
 
 const SHORTCUT_COLUMNS = 3;
 
@@ -20,7 +20,7 @@ interface HelpItem {
 }
 
 export function HelpPanel({ topic = '' }: { topic?: string }) {
-  const jinion = useJinion();
+  const api = useApi();
   const { close } = usePanel();
   const skills = sortSkills(useAtomValue(skillsAtom));
   const setDraft = useSetAtom(draftAtom);
@@ -36,13 +36,14 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
   const groups = [
     {
       label: 'Commands',
-      items: jinion.commands.list().map(
+      items: api.initialized.commands.map(
         (command): HelpItem => ({
           label: `/${command.name}`,
           hint: command.argumentHint,
           description: command.description,
           aside: command.aliases?.map((alias) => `/${alias}`).join(' '),
-          pick: () => (requiresArgument(command) ? setDraft(`/${command.name} `) : command.run(jinion, '')),
+          pick: () =>
+            requiresArgument(command) ? setDraft(`/${command.name} `) : api.act(api.inSession('session/submit', { text: `/${command.name}` })),
         }),
       ),
     },

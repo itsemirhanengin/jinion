@@ -1,7 +1,7 @@
 import { printable, StatusMark, Text, useHovered, useTheme, useView, type TreeNode } from '@jinion/tui';
 import { ToolLine } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
-import { tasksAtom } from '@jinion/core/state/active';
+import { tasksAtom } from '../../../state/session.js';
 import type { ToolCallEntry, ToolEntry } from '@jinion/core/conversation/entries';
 import { plural, preciseSeconds } from '@jinion/core/lib/format';
 import { callSummary } from './call-summary.js';

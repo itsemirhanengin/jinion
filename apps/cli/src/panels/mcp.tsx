@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Box, ChoiceList, choiceIndent, Panel, Text, useChoiceList, usePanel, useTheme, type Choice, type Theme } from '@jinion/tui';
-import type { AgentMcp, McpServerInfo } from '@jinion/core/agent/mcp';
-import { useJinion } from '../app/context.js';
+import type { McpServerInfo } from '@jinion/core/agent/mcp';
 import { errorMessage } from '@jinion/core/lib/errors';
 import { plural } from '@jinion/core/lib/format';
 import { truncate } from '@jinion/core/lib/text';
+import { useApi } from '../app/api.js';
 
 const VISIBLE = 10;
 const LABEL_WIDTH = 18;
@@ -12,8 +12,8 @@ const TOOLS_SHOWN = 8;
 const POLL_MS = 1_500;
 
 /** Changes apply from the next turn, when the agent connects again. */
-export function McpPanel({ mcp }: { mcp: AgentMcp }) {
-  const jinion = useJinion();
+export function McpPanel() {
+  const api = useApi();
   const theme = useTheme();
   const { close } = usePanel();
 
@@ -29,7 +29,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     onToggle: (name) => void touched.current.add(name),
     onSubmit: (checked) => {
       close();
-      void jinion.mcp.save(checked);
+      api.act(api.request('mcp/save', { enabled: checked }));
     },
   });
 
@@ -56,7 +56,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
     let open = true;
 
     const load = () =>
-      mcp.servers().then(
+      api.request('mcp/servers', {}).then(
         (next) => {
           if (!open) return;
 
@@ -101,7 +101,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
           empty="No MCP servers yet. Add them with `claude mcp add`, in ~/.jinion/mcp.json or in the project's .mcp.json."
         />
       ) : (
-        <Text color={theme.muted}>Asking {jinion.backend.name} about its servers…</Text>
+        <Text color={theme.muted}>Asking {api.initialized.agent.name} about its servers…</Text>
       )}
     </Panel>
   );
