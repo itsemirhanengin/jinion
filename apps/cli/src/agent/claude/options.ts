@@ -50,7 +50,7 @@ export function claudeOptions({ cwd, project, selection, mode, account, resume, 
     },
     // Turns off, by name, the servers Claude Code finds itself. Only an admin's policy could turn them back on.
     managedSettings: disabled.length > 0 ? { deniedMcpServers: disabled.map((serverName) => ({ serverName })) } : undefined,
-    plugins: [...skillPlugins(project), ...claudePlugins(project)],
+    plugins: [...skillPlugins(project, account), ...claudePlugins(project)],
     settings: {
       // Plugins' hooks would add context of their own to every conversation. Jinion's hooks below still run.
       disableAllHooks: true,

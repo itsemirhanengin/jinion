@@ -30,6 +30,8 @@ export interface ClaudeAgentOptions {
   debug?: DebugLog;
   spawn?: typeof query;
   sessionMessages?: typeof getSessionMessages;
+  /** Fetches the account's claude.ai skills for the next process; tests leave it out. */
+  syncSkills?: (account: string) => void;
 }
 
 export class ClaudeAgent implements Agent {
@@ -47,6 +49,7 @@ export class ClaudeAgent implements Agent {
   /** Claude Code only reads MCP servers when it starts, so the next turn starts a new process. */
   private stale = false;
   private invocations: Invocations = new Map();
+  private readonly synced = new Set<string>();
   private readonly approvals: ClaudeApprovals;
   private readonly listeners = new Set<(event: AgentEvent) => void>();
 
@@ -315,6 +318,14 @@ export class ClaudeAgent implements Agent {
   }
 
   /** Falls back to what the process itself continued, which a process that never took a turn would otherwise lose. */
+  private syncSkillsOnce() {
+    const account = this.accounts.current;
+    if (!this.options.syncSkills || this.synced.has(account)) return;
+
+    this.synced.add(account);
+    this.options.syncSkills(account);
+  }
+
   private resumeOf(claude: ClaudeProcess): ClaudeResume | undefined {
     const { sessionId, cost } = claude.events;
 
@@ -327,6 +338,7 @@ export class ClaudeAgent implements Agent {
 
     this.resume = undefined;
     if (resume) followTranscript(resume.sessionId, cwd);
+    this.syncSkillsOnce();
 
     const options = claudeOptions({
       cwd,

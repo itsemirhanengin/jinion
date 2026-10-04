@@ -28,7 +28,9 @@ export function toAgentCommands(list: SlashCommand[]) {
       const kind: (typeof PRECEDENCE)[number] = plugin === 'project' || plugin === 'user' ? plugin : 'plugin';
       const short = colon === -1 ? command.name : command.name.slice(colon + 1);
 
-      return { command, kind, group: plugin ?? 'plugin', short, full: command.name, target: command.name };
+      const group = plugin === 'claude-ai' ? 'claude.ai' : (plugin ?? 'plugin');
+
+      return { command, kind, group, short, full: command.name, target: command.name };
     })
     .sort((a, b) => PRECEDENCE.indexOf(a.kind) - PRECEDENCE.indexOf(b.kind));
 

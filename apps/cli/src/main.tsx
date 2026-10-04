@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
 import { ClaudeAgent } from './agent/claude/agent.js';
+import { syncSkills } from './agent/claude/synced-skills.js';
 import { demoCommands } from './agent/demo/commands.js';
 import { scenarios } from './agent/demo/scenarios/index.js';
 import { ScriptedAgent } from './agent/demo/agent.js';
@@ -71,7 +72,7 @@ const debug = values.debug || process.env.JINION_DEBUG === '1' ? new DebugLog() 
 
 const agent: Agent = values.demo
   ? new ScriptedAgent(scenarios, demoCommands)
-  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd), debug });
+  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd), debug, syncSkills });
 
 // Flags win over the choice `/model` saved in an earlier run.
 const saved = loadSettings().models?.[agent.name];

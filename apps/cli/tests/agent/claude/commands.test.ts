@@ -11,6 +11,7 @@ describe('toAgentCommands', () => {
     command('project:design', '(project) This project’s design rules'),
     command('vercel:nextjs', '(vercel) Next.js guidance'),
     command('vercel:design'),
+    command('claude-ai:pdf', '(claude-ai) PDF files'),
     command('claude.ai Figma:create_rules (MCP)', 'Rules for Figma'),
     command('plugin:vercel:vercel:deploy (MCP)'),
   ]);
@@ -31,6 +32,7 @@ describe('toAgentCommands', () => {
   it('groups by where they come from, without the plugin in the description', () => {
     expect(byName.nextjs).toMatchObject({ source: 'skill', group: 'vercel', description: 'Next.js guidance' });
     expect(byName['user:design']).toMatchObject({ group: 'user', description: 'Design guidelines' });
+    expect(byName.pdf).toMatchObject({ source: 'skill', group: 'claude.ai', description: 'PDF files' });
   });
 
   it('runs MCP prompts by their Claude Code command name', () => {

@@ -5,8 +5,9 @@ import type { SdkPluginConfig } from '@anthropic-ai/claude-agent-sdk';
 import { readJson } from '../../lib/json-file.js';
 import { jinionHome, projectDir } from '../../lib/paths.js';
 import { claudeConfigDir } from './paths.js';
+import { syncedSkillsDir } from './synced-skills.js';
 
-export const SKILL_PLUGINS = ['user', 'project'] as const;
+export const SKILL_PLUGINS = ['user', 'project', 'claude-ai'] as const;
 
 export function skillLabel(name: string) {
   const scope = SKILL_PLUGINS.find((plugin) => name.startsWith(`${plugin}:`));
@@ -17,11 +18,17 @@ export function skillLabel(name: string) {
 /** Skills of Claude Code's own plugins, about Claude Code itself; `disableBundledSkills` turns off the rest. */
 export const CLAUDE_CODE_SKILLS = ['design', 'doctor', 'plugin-authoring'];
 
-/** Claude Code reads no skills folders while its settings are off, so they go in as plugins. The first folder wins a name. */
-export function skillPlugins(cwd: string): SdkPluginConfig[] {
+/**
+ * Claude Code reads no skills folders while its settings are off, so they go in as plugins. The first folder wins a
+ * name. claude.ai's skills differ by organization, so each account has a plugin of its own.
+ */
+export function skillPlugins(cwd: string, account: string): SdkPluginConfig[] {
+  const synced = syncedSkillsDir(account);
+
   const scopes: [(typeof SKILL_PLUGINS)[number], string, string[]][] = [
     ['user', join(jinionHome(), 'plugins', 'user'), [join(claudeConfigDir(), 'skills'), join(homedir(), '.agents', 'skills')]],
     ['project', join(projectDir(cwd), 'plugins', 'project'), [join(cwd, '.claude', 'skills'), join(cwd, '.agents', 'skills')]],
+    ['claude-ai', join(jinionHome(), 'plugins', 'claude-ai', account), synced ? [synced] : []],
   ];
 
   return scopes.flatMap(([name, root, folders]) => {

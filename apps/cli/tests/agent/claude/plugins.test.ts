@@ -2,6 +2,7 @@ import { existsSync, readFileSync, readlinkSync, readdirSync, rmSync } from 'nod
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { sandboxEach } from '../../support/sandbox.js';
+import { accountsDir } from '../../../src/agent/claude/paths.js';
 import { claudePlugins, skillLabel, skillPlugins } from '../../../src/agent/claude/plugins.js';
 
 const box = sandboxEach();
@@ -11,7 +12,7 @@ const skill = (folder: string, name: string) =>
 
 describe('skillPlugins', () => {
   it('makes nothing when there are no skills', () => {
-    expect(skillPlugins(box.project)).toEqual([]);
+    expect(skillPlugins(box.project, 'default')).toEqual([]);
   });
 
   it('links each skill into a plugin per scope, Claude Code’s folder first', () => {
@@ -22,7 +23,7 @@ describe('skillPlugins', () => {
     skill(join(box.home, '.agents', 'skills'), 'design');
     box.write(join(box.home, '.claude', 'skills', 'notes', 'README.md'), 'not a skill');
 
-    const plugins = skillPlugins(box.project);
+    const plugins = skillPlugins(box.project, 'default');
     const [user, project] = plugins.map((plugin) => plugin.path);
 
     expect(plugins).toHaveLength(2);
@@ -38,12 +39,34 @@ describe('skillPlugins', () => {
 
     skill(skills, 'design');
     skill(skills, 'ideas');
-    const [user] = skillPlugins(box.project).map((plugin) => plugin.path);
+    const [user] = skillPlugins(box.project, 'default').map((plugin) => plugin.path);
 
     rmSync(join(skills, 'ideas'), { recursive: true });
-    skillPlugins(box.project);
+    skillPlugins(box.project, 'default');
 
     expect(readdirSync(join(user!, 'skills'))).toEqual(['design']);
+  });
+
+  it('hands over the claude.ai skills of the account’s organization, in a plugin per account', () => {
+    const synced = join(box.home, '.claude', 'skills', 'synced');
+    const pdf = skill(join(synced, 'org-1_me'), 'pdf');
+
+    skill(join(synced, 'org-2_me'), 'docx');
+    box.write(join(box.home, '.claude.json'), { oauthAccount: { accountUuid: 'me', organizationUuid: 'org-1' } });
+
+    const work = join(accountsDir(), 'work');
+    const xlsx = skill(join(work, 'skills', 'synced', 'org-2_me'), 'xlsx');
+
+    box.write(join(work, '.claude.json'), { oauthAccount: { accountUuid: 'me', organizationUuid: 'org-2' } });
+
+    const [own] = skillPlugins(box.project, 'default').map((plugin) => plugin.path);
+    const [other] = skillPlugins(box.project, 'work').map((plugin) => plugin.path);
+
+    expect(JSON.parse(readFileSync(join(own!, '.claude-plugin', 'plugin.json'), 'utf8')).name).toBe('claude-ai');
+    expect(readdirSync(join(own!, 'skills'))).toEqual(['pdf']);
+    expect(readlinkSync(join(own!, 'skills', 'pdf'))).toBe(pdf);
+    expect(readdirSync(join(other!, 'skills'))).toEqual(['xlsx']);
+    expect(readlinkSync(join(other!, 'skills', 'xlsx'))).toBe(xlsx);
   });
 });
 
@@ -88,6 +111,7 @@ describe('skillLabel', () => {
   it('drops Jinion’s own plugin names only', () => {
     expect(skillLabel('user:design')).toBe('design');
     expect(skillLabel('project:hello')).toBe('hello');
+    expect(skillLabel('claude-ai:pdf')).toBe('pdf');
     expect(skillLabel('vercel:nextjs')).toBe('vercel:nextjs');
   });
 });
