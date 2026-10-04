@@ -10,7 +10,7 @@ export function describeAccount(account: AgentAccount, seen: SeenLimit | undefin
   const who = [accountLabel(account), shared ? account.email : undefined].filter(Boolean).join(' · ');
   if (!seen) return who;
 
-  const usage = seen.windows.map((window) => `${window.label} ${Math.round(window.used * 100)}%`).join(' · ');
+  const left = seen.windows.map((window) => `${window.label} ${Math.round((1 - window.used) * 100)}% left`).join(' · ');
 
-  return `${who} · ${usage} ${ago(seen.at)}`;
+  return `${who} · ${left} ${ago(seen.at)}`;
 }

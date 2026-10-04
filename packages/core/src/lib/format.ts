@@ -6,7 +6,12 @@ export function compact(count: number) {
   return `${(count / divisor).toFixed(1)}${unit}`;
 }
 
-export const thousands = (count: number) => (count >= 1000 ? `${Math.round(count / 1000)}K` : String(count));
+/** Short and rounded, as a context window is told: `850`, `59K`, `1M`, `1.5M`. */
+export function abbreviated(count: number) {
+  if (count >= 1e6) return `${Number((count / 1e6).toFixed(1))}M`;
+
+  return count >= 1000 ? `${Math.round(count / 1000)}K` : String(Math.round(count));
+}
 
 export const grouped = (count: number) => Math.round(count).toLocaleString('en-US');
 

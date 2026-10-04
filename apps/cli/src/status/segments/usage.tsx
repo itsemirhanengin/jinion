@@ -1,6 +1,6 @@
 import { Meter, Text } from '@jinion/tui';
 import type { LimitWindow } from '@jinion/core/agent/usage';
-import { minutes, thousands } from '@jinion/core/lib/format';
+import { abbreviated, minutes } from '@jinion/core/lib/format';
 import { levelColor, type Segment } from '../segment.js';
 
 export const context: Segment = {
@@ -15,7 +15,7 @@ export const context: Segment = {
   render: ({ session, theme }, style) => {
     const { contextTokens, contextWindow } = session.usage;
     const used = contextWindow > 0 ? contextTokens / contextWindow : 0;
-    if (style === 'tokens') return <Text>ctx: {thousands(contextTokens)}/{thousands(contextWindow)}</Text>;
+    if (style === 'tokens') return <Text>ctx: {abbreviated(contextTokens)}/{abbreviated(contextWindow)}</Text>;
 
     const share = <Text color={levelColor(theme, used)}>{Math.round(used * 100)}%</Text>;
     if (style === 'percent') return <Text>ctx {share}</Text>;
@@ -31,7 +31,7 @@ export const context: Segment = {
 export const limits: Segment = {
   id: 'limits',
   name: 'Plan limits',
-  description: 'How much of your plan is used, per window; shows after the first request',
+  description: 'How much of your plan is left, per window; shows after the first request',
   styles: [
     { id: 'both', name: '5h and 7d' },
     { id: 'session', name: '5h with reset time' },
@@ -40,9 +40,14 @@ export const limits: Segment = {
   ],
   ticks: true,
   render: ({ limits, now, theme }, style) => {
+    // What is left is what decides whether to go on; its color still warns as the used part grows.
+    const left = (window: LimitWindow) => (
+      <Text color={levelColor(theme, window.used)}>{Math.round((1 - window.used) * 100)}% left</Text>
+    );
+
     const usage = (window: LimitWindow) => (
       <Text>
-        {window.label} <Text color={levelColor(theme, window.used)}>{Math.round(window.used * 100)}%</Text>
+        {window.label} {left(window)}
       </Text>
     );
 
@@ -54,7 +59,7 @@ export const limits: Segment = {
     if (style === 'bar') {
       return (
         <Text>
-          5h <Meter value={five.used} /> <Text color={levelColor(theme, five.used)}>{Math.round(five.used * 100)}%</Text>
+          5h <Meter value={1 - five.used} color={levelColor(theme, five.used)} /> {left(five)}
         </Text>
       );
     }
