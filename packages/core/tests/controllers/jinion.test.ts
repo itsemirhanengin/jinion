@@ -7,7 +7,6 @@ import type { Screen } from '../../src/controllers/context.js';
 import { Jinion } from '../../src/controllers/jinion.js';
 import { MemorySessionStore } from '../../src/conversation/store.js';
 import { MemoryStore } from '../../src/memory/store.js';
-import { activeSessionAtom } from '../../src/state/active.js';
 import { sandboxEach } from '../support/sandbox.js';
 
 const box = sandboxEach();
@@ -60,7 +59,7 @@ describe('Jinion', () => {
     const second = jinion.openSession();
 
     jinion.activate(second);
-    expect(jinion.store.get(activeSessionAtom)).toBe(second.atoms);
+    expect(jinion.session).toBe(second);
 
     await jinion.close(second);
     expect(jinion.session).toBe(first);

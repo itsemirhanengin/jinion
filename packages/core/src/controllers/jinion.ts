@@ -9,8 +9,6 @@ import type { SessionStore } from '../conversation/store.js';
 import { worktreeExists } from '../git/worktrees.js';
 import { tildify } from '../lib/paths.js';
 import type { MemoryStore } from '../memory/store.js';
-// biome-ignore lint/style/noRestrictedImports: the app is what sets the session the user looks at.
-import { activeSessionAtom } from '../state/active.js';
 import { accountAtom, modelsAtom, skillsAtom } from '../state/agent.js';
 import { notificationsAtom, worktreesAtom } from '../state/preferences.js';
 import { DEFAULT_CONTEXT_WINDOW } from '../state/session.js';
@@ -142,7 +140,6 @@ export class Jinion {
 
   activate(session: Session) {
     this.active = session;
-    this.store.set(activeSessionAtom, session.atoms);
     this.sessionsChanged();
   }
 
