@@ -265,7 +265,7 @@ describe('CodexSession', () => {
     expect(fake.sent('thread/resume')[0]?.params).toMatchObject({ threadId: 'saved-thread' });
   });
 
-  it('steers a running turn, and has nothing to steer between turns', async () => {
+  it('steers a running turn, hands Auto’s approvals to Codex’s reviewer at once, and has nothing to steer between turns', async () => {
     const { fake, session } = setup('interrupt', { fake: { holdUntilInterrupt: true } });
     const abort = new AbortController();
     const running = collect(session.run({ text: 'Sleep' }, context({ signal: abort.signal }))).catch(() => {});
@@ -273,6 +273,9 @@ describe('CodexSession', () => {
     expect(session.steer({ text: 'too early' })).toBeUndefined();
     await vi.waitFor(() => expect(fake.sent('turn/start')).toHaveLength(1));
     await new Promise((resolve) => setTimeout(resolve, 20));
+
+    await session.setMode('auto');
+    expect(fake.sent('turn/settings/update')[0]?.params).toEqual({ threadId: fake.thread, turnId: expect.any(String), approvalsReviewer: 'auto_review' });
 
     expect(session.steer({ text: 'and say ok twice' })).toEqual(expect.any(String));
     await vi.waitFor(() => expect(fake.sent('turn/steer')).toHaveLength(1));

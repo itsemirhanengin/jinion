@@ -70,9 +70,11 @@ Jinion's note tools as dynamic tools, Codex's questions); bumping it means runni
 
 - **`ctrl+b`.** Codex decides itself which commands go on in the background, so there is nothing to send there.
 - **What always asks, in Auto.** Codex's reviewer answers for commits and writes outside the project there, so
-  `/commit-approval` doesn't apply; the other modes ask through Codex's sandbox.
-- **MCP elicitations** are declined for now; they could become questions.
-- **A model or mode change during a turn** applies from the next one (`turn/settings/update` could do it at once).
+  `/commit-approval` doesn't apply; the other modes ask through Codex's sandbox. The app-server has no hook before
+  the reviewer, and its notifications about it only report; a `PreToolUse` hook in Codex's own config could ask, but
+  it is the user's file and needs their trust.
+- **A model change during a turn** applies from the next one: `turn/settings/update` takes it only with
+  `step_model_switching`, a feature Codex lists as under development. Auto coming or going applies at once.
 
 ### More backends
 

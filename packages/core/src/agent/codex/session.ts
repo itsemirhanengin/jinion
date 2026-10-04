@@ -85,14 +85,18 @@ export class CodexSession implements AgentSession {
     return this.turn !== undefined;
   }
 
-  /** From the next turn on; Codex keeps what a turn sets for those after it. */
+  /** From the next turn on: switching within a turn is a Codex feature still under development (step_model_switching). */
   async select(selection: ModelSelection) {
     this.current = selection;
   }
 
-  /** From the next turn on, since Codex reads the approval policy as a turn starts. */
+  /**
+   * In the running turn only who answers its approvals changes, as Auto comes or goes; the sandbox and plan mode
+   * follow from the next turn, since Codex sets them as a turn starts.
+   */
   async setMode(mode: AgentMode) {
     this.currentMode = mode;
+    await this.changeRunningTurn({ approvalsReviewer: modeSettings(mode, this.current, this.workspace).approvalsReviewer });
   }
 
   subscribe(listener: (event: AgentEvent) => void) {
@@ -220,6 +224,16 @@ export class CodexSession implements AgentSession {
     this.thread = undefined;
     this.turn?.inbox.push(error);
     this.stopTasks();
+  }
+
+  /** A turn that ended meanwhile has nothing to change; the next one starts with the setting anyway. */
+  private async changeRunningTurn(settings: object) {
+    const { thread, turn } = this;
+    if (!thread || !turn?.id) return;
+
+    await this.request('turn/settings/update', { threadId: thread, turnId: turn.id, ...settings }).catch((error: unknown) =>
+      this.host.options.debug?.write('error', { message: `Couldn't change the running turn: ${errorMessage(error)}` }),
+    );
   }
 
   private stopTasks() {

@@ -3,6 +3,7 @@ import { errorMessage } from '../../lib/errors.js';
 import type { RunContext } from '../agent.js';
 import type { PermissionDecision, PermissionRequest } from '../permissions.js';
 import type { Question, QuestionAnswer } from '../questions.js';
+import { elicit } from './elicitation.js';
 import { runMemoryTool } from './memory.js';
 import type { ServerRequest, ServerRequests, UserInputRequest } from './protocol.js';
 import { unwrapShell } from './tool-calls.js';
@@ -78,8 +79,7 @@ export async function answer(request: ServerRequest, context: ApprovalContext): 
     }
 
     case 'mcpServer/elicitation/request':
-      // An MCP server asking the user for input isn't shown yet; saying no lets the call go on.
-      return { action: 'decline', content: null, _meta: null };
+      return elicit(request.params, turn);
   }
 }
 

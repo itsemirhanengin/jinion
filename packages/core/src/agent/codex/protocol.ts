@@ -1,3 +1,5 @@
+import type { Elicitation, ElicitationAnswer } from './elicitation.js';
+
 // The part of `codex app-server`'s protocol Jinion uses, written after what `codex app-server generate-ts --experimental`
 // makes for the pinned version. Fields Jinion doesn't read are left out.
 
@@ -236,7 +238,7 @@ export interface ServerRequests {
   'item/tool/requestUserInput': { params: UserInputRequest; result: { answers: Record<string, { answers: string[] }> } };
   'item/permissions/requestApproval': { params: PermissionsRequest; result: { permissions: unknown; scope: 'turn' | 'session' } };
   'item/tool/call': { params: DynamicToolCall; result: { contentItems: { type: 'inputText'; text: string }[]; success: boolean } };
-  'mcpServer/elicitation/request': { params: { threadId: string; turnId: string | null }; result: { action: 'decline'; content: null; _meta: null } };
+  'mcpServer/elicitation/request': { params: { threadId: string; turnId: string | null } & Elicitation; result: ElicitationAnswer };
 }
 
 export type ServerRequest = { [M in keyof ServerRequests]: { method: M; params: ServerRequests[M]['params'] } }[keyof ServerRequests];
