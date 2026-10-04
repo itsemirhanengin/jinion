@@ -141,6 +141,11 @@ export class JinionClient {
     this.store.set(this.session(id), undefined);
   }
 
+  /** Once the connection is gone, e.g. as the server stops. */
+  onClose(listener: () => void) {
+    return this.peer.onClose(listener);
+  }
+
   /** Whether the user looks at this client, so the server knows when to notify them elsewhere. */
   focus(focused: boolean) {
     this.peer.notify('client/focus', { focused });
