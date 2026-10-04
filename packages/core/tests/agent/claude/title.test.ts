@@ -1,6 +1,6 @@
 import type { Options, query, SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { describe, expect, it } from 'vitest';
-import { claudeTitle, cleanTitle } from '../../../src/agent/claude/title.js';
+import { claudeTitle } from '../../../src/agent/claude/title.js';
 
 describe('claudeTitle', () => {
   it('asks the small model without tools, thinking or a saved transcript, under the account in use', async () => {
@@ -27,18 +27,6 @@ describe('claudeTitle', () => {
     const { spawn } = answering({ type: 'result', subtype: 'error_during_execution' } as never);
 
     expect(await claudeTitle({ digest: 'First message: hello', cwd: '/project', account: 'default', spawn })).toBeUndefined();
-  });
-});
-
-describe('cleanTitle', () => {
-  it('keeps the first line, without a label, quotes or a closing period', () => {
-    expect(cleanTitle('Title: `Fix the flaky login test`.\nBecause…')).toBe('Fix the flaky login test');
-    expect(cleanTitle('  \n')).toBeUndefined();
-    expect(cleanTitle('a'.repeat(100))).toHaveLength(80);
-  });
-
-  it('has no title when the model explained itself instead', () => {
-    expect(cleanTitle('This is a greeting with no work yet, so I will name it after the greeting itself')).toBeUndefined();
   });
 });
 

@@ -8,6 +8,7 @@ import { CodexConnection, type CodexProcess } from './connection.js';
 import { codexMcp } from './mcp.js';
 import { type Model, type Notification, type RateLimitSnapshot, type ServerRequest, type SkillMetadata, threadOf } from './protocol.js';
 import { CodexSession, type CodexHost } from './session.js';
+import { codexTitle } from './title.js';
 import { toUsage } from './usage.js';
 
 export interface CodexBackendOptions {
@@ -110,6 +111,10 @@ export class CodexBackend implements AgentBackend, CodexHost {
       source: 'skill',
       group: skill.pluginId ? skill.pluginId.split('@')[0]! : skill.scope === 'repo' ? 'project' : skill.scope,
     }));
+  }
+
+  titleFor(digest: string, current?: string) {
+    return codexTitle(this.connect(), { digest, current, cwd: this.options.cwd });
   }
 
   async usage() {

@@ -181,6 +181,21 @@ describe('CodexSession', () => {
     expect(fake.sent('thread/revert')[0]?.params).toEqual({ threadId: fake.thread, beforeTurnId: 'turn-1' });
   });
 
+  it('names a conversation in a thread that isn’t kept, told only to name it', async () => {
+    const { fake, backend } = setup('title');
+
+    expect(await backend.titleFor('First message: fix the flaky login test in auth.test.ts')).toBe('Fix flaky auth.test.ts login test');
+
+    expect(fake.sent('thread/start')[0]?.params).toMatchObject({
+      model: 'gpt-6-luna',
+      ephemeral: true,
+      baseInstructions: expect.stringContaining('You name conversations'),
+      sandbox: 'read-only',
+    });
+
+    expect(fake.sent('turn/start')[0]?.params.input[0].text).toBe('The conversation:\nFirst message: fix the flaky login test in auth.test.ts');
+  });
+
   it('carries on a saved thread', async () => {
     const { fake, session } = setup('compact', { resume: 'saved-thread' });
 
