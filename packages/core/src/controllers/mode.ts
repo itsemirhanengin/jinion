@@ -15,8 +15,8 @@ export class ModeController {
   }
 
   select(next: AgentMode) {
-    const { agent, notice } = this.context;
-    if (!agent.modes.includes(next)) return notice(`${agent.name} has no ${MODES[next].name} mode.`, 'warning');
+    const { backend, agent, notice } = this.context;
+    if (!backend.modes.includes(next)) return notice(`${backend.name} has no ${MODES[next].name} mode.`, 'warning');
 
     this.keep(next);
 
@@ -26,7 +26,7 @@ export class ModeController {
   }
 
   cycle() {
-    this.select(nextMode(this.context.agent.modes, this.current));
+    this.select(nextMode(this.context.backend.modes, this.current));
   }
 
   show(mode: AgentMode) {

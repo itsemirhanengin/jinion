@@ -1,12 +1,13 @@
 import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
-import { ClaudeAgent } from '@jinion/core/agent/claude/agent';
+import { ClaudeBackend } from '@jinion/core/agent/claude/backend';
 import { syncSkills } from '@jinion/core/agent/claude/synced-skills';
 import { demoCommands } from '@jinion/core/agent/demo/commands';
 import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
-import { ScriptedAgent } from '@jinion/core/agent/demo/agent';
-import type { Agent } from '@jinion/core/agent/agent';
+import { ScriptedBackend } from '@jinion/core/agent/demo/agent';
+import type { AgentBackend } from '@jinion/core/agent/agent';
+import type { ModelSelection } from '@jinion/core/agent/models';
 import { App } from './app/app.js';
 import { DebugLog } from '@jinion/core/lib/debug';
 import { McpConfig } from '@jinion/core/mcp/config';
@@ -70,17 +71,15 @@ const account = loadSettings().accounts?.Claude;
 const memory = new MemoryStore(cwd);
 const debug = values.debug || process.env.JINION_DEBUG === '1' ? new DebugLog() : undefined;
 
-const agent: Agent = values.demo
-  ? new ScriptedAgent(scenarios, demoCommands)
-  : new ClaudeAgent({ cwd, mode, account, memory, mcp: new McpConfig(cwd), debug, syncSkills });
+const backend: AgentBackend = values.demo
+  ? new ScriptedBackend(scenarios, demoCommands)
+  : new ClaudeBackend({ cwd, account, memory, mcp: new McpConfig(cwd), debug, syncSkills });
 
 // Flags win over the choice `/model` saved in an earlier run.
-const saved = loadSettings().models?.[agent.name];
+const saved = loadSettings().models?.[backend.name];
 const model = values.model ?? process.env.JINION_MODEL;
 const effort = values.effort ?? process.env.JINION_EFFORT;
-
-if (model) await agent.select({ model, effort });
-else if (saved || effort) await agent.select({ ...(saved ?? agent.selection), ...(effort && { effort }) });
+const selection: ModelSelection = model ? { model, effort } : { ...(saved ?? { model: backend.defaultModel }), ...(effort && { effort }) };
 
 const sessions: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
 const initial = values.continue ? sessions.list()[0] : undefined;
@@ -92,11 +91,21 @@ const info = {
   examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
 };
 
-const instance = await run(<App agent={agent} info={info} sessions={sessions} memory={memory} initial={initial} onExit={(message) => farewells.push(message)} />, {
-  scheme: theme as ColorScheme | undefined,
-});
+const instance = await run(
+  <App
+    backend={backend}
+    selection={selection}
+    mode={mode}
+    info={info}
+    sessions={sessions}
+    memory={memory}
+    initial={initial}
+    onExit={(message) => farewells.push(message)}
+  />,
+  { scheme: theme as ColorScheme | undefined },
+);
 
 await instance.waitUntilExit();
-agent.close?.();
+backend.close?.();
 for (const message of farewells) console.log(message);
 if (debug) console.log(`Debug log: ${debug.path}`);

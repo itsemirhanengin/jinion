@@ -68,7 +68,7 @@ export class ConversationController {
   }
 
   rename(name?: string) {
-    const { agent, notice } = this.context;
+    const { backend, notice } = this.context;
 
     if (name) {
       this.retitle(name, 'user');
@@ -76,7 +76,7 @@ export class ConversationController {
       return notice(`Renamed the conversation to “${name}”.`, 'success');
     }
 
-    if (!agent.titleFor) return notice(`${agent.name} can't name conversations. Type /rename and a name.`, 'warning');
+    if (!backend.titleFor) return notice(`${backend.name} can't name conversations. Type /rename and a name.`, 'warning');
     if (promptCount(this.session.entries) === 0) return notice('There is nothing to name yet.', 'muted');
 
     this.name(true).then(
@@ -89,8 +89,8 @@ export class ConversationController {
   }
 
   openRewind() {
-    const { agent, notice, screen, store } = this.context;
-    if (!agent.rewind) return notice(`${agent.name} can't rewind.`, 'warning');
+    const { backend, agent, notice, screen, store } = this.context;
+    if (!agent.rewind) return notice(`${backend.name} can't rewind.`, 'warning');
     if (store.get(workingAtom)) return notice(BUSY, 'warning');
 
     const points = this.rewindPoints();
@@ -158,15 +158,15 @@ export class ConversationController {
   }
 
   private async name(fresh: boolean) {
-    const { agent } = this.context;
-    if (!agent.titleFor || this.naming) return undefined;
+    const { backend } = this.context;
+    if (!backend.titleFor || this.naming) return undefined;
 
     const { entries, title, titled } = this.session;
 
     this.naming = true;
 
     try {
-      const named = await agent.titleFor(conversationDigest(entries), fresh || !titled ? undefined : title);
+      const named = await backend.titleFor(conversationDigest(entries), fresh || !titled ? undefined : title);
 
       if (named) this.retitle(named, 'agent');
 

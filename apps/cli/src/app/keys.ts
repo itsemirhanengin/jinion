@@ -24,7 +24,7 @@ export function useKeys() {
     if (key.ctrl && input === 't' && free) return jinion.screen.openView({ id: 'tasks' });
     if (key.ctrl && input === 'b' && busy && free) return jinion.tasks.sendToBackground();
     if (key.ctrl && input === 'g' && free) return jinion.worktrees.toggle();
-    if (key.tab && key.shift && free && jinion.agent.modes.length > 1) return jinion.modes.cycle();
+    if (key.tab && key.shift && free && jinion.backend.modes.length > 1) return jinion.modes.cycle();
     if (key.escape && busy && free) return jinion.turns.interrupt();
 
     if (key.escape && !busy && free) {

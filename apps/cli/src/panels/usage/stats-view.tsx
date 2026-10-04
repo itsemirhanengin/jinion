@@ -17,7 +17,7 @@ interface StatsViewProps {
 }
 
 export function StatsView({ history, progress, error, available }: StatsViewProps) {
-  const { agent } = useJinion();
+  const { backend } = useJinion();
   const theme = useTheme();
   const { rows } = useWindowSize();
 
@@ -32,7 +32,7 @@ export function StatsView({ history, progress, error, available }: StatsViewProp
     if (input === 'r') setRange((current) => RANGES[(RANGES.findIndex((candidate) => candidate.range === current) + 1) % RANGES.length]!.range);
   });
 
-  if (!available) return <Text color={theme.muted}>{agent.name} keeps no history of its use.</Text>;
+  if (!available) return <Text color={theme.muted}>{backend.name} keeps no history of its use.</Text>;
   if (error) return <Text color={theme.error}>Couldn't read the history: {error}</Text>;
 
   if (!history || !stats) {
@@ -40,7 +40,7 @@ export function StatsView({ history, progress, error, available }: StatsViewProp
 
     return (
       <Text color={theme.muted}>
-        Reading {agent.name}'s conversations on this machine…{total > 0 && ` ${grouped(done)} of ${grouped(total)}`}
+        Reading {backend.name}'s conversations on this machine…{total > 0 && ` ${grouped(done)} of ${grouped(total)}`}
       </Text>
     );
   }

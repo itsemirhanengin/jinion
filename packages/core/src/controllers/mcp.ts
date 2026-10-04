@@ -10,14 +10,14 @@ export class McpController {
   ) {}
 
   async save(servers: McpServerInfo[], checked: string[]) {
-    const { agent, notice } = this.context;
+    const { backend, notice } = this.context;
     const changes = servers.filter((server) => checked.includes(server.name) !== server.enabled);
-    if (!agent.mcp || changes.length === 0) return;
+    if (!backend.mcp || changes.length === 0) return;
 
     const labels = (on: boolean) => changes.filter((server) => !server.enabled === on).map((server) => server.label);
 
     try {
-      await agent.mcp.setEnabled(Object.fromEntries(changes.map((server) => [server.name, !server.enabled])));
+      await backend.mcp.setEnabled(Object.fromEntries(changes.map((server) => [server.name, !server.enabled])));
     } catch (error) {
       return notice(`Couldn't change the MCP servers: ${errorMessage(error)}`, 'error');
     }

@@ -1,74 +1,69 @@
 import { randomUUID } from 'node:crypto';
 import { getSessionMessages, type EffortLevel, type query, type SDKMessage } from '@anthropic-ai/claude-agent-sdk';
-import type { ModelOption, ModelSelection } from '../models.js';
+import type { ModelSelection } from '../models.js';
 import type { DebugLog } from '../../lib/debug.js';
 import { errorMessage } from '../../lib/errors.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
-import type { Agent, AgentCommand, AgentMode, AgentPrompt, FileChanges, RewindScope, RunContext } from '../agent.js';
+import type { AgentMode, AgentPrompt, AgentSession, FileChanges, RewindScope, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
-import type { AgentMcp } from '../mcp.js';
-import { ClaudeAccounts } from './agent-accounts.js';
 import { ClaudeApprovals } from './approvals.js';
 import { toAgentCommands, toClaudeContent, type Invocations } from './commands.js';
-import { readHistory } from './history.js';
-import { claudeMcp } from './mcp.js';
 import { claudeOptions } from './options.js';
 import { askRules, PERMISSION_MODES } from './policy.js';
 import { type ClaudeResume, ClaudeProcess, errorOf } from './process.js';
 import { followTranscript } from './session-files.js';
-import { claudeTitle } from './title.js';
-import { claudeUsage, toContextUsage } from './usage.js';
+import { toContextUsage } from './usage.js';
 
-export interface ClaudeAgentOptions {
-  cwd: string;
-  selection?: ModelSelection;
-  mode?: AgentMode;
-  account?: string;
-  memory?: MemoryStore;
-  mcp?: McpConfig;
-  debug?: DebugLog;
-  spawn?: typeof query;
-  sessionMessages?: typeof getSessionMessages;
-  /** Fetches the account's claude.ai skills for the next process; tests leave it out. */
-  syncSkills?: (account: string) => void;
+/** What a session takes from the backend it belongs to. */
+export interface ClaudeHost {
+  readonly options: {
+    /** The project. */
+    cwd: string;
+    memory?: MemoryStore;
+    mcp?: McpConfig;
+    debug?: DebugLog;
+    spawn?: typeof query;
+    sessionMessages?: typeof getSessionMessages;
+  };
+  readonly account: string;
+  /** Skills and MCP prompts by `$name`, the same in every session of the project. */
+  invocations: Invocations;
+  /** Called as a process starts, e.g. to fetch the account's skills. */
+  starting(): void;
+  closed(session: ClaudeSession): void;
 }
 
-export class ClaudeAgent implements Agent {
-  readonly name = 'Claude';
-  readonly modes: AgentMode[] = ['manual', 'edits', 'plan', 'auto'];
-  readonly accounts: ClaudeAccounts;
-  readonly mcp?: AgentMcp;
+export interface ClaudeSessionOptions {
+  cwd: string;
+  selection: ModelSelection;
+  mode: AgentMode;
+  resume?: ClaudeResume;
+}
+
+export class ClaudeSession implements AgentSession {
   private current: ModelSelection;
   private currentMode: AgentMode;
-  private modelList?: Promise<ModelOption[]>;
   private claude?: ClaudeProcess;
   private resume?: ClaudeResume;
   private cwd: string;
   private turn?: RunContext;
-  /** Claude Code only reads MCP servers when it starts, so the next turn starts a new process. */
+  /** Claude Code reads MCP servers and the login only when it starts, so the next turn starts a new process. */
   private stale = false;
-  private invocations: Invocations = new Map();
-  private readonly synced = new Set<string>();
   private readonly approvals: ClaudeApprovals;
   private readonly listeners = new Set<(event: AgentEvent) => void>();
 
-  constructor(private readonly options: ClaudeAgentOptions) {
-    this.current = options.selection ?? { model: 'opus' };
+  constructor(
+    private readonly host: ClaudeHost,
+    options: ClaudeSessionOptions,
+  ) {
+    this.current = options.selection;
+    this.currentMode = options.mode;
     this.cwd = options.cwd;
-    this.currentMode = options.mode ?? 'edits';
-
-    this.accounts = new ClaudeAccounts({
-      account: options.account,
-      running: () => this.running().query,
-      onSwitch: () => {
-        this.modelList = undefined;
-        this.restart();
-      },
-    });
+    this.resume = options.resume;
 
     this.approvals = new ClaudeApprovals({
-      project: options.cwd,
+      project: host.options.cwd,
       cwd: () => this.cwd,
       turn: () => this.turn,
       onPlanApproved: async (mode) => {
@@ -76,12 +71,6 @@ export class ClaudeAgent implements Agent {
         await this.claude?.query.applyFlagSettings({ permissions: { ask: askRules(mode) } });
       },
     });
-
-    if (options.mcp) {
-      this.mcp = claudeMcp(options.mcp, () => this.running().query, () => {
-        this.stale = true;
-      });
-    }
   }
 
   get selection() {
@@ -92,6 +81,11 @@ export class ClaudeAgent implements Agent {
     return this.currentMode;
   }
 
+  /** Whether its process runs, so the backend can ask it rather than start another. */
+  get live() {
+    return this.claude !== undefined;
+  }
+
   subscribe(listener: (event: AgentEvent) => void) {
     this.listeners.add(listener);
 
@@ -99,11 +93,11 @@ export class ClaudeAgent implements Agent {
   }
 
   steer(prompt: AgentPrompt) {
-    return this.turn ? this.claude?.steer(toClaudeContent(prompt, this.invocations)) : undefined;
+    return this.turn ? this.claude?.steer(toClaudeContent(prompt, this.host.invocations)) : undefined;
   }
 
   async rewindPreview(id: string): Promise<FileChanges | undefined> {
-    const preview = await this.running().query.rewindFiles(id, { dryRun: true });
+    const preview = await this.query().rewindFiles(id, { dryRun: true });
     if (!preview.canRewind || !preview.filesChanged?.length) return undefined;
 
     return { files: preview.filesChanged, insertions: preview.insertions ?? 0, deletions: preview.deletions ?? 0 };
@@ -122,7 +116,7 @@ export class ClaudeAgent implements Agent {
     const resume = this.resumeOf(claude);
     if (!resume) return this.drop();
 
-    const read = this.options.sessionMessages ?? getSessionMessages;
+    const read = this.host.options.sessionMessages ?? getSessionMessages;
     const transcript = await read(resume.sessionId, { dir: this.cwd });
     const index = transcript.findIndex((message) => message.uuid === id);
     if (index === -1) throw new Error("That message isn't in the transcript of this conversation.");
@@ -132,14 +126,6 @@ export class ClaudeAgent implements Agent {
     this.drop(before ? { ...resume, at: before } : undefined);
   }
 
-  async commands(): Promise<AgentCommand[]> {
-    const { commands, invocations } = toAgentCommands(await this.running().query.supportedCommands());
-
-    this.invocations = invocations;
-
-    return commands;
-  }
-
   async setMode(mode: AgentMode) {
     this.currentMode = mode;
     const running = this.claude?.query;
@@ -147,25 +133,6 @@ export class ClaudeAgent implements Agent {
 
     await running.setPermissionMode(PERMISSION_MODES[mode]);
     await running.applyFlagSettings({ permissions: { ask: askRules(mode) } });
-  }
-
-  models() {
-    this.modelList ??= (async () => {
-      const models = await this.running().query.supportedModels();
-
-      return models.map((model) => ({
-        id: model.value,
-        name: model.displayName,
-        description: model.description,
-        efforts: model.supportedEffortLevels ?? [],
-      }));
-    })().catch((error: unknown) => {
-      this.modelList = undefined;
-
-      throw error;
-    });
-
-    return this.modelList;
   }
 
   async select(selection: ModelSelection) {
@@ -189,7 +156,7 @@ export class ClaudeAgent implements Agent {
     const id = randomUUID();
 
     yield { type: 'sent', id };
-    yield* this.follow(claude, context, claude.send(toClaudeContent(prompt, this.invocations), id));
+    yield* this.follow(claude, context, claude.send(toClaudeContent(prompt, this.host.invocations), id));
   }
 
   /** Not async, so a message typed right away steers into the turn. */
@@ -218,29 +185,33 @@ export class ClaudeAgent implements Agent {
     return this.follow(claude, context, claude.send(focus ? `/compact ${focus}` : '/compact'));
   }
 
-  titleFor(digest: string, current?: string) {
-    return claudeTitle({ digest, current, cwd: this.options.cwd, account: this.accounts.current, spawn: this.options.spawn });
-  }
-
   async context() {
-    return toContextUsage(await this.running().query.getContextUsage({ detail: 'full' }));
-  }
-
-  usage({ drivers = false } = {}) {
-    return claudeUsage(this.running().query, drivers);
-  }
-
-  history(progress?: (done: number, total: number) => void) {
-    return readHistory(progress);
+    return toContextUsage(await this.query().getContextUsage({ detail: 'full' }));
   }
 
   reset(resume?: ClaudeResume, cwd?: string) {
-    this.cwd = cwd ?? this.options.cwd;
+    this.cwd = cwd ?? this.host.options.cwd;
     this.drop(resume);
   }
 
   close() {
     this.drop();
+    this.host.closed(this);
+  }
+
+  /** The running process's query, for what the backend asks on behalf of every session. */
+  query() {
+    return this.running().query;
+  }
+
+  /** Picks up what changed outside it, such as MCP servers, at its next turn. */
+  markStale() {
+    this.stale = true;
+  }
+
+  /** Starts over in a new process that carries on the same conversation, such as under another login. */
+  restart() {
+    this.drop(this.claude ? this.resumeOf(this.claude) : this.resume);
   }
 
   /** Ends the process; the next prompt continues `resume`, or starts afresh, in the same folder. */
@@ -273,7 +244,7 @@ export class ClaudeAgent implements Agent {
       context.signal.throwIfAborted();
       if (last?.type === 'result' && last.is_error) throw new Error(errorOf(last));
     } catch (error) {
-      this.options.debug?.write('error', { message: errorMessage(error), aborted: context.signal.aborted });
+      this.host.options.debug?.write('error', { message: errorMessage(error), aborted: context.signal.aborted });
 
       throw error;
     } finally {
@@ -301,7 +272,7 @@ export class ClaudeAgent implements Agent {
     for (const listener of this.listeners) listener(event);
   }
 
-  /** Changed MCP servers restart it only while no background task runs, since those end with the process. */
+  /** A stale process restarts only while no background task runs, since those end with the process. */
   private running() {
     if (this.stale && !this.turn && !this.claude?.events.tasks.running) {
       this.stale = false;
@@ -313,19 +284,7 @@ export class ClaudeAgent implements Agent {
     return this.claude;
   }
 
-  private restart() {
-    this.drop(this.claude ? this.resumeOf(this.claude) : this.resume);
-  }
-
   /** Falls back to what the process itself continued, which a process that never took a turn would otherwise lose. */
-  private syncSkillsOnce() {
-    const account = this.accounts.current;
-    if (!this.options.syncSkills || this.synced.has(account)) return;
-
-    this.synced.add(account);
-    this.options.syncSkills(account);
-  }
-
   private resumeOf(claude: ClaudeProcess): ClaudeResume | undefined {
     const { sessionId, cost } = claude.events;
 
@@ -333,19 +292,19 @@ export class ClaudeAgent implements Agent {
   }
 
   private start() {
-    const { memory, mcp, debug, spawn } = this.options;
+    const { memory, mcp, debug, spawn, cwd: project } = this.host.options;
     const { cwd, resume } = this;
 
     this.resume = undefined;
     if (resume) followTranscript(resume.sessionId, cwd);
-    this.syncSkillsOnce();
+    this.host.starting();
 
     const options = claudeOptions({
       cwd,
-      project: this.options.cwd,
+      project,
       selection: this.current,
       mode: this.currentMode,
-      account: this.accounts.current,
+      account: this.host.account,
       resume,
       memory,
       mcp,
@@ -357,7 +316,7 @@ export class ClaudeAgent implements Agent {
       model: options.model,
       effort: options.effort,
       mode: this.currentMode,
-      account: this.accounts.current,
+      account: this.host.account,
       resume: resume?.sessionId,
       resumeAt: resume?.at,
       servers: Object.keys(options.mcpServers ?? {}),
@@ -395,7 +354,7 @@ export class ClaudeAgent implements Agent {
     if (message.type === 'system' && message.subtype === 'commands_changed') {
       const { commands, invocations } = toAgentCommands(message.commands);
 
-      this.invocations = invocations;
+      this.host.invocations = invocations;
       yield { type: 'commands', commands };
 
       return;

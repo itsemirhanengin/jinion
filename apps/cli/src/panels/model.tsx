@@ -12,7 +12,7 @@ export function ModelPicker() {
     <ModelPanel
       models={useAtomValue(modelsAtom)}
       current={useAtomValue(selectionAtom)}
-      subtitle={jinion.agent.name}
+      subtitle={jinion.backend.name}
       onSelect={(selection) => {
         close();
         jinion.models.select(selection);

@@ -10,7 +10,7 @@ export const mode: Command = {
     const wanted = args.trim().toLowerCase();
     if (!wanted) return jinion.screen.openView({ id: 'mode' });
 
-    const { modes } = jinion.agent;
+    const { modes } = jinion.backend;
 
     const found = modes.find((candidate) => candidate === wanted || MODES[candidate].name.toLowerCase() === wanted) as
       | AgentMode
@@ -26,7 +26,7 @@ export const account: Command = {
   description: 'Switch between your logins, sign one in (again) with account add <name>, or remove one',
   argumentHint: '[name | add <name> | remove <name>]',
   run: (jinion, args) => {
-    if (!jinion.agent.accounts) return jinion.notice(`${jinion.agent.name} has a single login.`, 'warning');
+    if (!jinion.backend.accounts) return jinion.notice(`${jinion.backend.name} has a single login.`, 'warning');
 
     const [first = '', second = ''] = args.trim().split(/\s+/);
     if (!first) return jinion.screen.openView({ id: 'account' });
@@ -46,7 +46,7 @@ export const mcp: Command = {
   name: 'mcp',
   description: 'The MCP servers the agent connects to; turn them on or off',
   run: (jinion) => {
-    if (!jinion.agent.mcp) return jinion.notice(`${jinion.agent.name} has no MCP servers.`, 'warning');
+    if (!jinion.backend.mcp) return jinion.notice(`${jinion.backend.name} has no MCP servers.`, 'warning');
 
     jinion.screen.openView({ id: 'mcp' });
   },

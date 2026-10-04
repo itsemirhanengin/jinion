@@ -1,8 +1,9 @@
 import { basename } from 'node:path';
 import type { NoticeTone } from '../conversation/entries.js';
 import { createStore } from 'jotai/vanilla';
-import type { Agent } from '../agent/agent.js';
+import type { AgentBackend, AgentMode, AgentSession } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
+import type { ModelSelection } from '../agent/models.js';
 import type { CommandRegistry } from '../commands/registry.js';
 import { fromSaved, createSession, resumeOf, type SavedSession } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
@@ -23,7 +24,11 @@ import { TurnController } from './turns.js';
 import { WorktreeController } from './worktrees.js';
 
 export interface JinionOptions {
-  agent: Agent;
+  backend: AgentBackend;
+  /** The model to start with; the backend's default when left out. */
+  selection?: ModelSelection;
+  /** The project's mode; the backend's default when left out. */
+  mode?: AgentMode;
   info: AppInfo;
   sessions: SessionStore;
   memory: MemoryStore;
@@ -36,7 +41,8 @@ export interface JinionOptions {
 
 export class Jinion {
   readonly store = createStore();
-  readonly agent: Agent;
+  readonly backend: AgentBackend;
+  readonly agent: AgentSession;
   readonly info: AppInfo;
   readonly sessions: SessionStore;
   readonly memory: MemoryStore;
@@ -57,10 +63,12 @@ export class Jinion {
     options: JinionOptions,
     readonly screen: Screen,
   ) {
-    ({ agent: this.agent, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
+    ({ backend: this.backend, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
+    this.agent = this.backend.session({ cwd: this.info.cwd, selection: options.selection, mode: options.mode });
 
     const context: Context = {
       store: this.store,
+      backend: this.backend,
       agent: this.agent,
       info: this.info,
       screen,
@@ -96,7 +104,7 @@ export class Jinion {
     if (options.initial) this.agent.reset?.(resumeOf(options.initial), this.worktrees.folderOf(options.initial));
     this.store.set(selectionAtom, this.agent.selection);
     this.store.set(modeAtom, this.agent.mode);
-    this.store.set(accountAtom, this.agent.accounts?.current);
+    this.store.set(accountAtom, this.backend.accounts?.current);
   }
 
   start() {
@@ -113,7 +121,7 @@ export class Jinion {
 
   /** Later changes, e.g. as MCP servers connect, come as `commands` events. */
   private reloadSkills() {
-    this.agent.commands().then(
+    this.backend.commands().then(
       (skills) => this.store.set(skillsAtom, skills),
       () => {},
     );

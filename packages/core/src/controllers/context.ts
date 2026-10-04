@@ -2,7 +2,7 @@ import type { NoticeTone } from '../conversation/entries.js';
 import type { PermissionDecision, PermissionRequest } from '../agent/permissions.js';
 import type { Question, QuestionAnswer } from '../agent/questions.js';
 import type { Store } from 'jotai/vanilla';
-import type { Agent, AgentMode, PlanDecision } from '../agent/agent.js';
+import type { AgentBackend, AgentMode, AgentSession, PlanDecision } from '../agent/agent.js';
 import type { RewindPoint } from './conversation.js';
 
 export interface AppInfo {
@@ -47,7 +47,10 @@ export type Dialog =
 
 export interface Context {
   store: Store;
-  agent: Agent;
+  /** What every conversation shares: models, accounts, MCP servers, skills. */
+  backend: AgentBackend;
+  /** This conversation's session with the backend. */
+  agent: AgentSession;
   info: AppInfo;
   screen: Screen;
   notice(text: string, tone?: NoticeTone): void;

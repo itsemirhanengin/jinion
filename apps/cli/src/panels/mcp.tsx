@@ -101,7 +101,7 @@ export function McpPanel({ mcp }: { mcp: AgentMcp }) {
           empty="No MCP servers yet. Add them with `claude mcp add`, in ~/.jinion/mcp.json or in the project's .mcp.json."
         />
       ) : (
-        <Text color={theme.muted}>Asking {jinion.agent.name} about its servers…</Text>
+        <Text color={theme.muted}>Asking {jinion.backend.name} about its servers…</Text>
       )}
     </Panel>
   );

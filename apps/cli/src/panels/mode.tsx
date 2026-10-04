@@ -12,7 +12,7 @@ export function ModePicker() {
   const { close } = usePanel();
   const current = useAtomValue(modeAtom);
 
-  const available = jinion.agent.modes;
+  const available = jinion.backend.modes;
 
   const list = useChoiceList({
     keys: available,
@@ -28,7 +28,7 @@ export function ModePicker() {
   return (
     <Panel
       title="Mode"
-      subtitle={jinion.agent.name}
+      subtitle={jinion.backend.name}
       hints={[
         ['Enter', 'select'],
         ['Up/Down', 'move'],

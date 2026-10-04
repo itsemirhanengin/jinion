@@ -21,7 +21,7 @@ const TRAITS: Record<UsageDrivers['traits'][number]['trait'], [label: string, wh
 const SOURCE_KINDS = { skill: 'skill', agent: 'subagent', plugin: 'plugin', mcp: 'MCP' } as const;
 
 export function UsageView({ usage, error, available }: { usage?: AgentUsage; error?: string; available: boolean }) {
-  const { agent } = useJinion();
+  const { backend } = useJinion();
   const theme = useTheme();
   const plan = useAtomValue(identityAtom)?.plan;
 
@@ -32,9 +32,9 @@ export function UsageView({ usage, error, available }: { usage?: AgentUsage; err
     if (input === 'w') setWindow('week');
   });
 
-  if (!available) return <Text color={theme.muted}>{agent.name} doesn't report its usage.</Text>;
-  if (error) return <Text color={theme.error}>Couldn't ask {agent.name} for its usage: {error}</Text>;
-  if (!usage) return <Text color={theme.muted}>Asking {agent.name} for its usage…</Text>;
+  if (!available) return <Text color={theme.muted}>{backend.name} doesn't report its usage.</Text>;
+  if (error) return <Text color={theme.error}>Couldn't ask {backend.name} for its usage: {error}</Text>;
+  if (!usage) return <Text color={theme.muted}>Asking {backend.name} for its usage…</Text>;
 
   const { session, limits, extra, drivers } = usage;
   const labelWidth = Math.max(0, ...limits.map((limit) => limit.label.length)) + 2;

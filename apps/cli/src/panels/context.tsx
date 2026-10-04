@@ -7,7 +7,7 @@ import { modelNameAtom } from '@jinion/core/state/agent';
 import { useAsync } from '../ui/use-async.js';
 
 export function ContextPanel() {
-  const { agent } = useJinion();
+  const { backend, agent } = useJinion();
   const theme = useTheme();
   const { close } = usePanel();
   const modelName = useAtomValue(modelNameAtom);
@@ -29,13 +29,13 @@ export function ContextPanel() {
       hints={[['Esc', 'close']]}
     >
       {!read ? (
-        <Text color={theme.muted}>{agent.name} doesn't say what fills its context.</Text>
+        <Text color={theme.muted}>{backend.name} doesn't say what fills its context.</Text>
       ) : usage.state === 'failed' ? (
         <Text color={theme.error}>
-          Couldn't ask {agent.name} about its context: {usage.error}
+          Couldn't ask {backend.name} about its context: {usage.error}
         </Text>
       ) : !loaded ? (
-        <Text color={theme.muted}>Asking {agent.name} what fills its context…</Text>
+        <Text color={theme.muted}>Asking {backend.name} what fills its context…</Text>
       ) : (
         <ContextChart usage={loaded} />
       )}

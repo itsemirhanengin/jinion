@@ -30,8 +30,8 @@ export class WorktreeController {
   }
 
   set(on: boolean) {
-    const { store, agent, notice } = this.context;
-    if (!agent.reset) return notice(`${agent.name} can't work in another folder, so it can't use worktrees.`, 'warning');
+    const { store, backend, agent, notice } = this.context;
+    if (!agent.reset) return notice(`${backend.name} can't work in another folder, so it can't use worktrees.`, 'warning');
 
     store.set(worktreesAtom, on);
 

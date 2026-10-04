@@ -37,10 +37,10 @@ function ViewPanel({ view }: { view: View }) {
       return <ModePicker />;
 
     case 'account':
-      return <AccountPicker accounts={jinion.agent.accounts!} signIn={view.signIn} />;
+      return <AccountPicker accounts={jinion.backend.accounts!} signIn={view.signIn} />;
 
     case 'mcp':
-      return <McpPanel mcp={jinion.agent.mcp!} />;
+      return <McpPanel mcp={jinion.backend.mcp!} />;
 
     case 'resume':
       return <ResumePanel query={view.query} />;

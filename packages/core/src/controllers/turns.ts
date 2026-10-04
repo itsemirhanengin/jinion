@@ -77,9 +77,9 @@ export class TurnController {
   }
 
   compact(focus?: string) {
-    const { agent, notice, store } = this.context;
+    const { backend, agent, notice, store } = this.context;
     const compact = agent.compact?.bind(agent);
-    if (!compact) return notice(`${agent.name} can't compact the conversation.`, 'warning');
+    if (!compact) return notice(`${backend.name} can't compact the conversation.`, 'warning');
     if (this.working) return notice(BUSY, 'warning');
     if (!store.get(entriesAtom).some((entry) => entry.kind === 'user')) return notice('There is nothing to compact yet.', 'muted');
 

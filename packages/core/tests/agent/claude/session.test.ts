@@ -5,34 +5,65 @@ import { sandboxEach } from '../../support/sandbox.js';
 import type { AgentPrompt, RunContext } from '../../../src/agent/agent.js';
 import type { AgentEvent } from '../../../src/agent/events.js';
 import { McpConfig } from '../../../src/mcp/config.js';
-import { ClaudeAgent } from '../../../src/agent/claude/agent.js';
+import { ClaudeBackend } from '../../../src/agent/claude/backend.js';
+import type { ClaudeSession } from '../../../src/agent/claude/session.js';
 
 const box = sandboxEach();
 let fake: FakeClaude;
-let agent: ClaudeAgent;
+let backend: ClaudeBackend;
+let agent: ClaudeSession;
 let transcript: string[];
 
 beforeEach(() => {
   fake = new FakeClaude();
   transcript = [];
 
-  agent = new ClaudeAgent({
+  backend = new ClaudeBackend({
     cwd: box.project,
-    selection: { model: 'haiku' },
     spawn: fake.spawn,
     sessionMessages: (async () => transcript.map((uuid) => ({ uuid }))) as never,
     mcp: new McpConfig(box.project),
   });
+
+  agent = backend.session({ selection: { model: 'haiku' } });
 });
 
-afterEach(() => agent.close());
+afterEach(() => backend.close());
 
-describe('ClaudeAgent', () => {
+describe('ClaudeBackend', () => {
+  it('asks what sessions share through one that runs, gives each conversation a process of its own, and restarts them all for new MCP servers', async () => {
+    await turn('hello', (uuid) => [claudeSays.init('session-1'), claudeSays.result(uuid)]);
+
+    const other = backend.session({ resume: { sessionId: 'session-2', cost: 0 } });
+
+    await backend.commands();
+    expect(fake.processes).toHaveLength(1);
+
+    const received = fake.nextPrompt();
+
+    const running = (async () => {
+      for await (const _ of other.run({ text: 'in the other one' }, context()));
+    })();
+
+    const sent = await received;
+
+    fake.reply(claudeSays.result(sent.uuid!));
+    await running;
+    expect(fake.processes.map((spawned) => spawned.options.resume)).toEqual([undefined, 'session-2']);
+
+    await backend.mcp!.setEnabled({ 'claude.ai Gmail': false });
+    await turn('again', (uuid) => [claudeSays.result(uuid)]);
+    expect(fake.current.options.resume).toBe('session-1');
+    expect(fake.processes).toHaveLength(3);
+  });
+});
+
+describe('ClaudeSession', () => {
   it('tells subscribers what comes between turns, and runs mentions by the new commands', async () => {
     const heard: AgentEvent[] = [];
 
     agent.subscribe((event) => heard.push(event));
-    await agent.commands();
+    await backend.commands();
 
     fake.reply(claudeSays.commands('user:design', 'vercel:nextjs'));
     await settle();
@@ -116,10 +147,10 @@ describe('ClaudeAgent', () => {
 
   it('keeps the conversation it resumed when it restarts before its first turn', async () => {
     agent.reset({ sessionId: 'session-9', cost: 0 });
-    await agent.commands();
+    await backend.commands();
 
-    await agent.mcp!.setEnabled({ 'claude.ai Gmail': false });
-    await agent.commands();
+    await backend.mcp!.setEnabled({ 'claude.ai Gmail': false });
+    await backend.commands();
 
     expect(fake.processes.map((spawned) => spawned.options.resume)).toEqual(['session-9', 'session-9']);
   });

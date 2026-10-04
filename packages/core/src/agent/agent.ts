@@ -6,21 +6,48 @@ import type { AgentEvent } from './events.js';
 import type { AgentMcp } from './mcp.js';
 import type { AgentUsage, ContextUsage, UsageHistory } from './usage.js';
 
-/** Optional members are features a backend may not have; the app feature-detects them. */
-export interface Agent {
+/**
+ * A backend such as Claude: what all its conversations share. Optional members are features a backend may not have;
+ * the app feature-detects them.
+ */
+export interface AgentBackend {
   readonly name: string;
-  readonly selection: ModelSelection;
+  /** What a session uses when nothing picked a model. */
+  readonly defaultModel: string;
+  readonly modes: AgentMode[];
   models(): Promise<ModelOption[]>;
+  readonly accounts?: AgentAccounts;
+  readonly mcp?: AgentMcp;
+  /** Skills and MCP prompts; later changes come as `commands` events from a session. */
+  commands(): Promise<AgentCommand[]>;
+  /** `current` stays when it still fits, so a title only changes when the conversation moved on. */
+  titleFor?(digest: string, current?: string): Promise<string | undefined>;
+  usage?(options?: { drivers?: boolean }): Promise<AgentUsage>;
+  history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
+  /** A conversation of its own, with its own process; it starts when first used. */
+  session(options?: SessionOptions): AgentSession;
+  /** Ends every session. */
+  close?(): void;
+}
+
+export interface SessionOptions {
+  /** The project, or a worktree of it; the project by default. */
+  cwd?: string;
+  /** `defaultModel` when left out. */
+  selection?: ModelSelection;
+  mode?: AgentMode;
+  /** Continues an earlier conversation. */
+  resume?: AgentResume;
+}
+
+/** One conversation with the backend. */
+export interface AgentSession {
+  readonly selection: ModelSelection;
   /** Takes effect from the next request, also in a conversation that is already running. */
   select(selection: ModelSelection): Promise<void>;
   readonly mode: AgentMode;
-  readonly modes: AgentMode[];
   /** Takes effect right away, also in a running turn. */
   setMode(mode: AgentMode): Promise<void>;
-  readonly accounts?: AgentAccounts;
-  readonly mcp?: AgentMcp;
-  /** Later changes come as `commands` events. */
-  commands(): Promise<AgentCommand[]>;
   /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
   run(prompt: AgentPrompt, context: RunContext): AsyncIterable<AgentEvent>;
   /** Adds a message to the running turn; `undefined` when no turn runs to take it. */
@@ -36,15 +63,12 @@ export interface Agent {
   stopTask?(id: string): Promise<void>;
   /** Resolves `false` when nothing was waiting to go to the background. */
   background?(): Promise<boolean>;
-  /** `current` stays when it still fits, so a title only changes when the conversation moved on. */
-  titleFor?(digest: string, current?: string): Promise<string | undefined>;
   compact?(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent>;
   context?(): Promise<ContextUsage>;
-  usage?(options?: { drivers?: boolean }): Promise<AgentUsage>;
-  history?(progress?: (done: number, total: number) => void): Promise<UsageHistory>;
   /** The next prompt starts a new conversation, or continues `resume`; in `cwd`, such as a worktree, instead of the project. */
   reset?(resume?: AgentResume, cwd?: string): void;
-  close?(): void;
+  /** Ends its process; background tasks stop with it. */
+  close(): void;
 }
 
 /** `edits` changes project files without asking; `auto` lets the backend's own safety review decide what to ask. */

@@ -24,7 +24,7 @@ const HINTS: Record<UsageTab, KeyHint[]> = {
 };
 
 export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
-  const { agent } = useJinion();
+  const { backend } = useJinion();
   const { close } = usePanel();
 
   const [active] = useTabs(TABS.length, { initial: tab === 'stats' ? 1 : 0, arrows: false });
@@ -35,11 +35,11 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
   });
 
   return (
-    <Panel title="Usage" subtitle={agent.name} header={<Tabs tabs={[...TABS]} active={active} />} grow hints={HINTS[active === 0 ? 'usage' : 'stats']}>
+    <Panel title="Usage" subtitle={backend.name} header={<Tabs tabs={[...TABS]} active={active} />} grow hints={HINTS[active === 0 ? 'usage' : 'stats']}>
       {active === 0 ? (
-        <UsageView usage={loaded.usage} error={loaded.usageError} available={agent.usage !== undefined} />
+        <UsageView usage={loaded.usage} error={loaded.usageError} available={backend.usage !== undefined} />
       ) : (
-        <StatsView history={loaded.history} progress={loaded.progress} error={loaded.historyError} available={agent.history !== undefined} />
+        <StatsView history={loaded.history} progress={loaded.progress} error={loaded.historyError} available={backend.history !== undefined} />
       )}
     </Panel>
   );
@@ -47,7 +47,7 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
 
 /** Both tabs load at once, so switching shows what is already there. */
 function useUsage() {
-  const { agent } = useJinion();
+  const { backend } = useJinion();
 
   const [usage, setUsage] = useState<AgentUsage>();
   const [usageError, setUsageError] = useState<string>();
@@ -58,7 +58,7 @@ function useUsage() {
   useEffect(() => {
     let open = true;
     const failed = (set: (message: string) => void) => (error: unknown) => open && set(errorMessage(error));
-    const current = agent.usage?.bind(agent);
+    const current = backend.usage?.bind(backend);
 
     // The limits come quickly; what adds to them takes a look through the week's conversations.
     current?.({ drivers: false })
@@ -71,7 +71,7 @@ function useUsage() {
       })
       .catch(failed(setUsageError));
 
-    agent.history
+    backend.history
       ?.((done, total) => open && setProgress([done, total]))
       .then((days) => open && setHistory(days), failed(setHistoryError));
 

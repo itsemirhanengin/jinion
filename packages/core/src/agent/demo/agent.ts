@@ -1,5 +1,5 @@
 import type { ModelOption, ModelSelection } from '../models.js';
-import type { Agent, AgentCommand, AgentMode, AgentPrompt, RunContext } from '../agent.js';
+import type { AgentBackend, AgentCommand, AgentMode, AgentPrompt, AgentSession, RunContext, SessionOptions } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { Usage } from '../usage.js';
 import { demoContext, demoSummary } from './context.js';
@@ -8,36 +8,31 @@ import { DemoTasks } from './tasks.js';
 import type { Scenario } from './types.js';
 import { demoHistory, demoUsage } from './usage.js';
 
-export class ScriptedAgent implements Agent {
+const MODEL: ModelOption = { id: 'scripted-demo', name: 'Scripted demo', description: 'Plays prewritten scenarios', efforts: [] };
+
+/** Plays scripted scenarios instead of asking a model, for `--demo` and the app's tests. */
+export class ScriptedBackend implements AgentBackend {
   readonly name = 'Demo';
-  selection: ModelSelection = { model: 'scripted-demo' };
+  readonly defaultModel = MODEL.id;
   /** The scenarios play the same in any mode, so there is only one. */
-  readonly mode: AgentMode = 'edits';
   readonly modes: AgentMode[] = ['edits'];
-  private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
-  private readonly tasks: DemoTasks;
-  private titled?: string;
-  private prompts = 0;
-  private calls = 0;
+  /** The title of the scenario played last, which is what a conversation is about. */
+  titled?: string;
 
   constructor(
-    private readonly scenarios: Scenario[],
+    readonly scenarios: Scenario[],
     private readonly agentCommands: AgentCommand[] = [],
     /** 1 plays like a real agent, 0 as fast as possible, for tests. */
-    private readonly pace = 1,
-  ) {
-    this.tasks = new DemoTasks((followup, task, context) => followup(this.script(context), task), pace);
+    readonly pace = 1,
+  ) {}
+
+  session({ selection }: SessionOptions = {}): ScriptedSession {
+    return new ScriptedSession(this, selection ?? { model: this.defaultModel });
   }
 
-  async models(): Promise<ModelOption[]> {
-    return [{ id: 'scripted-demo', name: 'Scripted demo', description: 'Plays prewritten scenarios', efforts: [] }];
+  async models() {
+    return [MODEL];
   }
-
-  async select(selection: ModelSelection) {
-    this.selection = selection;
-  }
-
-  async setMode() {}
 
   async commands() {
     return this.agentCommands;
@@ -47,12 +42,41 @@ export class ScriptedAgent implements Agent {
     return this.titled;
   }
 
+  async usage({ drivers = false } = {}) {
+    return demoUsage(drivers);
+  }
+
+  async history() {
+    return demoHistory();
+  }
+}
+
+export class ScriptedSession implements AgentSession {
+  readonly mode: AgentMode = 'edits';
+  private readonly totals: Usage = { contextTokens: 0, contextWindow: 200_000, cost: 0, compactAt: 167_000 };
+  private readonly tasks: DemoTasks;
+  private prompts = 0;
+  private calls = 0;
+
+  constructor(
+    private readonly backend: ScriptedBackend,
+    public selection: ModelSelection,
+  ) {
+    this.tasks = new DemoTasks((followup, task, context) => followup(this.script(context), task), backend.pace);
+  }
+
+  async select(selection: ModelSelection) {
+    this.selection = selection;
+  }
+
+  async setMode() {}
+
   async *run({ text: prompt }: AgentPrompt, context: RunContext): AsyncGenerator<AgentEvent> {
-    const scenario = this.scenarios.find((candidate) => candidate.match?.test(prompt)) ??
-      this.scenarios.find((candidate) => !candidate.match);
+    const { scenarios } = this.backend;
+    const scenario = scenarios.find((candidate) => candidate.match?.test(prompt)) ?? scenarios.find((candidate) => !candidate.match);
     if (!scenario) throw new Error('No scenario matches this prompt.');
 
-    this.titled = typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt);
+    this.backend.titled = typeof scenario.title === 'string' ? scenario.title : scenario.title(prompt);
     yield { type: 'sent', id: `prompt_${++this.prompts}` };
     yield* scenario.play(this.script(context), prompt);
   }
@@ -86,14 +110,6 @@ export class ScriptedAgent implements Agent {
     return demoContext(this.totals);
   }
 
-  async usage({ drivers = false } = {}) {
-    return demoUsage(drivers);
-  }
-
-  async history() {
-    return demoHistory();
-  }
-
   async rewindPreview() {
     return undefined;
   }
@@ -104,7 +120,9 @@ export class ScriptedAgent implements Agent {
     Object.assign(this.totals, { contextTokens: 0, cost: 0 });
   }
 
+  close() {}
+
   private script(context: RunContext) {
-    return new Script(context, { totals: this.totals, pace: this.pace, tasks: this.tasks, nextCall: () => ++this.calls });
+    return new Script(context, { totals: this.totals, pace: this.backend.pace, tasks: this.tasks, nextCall: () => ++this.calls });
   }
 }

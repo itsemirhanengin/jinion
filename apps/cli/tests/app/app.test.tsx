@@ -6,7 +6,7 @@ import { darkTheme, hoverColor } from '@jinion/tui';
 import type { TodoStatus } from '@jinion/tui/chat';
 import { demoCommands } from '@jinion/core/agent/demo/commands';
 import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
-import { ScriptedAgent } from '@jinion/core/agent/demo/agent';
+import { ScriptedBackend, ScriptedSession } from '@jinion/core/agent/demo/agent';
 import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
 import { contextWarning, hasWorkLeft } from '../../src/app/activity.js';
 import { App } from '../../src/app/app.js';
@@ -23,7 +23,7 @@ function start(pace: number, rows = 40) {
 
   terminal = renderTerminal(
     <App
-      agent={new ScriptedAgent(scenarios, demoCommands, pace)}
+      backend={new ScriptedBackend(scenarios, demoCommands, pace)}
       info={{ version: '0.0.0', cwd: box.project, examples: ['hello'] }}
       sessions={new MemorySessionStore()}
       memory={new MemoryStore(box.project)}
@@ -257,7 +257,7 @@ describe('App', () => {
 
   it('goes back into a conversation’s worktree on /resume, and on in the project folder once the worktree is gone', async () => {
     repo(box.project, (path) => box.write(join(path, 'a.ts'), 'a'));
-    const reset = vi.spyOn(ScriptedAgent.prototype, 'reset');
+    const reset = vi.spyOn(ScriptedSession.prototype, 'reset');
     const lastFolder = () => (reset.mock.lastCall as unknown[] | undefined)?.[1];
 
     start(0, 50);
@@ -685,12 +685,12 @@ describe('App', () => {
       remove: async (name) => void logins.splice(logins.findIndex((login) => login.name === name), 1),
     };
 
-    const agent = Object.assign(new ScriptedAgent(scenarios, demoCommands, 0), { accounts });
+    const backend = Object.assign(new ScriptedBackend(scenarios, demoCommands, 0), { accounts });
 
     terminal.unmount();
 
     terminal = renderTerminal(
-      <App agent={agent} info={{ version: '0.0.0', cwd: box.project, examples: [] }} sessions={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
+      <App backend={backend} info={{ version: '0.0.0', cwd: box.project, examples: [] }} sessions={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
       { columns: 120, rows: 40 },
     );
 

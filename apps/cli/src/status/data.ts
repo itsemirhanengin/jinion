@@ -12,20 +12,20 @@ import type { StatusData } from './segment.js';
 export const gitStatusAtom = atom<GitStatus | undefined>(undefined);
 
 export function useStatusData(now = Date.now()): StatusData {
-  const { agent, info } = useJinion();
+  const { backend, info } = useJinion();
   const account = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
 
   return {
     version: info.version,
     cwd: info.cwd,
-    agent: agent.name,
+    agent: backend.name,
     model: { name: useAtomValue(modelNameAtom), selection: useAtomValue(selectionAtom) },
     mode: useAtomValue(modeAtom),
     account: useAtomValue(identityAtom),
     session: useAtomValue(sessionAtom),
     git: useAtomValue(gitStatusAtom),
-    limits: seen[limitsKey(agent.name, account)]?.windows,
+    limits: seen[limitsKey(backend.name, account)]?.windows,
     now,
     theme: useTheme(),
   };

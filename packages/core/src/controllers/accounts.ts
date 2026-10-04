@@ -18,27 +18,27 @@ export class AccountController {
   ) {}
 
   loadIdentity() {
-    const { agent, store } = this.context;
+    const { backend, store } = this.context;
 
     store.set(identityAtom, undefined);
 
-    agent.accounts?.active().then(
+    backend.accounts?.active().then(
       (identity) => store.set(identityAtom, identity),
       () => store.set(identityAtom, undefined),
     );
   }
 
   recordLimits(windows: LimitWindow[]) {
-    const { agent, store } = this.context;
-    const key = limitsKey(agent.name, store.get(accountAtom));
+    const { backend, store } = this.context;
+    const key = limitsKey(backend.name, store.get(accountAtom));
 
     store.set(seenLimitsAtom, (seen) => ({ ...seen, [key]: { windows, at: Date.now() } }));
   }
 
   select(name: string) {
-    const { agent, store, notice } = this.context;
-    const accounts = agent.accounts;
-    if (!accounts) return notice(`${agent.name} has a single login.`, 'warning');
+    const { backend, store, notice } = this.context;
+    const accounts = backend.accounts;
+    if (!accounts) return notice(`${backend.name} has a single login.`, 'warning');
     if (name === store.get(accountAtom)) return notice(`Already using the ${name} account.`, 'muted');
     if (store.get(workingAtom)) return notice(BUSY, 'warning');
 
@@ -54,7 +54,7 @@ export class AccountController {
       .then(
         () => {
           store.set(accountAtom, name);
-          saveAccount(agent.name, name);
+          saveAccount(backend.name, name);
           this.switched();
 
           const carries = store.get(sessionAtom).agentSession ? '; the conversation carries on there' : '';
@@ -66,26 +66,26 @@ export class AccountController {
   }
 
   async remove(name: string) {
-    const { agent, store, notice } = this.context;
-    if (!agent.accounts) return notice(`${agent.name} has a single login.`, 'warning');
+    const { backend, store, notice } = this.context;
+    if (!backend.accounts) return notice(`${backend.name} has a single login.`, 'warning');
 
     try {
-      await agent.accounts.remove(name);
+      await backend.accounts.remove(name);
     } catch (error) {
       return notice(`Couldn't remove the ${name} account: ${errorMessage(error)}.`, 'error');
     }
 
-    store.set(seenLimitsAtom, ({ [limitsKey(agent.name, name)]: _, ...rest }) => rest);
+    store.set(seenLimitsAtom, ({ [limitsKey(backend.name, name)]: _, ...rest }) => rest);
     notice(`Removed the ${name} account and signed it out. Its conversations stay.`, 'success');
   }
 
   /** Resolves whether the account is signed in now; a cancelled sign-in says nothing. */
   async signIn(name: string, options: SignInOptions) {
-    const { agent, store, notice } = this.context;
-    if (!agent.accounts) return false;
+    const { backend, store, notice } = this.context;
+    if (!backend.accounts) return false;
 
     try {
-      const account = await agent.accounts.signIn(name, options);
+      const account = await backend.accounts.signIn(name, options);
       const as = account.email ? ` as ${account.email}` : '';
 
       notice(
@@ -107,24 +107,24 @@ export class AccountController {
     }
   }
 
+  turnEnded() {
+    if (this.loginWaits) this.startWithNewLogin();
+  }
+
   private signedIn(name: string) {
-    if (name !== this.context.agent.accounts?.current) return;
+    if (name !== this.context.backend.accounts?.current) return;
 
     if (this.context.store.get(workingAtom)) this.loginWaits = true;
     else this.startWithNewLogin();
   }
 
-  turnEnded() {
-    if (this.loginWaits) this.startWithNewLogin();
-  }
-
   /** A new login reaches the conversation in a process that starts with it. */
   private startWithNewLogin() {
-    const { agent, notice } = this.context;
+    const { backend, notice } = this.context;
 
     this.loginWaits = false;
 
-    agent.accounts?.use(agent.accounts.current).then(this.switched, (error: unknown) =>
+    backend.accounts?.use(backend.accounts.current).then(this.switched, (error: unknown) =>
       notice(`Couldn't start over with the new login: ${errorMessage(error)}`, 'error'),
     );
   }

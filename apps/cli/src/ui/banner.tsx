@@ -9,7 +9,7 @@ import { worktreeAtom } from '@jinion/core/state/session';
 
 export function Banner() {
   const theme = useTheme();
-  const { agent, info } = useJinion();
+  const { backend, info } = useJinion();
   const model = useAtomValue(modelLabelAtom);
   const identity = useAtomValue(identityAtom);
   const worktree = useAtomValue(worktreeAtom);
@@ -33,7 +33,7 @@ export function Banner() {
         <Text color={theme.status.model}>{model}</Text>
       </Row>
       {identity && (
-        <Row label="account" hint={agent.accounts && '/account to change'}>
+        <Row label="account" hint={backend.accounts && '/account to change'}>
           <Text color={theme.accent}>{accountLabel(identity)}</Text>
           {identity.name !== 'default' && <Text color={theme.muted}> ({identity.name})</Text>}
         </Row>

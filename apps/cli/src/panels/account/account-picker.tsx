@@ -64,7 +64,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
       if (input !== 'd') return setRemoving(undefined);
 
       const refused = account.own
-        ? `${jinion.agent.name}'s own login stays; l signs in again`
+        ? `${jinion.backend.name}'s own login stays; l signs in again`
         : name === current
           ? 'in use; switch to another account first'
           : undefined;
@@ -96,7 +96,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
     ...(list ?? []).map((account) => ({
       key: account.name,
       label: account.name,
-      description: describeAccount(account, seen[limitsKey(jinion.agent.name, account.name)]),
+      description: describeAccount(account, seen[limitsKey(jinion.backend.name, account.name)]),
       aside:
         removing?.name === account.name ? (
           <Text color={removing.refused ? theme.warning : theme.error}>
@@ -134,7 +134,7 @@ export function AccountPicker({ accounts, signIn: initial }: { accounts: AgentAc
   return (
     <Panel
       title="Account"
-      subtitle={jinion.agent.name}
+      subtitle={jinion.backend.name}
       hints={
         naming !== undefined
           ? [
