@@ -60,7 +60,7 @@ export function useKeys() {
       if (panels.top) return panels.close();
       if (draft) return setDraft('');
 
-      return api.act(api.request('app/quit', {}));
+      return api.quit();
     }
   });
 }

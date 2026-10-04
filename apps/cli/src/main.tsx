@@ -1,47 +1,49 @@
 import { createRequire } from 'node:module';
 import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
-import { ClaudeBackend } from '@jinion/core/agent/claude/backend';
-import { syncSkills } from '@jinion/core/agent/claude/synced-skills';
-import { demoCommands } from '@jinion/core/agent/demo/commands';
-import { scenarios } from '@jinion/core/agent/demo/scenarios/index';
-import { ScriptedBackend } from '@jinion/core/agent/demo/agent';
-import type { AgentBackend } from '@jinion/core/agent/agent';
-import type { ModelSelection } from '@jinion/core/agent/models';
+import { findServer } from '@jinion/core/api/server-file';
+import { connectWebSocket } from '@jinion/core/api/websocket';
 import { App } from './app/app.js';
-import { startCore } from './host.js';
-import { DebugLog } from '@jinion/core/lib/debug';
-import { McpConfig } from '@jinion/core/mcp/config';
-import { MemoryStore } from '@jinion/core/memory/store';
-import { loadProjectSettings } from '@jinion/core/settings/project';
-import { loadSettings } from '@jinion/core/settings/user';
-import { demoSessions } from '@jinion/core/agent/demo/sessions';
-import { FileSessionStore, MemorySessionStore, type SessionStore } from '@jinion/core/conversation/store';
+import { coreOptions, startCore } from './host.js';
+import { serve } from './serve.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };
 
 const USAGE = `jinion ${version}
 
 Usage: jinion [options]
+       jinion serve [--port <port>] [--stdio] [--origin <origin>]...
 
 Options:
   -c, --continue        Continue the last conversation in this directory
   -m, --model <model>   Claude model alias or id (or JINION_MODEL); /model's last pick, else opus
   -e, --effort <level>  Effort level, e.g. low, medium, high, xhigh, max (or JINION_EFFORT)
+  --attach              Show the conversations of the jinion serve running for this directory
   --demo                Play the scripted demo instead of running Claude
   --debug               Log what goes to Claude Code and back to ~/.jinion/logs (or JINION_DEBUG=1)
   --theme <light|dark>  Skip background detection (or set JINION_THEME)
   -v, --version         Print the version
-  -h, --help            Show this help`;
+  -h, --help            Show this help
 
-const { values } = parseArgs({
+jinion serve runs jinion without a screen, for other apps to drive over its API: on a WebSocket on this
+machine, with a token only you can read, or over stdin and stdout with --stdio.
+  --port <port>         The port to serve on; a free one when left out
+  --stdio               Serve the process that started this one, over stdin and stdout
+  --origin <origin>     A web page let in, e.g. a desktop app's; repeat for several`;
+
+const { values, positionals } = parseArgs({
+  allowPositionals: true,
   options: {
     continue: { type: 'boolean', short: 'c' },
     model: { type: 'string', short: 'm' },
     effort: { type: 'string', short: 'e' },
+    attach: { type: 'boolean' },
     demo: { type: 'boolean' },
     debug: { type: 'boolean' },
     theme: { type: 'string' },
+    port: { type: 'string' },
+    stdio: { type: 'boolean' },
+    origin: { type: 'string', multiple: true },
     version: { type: 'boolean', short: 'v' },
     help: { type: 'boolean', short: 'h' },
   },
@@ -57,48 +59,64 @@ if (values.version) {
   process.exit(0);
 }
 
+const [command, ...rest] = positionals;
+
+if ((command !== undefined && command !== 'serve') || rest.length > 0) fail(`Unknown command "${positionals.join(' ')}". jinion --help lists what there is.`);
+
 const theme = values.theme ?? process.env.JINION_THEME;
 
-if (theme !== undefined && theme !== 'light' && theme !== 'dark') {
-  console.error(`Unknown theme "${theme}". Use light or dark.`);
-  process.exit(1);
-}
+if (theme !== undefined && theme !== 'light' && theme !== 'dark') fail(`Unknown theme "${theme}". Use light or dark.`);
+
+const port = values.port === undefined ? undefined : Number(values.port);
+
+if (port !== undefined && !(Number.isInteger(port) && port >= 0 && port < 65_536)) fail(`"${values.port}" is no port. Use a number up to 65535.`);
 
 // Package managers run scripts from the package directory; INIT_CWD is where the user invoked them.
 const cwd = process.env.INIT_CWD ?? process.cwd();
+const scheme = theme as ColorScheme | undefined;
 
-const { mode } = loadProjectSettings(cwd);
-const account = loadSettings().accounts?.Claude;
-const memory = new MemoryStore(cwd);
-const debug = values.debug || process.env.JINION_DEBUG === '1' ? new DebugLog() : undefined;
+if (values.attach) {
+  const server = findServer(cwd);
 
-const backend: AgentBackend = values.demo
-  ? new ScriptedBackend(scenarios, demoCommands)
-  : new ClaudeBackend({ cwd, account, memory, mcp: new McpConfig(cwd), debug, syncSkills });
+  if (!server) fail('No jinion serve runs for this directory. Start one with jinion serve.');
 
-// Flags win over the choice `/model` saved in an earlier run.
-const savedModel = loadSettings().models?.[backend.name];
-const model = values.model ?? process.env.JINION_MODEL;
-const effort = values.effort ?? process.env.JINION_EFFORT;
-const selection: ModelSelection = model ? { model, effort } : { ...(savedModel ?? { model: backend.defaultModel }), ...(effort && { effort }) };
+  let lost = false;
+  const instance = await run(<App connect={() => connectWebSocket(server.url, server.token)} version={version} attached onLost={() => (lost = true)} />, { scheme });
 
-const saved: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
-const initial = values.continue ? saved.list()[0] : undefined;
-const farewells: string[] = [];
+  await instance.waitUntilExit();
+  if (lost) console.log(`The connection to jinion serve at ${server.url} closed.`);
+  process.exit(0);
+}
 
-const info = {
-  version,
+const { options, debug, farewells } = coreOptions({
   cwd,
-  examples: values.demo ? ['add rate limiting to the api', 'hello'] : [],
-};
+  version,
+  demo: values.demo,
+  model: values.model ?? process.env.JINION_MODEL,
+  effort: values.effort ?? process.env.JINION_EFFORT,
+  debug: values.debug || process.env.JINION_DEBUG === '1',
+  continue: values.continue,
+});
 
-const core = startCore({ backend, selection, mode, info, saved, memory, initial, onExit: (message) => farewells.push(message) });
+const core = startCore(options);
 
 core.server.app.start();
 
-const instance = await run(<App connect={core.connect} version={version} />, { scheme: theme as ColorScheme | undefined });
+if (command === 'serve') {
+  await serve(core.server, { cwd, version, port, stdio: values.stdio, origins: values.origin });
+  options.backend.close?.();
+  for (const message of farewells) console.error(message);
+  process.exit(0);
+}
+
+const instance = await run(<App connect={core.connect} version={version} />, { scheme });
 
 await instance.waitUntilExit();
-backend.close?.();
+options.backend.close?.();
 for (const message of farewells) console.log(message);
 if (debug) console.log(`Debug log: ${debug.path}`);
+
+function fail(message: string): never {
+  console.error(message);
+  process.exit(1);
+}

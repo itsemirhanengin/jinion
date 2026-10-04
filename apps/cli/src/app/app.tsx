@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ScrollView, useTerminal } from '@jinion/tui';
+import { ScrollView, useApp, useTerminal } from '@jinion/tui';
 import { Shell } from '@jinion/tui/chat';
 import { Provider, useAtomValue } from 'jotai';
 import { JinionClient } from '@jinion/core/api/client';
@@ -20,11 +20,16 @@ export interface AppProps {
   /** A transport to the core, in this process or not. */
   connect(): Transport;
   version: string;
+  /** To a core that serves other clients too: quitting leaves it running. */
+  attached?: boolean;
+  /** The connection went without the app asking, e.g. as the server stopped. */
+  onLost?(): void;
 }
 
 /** The terminal app: a client of the core, drawing the session it shows once `initialize` answered. */
-export function App({ connect, version }: AppProps) {
+export function App({ connect, version, attached, onLost }: AppProps) {
   const terminal = useTerminal();
+  const tui = useApp();
   // The screen is made before the client it serves, and only reaches its store once the client is there.
   const screen = useScreen(() => client.store);
 
@@ -45,9 +50,25 @@ export function App({ connect, version }: AppProps) {
   const [api, setApi] = useState<Api>();
 
   useEffect(() => {
-    void client.initialize().then((initialized) => setApi(createApi(client, initialized)));
+    let leaving = false;
 
-    return terminal.onFocus((focused) => client.focus(focused));
+    void client.initialize().then((initialized) => setApi(createApi(client, initialized, attached ? () => tui.exit() : undefined)));
+
+    const stopFocus = terminal.onFocus((focused) => client.focus(focused));
+
+    const stopClose = client.onClose(() => {
+      if (leaving) return;
+
+      onLost?.();
+      tui.exit();
+    });
+
+    return () => {
+      leaving = true;
+      stopFocus();
+      stopClose();
+      client.close();
+    };
   }, [client]);
 
   return <Provider store={client.store}>{api && <Ready api={api} />}</Provider>;

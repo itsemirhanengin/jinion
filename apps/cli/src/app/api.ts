@@ -19,9 +19,12 @@ export interface Api {
   inSession<M extends SessionMethod>(method: M, params: WithoutSession<Params<ServerContract, M>>): Promise<Result<ServerContract, M>>;
   /** For a call nothing waits on: a failure shows in the conversation instead of going unhandled. */
   act(call: Promise<unknown>): void;
+  /** Quits the core, or only leaves it for a client attached to one that serves others. */
+  quit(): void;
 }
 
-export function createApi(client: JinionClient, initialized: Initialized): Api {
+/** `leave` is how an attached client goes, leaving the core running; without it, quitting quits the core. */
+export function createApi(client: JinionClient, initialized: Initialized, leave?: () => void): Api {
   const shown = () => {
     const id = client.store.get(client.shownAtom);
     if (id === undefined) throw new Error('No session is shown yet.');
@@ -34,15 +37,11 @@ export function createApi(client: JinionClient, initialized: Initialized): Api {
   const inSession: Api['inSession'] = (method, params) =>
     client.request(method, { ...params, session: shown() } as unknown as Params<ServerContract, typeof method>);
 
-  return {
-    client,
-    initialized,
-    request,
-    inSession,
-    act: (call) => {
-      call.catch((error: unknown) => inSession('session/notice', { text: errorMessage(error), tone: 'error' }).catch(() => {}));
-    },
+  const act: Api['act'] = (call) => {
+    call.catch((error: unknown) => inSession('session/notice', { text: errorMessage(error), tone: 'error' }).catch(() => {}));
   };
+
+  return { client, initialized, request, inSession, act, quit: leave ?? (() => act(request('app/quit', {}))) };
 }
 
 export const ApiContext = createContext<Api | undefined>(undefined);

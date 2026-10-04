@@ -5,6 +5,7 @@ description: Every flag of the jinion command, and the environment variables it 
 
 ```sh
 jinion [options]
+jinion serve [--port <port>] [--stdio] [--origin <origin>]...
 ```
 
 Run it in the folder you want to work in. Without options, it starts a new conversation with the model and account
@@ -20,10 +21,34 @@ you used last.
 | `--theme <light\|dark>` | Skips detecting the terminal's background                                     | `jinion --theme light`      |
 | `--debug`              | Writes a log of the session to `~/.jinion/logs`; prints its path on exit       | `jinion --debug`            |
 | `--demo`               | Plays a scripted session without a model                                       | `jinion --demo`             |
+| `--attach`             | Shows the conversations of the `jinion serve` running in this folder            | `jinion --attach`           |
 | `-v`, `--version`      | Prints the version                                                             | `jinion -v`                 |
 | `-h`, `--help`         | Shows the help                                                                 | `jinion -h`                 |
 
 `--model` and `--effort` apply to one run. To change the default, use [`/model`](/models-and-accounts) in a session.
+
+## jinion serve
+
+`jinion serve` runs Jinion without a screen, so that other apps can drive it. It takes the same flags as `jinion`,
+such as `--demo` or `-m`, and these:
+
+| Flag                | Does                                                                         | Example                                  |
+| ------------------- | ---------------------------------------------------------------------------- | ---------------------------------------- |
+| `--port <port>`     | Serves on this port; a free one when left out                                | `jinion serve --port 4747`               |
+| `--stdio`           | Serves the program that started it, over stdin and stdout                    | `jinion serve --stdio`                   |
+| `--origin <origin>` | Lets in a web page from this origin, such as a desktop app's; repeat for more | `jinion serve --origin app://jinion`     |
+
+Without `--stdio`, it serves on `127.0.0.1`, so only your machine reaches it, and it prints the address:
+
+```sh
+$ jinion serve
+jinion serves ~/code/shop at ws://127.0.0.1:53942
+Clients find its token in ~/.jinion/servers/38262.json, which only you can read. jinion --attach shows it here; ctrl+c stops it.
+```
+
+A client needs the token from that file to connect. In the same folder, `jinion --attach` finds it on its own and
+shows the conversations the server holds; ctrl+c leaves them running. ctrl+c in `jinion serve` stops it, saving its
+conversations as `jinion` does when you quit.
 
 ## Environment variables
 

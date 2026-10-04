@@ -63,8 +63,8 @@
     },
     {
       // The terminal app is a client: what it needs of the core comes over the API, as for a desktop app or a phone.
-      // `main.tsx` and `host.ts` start the core in this process, so they are the only files that build it.
-      "includes": ["apps/cli/src/**", "!apps/cli/src/main.tsx", "!apps/cli/src/host.ts"],
+      // `main.tsx`, `host.ts` and `serve.ts` start the core, so they are the only files that build it.
+      "includes": ["apps/cli/src/**", "!apps/cli/src/main.tsx", "!apps/cli/src/host.ts", "!apps/cli/src/serve.ts"],
       "linter": {
         "rules": {
           "style": {
