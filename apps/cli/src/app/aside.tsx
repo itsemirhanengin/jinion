@@ -1,9 +1,7 @@
+import { tasksAtom, queueAtom, sessionAtom, todosAtom } from '@jinion/core/state/active';
 import { Box, Text, usePanels, useTheme } from '@jinion/tui';
 import { TodoPanel, Working } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
-import { tasksAtom } from '@jinion/core/state/agent';
-import { queueAtom } from '@jinion/core/state/prompt';
-import { sessionAtom, todosAtom } from '@jinion/core/state/session';
 import { activity, hasWorkLeft } from './activity.js';
 import { TaskLine } from './task-line.js';
 

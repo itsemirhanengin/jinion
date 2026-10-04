@@ -16,11 +16,11 @@ import {
   type KeyHint,
 } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
+import { backgroundTasksAtom } from '@jinion/core/state/active';
 import type { BackgroundTask } from '@jinion/core/agent/tasks';
 import { useJinion } from '../../app/context.js';
 import { elapsed, plural } from '@jinion/core/lib/format';
 import { firstLine } from '@jinion/core/lib/text';
-import { backgroundTasksAtom } from '@jinion/core/state/agent';
 import { TASK_MARKS } from '../../ui/task-marks.js';
 import { useOutput } from './output.js';
 import { TaskOutput } from './task-output.js';
@@ -72,7 +72,7 @@ export function TasksPanel() {
   const running = tasks.filter((task) => task.status === 'running').length;
 
   useInput((input) => {
-    if (input === 'x' && focused?.status === 'running') jinion.tasks.stop(focused.id);
+    if (input === 'x' && focused?.status === 'running') jinion.session.tasks.stop(focused.id);
   });
 
   return (

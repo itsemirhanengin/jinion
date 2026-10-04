@@ -53,6 +53,10 @@
                   {
                     "group": ["**/app/**", "**/panels/**", "**/ui/**", "**/status/**"],
                     "message": "Core doesn't reach into the TUI's folders."
+                  },
+                  {
+                    "group": ["**/state/active.js"],
+                    "message": "These atoms follow the session the user looks at, for clients to draw; a session's controllers use its own atoms."
                   }
                 ]
               }

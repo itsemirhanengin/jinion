@@ -1,8 +1,8 @@
 import { Panel, printable, Text, useInput, usePanel, useTheme, type KeyHint } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import { useJinion } from '../../app/context.js';
+import { tasksAtom } from '@jinion/core/state/active';
 import { firstLine } from '@jinion/core/lib/text';
-import { tasksAtom } from '@jinion/core/state/agent';
 import { PAGER_HINTS, usePager } from '../../ui/use-pager.js';
 import { useOutput } from './output.js';
 
@@ -19,7 +19,7 @@ export function TaskOutput({ id }: { id: string }) {
 
   useInput((input, key) => {
     if (key.escape) return close();
-    if (input === 'x' && task?.status === 'running') return jinion.tasks.stop(task.id);
+    if (input === 'x' && task?.status === 'running') return jinion.session.tasks.stop(task.id);
 
     pager.scroll(key);
   });

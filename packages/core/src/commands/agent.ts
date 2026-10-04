@@ -17,7 +17,7 @@ export const mode: Command = {
       | undefined;
     if (!found) return jinion.notice(`No mode "${args.trim()}". Pick one of ${modes.join(', ')}, or type /mode.`, 'error');
 
-    jinion.modes.select(found);
+    jinion.session.modes.select(found);
   },
 };
 

@@ -2,9 +2,9 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '@jinion/tui';
 import { atom, useAtomValue } from 'jotai';
 import { useJinion } from '../app/context.js';
+import { modeAtom, modelNameAtom, selectionAtom, sessionAtom } from '@jinion/core/state/active';
 import { limitsKey } from '@jinion/core/settings/limits';
-import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom } from '@jinion/core/state/agent';
-import { sessionAtom } from '@jinion/core/state/session';
+import { accountAtom, identityAtom, seenLimitsAtom } from '@jinion/core/state/agent';
 import type { GitStatus } from '@jinion/core/git/status';
 import type { StatusData } from './segment.js';
 

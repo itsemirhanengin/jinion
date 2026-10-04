@@ -1,8 +1,8 @@
 import { useAnimation } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
+import { tasksAtom } from '@jinion/core/state/active';
 import type { ToolEntry } from '@jinion/core/conversation/entries';
 import { preciseSeconds } from '@jinion/core/lib/format';
-import { tasksAtom } from '@jinion/core/state/agent';
 
 export function ShellFooter({ entry }: { entry: ToolEntry }) {
   const running = entry.status === 'running';

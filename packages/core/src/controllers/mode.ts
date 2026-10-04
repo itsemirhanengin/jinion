@@ -1,17 +1,16 @@
 import type { AgentMode } from '../agent/agent.js';
 import { errorMessage } from '../lib/errors.js';
 import { saveProjectSettings } from '../settings/project.js';
-import { modeAtom } from '../state/agent.js';
 import { MODES, nextMode } from '../agent/modes.js';
-import type { Context } from './context.js';
+import type { SessionContext } from './context.js';
 
 export class ModeController {
   private switches = Promise.resolve();
 
-  constructor(private readonly context: Context) {}
+  constructor(private readonly context: SessionContext) {}
 
   get current() {
-    return this.context.store.get(modeAtom);
+    return this.context.store.get(this.context.atoms.mode);
   }
 
   select(next: AgentMode) {
@@ -30,9 +29,10 @@ export class ModeController {
   }
 
   show(mode: AgentMode) {
-    this.context.store.set(modeAtom, mode);
+    this.context.store.set(this.context.atoms.mode, mode);
   }
 
+  /** The project starts its next session in it too. */
   keep(mode: AgentMode) {
     this.show(mode);
     saveProjectSettings(this.context.info.cwd, { mode });

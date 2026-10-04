@@ -1,11 +1,10 @@
 import { errorMessage } from '../lib/errors.js';
 import { firstLine } from '../lib/text.js';
-import { waitsOnForegroundTaskAtom } from '../state/agent.js';
 import type { BackgroundTask } from '../agent/tasks.js';
-import type { Context } from './context.js';
+import type { SessionContext } from './context.js';
 
 export class TaskController {
-  constructor(private readonly context: Context) {}
+  constructor(private readonly context: SessionContext) {}
 
   stop(id: string) {
     this.context.agent.stopTask?.(id).catch((error: unknown) =>
@@ -14,10 +13,10 @@ export class TaskController {
   }
 
   sendToBackground() {
-    const { agent, store, notice } = this.context;
+    const { agent, atoms, store, notice } = this.context;
     if (!agent.background) return;
 
-    if (!store.get(waitsOnForegroundTaskAtom)) {
+    if (!store.get(atoms.waitsOnForegroundTask)) {
       return notice('Nothing to send to the background yet: a command or subagent can go there once it has run a few seconds.', 'muted');
     }
 

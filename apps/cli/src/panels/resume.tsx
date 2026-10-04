@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Box, fuzzyFilter, Highlight, ListRow, Panel, PromptInput, SelectList, Text, useInput, useListNavigation, usePanel, useTheme, useWindowSize } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import { useJinion } from '../app/context.js';
+import { sessionAtom } from '@jinion/core/state/active';
 import { firstPrompt, type SavedSession } from '@jinion/core/conversation/session';
 import { ago } from '@jinion/core/lib/format';
-import { sessionAtom } from '@jinion/core/state/session';
 
 const CHROME_ROWS = 9;
 const ROWS_PER_SESSION = 2;
@@ -34,7 +34,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
     if (!match) return;
 
     close();
-    jinion.conversation.resume(match.item);
+    jinion.session.conversation.resume(match.item);
   };
 
   return (

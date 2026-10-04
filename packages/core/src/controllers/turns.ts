@@ -6,11 +6,8 @@ import { elapsed } from '../lib/format.js';
 import { errorMessage } from '../lib/errors.js';
 import { quote } from '../lib/text.js';
 import type { Action } from '../conversation/reducer.js';
-import { draftAtom, queueAtom } from '../state/prompt.js';
-import { dispatchAtom, entriesAtom } from '../state/session.js';
-import { turnAbortAtom, workingAtom } from '../state/turn.js';
 import type { Attachments } from './attachments.js';
-import { BUSY, type Context, type Dialog } from './context.js';
+import { BUSY, type Dialog, type SessionContext } from './context.js';
 
 const LONG_TURN_MS = 15_000;
 
@@ -28,13 +25,13 @@ export class TurnController {
   private agentTurnWaiting = false;
 
   constructor(
-    private readonly context: Context,
+    private readonly context: SessionContext,
     private readonly attachments: Attachments,
     private readonly hooks: TurnHooks,
   ) {}
 
   get working() {
-    return this.context.store.get(workingAtom);
+    return this.context.store.get(this.context.atoms.working);
   }
 
   async prompt(text: string) {
@@ -55,18 +52,18 @@ export class TurnController {
   }
 
   enqueue(text: string) {
-    this.context.store.set(queueAtom, (queue) => [...queue, text]);
+    this.context.store.set(this.context.atoms.queue, (queue) => [...queue, text]);
   }
 
   interrupt() {
-    this.context.store.get(turnAbortAtom)?.abort();
+    this.context.store.get(this.context.atoms.turnAbort)?.abort();
   }
 
   followAgent() {
     const join = this.context.agent.join?.bind(this.context.agent);
     if (!join) return;
 
-    if (this.context.store.get(turnAbortAtom)) {
+    if (this.context.store.get(this.context.atoms.turnAbort)) {
       this.agentTurnWaiting = true;
 
       return;
@@ -77,18 +74,18 @@ export class TurnController {
   }
 
   compact(focus?: string) {
-    const { backend, agent, notice, store } = this.context;
+    const { backend, agent, atoms, notice, store } = this.context;
     const compact = agent.compact?.bind(agent);
     if (!compact) return notice(`${backend.name} can't compact the conversation.`, 'warning');
     if (this.working) return notice(BUSY, 'warning');
-    if (!store.get(entriesAtom).some((entry) => entry.kind === 'user')) return notice('There is nothing to compact yet.', 'muted');
+    if (!store.get(atoms.entries).some((entry) => entry.kind === 'user')) return notice('There is nothing to compact yet.', 'muted');
 
     this.dispatch({ type: 'agent-turn' });
     void this.run('the compaction', (turn) => compact(focus, turn));
   }
 
   private dispatch(action: Action) {
-    this.context.store.set(dispatchAtom, action);
+    this.context.store.set(this.context.atoms.dispatch, action);
   }
 
   private async *afterPreparing(events: () => AsyncIterable<AgentEvent>) {
@@ -97,10 +94,10 @@ export class TurnController {
   }
 
   private async run(label: string, events: (turn: RunContext) => AsyncIterable<AgentEvent>) {
-    const { store, notify } = this.context;
+    const { store, atoms, notify } = this.context;
     const abort = new AbortController();
 
-    store.set(turnAbortAtom, abort);
+    store.set(atoms.turnAbort, abort);
 
     const started = Date.now();
     // A long turn may have sent the user elsewhere; a short one they likely watched.
@@ -122,7 +119,7 @@ export class TurnController {
 
       this.returnQueueToPrompt();
     } finally {
-      store.set(turnAbortAtom, undefined);
+      store.set(atoms.turnAbort, undefined);
       this.context.screen.closeDialog('ask');
       this.context.screen.closeDialog('permission');
       this.hooks.ended();
@@ -172,12 +169,12 @@ export class TurnController {
   }
 
   private returnQueueToPrompt() {
-    const { store } = this.context;
-    const waiting = store.get(queueAtom);
+    const { store, atoms } = this.context;
+    const waiting = store.get(atoms.queue);
     if (waiting.length === 0) return;
 
-    store.set(queueAtom, []);
-    store.set(draftAtom, (draft) => [...waiting, draft].filter(Boolean).join('\n'));
+    store.set(atoms.queue, []);
+    store.set(atoms.draft, (draft) => [...waiting, draft].filter(Boolean).join('\n'));
   }
 
   private next() {
@@ -187,10 +184,11 @@ export class TurnController {
       return this.followAgent();
     }
 
-    const [text, ...rest] = this.context.store.get(queueAtom);
+    const { store, atoms } = this.context;
+    const [text, ...rest] = store.get(atoms.queue);
     if (text === undefined) return;
 
-    this.context.store.set(queueAtom, rest);
+    store.set(atoms.queue, rest);
     void this.prompt(text);
   }
 }
@@ -200,7 +198,7 @@ class DialogLine {
   private line = Promise.resolve();
 
   constructor(
-    private readonly context: Context,
+    private readonly context: SessionContext,
     private readonly abort: AbortController,
   ) {}
 

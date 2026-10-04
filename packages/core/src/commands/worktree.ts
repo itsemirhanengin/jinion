@@ -8,6 +8,6 @@ export const worktree: Command = {
     const wanted = args.trim().toLowerCase();
     if (wanted && wanted !== 'on' && wanted !== 'off') return jinion.notice('Type /worktree on or /worktree off.', 'error');
 
-    jinion.worktrees.set(wanted ? wanted === 'on' : !jinion.worktrees.on);
+    jinion.session.worktrees.set(wanted ? wanted === 'on' : !jinion.session.worktrees.on);
   },
 };

@@ -1,7 +1,4 @@
 import { atom } from 'jotai/vanilla';
 
-export const draftAtom = atom('');
-
+/** What was sent, in every session, for `up` to bring back. */
 export const historyAtom = atom<string[]>([]);
-
-export const queueAtom = atom<string[]>([]);

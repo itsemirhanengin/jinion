@@ -29,7 +29,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
     hint: skill.argumentHint,
     description: skill.description,
     aside: skillGroup(skill),
-    pick: (app) => app.input.fill(`$${skill.name} `),
+    pick: (app) => app.session.input.fill(`$${skill.name} `),
   });
 
   const groups = [
@@ -41,7 +41,7 @@ export function HelpPanel({ topic = '' }: { topic?: string }) {
           hint: command.argumentHint,
           description: command.description,
           aside: command.aliases?.map((alias) => `/${alias}`).join(' '),
-          pick: (app) => (requiresArgument(command) ? app.input.fill(`/${command.name} `) : command.run(app, '')),
+          pick: (app) => (requiresArgument(command) ? app.session.input.fill(`/${command.name} `) : command.run(app, '')),
         }),
       ),
     },

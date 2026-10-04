@@ -6,11 +6,7 @@ import type { SessionStore } from '../conversation/store.js';
 import { conversationDigest, titleDue } from '../conversation/titles.js';
 import { errorMessage } from '../lib/errors.js';
 import { firstLine, quote } from '../lib/text.js';
-import { backgroundTasksAtom, tasksAtom } from '../state/agent.js';
-import { draftAtom } from '../state/prompt.js';
-import { dispatchAtom, sessionAtom } from '../state/session.js';
-import { workingAtom } from '../state/turn.js';
-import { BUSY, type Context } from './context.js';
+import { BUSY, type SessionContext } from './context.js';
 import type { WorktreeController } from './worktrees.js';
 
 export interface RewindPoint {
@@ -24,17 +20,17 @@ export class ConversationController {
   private planAccepted = false;
 
   constructor(
-    private readonly context: Context,
+    private readonly context: SessionContext,
     private readonly sessions: SessionStore,
     private readonly worktrees: WorktreeController,
   ) {}
 
   get session() {
-    return this.context.store.get(sessionAtom);
+    return this.context.store.get(this.context.atoms.state);
   }
 
   dispatch(action: Action) {
-    this.context.store.set(dispatchAtom, action);
+    this.context.store.set(this.context.atoms.dispatch, action);
   }
 
   save() {
@@ -89,9 +85,9 @@ export class ConversationController {
   }
 
   openRewind() {
-    const { backend, agent, notice, screen, store } = this.context;
+    const { backend, agent, atoms, notice, screen, store } = this.context;
     if (!agent.rewind) return notice(`${backend.name} can't rewind.`, 'warning');
-    if (store.get(workingAtom)) return notice(BUSY, 'warning');
+    if (store.get(atoms.working)) return notice(BUSY, 'warning');
 
     const points = this.rewindPoints();
     if (points.length === 0) return notice('There is nothing to rewind yet.', 'muted');
@@ -109,7 +105,7 @@ export class ConversationController {
   }
 
   async rewindTo(point: RewindPoint, scope: RewindScope) {
-    const { agent, notice, store } = this.context;
+    const { agent, atoms, notice, store } = this.context;
     const quoted = quote(point.text);
 
     try {
@@ -120,7 +116,7 @@ export class ConversationController {
 
     if (scope.conversation) {
       this.dispatch({ type: 'rewind', entry: point.entry });
-      store.set(draftAtom, point.text);
+      store.set(atoms.draft, point.text);
     }
 
     notice(
@@ -134,17 +130,17 @@ export class ConversationController {
   }
 
   private async switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
-    const { store, agent, notice } = this.context;
-    if (store.get(workingAtom)) return notice(BUSY, 'warning');
+    const { store, agent, atoms, notice } = this.context;
+    if (store.get(atoms.working)) return notice(BUSY, 'warning');
 
     const left = await this.worktrees.leave();
     if (!left) return;
 
     this.save();
 
-    const running = store.get(backgroundTasksAtom).filter((task) => task.status === 'running');
+    const running = store.get(atoms.backgroundTasks).filter((task) => task.status === 'running');
 
-    store.set(tasksAtom, []);
+    store.set(atoms.tasks, []);
     this.dispatch(action);
 
     const resumed = action.type === 'load' ? action.session : undefined;
@@ -180,6 +176,6 @@ export class ConversationController {
     const { id, entries } = this.session;
 
     this.dispatch({ type: 'retitle', session: id, title, by, turns: promptCount(entries) });
-    if (!this.context.store.get(workingAtom)) this.save();
+    if (!this.context.store.get(this.context.atoms.working)) this.save();
   }
 }

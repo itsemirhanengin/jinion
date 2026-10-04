@@ -3,14 +3,14 @@ import { errorMessage } from '../lib/errors.js';
 import { clipboardImage, imageFromPaste } from '../prompt/images.js';
 import { PastedImages } from '../prompt/pasted-images.js';
 import { PastedTexts } from '../prompt/pasted-texts.js';
-import type { Context } from './context.js';
+import type { AppContext } from './context.js';
 
 /** Kept for the whole run, so a message recalled from history still carries its pastes and images. */
 export class Attachments {
   readonly texts = new PastedTexts();
   readonly images = new PastedImages();
 
-  constructor(private readonly context: Pick<Context, 'notice'>) {}
+  constructor(private readonly context: Pick<AppContext, 'notice'>) {}
 
   resolve(text: string): AgentPrompt {
     return { text: this.texts.expand(text), images: this.images.in(text) };

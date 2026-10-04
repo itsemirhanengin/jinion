@@ -1,8 +1,8 @@
+import { busyAtom } from '@jinion/core/state/active';
 import { useEffect } from 'react';
 import { StatusBar } from '@jinion/tui/chat';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { shownStatusItemsAtom } from '../status/items.js';
-import { busyAtom } from '@jinion/core/state/session';
 import { gitStatusAtom, useNow, useStatusData } from '../status/data.js';
 import { useGitStatus } from '../status/git.js';
 import { renderStatusLine } from '../status/line.js';

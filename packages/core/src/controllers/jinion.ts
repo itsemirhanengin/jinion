@@ -1,27 +1,21 @@
 import { basename } from 'node:path';
 import type { NoticeTone } from '../conversation/entries.js';
 import { createStore } from 'jotai/vanilla';
-import type { AgentBackend, AgentMode, AgentSession } from '../agent/agent.js';
-import type { AgentEvent } from '../agent/events.js';
+import type { AgentBackend, AgentMode } from '../agent/agent.js';
 import type { ModelSelection } from '../agent/models.js';
 import type { CommandRegistry } from '../commands/registry.js';
 import { fromSaved, createSessionState, resumeOf, type SavedSession } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
 import type { MemoryStore } from '../memory/store.js';
-import { accountAtom, modeAtom, selectionAtom, skillsAtom, tasksAtom } from '../state/agent.js';
+// biome-ignore lint/style/noRestrictedImports: the app is what sets the session the user looks at.
+import { activeSessionAtom } from '../state/active.js';
+import { accountAtom, modelsAtom, skillsAtom } from '../state/agent.js';
 import { notificationsAtom } from '../state/preferences.js';
-import { DEFAULT_CONTEXT_WINDOW, dispatchAtom, sessionAtom } from '../state/session.js';
+import { DEFAULT_CONTEXT_WINDOW } from '../state/session.js';
 import { AccountController } from './accounts.js';
-import { Attachments } from './attachments.js';
-import type { AppInfo, Context, Screen } from './context.js';
-import { ConversationController } from './conversation.js';
-import { InputController } from './input.js';
+import type { AppContext, AppInfo, Screen } from './context.js';
 import { McpController } from './mcp.js';
-import { ModeController } from './mode.js';
-import { ModelController } from './model.js';
-import { TaskController } from './tasks.js';
-import { TurnController } from './turns.js';
-import { WorktreeController } from './worktrees.js';
+import { Session } from './session.js';
 
 export interface JinionOptions {
   backend: AgentBackend;
@@ -39,24 +33,18 @@ export interface JinionOptions {
   onExit?(message: string): void;
 }
 
+/** The app: what every session shares, and the session the user looks at. */
 export class Jinion {
   readonly store = createStore();
   readonly backend: AgentBackend;
-  readonly agent: AgentSession;
   readonly info: AppInfo;
   readonly sessions: SessionStore;
   readonly memory: MemoryStore;
   readonly commands: CommandRegistry;
-  readonly attachments: Attachments;
-  readonly conversation: ConversationController;
-  readonly turns: TurnController;
-  readonly input: InputController;
-  readonly models: ModelController;
-  readonly modes: ModeController;
   readonly accounts: AccountController;
   readonly mcp: McpController;
-  readonly tasks: TaskController;
-  readonly worktrees: WorktreeController;
+  /** The session the user looks at. */
+  readonly session: Session;
   private readonly onExit?: (message: string) => void;
 
   constructor(
@@ -64,71 +52,52 @@ export class Jinion {
     readonly screen: Screen,
   ) {
     ({ backend: this.backend, info: this.info, sessions: this.sessions, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
-    this.agent = this.backend.session({ cwd: this.info.cwd, selection: options.selection, mode: options.mode });
 
-    const context: Context = {
+    const context: AppContext = {
       store: this.store,
       backend: this.backend,
-      agent: this.agent,
       info: this.info,
       screen,
       notice: (text, tone) => this.notice(text, tone),
       notify: (body) => this.notify(body),
     };
 
-    this.attachments = new Attachments(context);
-    this.worktrees = new WorktreeController(context);
-    this.conversation = new ConversationController(context, this.sessions, this.worktrees);
-    this.models = new ModelController(context);
-    this.modes = new ModeController(context);
-    this.accounts = new AccountController(context, () => this.refresh());
-    this.mcp = new McpController(context, () => this.reloadSkills());
-    this.tasks = new TaskController(context);
-
-    this.turns = new TurnController(context, this.attachments, {
-      apply: (event) => this.apply(event),
-      preparing: () => this.worktrees.prepare(),
-      planAccepted: (mode) => {
-        this.modes.keep(mode);
-        this.conversation.markPlanAccepted();
-      },
-      ended: () => {
-        this.conversation.turnEnded();
-        this.accounts.turnEnded();
-      },
+    this.accounts = new AccountController(context, {
+      switched: () => this.refresh(),
+      working: () => this.session.working,
+      started: () => this.store.get(this.session.atoms.state).agentSession !== undefined,
     });
 
-    this.input = new InputController(context, this, this.commands, this.attachments, this.turns);
+    this.mcp = new McpController(context, () => this.reloadSkills());
 
-    this.store.set(sessionAtom, options.initial ? fromSaved(options.initial) : createSessionState(DEFAULT_CONTEXT_WINDOW));
-    if (options.initial) this.agent.reset?.(resumeOf(options.initial), this.worktrees.folderOf(options.initial));
-    this.store.set(selectionAtom, this.agent.selection);
-    this.store.set(modeAtom, this.agent.mode);
+    const { initial } = options;
+    const agent = this.backend.session({ cwd: this.info.cwd, selection: options.selection, mode: options.mode });
+
+    this.session = new Session(this, agent, {
+      state: initial ? fromSaved(initial) : createSessionState(DEFAULT_CONTEXT_WINDOW),
+      selection: agent.selection,
+      mode: agent.mode,
+    });
+
+    if (initial) agent.reset?.(resumeOf(initial), this.session.worktrees.folderOf(initial));
+    this.store.set(activeSessionAtom, this.session.atoms);
     this.store.set(accountAtom, this.backend.accounts?.current);
   }
 
   start() {
     this.refresh();
 
-    return this.agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
+    return this.session.start();
   }
 
   refresh() {
-    this.models.load();
+    this.loadModels();
     this.accounts.loadIdentity();
     this.reloadSkills();
   }
 
-  /** Later changes, e.g. as MCP servers connect, come as `commands` events. */
-  private reloadSkills() {
-    this.backend.commands().then(
-      (skills) => this.store.set(skillsAtom, skills),
-      () => {},
-    );
-  }
-
   notice(text: string, tone?: NoticeTone) {
-    this.store.set(dispatchAtom, { type: 'notice', text, tone });
+    this.session.notice(text, tone);
   }
 
   notify(body: string) {
@@ -138,39 +107,26 @@ export class Jinion {
   }
 
   async quit() {
-    const kept = await this.worktrees.quit();
+    const kept = await this.session.quit();
 
-    this.conversation.save();
     this.screen.exit();
     if (kept) this.onExit?.(kept);
   }
 
-  private apply(event: AgentEvent) {
-    switch (event.type) {
-      case 'limits':
-        this.accounts.recordLimits(event.windows);
-        break;
+  private loadModels() {
+    this.store.set(modelsAtom, undefined);
 
-      case 'mode':
-        this.modes.show(event.mode);
-        break;
+    this.backend.models().then(
+      (models) => this.store.set(modelsAtom, models),
+      () => this.store.set(modelsAtom, []),
+    );
+  }
 
-      case 'commands':
-        this.store.set(skillsAtom, event.commands);
-        break;
-
-      case 'tasks':
-        this.store.set(tasksAtom, event.tasks);
-        break;
-
-      case 'task-end':
-        this.tasks.ended(event.task);
-        break;
-
-      case 'turn-start':
-        return this.turns.followAgent();
-    }
-
-    this.store.set(dispatchAtom, { type: 'event', event });
+  /** Later changes, e.g. as MCP servers connect, come as `commands` events. */
+  private reloadSkills() {
+    this.backend.commands().then(
+      (skills) => this.store.set(skillsAtom, skills),
+      () => {},
+    );
   }
 }

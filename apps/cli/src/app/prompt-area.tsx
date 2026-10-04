@@ -2,13 +2,13 @@ import { useMemo } from 'react';
 import { Text, useTheme } from '@jinion/tui';
 import { Composer } from '@jinion/tui/chat';
 import { atom, useAtom, useAtomValue } from 'jotai';
+import { modeAtom, draftAtom, busyAtom, sessionAtom } from '@jinion/core/state/active';
 import { MODES } from '@jinion/core/agent/modes';
 import { fileCompletion } from '@jinion/core/prompt/files';
 import { useProjectFiles } from '../ui/use-project-files.js';
 import { skillCompletion } from '@jinion/core/prompt/skills';
-import { mentionAtom, modeAtom, skillsAtom } from '@jinion/core/state/agent';
-import { draftAtom, historyAtom } from '@jinion/core/state/prompt';
-import { busyAtom, sessionAtom } from '@jinion/core/state/session';
+import { mentionAtom, skillsAtom } from '@jinion/core/state/agent';
+import { historyAtom } from '@jinion/core/state/prompt';
 import { modeColor } from '../ui/modes.js';
 import { contextWarning } from './activity.js';
 import { useJinion } from './context.js';
@@ -35,19 +35,19 @@ export function PromptArea() {
 
   return (
     <Composer
-      pastes={jinion.attachments.texts}
-      onPaste={(text) => jinion.attachments.pastePath(text)}
-      onPasteKey={() => jinion.attachments.pasteClipboard()}
+      pastes={jinion.session.attachments.texts}
+      onPaste={(text) => jinion.session.attachments.pastePath(text)}
+      onPasteKey={() => jinion.session.attachments.pasteClipboard()}
       value={draft}
       onChange={setDraft}
-      onSubmit={(value) => jinion.input.submit(value)}
+      onSubmit={(value) => jinion.session.input.submit(value)}
       history={history}
       completions={completions}
       mentions={[mention]}
       placeholder={
         !busy
           ? 'Ask jinion anything · / commands · $ skills · @ files'
-          : jinion.agent.steer
+          : jinion.session.agent.steer
             ? 'Type to steer · ctrl+q to queue · esc to interrupt'
             : 'Type to queue · esc to interrupt'
       }

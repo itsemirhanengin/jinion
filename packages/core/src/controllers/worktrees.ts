@@ -6,8 +6,7 @@ import { errorMessage } from '../lib/errors.js';
 import { plural } from '../lib/format.js';
 import { tildify } from '../lib/paths.js';
 import { worktreesAtom } from '../state/preferences.js';
-import { dispatchAtom, sessionAtom } from '../state/session.js';
-import type { Context } from './context.js';
+import type { SessionContext } from './context.js';
 
 /** What to tell the user once the next conversation shows. */
 export interface Left {
@@ -15,14 +14,14 @@ export interface Left {
 }
 
 export class WorktreeController {
-  constructor(private readonly context: Context) {}
+  constructor(private readonly context: SessionContext) {}
 
   get on() {
     return this.context.store.get(worktreesAtom);
   }
 
   get current() {
-    return this.context.store.get(sessionAtom).worktree;
+    return this.context.store.get(this.context.atoms.worktree);
   }
 
   toggle() {
@@ -53,9 +52,9 @@ export class WorktreeController {
 
   /** Before the first prompt of a conversation goes to the agent, while the turn already shows as running. */
   async prepare() {
-    const { agent, info, notice } = this.context;
+    const { agent, atoms, info, notice, store } = this.context;
     // The prompt that starts the conversation is already in it.
-    if (!this.on || !agent.reset || this.current || this.prompts() > 1 || this.context.store.get(sessionAtom).agentSession) return;
+    if (!this.on || !agent.reset || this.current || this.prompts() > 1 || store.get(atoms.state).agentSession) return;
 
     try {
       const worktree = await createWorktree(info.cwd);
@@ -112,7 +111,7 @@ export class WorktreeController {
   }
 
   private prompts() {
-    return promptCount(this.context.store.get(sessionAtom).entries);
+    return promptCount(this.context.store.get(this.context.atoms.entries));
   }
 
   private ask(worktree: Worktree, work: WorktreeWork | undefined) {
@@ -158,6 +157,6 @@ export class WorktreeController {
   }
 
   private dispatch(worktree: Worktree | undefined) {
-    this.context.store.set(dispatchAtom, { type: 'worktree', worktree });
+    this.context.store.set(this.context.atoms.dispatch, { type: 'worktree', worktree });
   }
 }

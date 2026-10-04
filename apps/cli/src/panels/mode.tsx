@@ -1,9 +1,9 @@
 import { ChoiceList, Panel, Text, useChoiceList, usePanel, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
+import { modeAtom } from '@jinion/core/state/active';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import { useJinion } from '../app/context.js';
-import { modeAtom } from '@jinion/core/state/agent';
 import { modeColor } from '../ui/modes.js';
 
 export function ModePicker() {
@@ -21,7 +21,7 @@ export function ModePicker() {
     onCancel: close,
     onSubmit: ([mode]) => {
       close();
-      if (mode) jinion.modes.select(mode as AgentMode);
+      if (mode) jinion.session.modes.select(mode as AgentMode);
     },
   });
 

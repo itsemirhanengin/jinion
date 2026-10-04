@@ -52,8 +52,8 @@ function ViewPanel({ view }: { view: View }) {
       return (
         <RewindPanel
           points={view.points}
-          preview={(point) => jinion.agent.rewindPreview?.(point.promptId) ?? Promise.resolve(undefined)}
-          onRewind={(point, scope) => void jinion.conversation.rewindTo(point, scope)}
+          preview={(point) => jinion.session.agent.rewindPreview?.(point.promptId) ?? Promise.resolve(undefined)}
+          onRewind={(point, scope) => void jinion.session.conversation.rewindTo(point, scope)}
         />
       );
 

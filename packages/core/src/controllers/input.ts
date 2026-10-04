@@ -1,15 +1,15 @@
 import type { CommandRegistry } from '../commands/registry.js';
-import { draftAtom, historyAtom } from '../state/prompt.js';
-import { busyAtom } from '../state/session.js';
+import { historyAtom } from '../state/prompt.js';
 import { skillsAtom } from '../state/agent.js';
 import type { Attachments } from './attachments.js';
-import type { Context } from './context.js';
+import type { SessionContext } from './context.js';
 import type { Jinion } from './jinion.js';
 import type { TurnController } from './turns.js';
 
+/** What the user types into one session's prompt. */
 export class InputController {
   constructor(
-    private readonly context: Context,
+    private readonly context: SessionContext,
     private readonly jinion: Jinion,
     private readonly commands: CommandRegistry,
     private readonly attachments: Attachments,
@@ -17,7 +17,7 @@ export class InputController {
   ) {}
 
   submit(value: string) {
-    const { store, notice } = this.context;
+    const { store, atoms, notice } = this.context;
     const text = value.trim();
     if (!text) return;
 
@@ -29,7 +29,7 @@ export class InputController {
 
     if (!command && store.get(skillsAtom).some((skill) => skill.name === name)) {
       // Typed out of habit: it goes back in the prompt the new way, to send as it is or to add to.
-      store.set(draftAtom, `$${text.slice(1)}`);
+      store.set(atoms.draft, `$${text.slice(1)}`);
 
       return notice(`Skills go after $ now, anywhere in the message: $${name}. Press enter to send it.`, 'muted');
     }
@@ -40,27 +40,27 @@ export class InputController {
   }
 
   queue() {
-    const { store } = this.context;
-    const text = store.get(draftAtom).trim();
+    const { store, atoms } = this.context;
+    const text = store.get(atoms.draft).trim();
     if (!text) return;
-    if (!store.get(busyAtom)) return this.submit(text);
+    if (!store.get(atoms.busy)) return this.submit(text);
 
     this.sent(text);
     this.turns.enqueue(text);
   }
 
   fill(text: string) {
-    this.context.store.set(draftAtom, text);
+    this.context.store.set(this.context.atoms.draft, text);
   }
 
   clear() {
-    const draft = this.context.store.get(draftAtom);
+    const draft = this.context.store.get(this.context.atoms.draft);
 
     if (draft) this.sent(draft);
   }
 
   private sent(text: string) {
-    this.context.store.set(draftAtom, '');
+    this.context.store.set(this.context.atoms.draft, '');
     this.context.store.set(historyAtom, (history) => [...history, text]);
   }
 }

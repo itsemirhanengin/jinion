@@ -4,17 +4,24 @@ import { errorMessage } from '../lib/errors.js';
 import { limitsKey } from '../settings/limits.js';
 import { saveAccount } from '../settings/user.js';
 import { accountAtom, identityAtom, seenLimitsAtom } from '../state/agent.js';
-import { sessionAtom } from '../state/session.js';
-import { workingAtom } from '../state/turn.js';
-import { BUSY, type Context } from './context.js';
+import { type AppContext, BUSY } from './context.js';
+
+export interface AccountHooks {
+  /** After a switch, to read the account's models and skills again. */
+  switched(): void;
+  /** Whether a session runs a turn, which a switch waits for. */
+  working(): boolean;
+  /** Whether the conversation the user looks at has started, so it carries on under the new login. */
+  started(): boolean;
+}
 
 /** A switch happens between turns only, so no request is cut off. */
 export class AccountController {
   private loginWaits = false;
 
   constructor(
-    private readonly context: Context,
-    private readonly switched: () => void,
+    private readonly context: AppContext,
+    private readonly hooks: AccountHooks,
   ) {}
 
   loadIdentity() {
@@ -40,7 +47,7 @@ export class AccountController {
     const accounts = backend.accounts;
     if (!accounts) return notice(`${backend.name} has a single login.`, 'warning');
     if (name === store.get(accountAtom)) return notice(`Already using the ${name} account.`, 'muted');
-    if (store.get(workingAtom)) return notice(BUSY, 'warning');
+    if (this.hooks.working()) return notice(BUSY, 'warning');
 
     accounts
       .list()
@@ -55,9 +62,9 @@ export class AccountController {
         () => {
           store.set(accountAtom, name);
           saveAccount(backend.name, name);
-          this.switched();
+          this.hooks.switched();
 
-          const carries = store.get(sessionAtom).agentSession ? '; the conversation carries on there' : '';
+          const carries = this.hooks.started() ? '; the conversation carries on there' : '';
 
           notice(`Switched to the ${name} account${carries}.`);
         },
@@ -114,7 +121,7 @@ export class AccountController {
   private signedIn(name: string) {
     if (name !== this.context.backend.accounts?.current) return;
 
-    if (this.context.store.get(workingAtom)) this.loginWaits = true;
+    if (this.hooks.working()) this.loginWaits = true;
     else this.startWithNewLogin();
   }
 
@@ -124,7 +131,7 @@ export class AccountController {
 
     this.loginWaits = false;
 
-    backend.accounts?.use(backend.accounts.current).then(this.switched, (error: unknown) =>
+    backend.accounts?.use(backend.accounts.current).then(this.hooks.switched, (error: unknown) =>
       notice(`Couldn't start over with the new login: ${errorMessage(error)}`, 'error'),
     );
   }

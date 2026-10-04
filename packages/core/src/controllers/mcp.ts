@@ -1,11 +1,11 @@
 import type { McpServerInfo } from '../agent/mcp.js';
 import { errorMessage } from '../lib/errors.js';
-import type { Context } from './context.js';
+import type { AppContext } from './context.js';
 
 /** Changes apply from the next turn, when the agent connects again. */
 export class McpController {
   constructor(
-    private readonly context: Context,
+    private readonly context: AppContext,
     private readonly changed: () => void,
   ) {}
 

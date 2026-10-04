@@ -3,6 +3,7 @@ import type { PermissionDecision, PermissionRequest } from '../agent/permissions
 import type { Question, QuestionAnswer } from '../agent/questions.js';
 import type { Store } from 'jotai/vanilla';
 import type { AgentBackend, AgentMode, AgentSession, PlanDecision } from '../agent/agent.js';
+import type { SessionAtoms } from '../state/session.js';
 import type { RewindPoint } from './conversation.js';
 
 export interface AppInfo {
@@ -45,17 +46,25 @@ export type Dialog =
   | { id: 'permission'; request: PermissionRequest; onDecide(decision: PermissionDecision): void; onCancel(): void }
   | { id: 'plan'; modes: AgentMode[]; onDecide(decision: PlanDecision): void; onCancel(): void };
 
-export interface Context {
+/** What the app's controllers work with. */
+export interface AppContext {
   store: Store;
   /** What every conversation shares: models, accounts, MCP servers, skills. */
   backend: AgentBackend;
-  /** This conversation's session with the backend. */
-  agent: AgentSession;
   info: AppInfo;
   screen: Screen;
+  /** In the conversation the user looks at. */
   notice(text: string, tone?: NoticeTone): void;
   /** Nothing while the user looks at this window. */
   notify(body: string): void;
+}
+
+/** What a session's controllers work with: the app's, and the session's own agent and atoms. */
+export interface SessionContext extends AppContext {
+  agent: AgentSession;
+  atoms: SessionAtoms;
+  /** In this session's conversation, whichever the user looks at. */
+  notice(text: string, tone?: NoticeTone): void;
 }
 
 export const BUSY = 'Finish or interrupt the current turn first (esc).';

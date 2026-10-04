@@ -1,23 +1,64 @@
 import { atom } from 'jotai/vanilla';
-import { atomWithLazy } from 'jotai/vanilla/utils';
+import type { AgentMode } from '../agent/agent.js';
+import type { ModelSelection } from '../agent/models.js';
+import type { BackgroundTask } from '../agent/tasks.js';
 import { editTurns } from '../conversation/edits.js';
 import { reduce, type Action } from '../conversation/reducer.js';
-import { createSessionState } from '../conversation/session.js';
+import type { SessionState } from '../conversation/session.js';
+import { modelsAtom } from './agent.js';
 
 export const DEFAULT_CONTEXT_WINDOW = 200_000;
 
-export const sessionAtom = atomWithLazy(() => createSessionState(DEFAULT_CONTEXT_WINDOW));
+export interface SessionStart {
+  state: SessionState;
+  selection: ModelSelection;
+  mode: AgentMode;
+}
 
-export const worktreeAtom = atom((get) => get(sessionAtom).worktree);
+/** One session's atoms, in the app's one store. Its controllers read and write these only, never another session's. */
+export function sessionAtoms({ state: initial, selection: initialSelection, mode }: SessionStart) {
+  const state = atom(initial);
+  const entries = atom((get) => get(state).entries);
+  const busySince = atom((get) => get(state).busySince);
+  const busy = atom((get) => get(busySince) !== undefined);
+  /** Set from the moment a turn starts, before the render that shows it, until it ends. */
+  const turnAbort = atom<AbortController | undefined>(undefined);
+  const selection = atom(initialSelection);
 
-export const dispatchAtom = atom(null, (get, set, action: Action) => set(sessionAtom, reduce(get(sessionAtom), action)));
+  const modelName = atom((get) => {
+    const { model } = get(selection);
 
-export const entriesAtom = atom((get) => get(sessionAtom).entries);
+    return get(modelsAtom)?.find((option) => option.id === model)?.name ?? model;
+  });
 
-export const todosAtom = atom((get) => get(sessionAtom).todos);
+  /** Includes the command or subagent the turn waits for, as `foreground`. */
+  const tasks = atom<BackgroundTask[]>([]);
 
-export const busySinceAtom = atom((get) => get(sessionAtom).busySince);
+  return {
+    state,
+    dispatch: atom(null, (get, set, action: Action) => set(state, reduce(get(state), action))),
+    entries,
+    todos: atom((get) => get(state).todos),
+    worktree: atom((get) => get(state).worktree),
+    busySince,
+    busy,
+    editTurns: atom((get) => editTurns(get(entries))),
+    turnAbort,
+    working: atom((get) => get(busy) || get(turnAbort) !== undefined),
+    draft: atom(''),
+    queue: atom<string[]>([]),
+    selection,
+    modelName,
+    modelLabel: atom((get) => {
+      const { effort } = get(selection);
 
-export const busyAtom = atom((get) => get(busySinceAtom) !== undefined);
+      return effort ? `${get(modelName)} · ${effort}` : get(modelName);
+    }),
+    mode: atom(mode),
+    tasks,
+    backgroundTasks: atom((get) => get(tasks).filter((task) => !task.foreground)),
+    waitsOnForegroundTask: atom((get) => get(tasks).some((task) => task.foreground && task.status === 'running')),
+  };
+}
 
-export const editTurnsAtom = atom((get) => editTurns(get(entriesAtom)));
+export type SessionAtoms = ReturnType<typeof sessionAtoms>;

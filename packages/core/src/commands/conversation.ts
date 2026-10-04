@@ -11,27 +11,27 @@ export const compact: Command = {
   name: 'compact',
   description: 'Summarize the conversation so far to free context, keeping what you say above all',
   argumentHint: '[focus]',
-  run: (jinion, args) => jinion.turns.compact(args.trim() || undefined),
+  run: (jinion, args) => jinion.session.turns.compact(args.trim() || undefined),
 };
 
 export const rename: Command = {
   name: 'rename',
   description: 'Name this conversation, to find it in /resume; without a name, jinion names it from what it is about',
   argumentHint: '[name]',
-  run: (jinion, args) => jinion.conversation.rename(args.trim() || undefined),
+  run: (jinion, args) => jinion.session.conversation.rename(args.trim() || undefined),
 };
 
 export const rewind: Command = {
   name: 'rewind',
   description: 'Go back to before an earlier message: code, conversation or both (esc esc)',
-  run: (jinion) => jinion.conversation.openRewind(),
+  run: (jinion) => jinion.session.conversation.openRewind(),
 };
 
 export const clear: Command = {
   name: 'clear',
   aliases: ['new'],
   description: 'Save this conversation and start a new one',
-  run: (jinion) => jinion.conversation.newSession(),
+  run: (jinion) => jinion.session.conversation.newSession(),
 };
 
 export const exit: Command = {
