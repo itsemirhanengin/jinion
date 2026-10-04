@@ -1,13 +1,12 @@
 import type { RewindScope } from '../agent/agent.js';
 import { promptCount } from '../conversation/entries.js';
 import type { Action } from '../conversation/reducer.js';
-import { resumeOf, toSaved, type SavedSession } from '../conversation/session.js';
+import { toSaved } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
 import { conversationDigest, titleDue } from '../conversation/titles.js';
 import { errorMessage } from '../lib/errors.js';
-import { firstLine, quote } from '../lib/text.js';
+import { quote } from '../lib/text.js';
 import { BUSY, type SessionContext } from './context.js';
-import type { WorktreeController } from './worktrees.js';
 
 export interface RewindPoint {
   entry: string;
@@ -21,8 +20,7 @@ export class ConversationController {
 
   constructor(
     private readonly context: SessionContext,
-    private readonly sessions: SessionStore,
-    private readonly worktrees: WorktreeController,
+    private readonly saved: SessionStore,
   ) {}
 
   get session() {
@@ -36,15 +34,7 @@ export class ConversationController {
   save() {
     const saved = toSaved(this.session);
 
-    if (saved) this.sessions.save(saved);
-  }
-
-  newSession() {
-    return this.switchTo({ type: 'clear' });
-  }
-
-  resume(saved: SavedSession) {
-    return this.switchTo({ type: 'load', session: saved });
+    if (saved) this.saved.save(saved);
   }
 
   markPlanAccepted() {
@@ -127,30 +117,6 @@ export class ConversationController {
           : `The files went back to how they were before ${quoted}; the conversation goes on.`,
       'success',
     );
-  }
-
-  private async switchTo(action: Extract<Action, { type: 'clear' | 'load' }>) {
-    const { store, agent, atoms, notice } = this.context;
-    if (store.get(atoms.working)) return notice(BUSY, 'warning');
-
-    const left = await this.worktrees.leave();
-    if (!left) return;
-
-    this.save();
-
-    const running = store.get(atoms.backgroundTasks).filter((task) => task.status === 'running');
-
-    store.set(atoms.tasks, []);
-    this.dispatch(action);
-
-    const resumed = action.type === 'load' ? action.session : undefined;
-
-    agent.reset?.(resumed && resumeOf(resumed), resumed && this.worktrees.folderOf(resumed));
-    if (left.notice) notice(left.notice.text, left.notice.tone);
-
-    if (running.length > 0) {
-      notice(`Stopped what ran in the background of the last conversation: ${running.map((task) => firstLine(task.title)).join(', ')}.`);
-    }
   }
 
   private async name(fresh: boolean) {

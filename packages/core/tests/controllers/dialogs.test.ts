@@ -7,7 +7,7 @@ import { sessionAtoms } from '../../src/state/session.js';
 
 function setup() {
   const store = createStore();
-  const atoms = sessionAtoms({ state: createSessionState(200_000), selection: { model: 'demo' }, mode: 'edits' });
+  const atoms = sessionAtoms({ state: createSessionState(200_000), selection: { model: 'demo' }, mode: 'edits', worktree: false });
   const notify = vi.fn();
   const dialogs = new DialogController({ store, atoms, notify } as unknown as SessionContext);
 

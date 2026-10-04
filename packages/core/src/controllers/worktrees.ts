@@ -1,7 +1,6 @@
 import type { NoticeTone } from '../conversation/entries.js';
 import { promptCount } from '../conversation/entries.js';
-import type { SavedSession } from '../conversation/session.js';
-import { createWorktree, removeWorktree, type Worktree, worktreeExists, worktreeWork, type WorktreeWork } from '../git/worktrees.js';
+import { createWorktree, removeWorktree, type Worktree, worktreeWork, type WorktreeWork } from '../git/worktrees.js';
 import { errorMessage } from '../lib/errors.js';
 import { plural } from '../lib/format.js';
 import { tildify } from '../lib/paths.js';
@@ -20,6 +19,7 @@ export class WorktreeController {
     private readonly dialogs: DialogController,
   ) {}
 
+  /** The default for new sessions, which `ctrl+g` and `/worktree` change. */
   get on() {
     return this.context.store.get(worktreesAtom);
   }
@@ -32,11 +32,13 @@ export class WorktreeController {
     this.set(!this.on);
   }
 
+  /** Sets the default, and this conversation's choice while it hasn't started. */
   set(on: boolean) {
-    const { store, backend, agent, notice } = this.context;
-    if (!agent.reset) return notice(`${backend.name} can't work in another folder, so it can't use worktrees.`, 'warning');
+    const { store, backend, agent, atoms, notice } = this.context;
+    if (!agent.moveTo) return notice(`${backend.name} can't work in another folder, so it can't use worktrees.`, 'warning');
 
     store.set(worktreesAtom, on);
+    if (this.prompts() === 0) store.set(atoms.wantsWorktree, on);
 
     if (on) {
       const when = this.prompts() > 0 ? 'The next conversation gets' : 'This conversation gets';
@@ -57,14 +59,15 @@ export class WorktreeController {
   /** Before the first prompt of a conversation goes to the agent, while the turn already shows as running. */
   async prepare() {
     const { agent, atoms, info, notice, store } = this.context;
+    if (!store.get(atoms.wantsWorktree) || !agent.moveTo || this.current) return;
     // The prompt that starts the conversation is already in it.
-    if (!this.on || !agent.reset || this.current || this.prompts() > 1 || store.get(atoms.state).agentSession) return;
+    if (this.prompts() > 1 || store.get(atoms.state).agentSession) return;
 
     try {
       const worktree = await createWorktree(info.cwd);
 
       this.dispatch(worktree);
-      agent.reset(undefined, worktree.folder);
+      agent.moveTo(worktree.folder);
       notice(`Working in the worktree ${worktree.name}, on branch ${worktree.branch}, at ${tildify(worktree.path)}.`, 'muted');
     } catch (error) {
       notice(`Couldn't make a worktree, so this conversation works in the project folder: ${errorMessage(error)}`, 'warning');
@@ -100,18 +103,6 @@ export class WorktreeController {
     }
 
     return `The worktree ${worktree.name} is kept at ${tildify(worktree.path)}, on branch ${worktree.branch}. jinion --continue goes back to it.`;
-  }
-
-  /** Where a resumed conversation works; its worktree, unless that is gone. */
-  folderOf(saved: SavedSession) {
-    const worktree = saved.worktree;
-    if (!worktree) return undefined;
-    if (worktreeExists(worktree)) return worktree.folder;
-
-    this.dispatch(undefined);
-    this.context.notice(`Your worktree ${tildify(worktree.path)} no longer exists. The conversation continues in the project folder.`, 'warning');
-
-    return undefined;
   }
 
   private prompts() {

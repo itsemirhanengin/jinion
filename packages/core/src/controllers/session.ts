@@ -1,10 +1,11 @@
 import type { AgentSession } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { NoticeTone } from '../conversation/entries.js';
+import { firstLine } from '../lib/text.js';
 import { skillsAtom } from '../state/agent.js';
 import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/session.js';
 import { Attachments } from './attachments.js';
-import type { SessionContext } from './context.js';
+import { BUSY, type SessionContext } from './context.js';
 import { ConversationController } from './conversation.js';
 import { DialogController } from './dialogs.js';
 import { InputController } from './input.js';
@@ -14,6 +15,11 @@ import { ModelController } from './model.js';
 import { TaskController } from './tasks.js';
 import { TurnController } from './turns.js';
 import { WorktreeController } from './worktrees.js';
+
+export interface Notice {
+  text: string;
+  tone?: NoticeTone;
+}
 
 /** One conversation: its agent session, its atoms and what it does. Several can be open; a client shows one or more. */
 export class Session {
@@ -28,6 +34,7 @@ export class Session {
   readonly modes: ModeController;
   readonly tasks: TaskController;
   readonly worktrees: WorktreeController;
+  private readonly unsubscribe: () => void;
 
   constructor(
     private readonly app: Jinion,
@@ -50,7 +57,7 @@ export class Session {
     this.attachments = new Attachments(context);
     this.dialogs = new DialogController(context);
     this.worktrees = new WorktreeController(context, this.dialogs);
-    this.conversation = new ConversationController(context, app.sessions, this.worktrees);
+    this.conversation = new ConversationController(context, app.saved);
     this.models = new ModelController(context);
     this.modes = new ModeController(context);
     this.tasks = new TaskController(context);
@@ -69,29 +76,65 @@ export class Session {
     });
 
     this.input = new InputController(context, app, app.commands, this.attachments, this.turns);
+    this.unsubscribe = agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
+  }
+
+  /** The conversation it holds, as saved, so one can't be open in two sessions. */
+  get id() {
+    return this.app.store.get(this.atoms.state).id;
   }
 
   get working() {
     return this.app.store.get(this.atoms.working);
   }
 
-  /** Follows what the agent says between turns; the result stops it. */
-  start() {
-    return this.agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
-  }
-
   notice(text: string, tone?: NoticeTone) {
     this.app.store.set(this.atoms.dispatch, { type: 'notice', text, tone });
   }
 
-  /** Saves the conversation and ends its agent session; says where a worktree with work in it stays. */
+  /**
+   * Ends it for good: asks about a worktree with work in it, saves, and stops its agent with what ran in the
+   * background. `undefined` when it stays open; otherwise what to tell the user wherever they look next.
+   */
+  async close(): Promise<Notice[] | undefined> {
+    const { store } = this.app;
+
+    if (this.working) {
+      this.notice(BUSY, 'warning');
+
+      return undefined;
+    }
+
+    const left = await this.worktrees.leave();
+    if (!left) return undefined;
+
+    this.conversation.save();
+
+    const running = store.get(this.atoms.backgroundTasks).filter((task) => task.status === 'running');
+
+    this.end();
+
+    return [
+      ...(left.notice ? [left.notice] : []),
+      ...(running.length > 0
+        ? [{ text: `Stopped what ran in the background of the last conversation: ${running.map((task) => firstLine(task.title)).join(', ')}.` }]
+        : []),
+    ];
+  }
+
+  /** On quit nobody is asked: saves, ends it, and says where a worktree with work in it stays. */
   async quit() {
     const kept = await this.worktrees.quit();
 
     this.conversation.save();
-    this.agent.close();
+    this.end();
 
     return kept;
+  }
+
+  private end() {
+    this.unsubscribe();
+    this.agent.close();
   }
 
   private apply(event: AgentEvent) {

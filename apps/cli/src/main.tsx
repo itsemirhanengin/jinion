@@ -76,13 +76,13 @@ const backend: AgentBackend = values.demo
   : new ClaudeBackend({ cwd, account, memory, mcp: new McpConfig(cwd), debug, syncSkills });
 
 // Flags win over the choice `/model` saved in an earlier run.
-const saved = loadSettings().models?.[backend.name];
+const savedModel = loadSettings().models?.[backend.name];
 const model = values.model ?? process.env.JINION_MODEL;
 const effort = values.effort ?? process.env.JINION_EFFORT;
-const selection: ModelSelection = model ? { model, effort } : { ...(saved ?? { model: backend.defaultModel }), ...(effort && { effort }) };
+const selection: ModelSelection = model ? { model, effort } : { ...(savedModel ?? { model: backend.defaultModel }), ...(effort && { effort }) };
 
-const sessions: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
-const initial = values.continue ? sessions.list()[0] : undefined;
+const saved: SessionStore = values.demo ? new MemorySessionStore(demoSessions()) : new FileSessionStore(cwd);
+const initial = values.continue ? saved.list()[0] : undefined;
 const farewells: string[] = [];
 
 const info = {
@@ -97,7 +97,7 @@ const instance = await run(
     selection={selection}
     mode={mode}
     info={info}
-    sessions={sessions}
+    saved={saved}
     memory={memory}
     initial={initial}
     onExit={(message) => farewells.push(message)}

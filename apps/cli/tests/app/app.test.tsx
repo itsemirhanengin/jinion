@@ -25,7 +25,7 @@ function start(pace: number, rows = 40) {
     <App
       backend={new ScriptedBackend(scenarios, demoCommands, pace)}
       info={{ version: '0.0.0', cwd: box.project, examples: ['hello'] }}
-      sessions={new MemorySessionStore()}
+      saved={new MemorySessionStore()}
       memory={new MemoryStore(box.project)}
     />,
     { columns: 120, rows },
@@ -257,8 +257,9 @@ describe('App', () => {
 
   it('goes back into a conversation’s worktree on /resume, and on in the project folder once the worktree is gone', async () => {
     repo(box.project, (path) => box.write(join(path, 'a.ts'), 'a'));
-    const reset = vi.spyOn(ScriptedSession.prototype, 'reset');
-    const lastFolder = () => (reset.mock.lastCall as unknown[] | undefined)?.[1];
+    const moved = vi.spyOn(ScriptedSession.prototype, 'moveTo');
+    const opened = vi.spyOn(ScriptedBackend.prototype, 'session');
+    const lastFolder = () => opened.mock.lastCall?.[0]?.cwd;
 
     start(0, 50);
     await terminal.waitFor('Ask jinion anything');
@@ -273,7 +274,7 @@ describe('App', () => {
 
     expect(screen.trimEnd().split('\n').at(-1)).toContain(`[W] ${name}`);
     expect(screen).toMatch(new RegExp(`worktree +${name} on worktree-${name}`));
-    expect(reset).toHaveBeenLastCalledWith(undefined, folder);
+    expect(moved).toHaveBeenLastCalledWith(folder);
 
     box.write(join(folder, 'b.ts'), 'b');
     await terminal.type('/worktree off');
@@ -303,7 +304,7 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     // The message wraps where the temporary folder's path ends.
     await terminal.waitFor(/no longer exists\.\s+The\s+conversation\s+continues\s+in\s+the\s+project\s+folder\./);
-    expect(lastFolder()).toBeUndefined();
+    expect(lastFolder()).toBe(box.project);
   });
 
   it('plays the tour through its questions, edits and commands', async () => {
@@ -690,7 +691,7 @@ describe('App', () => {
     terminal.unmount();
 
     terminal = renderTerminal(
-      <App backend={backend} info={{ version: '0.0.0', cwd: box.project, examples: [] }} sessions={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
+      <App backend={backend} info={{ version: '0.0.0', cwd: box.project, examples: [] }} saved={new MemorySessionStore()} memory={new MemoryStore(box.project)} />,
       { columns: 120, rows: 40 },
     );
 

@@ -146,7 +146,8 @@ describe('ClaudeSession', () => {
   });
 
   it('keeps the conversation it resumed when it restarts before its first turn', async () => {
-    agent.reset({ sessionId: 'session-9', cost: 0 });
+    agent.close();
+    agent = backend.session({ resume: { sessionId: 'session-9', cost: 0 } });
     await backend.commands();
 
     await backend.mcp!.setEnabled({ 'claude.ai Gmail': false });
@@ -155,19 +156,22 @@ describe('ClaudeSession', () => {
     expect(fake.processes.map((spawned) => spawned.options.resume)).toEqual(['session-9', 'session-9']);
   });
 
-  it('works in the folder a conversation is reset into, through restarts, until the next conversation', async () => {
+  it('carries on in the folder it moved to, through restarts, while the next conversation starts in the project', async () => {
     const worktree = join(box.home, 'worktree');
 
-    agent.reset({ sessionId: 'session-4', cost: 0 }, worktree);
+    await backend.commands();
+    agent.moveTo(worktree);
     await turn('hello', (uuid) => [claudeSays.init('session-4'), claudeSays.result(uuid)]);
     fake.exit();
     await settle();
     await turn('still there?', (uuid) => [claudeSays.result(uuid)]);
 
-    expect(fake.processes.map((spawned) => spawned.options.cwd)).toEqual([worktree, worktree]);
+    expect(fake.processes.map((spawned) => spawned.options.cwd)).toEqual([box.project, worktree, worktree]);
+    expect(fake.current.options.resume).toBe('session-4');
     expect(fake.current.options.systemPrompt).toMatchObject({ prompt: expect.stringContaining(`Working directory: ${worktree}`) });
 
-    agent.reset();
+    agent.close();
+    agent = backend.session();
     await turn('new one', (uuid) => [claudeSays.result(uuid)]);
 
     expect(fake.current.options.cwd).toBe(box.project);
@@ -211,7 +215,7 @@ describe('ClaudeSession', () => {
     agent.subscribe((event) => heard.push(event));
     await turn('start the server', (uuid) => [claudeSays.taskStarted('b1', 'toolu_1', 'Start the server'), claudeSays.result(uuid)]);
 
-    agent.reset();
+    agent.close();
     expect(heard.at(-1)).toMatchObject({ type: 'tasks', tasks: [{ id: 'b1', status: 'stopped' }] });
   });
 });

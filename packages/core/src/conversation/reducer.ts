@@ -5,7 +5,7 @@ import type { Worktree } from '../git/worktrees.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
 import { isBackground, lastToolRun, nextId, noticeEntry, type Entry } from './entries.js';
-import { addEntries, createSessionState, fromSaved, updateTool, type SavedSession, type SessionState } from './session.js';
+import { addEntries, updateTool, type SessionState } from './session.js';
 import { titleOf } from './titles.js';
 
 export type Action =
@@ -19,8 +19,6 @@ export type Action =
   | { type: 'event'; event: AgentEvent }
   | { type: 'finish'; outcome: TurnOutcome; message?: string }
   | { type: 'notice'; text: string; tone?: NoticeTone }
-  | { type: 'clear' }
-  | { type: 'load'; session: SavedSession }
   | { type: 'worktree'; worktree?: Worktree };
 
 export type TurnOutcome = 'done' | 'interrupted' | 'failed';
@@ -83,12 +81,6 @@ function next(session: SessionState, action: Action): SessionState {
 
     case 'notice':
       return addEntries(session, noticeEntry(action.text, action.tone ?? 'muted'));
-
-    case 'clear':
-      return createSessionState(session.usage.contextWindow);
-
-    case 'load':
-      return fromSaved(action.session);
 
     case 'worktree':
       return { ...session, worktree: action.worktree };

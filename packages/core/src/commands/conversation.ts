@@ -31,7 +31,7 @@ export const clear: Command = {
   name: 'clear',
   aliases: ['new'],
   description: 'Save this conversation and start a new one',
-  run: (jinion) => jinion.session.conversation.newSession(),
+  run: (jinion) => jinion.newSession(),
 };
 
 export const exit: Command = {

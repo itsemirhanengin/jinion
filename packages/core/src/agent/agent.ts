@@ -65,8 +65,8 @@ export interface AgentSession {
   background?(): Promise<boolean>;
   compact?(focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent>;
   context?(): Promise<ContextUsage>;
-  /** The next prompt starts a new conversation, or continues `resume`; in `cwd`, such as a worktree, instead of the project. */
-  reset?(resume?: AgentResume, cwd?: string): void;
+  /** Carries on the conversation in `cwd`, such as a worktree made for it, instead of where it started. */
+  moveTo?(cwd: string): void;
   /** Ends its process; background tasks stop with it. */
   close(): void;
 }

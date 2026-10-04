@@ -14,10 +14,12 @@ export interface SessionStart {
   state: SessionState;
   selection: ModelSelection;
   mode: AgentMode;
+  /** Whether the conversation gets a git worktree of its own with its first message. */
+  worktree: boolean;
 }
 
 /** One session's atoms, in the app's one store. Its controllers read and write these only, never another session's. */
-export function sessionAtoms({ state: initial, selection: initialSelection, mode }: SessionStart) {
+export function sessionAtoms({ state: initial, selection: initialSelection, mode, worktree }: SessionStart) {
   const state = atom(initial);
   const entries = atom((get) => get(state).entries);
   const busySince = atom((get) => get(state).busySince);
@@ -41,6 +43,7 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     entries,
     todos: atom((get) => get(state).todos),
     worktree: atom((get) => get(state).worktree),
+    wantsWorktree: atom(worktree),
     busySince,
     busy,
     editTurns: atom((get) => editTurns(get(entries))),

@@ -189,9 +189,9 @@ export class ClaudeSession implements AgentSession {
     return toContextUsage(await this.query().getContextUsage({ detail: 'full' }));
   }
 
-  reset(resume?: ClaudeResume, cwd?: string) {
-    this.cwd = cwd ?? this.host.options.cwd;
-    this.drop(resume);
+  moveTo(cwd: string) {
+    this.cwd = cwd;
+    this.restart();
   }
 
   close() {

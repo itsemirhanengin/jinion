@@ -116,9 +116,8 @@ export class ScriptedSession implements AgentSession {
 
   async rewind() {}
 
-  reset() {
-    Object.assign(this.totals, { contextTokens: 0, cost: 0 });
-  }
+  /** The scenarios don't touch the disk, so there is nothing to move. */
+  moveTo() {}
 
   close() {}
 

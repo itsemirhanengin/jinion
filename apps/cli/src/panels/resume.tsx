@@ -18,7 +18,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
 
   const [query, setQuery] = useState(initialQuery.trim());
 
-  const sessions = useMemo(() => jinion.sessions.list().filter((session) => session.id !== current), [current]);
+  const sessions = useMemo(() => jinion.saved.list().filter((session) => session.id !== current), [current]);
   const matches = useMemo(() => fuzzyFilter(sessions, query, (session) => session.title), [sessions, query]);
   const limit = Math.max(1, Math.floor((rows - CHROME_ROWS) / ROWS_PER_SESSION));
   const [selected, setSelected] = useListNavigation(matches.length, { wrap: false, pageSize: limit });
@@ -34,7 +34,7 @@ export function ResumePanel({ query: initialQuery = '' }: { query?: string }) {
     if (!match) return;
 
     close();
-    jinion.session.conversation.resume(match.item);
+    void jinion.resume(match.item);
   };
 
   return (
