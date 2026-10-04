@@ -43,6 +43,8 @@ export interface ThreadStarted {
 
 export interface Turn {
   id: string;
+  /** Empty unless asked for, as `thread/turns/list` with `itemsView: 'full'` does. */
+  items: ThreadItem[];
   status: 'completed' | 'interrupted' | 'failed' | 'inProgress';
   error: { message: string; additionalDetails: string | null } | null;
 }

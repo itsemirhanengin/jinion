@@ -68,8 +68,6 @@ Jinion's note tools as dynamic tools, Codex's questions); bumping it means runni
 --experimental`, comparing with `agent/codex/protocol.ts`, and recording the fixtures again (`pnpm --filter
 @jinion/core codex-fixture`). What Claude has and Codex doesn't yet:
 
-- **Rewind.** `thread/revert` takes the conversation back but not the files; the code part needs the turn's diff
-  (`turn/diff/updated`) undone by Jinion.
 - **Background tasks.** Codex keeps long commands running (`thread/backgroundTerminals/*`, experimental); they could
   show in `ctrl+t` as Claude's do.
 - **Titles.** A short ephemeral thread on a small model could name conversations, as `agent/claude/title.ts` does.

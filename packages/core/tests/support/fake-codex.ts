@@ -8,6 +8,8 @@ type Message = Record<string, any>;
 export interface FakeCodexOptions {
   /** Each turn's end waits for Jinion to interrupt it, as a turn the user stops does. */
   holdUntilInterrupt?: boolean;
+  /** What `thread/turns/list` answers with. */
+  history?: Message[];
 }
 
 /**
@@ -88,6 +90,9 @@ export class FakeCodex {
 
       case 'turn/start':
         return { turn: { id: turn?.find((item) => item.method === 'turn/started')?.params.turn.id, status: 'inProgress', error: null } };
+
+      case 'thread/turns/list':
+        return { data: this.options.history ?? [], nextCursor: null };
 
       default:
         return {};

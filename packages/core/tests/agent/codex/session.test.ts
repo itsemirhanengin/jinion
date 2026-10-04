@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import type { AgentMode, RunContext } from '../../../src/agent/agent.js';
 import { CodexBackend } from '../../../src/agent/codex/backend.js';
@@ -161,6 +163,22 @@ describe('CodexSession', () => {
     void collect(session.run({ text: 'Again' }, context())).catch(() => {});
     await vi.waitFor(() => expect(fake.sent('thread/resume')).toHaveLength(1));
     expect(fake.sent('thread/resume')[0]?.params).toMatchObject({ threadId: fake.thread, excludeTurns: true });
+  });
+
+  it('rewinds from Codex’s history: the files from its patches, the conversation through thread/revert', async () => {
+    const notes = join(box.project, 'notes.txt');
+    const change = { path: notes, kind: { type: 'update', move_path: null }, diff: '@@ -1,2 +1,2 @@\n hello\n-world\n+there\n' };
+    const history = [{ id: 'turn-1', status: 'completed', error: null, items: [{ type: 'fileChange', id: 'patch', status: 'completed', changes: [change] }] }];
+    const { fake, session } = setup('compact', { fake: { history } });
+
+    box.write(notes, 'hello\nthere\n');
+
+    expect(await session.rewindPreview('turn-1')).toEqual({ files: [notes], insertions: 1, deletions: 1 });
+    await session.rewind('turn-1', { code: true, conversation: true });
+
+    expect(readFileSync(notes, 'utf8')).toBe('hello\nworld\n');
+    expect(fake.sent('thread/start')[0]?.params).toMatchObject({ historyMode: 'paginated' });
+    expect(fake.sent('thread/revert')[0]?.params).toEqual({ threadId: fake.thread, beforeTurnId: 'turn-1' });
   });
 
   it('carries on a saved thread', async () => {

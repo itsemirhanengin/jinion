@@ -3,7 +3,7 @@ import type { DebugLog } from '../../lib/debug.js';
 import { errorMessage } from '../../lib/errors.js';
 import { Inbox } from '../../lib/inbox.js';
 import type { MemoryStore } from '../../memory/store.js';
-import type { AgentMode, AgentPrompt, AgentSession, RunContext } from '../agent.js';
+import type { AgentMode, AgentPrompt, AgentSession, RewindScope, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { ModelSelection } from '../models.js';
 import type { ContextUsage } from '../usage.js';
@@ -12,6 +12,7 @@ import type { CodexConnection } from './connection.js';
 import { CodexEvents, DEFAULT_CONTEXT_WINDOW } from './events.js';
 import { developerInstructions, memoryToolSpecs } from './memory.js';
 import { modeSettings } from './modes.js';
+import { changesFrom, previewOf, restore } from './rewind.js';
 import type { Notification, SandboxPolicy, ServerRequest, ThreadStarted, Turn, UserInput } from './protocol.js';
 
 /** What a session takes from the backend it belongs to. */
@@ -123,6 +124,26 @@ export class CodexSession implements AgentSession {
 
       return undefined;
     });
+  }
+
+  async rewindPreview(id: string) {
+    const changes = changesFrom(await this.turns(), id);
+
+    return changes && previewOf(changes);
+  }
+
+  /** Codex takes the conversation back; the files are put back here, from the patches its history holds. */
+  async rewind(id: string, { code, conversation }: RewindScope) {
+    const threadId = await this.ensureThread();
+
+    if (code) {
+      const changes = changesFrom(await this.turns(), id);
+      if (!changes) throw new Error("That message isn't in this conversation's history");
+
+      restore(changes);
+    }
+
+    if (conversation) await this.request('thread/revert', { threadId, beforeTurnId: id });
   }
 
   async context(): Promise<ContextUsage> {
@@ -302,13 +323,34 @@ export class CodexSession implements AgentSession {
 
     const { thread, sandbox } = this.resume
       ? await this.request<ThreadStarted>('thread/resume', { ...settings, threadId: this.resume, excludeTurns: true })
-      : await this.request<ThreadStarted>('thread/start', { ...settings, dynamicTools: memory ? memoryToolSpecs(memory) : undefined });
+      : await this.request<ThreadStarted>('thread/start', {
+          ...settings,
+          dynamicTools: memory ? memoryToolSpecs(memory) : undefined,
+          // Only a paginated history can be taken back to before a turn, as `/rewind` does.
+          historyMode: 'paginated',
+        });
 
     this.resume = undefined;
     this.thread = thread.id;
     if (sandbox.type === 'workspaceWrite') this.workspace = sandbox;
 
     return thread.id;
+  }
+
+  /** Every turn of the thread, oldest first, with what happened in each. */
+  private async turns() {
+    const threadId = await this.ensureThread();
+    const turns: Turn[] = [];
+    let cursor: string | null = null;
+
+    do {
+      const page: { data: Turn[]; nextCursor: string | null } = await this.request('thread/turns/list', { threadId, cursor, itemsView: 'full', sortDirection: 'asc' });
+
+      turns.push(...page.data);
+      cursor = page.nextCursor;
+    } while (cursor);
+
+    return turns;
   }
 
   /** Skills the prompt mentions with `$` go along as Codex's skill inputs, as Codex's own composer sends them. */
