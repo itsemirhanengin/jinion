@@ -18,7 +18,12 @@ export const SessionState = z.object({
   /** Where the running turn begins in `entries`; what follows stays open until it ends. */
   turnFrom: z.number().optional(),
   compacting: z.boolean().optional(),
+  /** The backend it runs on; set in every open session, missing only in saves made before there were several. */
+  agent: z.string().optional(),
+  /** The backend's own id for the conversation, under which it continues. */
   agentSession: z.string().optional(),
+  /** It moved to another backend, which gets what came before with the next prompt it is sent. */
+  handover: z.boolean().optional(),
   /** Where the conversation works, when it has a worktree of its own. */
   worktree: Worktree.optional(),
   /** The last id the conversation gave an entry of its own; saved, so a resumed one goes on from it. */

@@ -15,7 +15,7 @@ import { sandboxEach } from '../support/sandbox.js';
 
 const box = sandboxEach();
 
-function setup(saved: SessionStore = new MemorySessionStore(), initial?: SavedSession) {
+function setup(saved: SessionStore = new MemorySessionStore(), initial?: SavedSession, backends = [new ScriptedBackend([], [], 0)]) {
   const screen: Screen = {
     openView: vi.fn(),
     fillPrompt: vi.fn(),
@@ -28,7 +28,7 @@ function setup(saved: SessionStore = new MemorySessionStore(), initial?: SavedSe
 
   const jinion = new Jinion(
     {
-      backend: new ScriptedBackend([], [], 0),
+      backends,
       info: { version: '0.0.0', cwd: box.project },
       saved,
       memory: new MemoryStore(box.project),
@@ -49,6 +49,26 @@ describe('Jinion', () => {
 
     expect(jinion.openSession(saved)).toBe(first);
     expect(jinion.sessions).toHaveLength(2);
+  });
+
+  it('opens a saved conversation on the backend it ran on, one saved before there were several on the first', () => {
+    const backends = [new ScriptedBackend([], [], 0), new ScriptedBackend([], [], 0, 'Other')];
+    const { jinion } = setup(undefined, undefined, backends);
+    const [older, other] = demoSessions();
+
+    expect(jinion.openSession(older).backend.name).toBe('Demo');
+    expect(jinion.openSession({ ...other!, agent: 'Other' }).backend.name).toBe('Other');
+    expect(jinion.store.get(jinion.sessions.at(-1)!.atoms.state).agent).toBe('Other');
+    expect(() => jinion.openSession({ ...other!, id: 'gone', agent: 'Gone' })).toThrow("Gone isn't available in this jinion.");
+  });
+
+  it('starts a new conversation on the backend of the one the user looks at', () => {
+    const backends = [new ScriptedBackend([], [], 0), new ScriptedBackend([], [], 0, 'Other')];
+    const { jinion } = setup(undefined, undefined, backends);
+
+    jinion.session.models.select({ model: 'scripted-demo' }, 'Other');
+
+    expect(jinion.openSession().backend.name).toBe('Other');
   });
 
   it('gives a new session the worktree choice it is opened with, or else the default', () => {

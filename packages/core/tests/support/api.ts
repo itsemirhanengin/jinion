@@ -15,12 +15,12 @@ import { MemorySessionStore } from '../../src/conversation/store.js';
 import { MemoryStore } from '../../src/memory/store.js';
 
 /** A server on the demo backend, as fast as it goes, and clients connected to it in process. */
-export function serve(project: string, { backend = new ScriptedBackend(scenarios, demoCommands, 0) as AgentBackend } = {}) {
+export function serve(project: string, { backends = [new ScriptedBackend(scenarios, demoCommands, 0)] as AgentBackend[] } = {}) {
   const saved = new MemorySessionStore(demoSessions());
   const memory = new MemoryStore(project);
 
   const server = new JinionServer({
-    backend,
+    backends,
     info: { version: '1.2.3', cwd: project },
     saved,
     memory,

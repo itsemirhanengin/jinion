@@ -1,52 +1,54 @@
+import type { AgentBackend } from '../agent/agent.js';
 import type { SignInOptions } from '../agent/accounts.js';
 import type { LimitWindow } from '../agent/usage.js';
 import { errorMessage } from '../lib/errors.js';
 import { limitsKey } from '../agent/usage.js';
 import { saveAccount } from '../settings/user.js';
-import { accountAtom, identityAtom, seenLimitsAtom } from '../state/agent.js';
+import { accountsAtom, identitiesAtom, seenLimitsAtom } from '../state/agent.js';
 import { type AppContext, BUSY } from './context.js';
 
 export interface AccountHooks {
-  /** After a switch, to read the account's models and skills again. */
-  switched(): void;
+  /** After a switch, to read the backend's models and skills again. */
+  switched(backend: AgentBackend): void;
   /** Whether a session runs a turn, which a switch waits for. */
   working(): boolean;
   /** Whether the conversation the user looks at has started, so it carries on under the new login. */
   started(): boolean;
 }
 
-/** A switch happens between turns only, so no request is cut off. */
+/** The accounts of the backend the user looks at. A switch happens between turns only, so no request is cut off. */
 export class AccountController {
-  private loginWaits = false;
+  /** The backends whose new login waits for the running turn to end. */
+  private readonly loginWaits = new Set<AgentBackend>();
 
   constructor(
     private readonly context: AppContext,
     private readonly hooks: AccountHooks,
   ) {}
 
-  loadIdentity() {
-    const { backend, store } = this.context;
+  loadIdentity(backend: AgentBackend) {
+    const { store } = this.context;
+    const forget = () => store.set(identitiesAtom, ({ [backend.name]: _, ...rest }) => rest);
 
-    store.set(identityAtom, undefined);
+    forget();
+    store.set(accountsAtom, (accounts) => (backend.accounts ? { ...accounts, [backend.name]: backend.accounts.current } : accounts));
 
-    backend.accounts?.active().then(
-      (identity) => store.set(identityAtom, identity),
-      () => store.set(identityAtom, undefined),
-    );
+    backend.accounts?.active().then((identity) => store.set(identitiesAtom, (identities) => ({ ...identities, [backend.name]: identity })), forget);
   }
 
-  recordLimits(windows: LimitWindow[]) {
-    const { backend, store } = this.context;
-    const key = limitsKey(backend.name, store.get(accountAtom));
+  recordLimits(backend: AgentBackend, windows: LimitWindow[]) {
+    const { store } = this.context;
+    const key = limitsKey(backend.name, store.get(accountsAtom)[backend.name]);
 
     store.set(seenLimitsAtom, (seen) => ({ ...seen, [key]: { windows, at: Date.now() } }));
   }
 
   select(name: string) {
-    const { backend, store, notice } = this.context;
+    const { store, notice } = this.context;
+    const backend = this.context.activeBackend();
     const accounts = backend.accounts;
     if (!accounts) return notice(`${backend.name} has a single login.`, 'warning');
-    if (name === store.get(accountAtom)) return notice(`Already using the ${name} account.`, 'muted');
+    if (name === store.get(accountsAtom)[backend.name]) return notice(`Already using the ${name} account.`, 'muted');
     if (this.hooks.working()) return notice(BUSY, 'warning');
 
     accounts
@@ -60,9 +62,8 @@ export class AccountController {
       })
       .then(
         () => {
-          store.set(accountAtom, name);
           saveAccount(backend.name, name);
-          this.hooks.switched();
+          this.hooks.switched(backend);
 
           const carries = this.hooks.started() ? '; the conversation carries on there' : '';
 
@@ -73,7 +74,8 @@ export class AccountController {
   }
 
   async remove(name: string) {
-    const { backend, store, notice } = this.context;
+    const { store, notice } = this.context;
+    const backend = this.context.activeBackend();
     if (!backend.accounts) return notice(`${backend.name} has a single login.`, 'warning');
 
     try {
@@ -88,7 +90,8 @@ export class AccountController {
 
   /** Resolves whether the account is signed in now; a cancelled sign-in says nothing. */
   async signIn(name: string, options: SignInOptions) {
-    const { backend, store, notice } = this.context;
+    const { notice } = this.context;
+    const backend = this.context.activeBackend();
     if (!backend.accounts) return false;
 
     try {
@@ -98,13 +101,13 @@ export class AccountController {
       notice(
         !account.signedIn
           ? `${name} isn't signed in yet. Try again from /account.`
-          : name === store.get(accountAtom)
+          : name === backend.accounts.current
             ? `Signed in to ${name} again${as}. The conversation carries on with the new login.`
             : `Signed in to ${name}${as}. Pick it here to switch.`,
         account.signedIn ? 'success' : 'warning',
       );
 
-      if (account.signedIn) this.signedIn(name);
+      if (account.signedIn) this.signedIn(backend, name);
 
       return account.signedIn;
     } catch (error) {
@@ -115,24 +118,23 @@ export class AccountController {
   }
 
   turnEnded() {
-    if (this.loginWaits) this.startWithNewLogin();
+    for (const backend of this.loginWaits) this.startWithNewLogin(backend);
   }
 
-  private signedIn(name: string) {
-    if (name !== this.context.backend.accounts?.current) return;
+  private signedIn(backend: AgentBackend, name: string) {
+    if (name !== backend.accounts?.current) return;
 
-    if (this.hooks.working()) this.loginWaits = true;
-    else this.startWithNewLogin();
+    if (this.hooks.working()) this.loginWaits.add(backend);
+    else this.startWithNewLogin(backend);
   }
 
   /** A new login reaches the conversation in a process that starts with it. */
-  private startWithNewLogin() {
-    const { backend, notice } = this.context;
+  private startWithNewLogin(backend: AgentBackend) {
+    this.loginWaits.delete(backend);
 
-    this.loginWaits = false;
-
-    backend.accounts?.use(backend.accounts.current).then(this.hooks.switched, (error: unknown) =>
-      notice(`Couldn't start over with the new login: ${errorMessage(error)}`, 'error'),
+    backend.accounts?.use(backend.accounts.current).then(
+      () => this.hooks.switched(backend),
+      (error: unknown) => this.context.notice(`Couldn't start over with the new login: ${errorMessage(error)}`, 'error'),
     );
   }
 }

@@ -22,7 +22,7 @@ export const sessionMethods: Methods = (connection) => {
   connection.answer('session/queue', ({ session, ...submission }) => typedIn(session).input.queue(submission));
   connection.answer('session/interrupt', ({ session }) => connection.find(session).turns.interrupt());
   connection.answer('session/notice', ({ session, text, tone }) => connection.find(session).notice(text, tone));
-  connection.answer('session/model', ({ session, selection }) => connection.find(session).models.select(selection));
+  connection.answer('session/model', ({ session, selection, agent }) => connection.find(session).models.select(selection, agent));
   connection.answer('session/mode', ({ session, mode }) => connection.find(session).modes.select(mode));
   connection.answer('session/worktree', ({ session, on }) => connection.find(session).worktrees.set(on));
   connection.answer('session/stop-task', ({ session, task }) => connection.find(session).tasks.stop(task));
@@ -36,9 +36,9 @@ export const sessionMethods: Methods = (connection) => {
   });
 
   connection.answer('session/context', ({ session }) => {
-    const { agent } = connection.find(session);
+    const { agent, backend } = connection.find(session);
 
-    return supported(agent.context?.bind(agent), app.backend.name, 'say what fills its context')();
+    return supported(agent.context?.bind(agent), backend.name, 'say what fills its context')();
   });
 
   connection.answer('session/open-rewind', ({ session }) => connection.find(session).conversation.openRewind());

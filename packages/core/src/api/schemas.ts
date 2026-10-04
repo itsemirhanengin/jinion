@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { AgentAccount } from '../agent/accounts.js';
-import { AgentCommand, AgentMode } from '../agent/agent.js';
+import { AgentCommand, AgentInfo, AgentMode, SessionFeatures } from '../agent/agent.js';
 import { ModelOption, ModelSelection } from '../agent/models.js';
 import { BackgroundTask } from '../agent/tasks.js';
 import { SeenLimits } from '../agent/usage.js';
@@ -11,25 +11,6 @@ import { SessionState } from '../conversation/session.js';
 import { Memory } from '../memory/types.js';
 import { Submission } from '../prompt/submission.js';
 
-/** What the backend can do; a client leaves out what it can't. */
-export const AgentFeatures = z.object({
-  accounts: z.boolean(),
-  mcp: z.boolean(),
-  usage: z.boolean(),
-  history: z.boolean(),
-  steer: z.boolean(),
-  rewind: z.boolean(),
-  context: z.boolean(),
-  background: z.boolean(),
-  compact: z.boolean(),
-});
-
-export type AgentFeatures = z.infer<typeof AgentFeatures>;
-
-export const AgentInfo = z.object({ name: z.string(), modes: z.array(AgentMode), features: AgentFeatures });
-
-export type AgentInfo = z.infer<typeof AgentInfo>;
-
 export const SessionSummary = z.object({ id: z.string(), title: z.string().optional(), working: z.boolean() });
 
 export type SessionSummary = z.infer<typeof SessionSummary>;
@@ -39,12 +20,16 @@ export const Sessions = z.object({ sessions: z.array(SessionSummary), active: z.
 
 export type Sessions = z.infer<typeof Sessions>;
 
-/** What every session shares that a client shows. `worktrees` is the default for new sessions. */
+/**
+ * What every session shares that a client shows; what a backend has is keyed by its name, and a backend is missing
+ * until it has said. `worktrees` is the default for new sessions.
+ */
 export const AppFields = z.object({
-  models: z.array(ModelOption).optional(),
-  account: z.string().optional(),
-  identity: AgentAccount.optional(),
-  skills: z.array(AgentCommand),
+  agents: z.array(AgentInfo),
+  models: z.record(z.string(), z.array(ModelOption)),
+  accounts: z.record(z.string(), z.string()),
+  identities: z.record(z.string(), AgentAccount),
+  skills: z.record(z.string(), z.array(AgentCommand)),
   seenLimits: SeenLimits,
   worktrees: z.boolean(),
 });
@@ -53,6 +38,9 @@ export type AppFields = z.infer<typeof AppFields>;
 
 /** What a client shows of a session besides its conversation, which it follows action by action instead. */
 export const SessionFields = z.object({
+  /** The backend it runs on, one of `AppFields.agents`. */
+  agent: z.string(),
+  features: SessionFeatures,
   selection: ModelSelection,
   mode: AgentMode,
   tasks: z.array(BackgroundTask),
@@ -108,7 +96,6 @@ export const Initialized = Sessions.extend({
   protocolVersion: z.number().int(),
   server: z.object({ name: z.string(), version: z.string() }),
   info: AppInfo,
-  agent: AgentInfo,
   commands: z.array(CommandInfo),
   app: AppFields,
 });

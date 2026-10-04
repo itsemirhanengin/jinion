@@ -33,7 +33,7 @@ export function applyEvent(session: SessionState, event: AgentEvent, at: number)
 
       const entries = session.entries.map((entry, position) => (position === index ? { ...entry, promptId: event.id } : entry));
 
-      return { ...session, entries };
+      return { ...session, entries, handover: undefined };
     }
 
     case 'compaction': {

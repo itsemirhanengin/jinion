@@ -130,10 +130,12 @@ export class ClaudeBackend implements AgentBackend, ClaudeHost {
     if (index !== -1) this.sessions.splice(index, 1);
   }
 
-  /** A session whose process runs, or else the newest one, which then starts its process. */
+  /**
+   * A session whose process runs, or else the newest one, which then starts its process. With none, as when every
+   * conversation is on another backend, one of its own asks.
+   */
   private query() {
-    const session = this.sessions.findLast((candidate) => candidate.live) ?? this.sessions.at(-1);
-    if (!session) throw new Error('There is no conversation to ask through.');
+    const session = this.sessions.findLast((candidate) => candidate.live) ?? this.sessions.at(-1) ?? this.session();
 
     return session.query();
   }

@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { BarList, Box, Meter, Text, useInput, useTheme } from '@jinion/tui';
 import { useAtomValue } from 'jotai';
 import type { AgentUsage, UsageDrivers } from '@jinion/core/agent/usage';
-import { useApi } from '../../app/api.js';
 import { grouped, money, plural, resetTime, span } from '@jinion/core/lib/format';
-import { identityAtom } from '../../state/session.js';
+import { agentAtom, identityAtom } from '../../state/session.js';
 import { Section, tokenLine } from './section.js';
 
 const LIMIT_BAR = 28;
@@ -21,7 +20,7 @@ const TRAITS: Record<UsageDrivers['traits'][number]['trait'], [label: string, wh
 const SOURCE_KINDS = { skill: 'skill', agent: 'subagent', plugin: 'plugin', mcp: 'MCP' } as const;
 
 export function UsageView({ usage, error, available }: { usage?: AgentUsage; error?: string; available: boolean }) {
-  const backend = useApi().initialized.agent;
+  const backend = useAtomValue(agentAtom);
   const theme = useTheme();
   const plan = useAtomValue(identityAtom)?.plan;
 

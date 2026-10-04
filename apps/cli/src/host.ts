@@ -37,12 +37,16 @@ export function coreOptions(flags: CoreFlags) {
   const memory = new MemoryStore(cwd);
   const debug = flags.debug ? new DebugLog() : undefined;
 
-  const backend: AgentBackend = demo
-    ? new ScriptedBackend(scenarios, demoCommands)
-    : new ClaudeBackend({ cwd, account: loadSettings().accounts?.Claude, memory, mcp: new McpConfig(cwd), debug, syncSkills });
+  const settings = loadSettings();
+
+  const backends: AgentBackend[] = demo
+    ? [new ScriptedBackend(scenarios, demoCommands)]
+    : [new ClaudeBackend({ cwd, account: settings.accounts?.Claude, memory, mcp: new McpConfig(cwd), debug, syncSkills })];
+
+  const backend = backends.find(({ name }) => name === settings.agent) ?? backends[0]!;
 
   // Flags win over the choice `/model` saved in an earlier run.
-  const savedModel = loadSettings().models?.[backend.name];
+  const savedModel = settings.models?.[backend.name];
   const { model, effort } = flags;
   const selection: ModelSelection = model ? { model, effort } : { ...(savedModel ?? { model: backend.defaultModel }), ...(effort && { effort }) };
 
@@ -50,7 +54,8 @@ export function coreOptions(flags: CoreFlags) {
   const farewells: string[] = [];
 
   const options: CoreOptions = {
-    backend,
+    backends,
+    agent: backend.name,
     selection,
     mode,
     info: { version, cwd, examples: demo ? ['add rate limiting to the api', 'hello'] : [] },

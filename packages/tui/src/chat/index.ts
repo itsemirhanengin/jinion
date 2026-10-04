@@ -12,7 +12,7 @@ export { AskResult } from './ask/ask-result.js';
 export type { AskResultProps } from './ask/ask-result.js';
 export type { Question, QuestionAnswer, QuestionOption } from './ask/question.js';
 export { ModelPanel } from './model.js';
-export type { ModelOption, ModelPanelProps, ModelSelection } from './model.js';
+export type { ModelGroup, ModelOption, ModelPanelProps, ModelSelection } from './model.js';
 export { PermissionPanel } from './permission.js';
 export type { PermissionDecision, PermissionPanelProps, PermissionRequest } from './permission.js';
 export { PlanPanel } from './plan.js';

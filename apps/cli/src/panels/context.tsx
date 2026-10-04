@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import type { ContextUsage } from '@jinion/core/agent/usage';
 import { compact, percent } from '@jinion/core/lib/format';
 import { useApi } from '../app/api.js';
-import { modelNameAtom } from '../state/session.js';
+import { agentAtom, modelNameAtom } from '../state/session.js';
 import { useAsync } from '../ui/use-async.js';
 
 export function ContextPanel() {
@@ -11,8 +11,8 @@ export function ContextPanel() {
   const theme = useTheme();
   const { close } = usePanel();
   const modelName = useAtomValue(modelNameAtom);
+  const { name, features } = useAtomValue(agentAtom);
 
-  const { name, features } = api.initialized.agent;
   const read = features.context;
   const usage = useAsync(() => (read ? api.inSession('session/context', {}) : undefined), []);
   const loaded = usage.state === 'done' ? usage.value : undefined;

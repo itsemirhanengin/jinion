@@ -1,5 +1,5 @@
 import { atom } from 'jotai/vanilla';
-import type { AgentMode } from '../agent/agent.js';
+import type { AgentMode, SessionFeatures } from '../agent/agent.js';
 import { modelLabel, modelName, type ModelSelection } from '../agent/models.js';
 import type { BackgroundTask } from '../agent/tasks.js';
 import type { Dialog } from '../conversation/dialogs.js';
@@ -12,7 +12,9 @@ import { modelsAtom } from './agent.js';
 export const DEFAULT_CONTEXT_WINDOW = 200_000;
 
 export interface SessionStart {
+  /** With `agent` set. */
   state: SessionState;
+  features: SessionFeatures;
   selection: ModelSelection;
   mode: AgentMode;
   /** Whether the conversation gets a git worktree of its own with its first message. */
@@ -20,8 +22,10 @@ export interface SessionStart {
 }
 
 /** One session's atoms, in the app's one store. Its controllers read and write these only, never another session's. */
-export function sessionAtoms({ state: initial, selection: initialSelection, mode, worktree }: SessionStart) {
+export function sessionAtoms({ state: initial, features, selection: initialSelection, mode, worktree }: SessionStart) {
   const state = atom(initial);
+  const agent = atom((get) => get(state).agent ?? '');
+  const models = atom((get) => get(modelsAtom)[get(agent)]);
   const entries = atom((get) => get(state).entries);
   const busySince = atom((get) => get(state).busySince);
   const busy = atom((get) => get(busySince) !== undefined);
@@ -47,9 +51,11 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
     turnAbort,
     working: atom((get) => get(busy) || get(turnAbort) !== undefined),
     queue: atom<Submission[]>([]),
+    agent,
+    features: atom(features),
     selection,
-    modelName: atom((get) => modelName(get(selection), get(modelsAtom))),
-    modelLabel: atom((get) => modelLabel(get(selection), get(modelsAtom))),
+    modelName: atom((get) => modelName(get(selection), get(models))),
+    modelLabel: atom((get) => modelLabel(get(selection), get(models))),
     mode: atom(mode),
     tasks,
     backgroundTasks: atom((get) => get(tasks).filter((task) => !task.foreground)),

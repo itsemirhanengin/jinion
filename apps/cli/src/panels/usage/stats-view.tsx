@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react';
 import { BarList, Box, dayKey, Heatmap, parseDay, StatGrid, Text, useDayCursor, useInput, useTheme, useWindowSize } from '@jinion/tui';
+import { useAtomValue } from 'jotai';
 import type { UsageHistory } from '@jinion/core/agent/usage';
-import { useApi } from '../../app/api.js';
 import { compact, grouped, plural, shortDate, span } from '@jinion/core/lib/format';
 import { RANGES, totalOf, usageStats, type StatsRange } from '@jinion/core/usage/stats';
+import { agentAtom } from '../../state/session.js';
 import { tokenLine } from './section.js';
 
 const SHARE_BAR = 16;
@@ -17,7 +18,7 @@ interface StatsViewProps {
 }
 
 export function StatsView({ history, progress, error, available }: StatsViewProps) {
-  const backend = useApi().initialized.agent;
+  const backend = useAtomValue(agentAtom);
   const theme = useTheme();
   const { rows } = useWindowSize();
 

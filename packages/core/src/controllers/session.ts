@@ -1,9 +1,9 @@
-import type { AgentSession } from '../agent/agent.js';
+import { type AgentBackend, type AgentSession, sessionFeatures } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
+import type { ModelSelection } from '../agent/models.js';
 import type { NoticeTone } from '../conversation/entries.js';
 import type { Action, SentAction } from '../conversation/reducer.js';
 import { firstLine } from '../lib/text.js';
-import { skillsAtom } from '../state/agent.js';
 import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/session.js';
 import { BUSY, type SessionContext } from './context.js';
 import { ConversationController } from './conversation.js';
@@ -33,20 +33,24 @@ export class Session {
   readonly modes: ModeController;
   readonly tasks: TaskController;
   readonly worktrees: WorktreeController;
-  private readonly unsubscribe: () => void;
+  private readonly context: SessionContext;
+  private unsubscribe: () => void;
   private readonly listeners = new Set<(sent: SentAction) => void>();
   private sent = 0;
 
   constructor(
     private readonly app: Jinion,
-    readonly agent: AgentSession,
+    backend: AgentBackend,
+    agent: AgentSession,
     start: SessionStart,
   ) {
     this.atoms = sessionAtoms(start);
 
     const context: SessionContext = {
       store: app.store,
-      backend: app.backend,
+      backends: app.backends,
+      activeBackend: () => app.backend,
+      backend,
       info: app.info,
       screen: app.screen,
       agent,
@@ -57,10 +61,11 @@ export class Session {
       fillPrompt: (text, fill) => app.screen.fillPrompt(this.id, text, fill),
     };
 
+    this.context = context;
     this.dialogs = new DialogController(context);
     this.worktrees = new WorktreeController(context, this.dialogs);
     this.conversation = new ConversationController(context, app.saved);
-    this.models = new ModelController(context);
+    this.models = new ModelController(context, app, (next, selection) => this.switchTo(next, selection));
     this.modes = new ModeController(context);
     this.tasks = new TaskController(context);
 
@@ -78,7 +83,15 @@ export class Session {
     });
 
     this.input = new InputController(context, app, app.commands, this.turns);
-    this.unsubscribe = agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
+    this.unsubscribe = this.follow(agent);
+  }
+
+  get backend() {
+    return this.context.backend;
+  }
+
+  get agent() {
+    return this.context.agent;
   }
 
   /** The conversation it holds, as saved, so one can't be open in two sessions. */
@@ -151,6 +164,38 @@ export class Session {
     return kept;
   }
 
+  /**
+   * Goes on with `backend`, in a conversation of its own there that gets this one handed over with the next prompt.
+   * What ran in the background stops with the agent it ran in.
+   */
+  private switchTo(backend: AgentBackend, selection: ModelSelection) {
+    const { store } = this.app;
+    const { atoms } = this;
+
+    const agent = backend.session({
+      cwd: this.folder,
+      selection,
+      mode: this.app.modeFor(backend, store.get(atoms.mode)),
+    });
+
+    this.unsubscribe();
+    this.context.agent.close();
+    this.context.backend = backend;
+    this.context.agent = agent;
+    this.unsubscribe = this.follow(agent);
+
+    store.set(atoms.features, sessionFeatures(agent));
+    store.set(atoms.selection, agent.selection);
+    store.set(atoms.mode, agent.mode);
+    store.set(atoms.tasks, []);
+    this.dispatch({ type: 'switch-agent', agent: backend.name });
+    this.app.load(backend);
+  }
+
+  private follow(agent: AgentSession) {
+    return agent.subscribe?.((event) => this.apply(event)) ?? (() => {});
+  }
+
   /** The one way its conversation changes: stamped once, so replaying it anywhere gives the same result. */
   private dispatch(action: Action) {
     const sent = { action, at: Date.now(), seq: ++this.sent };
@@ -162,7 +207,7 @@ export class Session {
   private end() {
     this.listeners.clear();
     this.unsubscribe();
-    this.agent.close();
+    this.context.agent.close();
   }
 
   private apply(event: AgentEvent) {
@@ -170,7 +215,7 @@ export class Session {
 
     switch (event.type) {
       case 'limits':
-        this.app.accounts.recordLimits(event.windows);
+        this.app.accounts.recordLimits(this.backend, event.windows);
         break;
 
       case 'mode':
@@ -178,7 +223,7 @@ export class Session {
         break;
 
       case 'commands':
-        store.set(skillsAtom, event.commands);
+        this.app.setSkills(this.backend, event.commands);
         break;
 
       case 'tasks':

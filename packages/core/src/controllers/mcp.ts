@@ -1,17 +1,19 @@
+import type { AgentBackend } from '../agent/agent.js';
 import type { McpServerInfo } from '../agent/mcp.js';
 import { errorMessage } from '../lib/errors.js';
 import type { AppContext } from './context.js';
 
-/** Changes apply from the next turn, when the agent connects again. */
+/** The servers of the backend the user looks at. Changes apply from the next turn, when the agent connects again. */
 export class McpController {
   constructor(
     private readonly context: AppContext,
-    private readonly changed: () => void,
+    private readonly changed: (backend: AgentBackend) => void,
   ) {}
 
   /** `enabled` names the servers to have on; the others go off. */
   async save(enabled: string[]) {
-    const { backend, notice } = this.context;
+    const { notice } = this.context;
+    const backend = this.context.activeBackend();
     if (!backend.mcp) return;
 
     let changes: McpServerInfo[];
@@ -30,6 +32,6 @@ export class McpController {
     const done = parts.filter(Boolean).join('; ');
 
     notice(`${done.charAt(0).toUpperCase()}${done.slice(1)}. This applies from the next turn.`, 'success');
-    this.changed();
+    this.changed(backend);
   }
 }

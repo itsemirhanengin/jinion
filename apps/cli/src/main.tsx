@@ -104,7 +104,7 @@ core.server.app.start();
 
 if (command === 'serve') {
   await serve(core.server, { cwd, version, port, stdio: values.stdio, origins: values.origin });
-  options.backend.close?.();
+  for (const backend of options.backends) backend.close?.();
   for (const message of farewells) console.error(message);
   process.exit(0);
 }
@@ -112,7 +112,7 @@ if (command === 'serve') {
 const instance = await run(<App connect={core.connect} version={version} />, { scheme });
 
 await instance.waitUntilExit();
-options.backend.close?.();
+for (const backend of options.backends) backend.close?.();
 for (const message of farewells) console.log(message);
 if (debug) console.log(`Debug log: ${debug.path}`);
 

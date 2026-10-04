@@ -6,16 +6,17 @@ import { sandboxEach } from '../../support/sandbox.js';
 const box = sandboxEach();
 
 describe('app methods', () => {
-  it('tells a client on initialize what the backend can do and which commands there are, once', async () => {
-    const { client, initialized } = await serve(box.project).connect();
-    const { agent, commands } = initialized;
+  it('tells a client on initialize what each backend and the session on it can do, and which commands there are, once', async () => {
+    const { client, initialized, session } = await serve(box.project).connect();
+    const { app, commands } = initialized;
 
     await expect(client.initialize()).rejects.toMatchObject({ message: 'The client is already initialized.' });
 
-    expect(agent).toEqual({
-      name: 'Demo',
-      modes: ['edits'],
-      features: { accounts: false, mcp: false, usage: true, history: true, steer: false, rewind: true, context: true, background: false, compact: true },
+    expect(app.agents).toEqual([{ name: 'Demo', modes: ['edits'], features: { accounts: false, mcp: false, usage: true, history: true } }]);
+
+    expect((await client.request('session/subscribe', { session })).fields).toMatchObject({
+      agent: 'Demo',
+      features: { steer: false, rewind: true, context: true, background: false, compact: true },
     });
 
     expect(commands).toContainEqual(expect.objectContaining({ name: 'clear', description: expect.any(String) }));

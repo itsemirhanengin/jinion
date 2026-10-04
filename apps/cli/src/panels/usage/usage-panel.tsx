@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Panel, Tabs, useInput, usePanel, useTabs, type KeyHint } from '@jinion/tui';
 import type { AgentUsage, UsageHistory } from '@jinion/core/agent/usage';
 import { errorMessage } from '@jinion/core/lib/errors';
+import { useAtomValue } from 'jotai';
 import { useApi } from '../../app/api.js';
+import { agentAtom } from '../../state/session.js';
 import { StatsView } from './stats-view.js';
 import { UsageView } from './usage-view.js';
 
@@ -24,11 +26,11 @@ const HINTS: Record<UsageTab, KeyHint[]> = {
 };
 
 export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
-  const { agent } = useApi().initialized;
+  const agent = useAtomValue(agentAtom);
   const { close } = usePanel();
 
   const [active] = useTabs(TABS.length, { initial: tab === 'stats' ? 1 : 0, arrows: false });
-  const loaded = useUsage();
+  const loaded = useUsage(agent.features);
 
   useInput((_, key) => {
     if (key.escape) close();
@@ -46,7 +48,7 @@ export function UsagePanel({ tab = 'usage' }: { tab?: UsageTab }) {
 }
 
 /** Both tabs load at once, so switching shows what is already there. */
-function useUsage() {
+function useUsage(features: { usage: boolean; history: boolean }) {
   const api = useApi();
 
   const [usage, setUsage] = useState<AgentUsage>();
@@ -58,7 +60,6 @@ function useUsage() {
   useEffect(() => {
     let open = true;
     const failed = (set: (message: string) => void) => (error: unknown) => open && set(errorMessage(error));
-    const { features } = api.initialized.agent;
 
     // The limits come quickly; what adds to them takes a look through the week's conversations.
     if (features.usage) {

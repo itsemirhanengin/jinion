@@ -15,7 +15,7 @@ export class InputController {
   ) {}
 
   submit(submission: Submission) {
-    const { store, notice, fillPrompt } = this.context;
+    const { store, backend, notice, fillPrompt } = this.context;
     const text = submission.text.trim();
     if (!text) return;
     if (!text.startsWith('/')) return this.turns.working ? this.turns.steer(submission) : void this.turns.prompt(submission);
@@ -23,7 +23,7 @@ export class InputController {
     const [name = ''] = text.slice(1).split(/\s+/, 1);
     const command = this.commands.find(name);
 
-    if (!command && store.get(skillsAtom).some((skill) => skill.name === name)) {
+    if (!command && store.get(skillsAtom)[backend.name]?.some((skill) => skill.name === name)) {
       // Typed out of habit: it goes back in the prompt the new way, to send as it is or to add to.
       fillPrompt(`$${text.slice(1)}`, 'replace');
 

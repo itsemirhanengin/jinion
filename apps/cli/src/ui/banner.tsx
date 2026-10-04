@@ -4,11 +4,12 @@ import { useAtomValue } from 'jotai';
 import { accountLabel } from '@jinion/core/agent/accounts';
 import { tildify } from '@jinion/core/lib/paths';
 import { useApi } from '../app/api.js';
-import { identityAtom, modelLabelAtom, worktreeAtom } from '../state/session.js';
+import { agentAtom, identityAtom, modelLabelAtom, worktreeAtom } from '../state/session.js';
 
 export function Banner() {
   const theme = useTheme();
-  const { agent, info } = useApi().initialized;
+  const { info } = useApi().initialized;
+  const agent = useAtomValue(agentAtom);
   const model = useAtomValue(modelLabelAtom);
   const identity = useAtomValue(identityAtom);
   const worktree = useAtomValue(worktreeAtom);

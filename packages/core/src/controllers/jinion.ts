@@ -2,15 +2,16 @@ import { basename } from 'node:path';
 import { isServer } from '../api/server-file.js';
 import type { NoticeTone } from '../conversation/entries.js';
 import { createStore } from 'jotai/vanilla';
-import type { AgentBackend, AgentMode } from '../agent/agent.js';
-import type { ModelSelection } from '../agent/models.js';
+import { type AgentBackend, type AgentCommand, type AgentMode, agentInfo, sessionFeatures } from '../agent/agent.js';
+import type { ModelOption, ModelSelection } from '../agent/models.js';
 import type { CommandRegistry } from '../commands/registry.js';
 import { fromSaved, createSessionState, resumeOf, type SavedSession } from '../conversation/session.js';
 import type { SessionStore } from '../conversation/store.js';
 import { worktreeExists } from '../git/worktrees.js';
 import { tildify } from '../lib/paths.js';
 import type { MemoryStore } from '../memory/store.js';
-import { accountAtom, modelsAtom, skillsAtom } from '../state/agent.js';
+import { loadSettings } from '../settings/user.js';
+import { agentsAtom, modelsAtom, skillsAtom } from '../state/agent.js';
 import { notificationsAtom, worktreesAtom } from '../state/preferences.js';
 import { DEFAULT_CONTEXT_WINDOW } from '../state/session.js';
 import { AccountController } from './accounts.js';
@@ -19,8 +20,11 @@ import { McpController } from './mcp.js';
 import { type Notice, Session } from './session.js';
 
 export interface JinionOptions {
-  backend: AgentBackend;
-  /** The model to start with; the backend's default when left out. */
+  /** In the order `/model` lists them; conversations saved before there were several ran on the first. */
+  backends: AgentBackend[];
+  /** The backend a new conversation starts on; the first when left out. */
+  agent?: string;
+  /** The model to start with on `agent`; the one last picked for it, or its default, when left out. */
   selection?: ModelSelection;
   /** The project's mode; the backend's default when left out. */
   mode?: AgentMode;
@@ -43,7 +47,7 @@ export interface OpenOptions {
 /** The app: what every session shares, the sessions open in it, and the one the user looks at. */
 export class Jinion {
   readonly store = createStore();
-  readonly backend: AgentBackend;
+  readonly backends: readonly AgentBackend[];
   readonly info: AppInfo;
   readonly saved: SessionStore;
   readonly memory: MemoryStore;
@@ -52,6 +56,9 @@ export class Jinion {
   readonly mcp: McpController;
   private readonly open: Session[] = [];
   private active?: Session;
+  /** The backends whose models, login and skills were read, which happens once a session or `/model` needs them. */
+  private readonly loaded = new Set<AgentBackend>();
+  private started = false;
   private readonly onExit?: (message: string) => void;
   private readonly sessionListeners = new Set<() => void>();
 
@@ -59,11 +66,12 @@ export class Jinion {
     private readonly options: JinionOptions,
     readonly screen: Screen,
   ) {
-    ({ backend: this.backend, info: this.info, saved: this.saved, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
+    ({ backends: this.backends, info: this.info, saved: this.saved, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
 
     const context: AppContext = {
       store: this.store,
-      backend: this.backend,
+      backends: this.backends,
+      activeBackend: () => this.backend,
       info: this.info,
       screen,
       notice: (text, tone) => this.notice(text, tone),
@@ -71,13 +79,13 @@ export class Jinion {
     };
 
     this.accounts = new AccountController(context, {
-      switched: () => this.refresh(),
+      switched: (backend) => this.refresh(backend),
       working: () => this.open.some((session) => session.working),
       started: () => this.store.get(this.session.atoms.state).agentSession !== undefined,
     });
 
-    this.mcp = new McpController(context, () => this.reloadSkills());
-    this.store.set(accountAtom, this.backend.accounts?.current);
+    this.mcp = new McpController(context, (backend) => this.reloadSkills(backend));
+    this.store.set(agentsAtom, this.backends.map(agentInfo));
     this.activate(this.openFirst(options.initial));
   }
 
@@ -88,18 +96,53 @@ export class Jinion {
     return this.active;
   }
 
+  /** The backend of the session the user looks at, which the app's accounts, MCP servers and usage are about. */
+  get backend() {
+    return this.session.backend;
+  }
+
   get sessions(): readonly Session[] {
     return this.open;
   }
 
   start() {
-    this.refresh();
+    this.started = true;
+    for (const session of this.open) this.load(session.backend);
   }
 
-  refresh() {
-    this.loadModels();
-    this.accounts.loadIdentity();
-    this.reloadSkills();
+  /** Reads a backend's models, login and skills, the first time something needs them once the app started. */
+  load(backend: AgentBackend) {
+    if (!this.started || this.loaded.has(backend)) return;
+
+    this.loaded.add(backend);
+    this.refresh(backend);
+  }
+
+  /** Every backend's models, for `/model` to list them all. */
+  loadAll() {
+    for (const backend of this.backends) this.load(backend);
+  }
+
+  named(name: string) {
+    const backend = this.backends.find((candidate) => candidate.name === name);
+    if (!backend) throw new Error(`${name} isn't available in this jinion.`);
+
+    return backend;
+  }
+
+  /** The model to use on `backend`: the one picked for it last, or its default. */
+  selectionFor(backend: AgentBackend): ModelSelection {
+    const { selection } = this.options;
+    if (selection && backend === this.startingBackend()) return selection;
+
+    return loadSettings().models?.[backend.name] ?? { model: backend.defaultModel };
+  }
+
+  /** `mode` when the backend has it; otherwise the project's mode, or the backend's first. */
+  modeFor(backend: AgentBackend, mode?: AgentMode): AgentMode {
+    const fits = [mode, this.options.mode, 'edits' as const].find((candidate) => candidate && backend.modes.includes(candidate));
+
+    return fits ?? backend.modes[0]!;
   }
 
   /**
@@ -112,27 +155,31 @@ export class Jinion {
     if (already) return already;
 
     const { store, active } = this;
+    // A saved conversation goes on where it ran; a new one starts where the user is.
+    const backend = saved ? this.named(saved.agent ?? this.backends[0]!.name) : (active?.backend ?? this.startingBackend());
     const gone = saved?.worktree && !worktreeExists(saved.worktree) ? saved.worktree : undefined;
     const contextWindow = active ? store.get(active.atoms.state).usage.contextWindow : DEFAULT_CONTEXT_WINDOW;
     const state = saved ? fromSaved(gone ? { ...saved, worktree: undefined } : saved) : createSessionState(contextWindow);
 
     this.claim(state.id, saved?.title);
 
-    const agent = this.backend.session({
+    const agent = backend.session({
       cwd: (!gone && saved?.worktree?.folder) || this.info.cwd,
-      selection: active ? store.get(active.atoms.selection) : this.options.selection,
-      mode: active ? store.get(active.atoms.mode) : this.options.mode,
+      selection: active?.backend === backend ? store.get(active.atoms.selection) : this.selectionFor(backend),
+      mode: this.modeFor(backend, active && store.get(active.atoms.mode)),
       resume: saved && resumeOf(saved),
     });
 
-    const session = new Session(this, agent, {
-      state,
+    const session = new Session(this, backend, agent, {
+      state: { ...state, agent: backend.name },
+      features: sessionFeatures(agent),
       selection: agent.selection,
       mode: agent.mode,
       worktree: worktree ?? store.get(worktreesAtom),
     });
 
     this.open.push(session);
+    this.load(backend);
     this.sessionsChanged();
 
     if (gone) {
@@ -185,6 +232,11 @@ export class Jinion {
 
   notice(text: string, tone?: NoticeTone) {
     this.session.notice(text, tone);
+  }
+
+  /** A backend's skills and MCP prompts, as one of its sessions reports them. */
+  setSkills(backend: AgentBackend, skills: AgentCommand[]) {
+    this.store.set(skillsAtom, (all) => ({ ...all, [backend.name]: skills }));
   }
 
   /** Also while the window has focus, when it comes from a session the user isn't looking at. */
@@ -241,6 +293,10 @@ export class Jinion {
     }
   }
 
+  private startingBackend() {
+    return this.named(this.options.agent ?? this.backends[0]!.name);
+  }
+
   private claim(id: string, title?: string) {
     const owner = this.saved.claim(id);
 
@@ -256,19 +312,24 @@ export class Jinion {
     for (const { text, tone } of notices) session.notice(text, tone);
   }
 
-  private loadModels() {
-    this.store.set(modelsAtom, undefined);
+  private refresh(backend: AgentBackend) {
+    this.loadModels(backend);
+    this.accounts.loadIdentity(backend);
+    this.reloadSkills(backend);
+  }
 
-    this.backend.models().then(
-      (models) => this.store.set(modelsAtom, models),
-      () => this.store.set(modelsAtom, []),
-    );
+  private loadModels(backend: AgentBackend) {
+    const { name } = backend;
+    const listed = (list: ModelOption[]) => this.store.set(modelsAtom, (all) => ({ ...all, [name]: list }));
+
+    this.store.set(modelsAtom, ({ [name]: _, ...rest }) => rest);
+    backend.models().then(listed, () => listed([]));
   }
 
   /** Later changes, e.g. as MCP servers connect, come as `commands` events. */
-  private reloadSkills() {
-    this.backend.commands().then(
-      (skills) => this.store.set(skillsAtom, skills),
+  private reloadSkills(backend: AgentBackend) {
+    backend.commands().then(
+      (skills) => this.setSkills(backend, skills),
       () => {},
     );
   }

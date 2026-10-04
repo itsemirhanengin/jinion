@@ -3,6 +3,7 @@ import type { AgentEvent } from '../agent/events.js';
 import { elapsed } from '../lib/format.js';
 import { errorMessage } from '../lib/errors.js';
 import { quote } from '../lib/text.js';
+import { handoff } from '../conversation/handoff.js';
 import type { Action } from '../conversation/reducer.js';
 import { BUSY, type SessionContext } from './context.js';
 import { DialogCancelled, type DialogController } from './dialogs.js';
@@ -39,9 +40,11 @@ export class TurnController {
 
     const { text } = submission;
     const sent = promptOf(submission);
+    const { entries, handover } = this.context.store.get(this.context.atoms.state);
+    const handed = handover ? { ...sent, text: handoff(entries, sent.text) } : sent;
 
     this.dispatch({ type: 'submit', text, prompt: sent.text === text ? undefined : sent.text });
-    await this.run(quote(text), (turn) => this.afterPreparing(() => this.context.agent.run(sent, turn)));
+    await this.run(quote(text), (turn) => this.afterPreparing(() => this.context.agent.run(handed, turn)));
   }
 
   steer(submission: Submission) {

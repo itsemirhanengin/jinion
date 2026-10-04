@@ -3,7 +3,7 @@ import { useAtomValue } from 'jotai';
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import { useApi } from '../app/api.js';
-import { modeAtom } from '../state/session.js';
+import { agentAtom, modeAtom } from '../state/session.js';
 import { modeColor } from '../ui/modes.js';
 
 export function ModePicker() {
@@ -11,8 +11,7 @@ export function ModePicker() {
   const theme = useTheme();
   const { close } = usePanel();
   const current = useAtomValue(modeAtom);
-
-  const { modes: available, name } = api.initialized.agent;
+  const { modes: available, name } = useAtomValue(agentAtom);
 
   const list = useChoiceList({
     keys: available,

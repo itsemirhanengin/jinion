@@ -5,6 +5,9 @@ import { jinionHome } from '../lib/paths.js';
 
 /** What the core keeps in the user's settings file; a client may keep keys of its own there too, which stay as they are. */
 export interface Settings {
+  /** The backend new conversations start on: the one picked last in `/model`. */
+  agent?: string;
+  /** The model picked last on each backend. */
   models?: Record<string, ModelSelection>;
   accounts?: Record<string, string>;
   mcp?: { disabled?: string[] };
@@ -23,6 +26,8 @@ export const updateSettings = (patch: (current: Settings) => Settings) =>
 
 export const saveModel = (agent: string, selection: ModelSelection) =>
   updateSettings((current) => ({ models: { ...current.models, [agent]: selection } }));
+
+export const saveAgent = (agent: string) => updateSettings(() => ({ agent }));
 
 export const saveAccount = (agent: string, account: string) =>
   updateSettings((current) => ({ accounts: { ...current.accounts, [agent]: account } }));

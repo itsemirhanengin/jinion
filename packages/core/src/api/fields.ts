@@ -1,5 +1,5 @@
 import type { Atom, Store } from 'jotai/vanilla';
-import { accountAtom, identityAtom, modelsAtom, seenLimitsAtom, skillsAtom } from '../state/agent.js';
+import { accountsAtom, agentsAtom, identitiesAtom, modelsAtom, seenLimitsAtom, skillsAtom } from '../state/agent.js';
 import { worktreesAtom } from '../state/preferences.js';
 import type { SessionAtoms } from '../state/session.js';
 import type { AppFields, FieldChange, SessionFields } from './schemas.js';
@@ -9,17 +9,18 @@ type FieldAtoms<V> = { [K in keyof V]-?: Atom<V[K]> };
 
 /** Where the server reads `AppFields` from. */
 export const appFields = {
+  agents: agentsAtom,
   models: modelsAtom,
-  account: accountAtom,
-  identity: identityAtom,
+  accounts: accountsAtom,
+  identities: identitiesAtom,
   skills: skillsAtom,
   seenLimits: seenLimitsAtom,
   worktrees: worktreesAtom,
 } satisfies FieldAtoms<AppFields>;
 
 /** Where the server reads a session's `SessionFields` from. */
-export const sessionFields = ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) =>
-  ({ selection, mode, tasks, dialog, queue, wantsWorktree, working }) satisfies FieldAtoms<SessionFields>;
+export const sessionFields = ({ agent, features, selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) =>
+  ({ agent, features, selection, mode, tasks, dialog, queue, wantsWorktree, working }) satisfies FieldAtoms<SessionFields>;
 
 export function readFields<V>(store: Store, fields: FieldAtoms<V>) {
   return Object.fromEntries(Object.entries<Atom<unknown>>(fields).map(([name, atom]) => [name, store.get(atom)])) as V;

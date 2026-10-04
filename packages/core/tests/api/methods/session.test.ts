@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
+import { ScriptedBackend } from '../../../src/agent/demo/agent.js';
+import type { Scenario } from '../../../src/agent/demo/types.js';
 import { serve } from '../../support/api.js';
 import { sandboxEach } from '../../support/sandbox.js';
 
@@ -17,6 +19,51 @@ describe('session methods', () => {
     expect(store.get(atoms.selection)).toEqual({ model: 'scripted-demo', effort: 'high' });
     expect(store.get(atoms.mode)).toBe('edits');
     expect(store.get(atoms.entries).at(-1)).toMatchObject({ kind: 'notice', text: 'Demo has no Plan mode.', tone: 'warning' });
+  });
+
+  it('moves the conversation to a model of another backend, which gets it handed over with the next prompt', async () => {
+    const prompts: string[] = [];
+
+    const echo: Scenario = {
+      title: 'Echo',
+      async *play(script, prompt) {
+        prompts.push(prompt);
+        yield* script.say(`answered ${prompts.length}`);
+      },
+    };
+
+    const { server, connect } = serve(box.project, { backends: [new ScriptedBackend([echo], [], 0), new ScriptedBackend([echo], [], 0, 'Other')] });
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+    const idle = () => vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
+
+    server.app.start();
+    await client.follow(session);
+    await client.request('session/submit', { session, text: '/model' });
+    await vi.waitFor(() => expect(client.store.get(client.appAtom)?.models.Other).toHaveLength(1));
+    await client.request('session/submit', { session, text: 'first question' });
+    await idle();
+    await client.request('session/model', { session, selection: { model: 'scripted-demo' }, agent: 'Other' });
+
+    expect(server.app.session.backend.name).toBe('Other');
+    expect(store.get(atoms.state)).toMatchObject({ agent: 'Other', handover: true });
+    expect(store.get(atoms.entries).find((entry) => entry.kind === 'user')).not.toHaveProperty('promptId');
+
+    expect(store.get(atoms.entries).at(-1)).toMatchObject({
+      kind: 'notice',
+      text: 'Switched to Scripted demo on Other. It reads the conversation so far with your next message.',
+    });
+
+    await client.request('session/submit', { session, text: 'second question' });
+    await idle();
+
+    expect(prompts[0]).toBe('first question');
+    expect(prompts[1]).toContain('User: first question\n\nAgent: answered 1');
+    expect(prompts[1]).toMatch(/\n\nsecond question$/);
+    expect(store.get(atoms.state).handover).toBeUndefined();
+    expect(client.store.get(client.session(session))?.fields.agent).toBe('Other');
+    expect(client.store.get(client.session(session))?.state).toEqual(store.get(atoms.state));
   });
 
   it('turns worktrees on for new sessions and for this one while it hasn’t started', async () => {

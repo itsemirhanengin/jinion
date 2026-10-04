@@ -54,8 +54,10 @@ export type View = z.infer<typeof View>;
 /** What the app's controllers work with. */
 export interface AppContext {
   store: Store;
-  /** What every conversation shares: models, accounts, MCP servers, skills. */
-  backend: AgentBackend;
+  /** Each holds what its conversations share: models, accounts, MCP servers, skills. */
+  backends: readonly AgentBackend[];
+  /** The backend of the session the user looks at, whose accounts and servers the app's views show. */
+  activeBackend(): AgentBackend;
   info: AppInfo;
   screen: Screen;
   /** In the conversation the user looks at. */
@@ -64,8 +66,10 @@ export interface AppContext {
   notify(body: string): void;
 }
 
-/** What a session's controllers work with: the app's, and the session's own agent and atoms. */
+/** What a session's controllers work with: the app's, and the session's own backend, agent and atoms. */
 export interface SessionContext extends AppContext {
+  /** Both change when the conversation moves to another backend, so they are read where they are used. */
+  backend: AgentBackend;
   agent: AgentSession;
   atoms: SessionAtoms;
   /** The one way a conversation changes. */

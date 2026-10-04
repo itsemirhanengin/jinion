@@ -4,7 +4,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { nextMode } from '@jinion/core/agent/modes';
 import { draftAtom } from '../prompt/draft.js';
 import { usePrompt } from '../prompt/use-prompt.js';
-import { busyAtom, dialogAtom, modeAtom, tabsAtom, worktreesAtom } from '../state/session.js';
+import { agentAtom, busyAtom, dialogAtom, modeAtom, tabsAtom, worktreesAtom } from '../state/session.js';
 import { useApi } from './api.js';
 import { useOpenView } from './use-screen.js';
 
@@ -23,6 +23,7 @@ export function useKeys() {
   const worktrees = useAtomValue(worktreesAtom);
   const dialog = useAtomValue(dialogAtom);
   const tabs = useAtomValue(tabsAtom);
+  const { modes } = useAtomValue(agentAtom);
   const [draft, setDraft] = useAtom(draftAtom);
 
   const lastEscape = useRef(0);
@@ -30,7 +31,6 @@ export function useKeys() {
   const free = !panels.top;
   // A dialog stays with its tab, so going to another one while it waits is fine; a picker would act on the wrong one.
   const tabsFree = free || (dialog !== undefined && panels.top?.id === dialog.id);
-  const { modes } = api.initialized.agent;
   const interrupt = () => api.act(api.inSession('session/interrupt', {}));
 
   useInput((input, key) => {

@@ -22,8 +22,9 @@ let box: Sandbox;
 let terminal: TestTerminal;
 
 /** The app as `jinion` runs it: the core started in this process, and the app as its client. */
-function app(backend: AgentBackend, examples: string[] = []) {
-  const core = startCore({ backend, info: { version: '0.0.0', cwd: box.project, examples }, saved: new MemorySessionStore(), memory: new MemoryStore(box.project) });
+function app(backend: AgentBackend | AgentBackend[], examples: string[] = []) {
+  const backends = [backend].flat();
+  const core = startCore({ backends, info: { version: '0.0.0', cwd: box.project, examples }, saved: new MemorySessionStore(), memory: new MemoryStore(box.project) });
 
   core.server.app.start();
 
@@ -751,6 +752,26 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     await terminal.waitFor('Which routes should be limited?');
     expect(terminal.notifications()).toHaveLength(1);
+  });
+
+  it('lists every backend’s models in /model under its name, and moves the conversation to one picked from another', async () => {
+    terminal.unmount();
+    terminal = renderTerminal(app([new ScriptedBackend(scenarios, demoCommands, 0), new ScriptedBackend(scenarios, [], 0, 'Codex')]), { columns: 120, rows: 40 });
+
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.type('hello');
+    await terminal.press(KEYS.enter);
+    await terminal.waitFor('esc interrupts a running turn');
+    await terminal.type('/model');
+    await terminal.press(KEYS.enter);
+
+    const picker = await terminal.waitFor('Up/Down model');
+
+    expect(picker).toMatch(/^\| Demo +\|\n\| > 1\. Scripted demo +current \|$/m);
+    expect(picker).toMatch(/^\| Codex +\|\n\| {3}2\. Scripted demo +\|$/m);
+
+    await terminal.press(KEYS.down, KEYS.enter);
+    await terminal.waitFor('Switched to Scripted demo on Codex. It reads the conversation so far with your next message.');
   });
 
   it('signs an account in again with l, and removes one with d twice, but not the own login or the one in use', async () => {

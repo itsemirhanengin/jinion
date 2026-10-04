@@ -4,14 +4,15 @@ import { atom, useAtomValue } from 'jotai';
 import type { GitStatus } from '@jinion/core/api/protocol';
 import { limitsKey } from '@jinion/core/agent/usage';
 import { useApi } from '../app/api.js';
-import { accountAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom, sessionAtom } from '../state/session.js';
+import { accountAtom, agentAtom, identityAtom, modeAtom, modelNameAtom, seenLimitsAtom, selectionAtom, sessionAtom } from '../state/session.js';
 import type { StatusData } from './segment.js';
 
 /** Set by the status line, which runs `git status` only while a shown segment needs it. */
 export const gitStatusAtom = atom<GitStatus | undefined>(undefined);
 
 export function useStatusData(now = Date.now()): StatusData {
-  const { agent, info } = useApi().initialized;
+  const { info } = useApi().initialized;
+  const agent = useAtomValue(agentAtom);
   const account = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
 

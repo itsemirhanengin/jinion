@@ -23,6 +23,7 @@ import {
 } from './schemas.js';
 
 /** The core's types that come over the API, so a client imports them from it rather than from where the core keeps them. */
+export type { AgentInfo, SessionFeatures } from '../agent/agent.js';
 export type { AppInfo, PromptFill, RewindPoint, View } from '../controllers/context.js';
 export type { FileChange, GitStatus, RepoChanges } from '../git/types.js';
 export type * from './schemas.js';
@@ -32,7 +33,7 @@ export type * from './schemas.js';
  * optional field doesn't: a client ignores what it doesn't know. Removing or renaming any, or making a field required,
  * does.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** The protocol's own error codes, in the range JSON-RPC leaves to it. */
 export const ApiCode = {
@@ -92,7 +93,8 @@ export const requests = {
   'session/interrupt': { params: session, result: done },
   /** A line in the conversation from the client, e.g. that a paste couldn't be read. */
   'session/notice': { params: session.extend({ text: z.string(), tone: NoticeTone.optional() }), result: done },
-  'session/model': { params: session.extend({ selection: ModelSelection }), result: done },
+  /** A model of another backend, named by `agent`, moves the conversation there. */
+  'session/model': { params: session.extend({ selection: ModelSelection, agent: z.string().optional() }), result: done },
   'session/mode': { params: session.extend({ mode: AgentMode }), result: done },
   /** The default for new sessions, and this one's choice while it hasn't started. */
   'session/worktree': { params: session.extend({ on: z.boolean() }), result: done },
@@ -125,6 +127,7 @@ export const requests = {
   'git/diff': { params: session.extend({ file: z.string() }), result: z.string() },
   'files/list': { params: session, result: z.array(z.string()) },
 
+  // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on.
   'accounts/list': { params: empty, result: z.array(AgentAccount) },
   'accounts/select': { params: name, result: done },
   'accounts/remove': { params: name, result: done },

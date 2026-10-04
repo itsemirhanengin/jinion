@@ -25,7 +25,7 @@ describe('JinionServer', () => {
     const { id } = server.app.session;
 
     expect(client.store.get(client.sessionsAtom)).toEqual({ sessions: [{ id, title: undefined, working: false }], active: id });
-    expect(client.store.get(client.appAtom)).toMatchObject({ skills: [] });
+    expect(client.store.get(client.appAtom)).toMatchObject({ skills: {}, models: {} });
   });
 
   it('refuses a client of another protocol version, and requests before initialize', async () => {
@@ -80,7 +80,7 @@ describe('JinionServer', () => {
     const { id } = server.app.session;
 
     server.app.start();
-    await vi.waitFor(() => expect(client.store.get(client.appAtom)?.skills).not.toHaveLength(0));
+    await vi.waitFor(() => expect(client.store.get(client.appAtom)?.skills.Demo).not.toHaveLength(0));
     await client.request('session/submit', { session: id, text: '/review the parser' });
 
     await vi.waitFor(() => expect(screen.fillPrompt).toHaveBeenCalledWith(id, '$review the parser', 'replace'));

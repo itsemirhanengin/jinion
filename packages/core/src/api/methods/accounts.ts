@@ -7,21 +7,30 @@ interface Signing {
   answer?(text: string): void;
 }
 
-/** The backend's accounts. Signing in is a flow: its link and what to type go to the client that started it. */
+/**
+ * The accounts of the backend the user looks at. Signing in is a flow: its link and what to type go to the client that
+ * started it.
+ */
 export const accountMethods: Methods = (connection) => {
   const { app } = connection;
-  const { backend } = app;
   const signing = new Map<string, Signing>();
 
   connection.peer.onClose(() => {
     for (const { abort } of signing.values()) abort.abort();
   });
 
-  connection.answer('accounts/list', () => supported(backend.accounts, backend.name, 'switch accounts').list());
+  connection.answer('accounts/list', () => {
+    const { backend } = app;
+
+    return supported(backend.accounts, backend.name, 'switch accounts').list();
+  });
+
   connection.answer('accounts/select', ({ name }) => app.accounts.select(name));
   connection.answer('accounts/remove', ({ name }) => app.accounts.remove(name));
 
   connection.answer('accounts/sign-in', async ({ name }) => {
+    const { backend } = app;
+
     supported(backend.accounts, backend.name, 'sign in');
     signing.get(name)?.abort.abort();
 

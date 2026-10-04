@@ -87,6 +87,45 @@ export interface RunContext {
   asksBeforeCommits(): boolean;
 }
 
+/** What a client knows of a backend; it leaves out what the backend can't do. */
+export const AgentInfo = z.object({
+  name: z.string(),
+  modes: z.array(AgentMode),
+  features: z.object({ accounts: z.boolean(), mcp: z.boolean(), usage: z.boolean(), history: z.boolean() }),
+});
+
+export type AgentInfo = z.infer<typeof AgentInfo>;
+
+export const agentInfo = (backend: AgentBackend): AgentInfo => ({
+  name: backend.name,
+  modes: backend.modes,
+  features: {
+    accounts: backend.accounts !== undefined,
+    mcp: backend.mcp !== undefined,
+    usage: backend.usage !== undefined,
+    history: backend.history !== undefined,
+  },
+});
+
+/** What one conversation's agent can do. */
+export const SessionFeatures = z.object({
+  steer: z.boolean(),
+  rewind: z.boolean(),
+  context: z.boolean(),
+  background: z.boolean(),
+  compact: z.boolean(),
+});
+
+export type SessionFeatures = z.infer<typeof SessionFeatures>;
+
+export const sessionFeatures = (session: AgentSession): SessionFeatures => ({
+  steer: session.steer !== undefined,
+  rewind: session.rewind !== undefined,
+  context: session.context !== undefined,
+  background: session.background !== undefined,
+  compact: session.compact !== undefined,
+});
+
 export const PlanDecision = z.union([
   z.object({ approve: z.literal(true), mode: AgentMode }),
   z.object({ approve: z.literal(false), note: z.string().optional() }),

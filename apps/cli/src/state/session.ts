@@ -1,4 +1,5 @@
 import { atom, type Getter } from 'jotai';
+import type { AgentCommand } from '@jinion/core/agent/agent';
 import { modelLabel, modelName } from '@jinion/core/agent/models';
 import type { JinionClient } from '@jinion/core/api/client';
 import { editTurns } from '@jinion/core/conversation/edits';
@@ -88,13 +89,29 @@ function app(get: Getter) {
   return found;
 }
 
-export const modelsAtom = atom((get) => app(get).models);
+/** The backend the shown session runs on, with what it and the session on it can do. */
+export const agentAtom = atom((get) => {
+  const { agent: name, features } = fields(get);
+  const info = app(get).agents.find((candidate) => candidate.name === name);
+  if (!info) throw new Error(`The server didn't describe ${name}.`);
 
-export const accountAtom = atom((get) => app(get).account);
+  return { ...info, features: { ...info.features, ...features } };
+});
 
-export const identityAtom = atom((get) => app(get).identity);
+export const agentsAtom = atom((get) => app(get).agents);
 
-export const skillsAtom = atom((get) => app(get).skills);
+/** Every backend's models, by backend; one is missing until it has listed them. */
+export const allModelsAtom = atom((get) => app(get).models);
+
+export const modelsAtom = atom((get) => app(get).models[get(agentAtom).name]);
+
+export const accountAtom = atom((get) => app(get).accounts[get(agentAtom).name]);
+
+export const identityAtom = atom((get) => app(get).identities[get(agentAtom).name]);
+
+const noSkills: AgentCommand[] = [];
+
+export const skillsAtom = atom((get) => app(get).skills[get(agentAtom).name] ?? noSkills);
 
 export const seenLimitsAtom = atom((get) => app(get).seenLimits);
 

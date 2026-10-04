@@ -59,6 +59,14 @@ describe('ClaudeBackend', () => {
 });
 
 describe('ClaudeSession', () => {
+  it('asks through a process of its own when no conversation is on Claude, as when every one is on Codex', async () => {
+    agent.close();
+    fake.commands = [{ name: 'review', description: 'Reviews', argumentHint: '' }];
+
+    expect(await backend.commands()).toEqual([expect.objectContaining({ name: 'review' })]);
+    expect(fake.processes).toHaveLength(1);
+  });
+
   it('tells subscribers what comes between turns, and runs mentions by the new commands', async () => {
     const heard: AgentEvent[] = [];
 

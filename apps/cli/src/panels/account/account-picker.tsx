@@ -4,7 +4,7 @@ import { useAtomValue } from 'jotai';
 import type { AgentAccount } from '@jinion/core/agent/accounts';
 import { limitsKey } from '@jinion/core/agent/usage';
 import { useApi } from '../../app/api.js';
-import { accountAtom, seenLimitsAtom } from '../../state/session.js';
+import { accountAtom, agentAtom, seenLimitsAtom } from '../../state/session.js';
 import { describeAccount } from './describe.js';
 import { SignInView } from './sign-in-view.js';
 import { useSignIn } from './use-sign-in.js';
@@ -19,12 +19,12 @@ export function AccountPicker({ signIn: initial }: { signIn?: string }) {
   const { close } = usePanel();
   const current = useAtomValue(accountAtom);
   const seen = useAtomValue(seenLimitsAtom);
+  const agent = useAtomValue(agentAtom).name;
 
   const [list, setList] = useState<AgentAccount[]>();
   const [naming, setNaming] = useState<string>();
   const [removing, setRemoving] = useState<Removing>();
 
-  const agent = api.initialized.agent.name;
   const refresh = () => api.request('accounts/list', {}).then(setList, () => setList([]));
 
   const login = useSignIn((name, signedIn) => {

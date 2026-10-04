@@ -18,34 +18,47 @@ export interface ModelSelection {
   effort?: string;
 }
 
+/** Models from one source, such as a provider; `models` is missing while they are still listed. */
+export interface ModelGroup {
+  name: string;
+  models?: ModelOption[];
+}
+
 export interface ModelPanelProps {
-  models: ModelOption[] | undefined;
-  current: ModelSelection;
+  /** With more than one, each shows under its name. */
+  groups: ModelGroup[];
+  current: ModelSelection & { group: string };
   subtitle?: string;
-  onSelect(selection: ModelSelection): void;
+  onSelect(selection: ModelSelection, group: string): void;
   onCancel(): void;
 }
 
 const DEFAULT = 'default';
-const VISIBLE = 5;
+const VISIBLE = 8;
 
-export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: ModelPanelProps) {
+export function ModelPanel({ groups, current, subtitle, onSelect, onCancel }: ModelPanelProps) {
   const theme = useTheme();
 
   const [effort, setEffort] = useState(current.effort ?? DEFAULT);
 
-  const options = models ?? [];
+  const grouped = groups.length > 1;
+  const options = groups.flatMap(({ name, models = [] }) => models.map((model) => ({ key: `${name}:${model.id}`, group: name, model })));
+  const listing = groups.filter((group) => group.models === undefined).map((group) => group.name);
 
   const list = useChoiceList({
-    keys: options.map((option) => option.id),
+    keys: options.map((option) => option.key),
     mode: 'single',
-    // Focus is kept by id, so it lands on the model in use even when the models arrive after the panel opened.
-    initialFocus: current.model,
+    // Focus is kept by key, so it lands on the model in use even when the models arrive after the panel opened.
+    initialFocus: `${current.group}:${current.model}`,
     onCancel,
-    onSubmit: ([id]) => id && onSelect({ model: id, effort: shown === DEFAULT ? undefined : shown }),
+    onSubmit: ([key]) => {
+      const chosen = options.find((option) => option.key === key);
+
+      if (chosen) onSelect({ model: chosen.model.id, effort: shown === DEFAULT ? undefined : shown }, chosen.group);
+    },
   });
 
-  const model = options.find((option) => option.id === list.focus);
+  const model = options.find((option) => option.key === list.focus)?.model;
   const levels = model && model.efforts.length > 0 ? [DEFAULT, ...model.efforts] : [];
   // A level the focused model doesn't have shows as its default, but stays picked for models that do.
   const shown = levels.includes(effort) ? effort : DEFAULT;
@@ -77,7 +90,7 @@ export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: Mo
         ['Esc', 'cancel'],
       ]}
     >
-      {models === undefined ? (
+      {listing.length === groups.length ? (
         <Text color={theme.muted}>Loading models…</Text>
       ) : (
         <ChoiceList
@@ -85,12 +98,18 @@ export function ModelPanel({ models, current, subtitle, onSelect, onCancel }: Mo
           limit={VISIBLE}
           empty="No models available"
           choices={options.map((option) => ({
-            key: option.id,
-            label: option.name,
-            description: option.description,
-            aside: option.id === current.model ? 'current' : undefined,
+            key: option.key,
+            group: grouped ? option.group : undefined,
+            label: option.model.name,
+            description: option.model.description,
+            aside: option.group === current.group && option.model.id === current.model ? 'current' : undefined,
           }))}
         />
+      )}
+      {listing.length > 0 && listing.length < groups.length && (
+        <Box marginTop={1}>
+          <Text color={theme.muted}>Listing the models of {listing.join(' and ')}…</Text>
+        </Box>
       )}
     </Panel>
   );

@@ -4,7 +4,9 @@ import type { McpServerInfo } from '@jinion/core/agent/mcp';
 import { errorMessage } from '@jinion/core/lib/errors';
 import { plural } from '@jinion/core/lib/format';
 import { truncate } from '@jinion/core/lib/text';
+import { useAtomValue } from 'jotai';
 import { useApi } from '../app/api.js';
+import { agentAtom } from '../state/session.js';
 
 const VISIBLE = 10;
 const LABEL_WIDTH = 18;
@@ -14,6 +16,7 @@ const POLL_MS = 1_500;
 /** Changes apply from the next turn, when the agent connects again. */
 export function McpPanel() {
   const api = useApi();
+  const agent = useAtomValue(agentAtom);
   const theme = useTheme();
   const { close } = usePanel();
 
@@ -101,7 +104,7 @@ export function McpPanel() {
           empty="No MCP servers yet. Add them with `claude mcp add`, in ~/.jinion/mcp.json or in the project's .mcp.json."
         />
       ) : (
-        <Text color={theme.muted}>Asking {api.initialized.agent.name} about its servers…</Text>
+        <Text color={theme.muted}>Asking {agent.name} about its servers…</Text>
       )}
     </Panel>
   );

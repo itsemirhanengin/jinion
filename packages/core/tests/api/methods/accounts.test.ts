@@ -30,7 +30,7 @@ function accounts(): AgentAccounts {
 describe('account methods', () => {
   it('signs in through the client that asked: the link and what to type go to it, its answers come back', async () => {
     const backend = Object.assign(new ScriptedBackend(scenarios, [], 0), { accounts: accounts() });
-    const { client } = await serve(box.project, { backend }).connect();
+    const { client } = await serve(box.project, { backends: [backend] }).connect();
     const link = vi.fn();
     const prompts = vi.fn();
 
@@ -50,7 +50,7 @@ describe('account methods', () => {
 
   it('stops signing in when the client cancels', async () => {
     const backend = Object.assign(new ScriptedBackend(scenarios, [], 0), { accounts: accounts() });
-    const { client } = await serve(box.project, { backend }).connect();
+    const { client } = await serve(box.project, { backends: [backend] }).connect();
     const prompts = vi.fn();
 
     backend.accounts.signIn = (_, { signal, onPrompt }) =>

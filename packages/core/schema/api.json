@@ -1,6 +1,6 @@
 {
   "title": "Jinion API",
-  "description": "JSON-RPC 2.0. Protocol version 1: what a client sends in initialize, and what the server answers with.",
+  "description": "JSON-RPC 2.0. Protocol version 2: what a client sends in initialize, and what the server answers with.",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
@@ -374,6 +374,9 @@
                 },
                 "selection": {
                   "$ref": "#/$defs/ModelSelection"
+                },
+                "agent": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -1386,9 +1389,6 @@
         "info": {
           "$ref": "#/$defs/AppInfo"
         },
-        "agent": {
-          "$ref": "#/$defs/AgentInfo"
-        },
         "commands": {
           "type": "array",
           "items": {
@@ -1404,7 +1404,6 @@
         "protocolVersion",
         "server",
         "info",
-        "agent",
         "commands",
         "app"
       ]
@@ -1448,80 +1447,6 @@
         "cwd"
       ]
     },
-    "AgentInfo": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "modes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/AgentMode"
-          }
-        },
-        "features": {
-          "$ref": "#/$defs/AgentFeatures"
-        }
-      },
-      "required": [
-        "name",
-        "modes",
-        "features"
-      ]
-    },
-    "AgentMode": {
-      "type": "string",
-      "enum": [
-        "manual",
-        "edits",
-        "plan",
-        "auto"
-      ]
-    },
-    "AgentFeatures": {
-      "type": "object",
-      "properties": {
-        "accounts": {
-          "type": "boolean"
-        },
-        "mcp": {
-          "type": "boolean"
-        },
-        "usage": {
-          "type": "boolean"
-        },
-        "history": {
-          "type": "boolean"
-        },
-        "steer": {
-          "type": "boolean"
-        },
-        "rewind": {
-          "type": "boolean"
-        },
-        "context": {
-          "type": "boolean"
-        },
-        "background": {
-          "type": "boolean"
-        },
-        "compact": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "accounts",
-        "mcp",
-        "usage",
-        "history",
-        "steer",
-        "rewind",
-        "context",
-        "background",
-        "compact"
-      ]
-    },
     "CommandInfo": {
       "type": "object",
       "properties": {
@@ -1549,22 +1474,52 @@
     "AppFields": {
       "type": "object",
       "properties": {
-        "models": {
+        "agents": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/ModelOption"
+            "$ref": "#/$defs/AgentInfo"
           }
         },
-        "account": {
-          "type": "string"
+        "models": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ModelOption"
+            }
+          }
         },
-        "identity": {
-          "$ref": "#/$defs/AgentAccount"
+        "accounts": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "identities": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/AgentAccount"
+          }
         },
         "skills": {
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/AgentCommand"
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/AgentCommand"
+            }
           }
         },
         "seenLimits": {
@@ -1575,9 +1530,64 @@
         }
       },
       "required": [
+        "agents",
+        "models",
+        "accounts",
+        "identities",
         "skills",
         "seenLimits",
         "worktrees"
+      ]
+    },
+    "AgentInfo": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "modes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AgentMode"
+          }
+        },
+        "features": {
+          "type": "object",
+          "properties": {
+            "accounts": {
+              "type": "boolean"
+            },
+            "mcp": {
+              "type": "boolean"
+            },
+            "usage": {
+              "type": "boolean"
+            },
+            "history": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "accounts",
+            "mcp",
+            "usage",
+            "history"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "modes",
+        "features"
+      ]
+    },
+    "AgentMode": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "edits",
+        "plan",
+        "auto"
       ]
     },
     "ModelOption": {
@@ -1819,8 +1829,14 @@
         "compacting": {
           "type": "boolean"
         },
+        "agent": {
+          "type": "string"
+        },
         "agentSession": {
           "type": "string"
+        },
+        "handover": {
+          "type": "boolean"
         },
         "worktree": {
           "$ref": "#/$defs/Worktree"
@@ -2953,6 +2969,12 @@
     "SessionFields": {
       "type": "object",
       "properties": {
+        "agent": {
+          "type": "string"
+        },
+        "features": {
+          "$ref": "#/$defs/SessionFeatures"
+        },
         "selection": {
           "$ref": "#/$defs/ModelSelection"
         },
@@ -2982,12 +3004,41 @@
         }
       },
       "required": [
+        "agent",
+        "features",
         "selection",
         "mode",
         "tasks",
         "queue",
         "wantsWorktree",
         "working"
+      ]
+    },
+    "SessionFeatures": {
+      "type": "object",
+      "properties": {
+        "steer": {
+          "type": "boolean"
+        },
+        "rewind": {
+          "type": "boolean"
+        },
+        "context": {
+          "type": "boolean"
+        },
+        "background": {
+          "type": "boolean"
+        },
+        "compact": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "steer",
+        "rewind",
+        "context",
+        "background",
+        "compact"
       ]
     },
     "ModelSelection": {
@@ -4024,6 +4075,22 @@
           "required": [
             "type"
           ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "switch-agent"
+            },
+            "agent": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "agent"
+          ]
         }
       ]
     },
@@ -4919,6 +4986,46 @@
             },
             "name": {
               "type": "string",
+              "const": "agent"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "features"
+            },
+            "value": {
+              "$ref": "#/$defs/SessionFeatures"
+            }
+          },
+          "required": [
+            "session",
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
               "const": "selection"
             },
             "value": {
@@ -5065,17 +5172,18 @@
           "properties": {
             "name": {
               "type": "string",
-              "const": "models"
+              "const": "agents"
             },
             "value": {
               "type": "array",
               "items": {
-                "$ref": "#/$defs/ModelOption"
+                "$ref": "#/$defs/AgentInfo"
               }
             }
           },
           "required": [
-            "name"
+            "name",
+            "value"
           ]
         },
         {
@@ -5083,14 +5191,24 @@
           "properties": {
             "name": {
               "type": "string",
-              "const": "account"
+              "const": "models"
             },
             "value": {
-              "type": "string"
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/ModelOption"
+                }
+              }
             }
           },
           "required": [
-            "name"
+            "name",
+            "value"
           ]
         },
         {
@@ -5098,14 +5216,43 @@
           "properties": {
             "name": {
               "type": "string",
-              "const": "identity"
+              "const": "accounts"
             },
             "value": {
-              "$ref": "#/$defs/AgentAccount"
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
             }
           },
           "required": [
-            "name"
+            "name",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "const": "identities"
+            },
+            "value": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "$ref": "#/$defs/AgentAccount"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "value"
           ]
         },
         {
@@ -5116,9 +5263,15 @@
               "const": "skills"
             },
             "value": {
-              "type": "array",
-              "items": {
-                "$ref": "#/$defs/AgentCommand"
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/AgentCommand"
+                }
               }
             }
           },

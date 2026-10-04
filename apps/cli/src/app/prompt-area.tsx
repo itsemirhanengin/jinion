@@ -9,7 +9,7 @@ import { skillCompletion } from '@jinion/core/prompt/skills';
 import { useAttachments } from '../prompt/attachments.js';
 import { draftAtom, historyAtom } from '../prompt/draft.js';
 import { usePrompt } from '../prompt/use-prompt.js';
-import { busyAtom, mentionAtom, modeAtom, sessionAtom, skillsAtom } from '../state/session.js';
+import { agentAtom, busyAtom, mentionAtom, modeAtom, sessionAtom, skillsAtom } from '../state/session.js';
 import { modeColor } from '../ui/modes.js';
 import { useProjectFiles } from '../ui/use-project-files.js';
 import { contextWarning } from './activity.js';
@@ -19,6 +19,7 @@ const contextLeftAtom = atom((get) => contextWarning(get(sessionAtom).usage));
 
 export function PromptArea() {
   const { initialized } = useApi();
+  const agent = useAtomValue(agentAtom);
   const attachments = useAttachments();
   const prompt = usePrompt();
   const [draft, setDraft] = useAtom(draftAtom);
@@ -29,7 +30,7 @@ export function PromptArea() {
   const contextLeft = useAtomValue(contextLeftAtom);
   const files = useProjectFiles(busy);
 
-  const { agent, commands } = initialized;
+  const { commands } = initialized;
   const footer = agent.modes.length > 1 || contextLeft !== undefined;
 
   const completions = useMemo(
@@ -61,12 +62,12 @@ export function PromptArea() {
 }
 
 function PromptFooter() {
-  const { initialized } = useApi();
   const theme = useTheme();
   const mode = useAtomValue(modeAtom);
   const left = useAtomValue(contextLeftAtom);
+  const agent = useAtomValue(agentAtom);
 
-  const modes = initialized.agent.modes.length > 1;
+  const modes = agent.modes.length > 1;
 
   return (
     <Text>

@@ -12,7 +12,6 @@ const MODEL: ModelOption = { id: 'scripted-demo', name: 'Scripted demo', descrip
 
 /** Plays scripted scenarios instead of asking a model, for `--demo` and the app's tests. */
 export class ScriptedBackend implements AgentBackend {
-  readonly name = 'Demo';
   readonly defaultModel = MODEL.id;
   /** The scenarios play the same in any mode, so there is only one. */
   readonly modes: AgentMode[] = ['edits'];
@@ -24,6 +23,8 @@ export class ScriptedBackend implements AgentBackend {
     private readonly agentCommands: AgentCommand[] = [],
     /** 1 plays like a real agent, 0 as fast as possible, for tests. */
     readonly pace = 1,
+    /** Tests give a second one another name, to move a conversation between backends. */
+    readonly name = 'Demo',
   ) {}
 
   session({ selection }: SessionOptions = {}): ScriptedSession {

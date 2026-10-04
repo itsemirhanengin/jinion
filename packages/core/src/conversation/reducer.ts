@@ -3,7 +3,7 @@ import { AgentEvent } from '../agent/events.js';
 import { Worktree } from '../git/types.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
-import { isBackground, lastToolRun, noticeEntry, NoticeTone, type Entry, type NewEntry, type Status } from './entries.js';
+import { isBackground, isPrompt, lastToolRun, noticeEntry, NoticeTone, type Entry, type NewEntry, type Status } from './entries.js';
 import { addNewEntries, updateTool, type SessionState } from './session.js';
 import { titleOf } from './titles.js';
 
@@ -23,6 +23,8 @@ export const Action = z.discriminatedUnion('type', [
   z.object({ type: z.literal('finish'), outcome: TurnOutcome, message: z.string().optional() }),
   z.object({ type: z.literal('notice'), text: z.string(), tone: NoticeTone.optional() }),
   z.object({ type: z.literal('worktree'), worktree: Worktree.optional() }),
+  /** The conversation goes on with another backend, which knows nothing of it until it is handed over. */
+  z.object({ type: z.literal('switch-agent'), agent: z.string() }),
 ]);
 
 export type Action = z.infer<typeof Action>;
@@ -94,6 +96,19 @@ function next(session: SessionState, action: Action, at: number): SessionState {
 
     case 'worktree':
       return { ...session, worktree: action.worktree };
+
+    case 'switch-agent': {
+      // The prompts before it belong to the other backend, which is no longer there to rewind them.
+      const entries = session.entries.map((entry) => {
+        if (entry.kind !== 'user') return entry;
+
+        const { promptId: _, ...rest } = entry;
+
+        return rest;
+      });
+
+      return { ...session, agent: action.agent, agentSession: undefined, entries, handover: entries.some(isPrompt) || undefined };
+    }
 
     case 'rewind': {
       const index = session.entries.findIndex((entry) => entry.id === action.entry);
