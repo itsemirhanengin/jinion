@@ -4,7 +4,7 @@ import type { ModelSelection } from '../agent/models.js';
 import type { BackgroundTask } from '../agent/tasks.js';
 import type { Dialog } from '../conversation/dialogs.js';
 import { editTurns } from '../conversation/edits.js';
-import { reduce, type Action } from '../conversation/reducer.js';
+import { reduce, type StampedAction } from '../conversation/reducer.js';
 import type { SessionState } from '../conversation/session.js';
 import { modelsAtom } from './agent.js';
 
@@ -39,7 +39,8 @@ export function sessionAtoms({ state: initial, selection: initialSelection, mode
 
   return {
     state,
-    dispatch: atom(null, (get, set, action: Action) => set(state, reduce(get(state), action))),
+    /** Written only by the session, which stamps each action once and tells whoever follows it. */
+    dispatch: atom(null, (get, set, { action, at }: StampedAction) => set(state, reduce(get(state), action, at))),
     entries,
     todos: atom((get) => get(state).todos),
     worktree: atom((get) => get(state).worktree),

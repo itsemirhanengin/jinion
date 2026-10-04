@@ -1,4 +1,5 @@
 import type { NoticeTone } from '../conversation/entries.js';
+import type { Action } from '../conversation/reducer.js';
 import type { Store } from 'jotai/vanilla';
 import type { AgentBackend, AgentSession } from '../agent/agent.js';
 import type { SessionAtoms } from '../state/session.js';
@@ -54,6 +55,8 @@ export interface AppContext {
 export interface SessionContext extends AppContext {
   agent: AgentSession;
   atoms: SessionAtoms;
+  /** The one way a conversation changes. */
+  dispatch(action: Action): void;
   /** In this session's conversation, whichever the user looks at. */
   notice(text: string, tone?: NoticeTone): void;
 }

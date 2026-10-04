@@ -1,23 +1,24 @@
 import type { Status } from './entries.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { ToolRun } from '../agent/tools.js';
-import { nextId, noticeEntry, type Entry, type ToolCallEntry } from './entries.js';
-import { addEntries, updateTool, type SessionState } from './session.js';
+import { noticeEntry, type Entry, type ToolCallEntry } from './entries.js';
+import { addEntries, addNewEntries, updateTool, type SessionState } from './session.js';
 
-export function applyEvent(session: SessionState, event: AgentEvent): SessionState {
+/** `at` is when the event came, since the reducer reads no clock of its own. */
+export function applyEvent(session: SessionState, event: AgentEvent, at: number): SessionState {
   switch (event.type) {
     case 'thinking':
     case 'text':
-      return streamed(session, event.type, event.delta);
+      return streamed(session, event.type, event.delta, at);
 
     case 'tool-start':
-      return toolStart(session, event);
+      return toolStart(session, event, at);
 
     case 'tool-output':
       return updateTool(session, event.id, (entry) => ({ ...entry, output: [...entry.output, ...event.lines] }));
 
     case 'tool-end':
-      return toolEnd(session, event);
+      return toolEnd(session, event, at);
 
     case 'usage':
       return { ...session, usage: event.usage };
@@ -30,7 +31,7 @@ export function applyEvent(session: SessionState, event: AgentEvent): SessionSta
       const index = session.entries.findLastIndex((entry) => entry.kind === 'user' && !entry.promptId);
       if (index === -1) return session;
 
-      const entries = session.entries.map((entry, at) => (at === index ? { ...entry, promptId: event.id } : entry));
+      const entries = session.entries.map((entry, position) => (position === index ? { ...entry, promptId: event.id } : entry));
 
       return { ...session, entries };
     }
@@ -39,15 +40,15 @@ export function applyEvent(session: SessionState, event: AgentEvent): SessionSta
       if (event.state === 'running') return { ...session, compacting: true };
 
       const done = { ...session, compacting: undefined };
-      if (event.state === 'failed') return addEntries(done, noticeEntry(`Couldn't compact the conversation: ${event.error}`, 'error'));
+      if (event.state === 'failed') return addNewEntries(done, noticeEntry(`Couldn't compact the conversation: ${event.error}`, 'error'));
 
       const { trigger, before, after, summary } = event;
 
-      return addEntries(done, { id: nextId(), kind: 'compaction', trigger, before, after, summary });
+      return addNewEntries(done, { kind: 'compaction', trigger, before, after, summary });
     }
 
     case 'task-end':
-      return addEntries(session, { id: nextId(), kind: 'task', task: event.task, summary: event.summary });
+      return addNewEntries(session, { kind: 'task', task: event.task, summary: event.summary });
 
     case 'limits':
     case 'mode':
@@ -59,7 +60,7 @@ export function applyEvent(session: SessionState, event: AgentEvent): SessionSta
   }
 }
 
-function streamed(session: SessionState, kind: 'thinking' | 'text', delta: string): SessionState {
+function streamed(session: SessionState, kind: 'thinking' | 'text', delta: string, at: number): SessionState {
   const last = session.entries.at(-1);
 
   if (last?.kind === kind) {
@@ -67,19 +68,18 @@ function streamed(session: SessionState, kind: 'thinking' | 'text', delta: strin
   }
 
   const text = delta.trimStart();
-  const entry: Entry = kind === 'thinking' ? { id: nextId(), kind, text, startedAt: Date.now() } : { id: nextId(), kind, text };
 
-  return addEntries(session, entry);
+  return addNewEntries(session, kind === 'thinking' ? { kind, text, startedAt: at } : { kind, text });
 }
 
-function toolStart(session: SessionState, event: Extract<AgentEvent, { type: 'tool-start' }>): SessionState {
+function toolStart(session: SessionState, event: Extract<AgentEvent, { type: 'tool-start' }>, at: number): SessionState {
   if (event.parent) {
-    const child: ToolCallEntry = { id: event.id, run: event.call, status: 'running', startedAt: Date.now() };
+    const child: ToolCallEntry = { id: event.id, run: event.call, status: 'running', startedAt: at };
 
     return updateTool(session, event.parent, (entry) => ({ ...entry, children: [...(entry.children ?? []), child] }));
   }
 
-  const entry: Entry = { id: event.id, kind: 'tool', run: event.call, status: 'running', output: [], startedAt: Date.now() };
+  const entry: Entry = { id: event.id, kind: 'tool', run: event.call, status: 'running', output: [], startedAt: at };
   if (event.call.name !== 'todo') return addEntries(session, entry);
 
   // Consecutive todo updates replace each other instead of stacking up.
@@ -89,12 +89,12 @@ function toolStart(session: SessionState, event: Extract<AgentEvent, { type: 'to
   return { ...session, entries: [...kept, entry], todos: event.call.input.groups };
 }
 
-function toolEnd(session: SessionState, event: Extract<AgentEvent, { type: 'tool-end' }>): SessionState {
+function toolEnd(session: SessionState, event: Extract<AgentEvent, { type: 'tool-end' }>, at: number): SessionState {
   const end = <T extends { run: ToolRun; status: Status }>(call: T): T => ({
     ...call,
     run: { ...call.run, result: event.result } as ToolRun,
     status: event.ok ? 'done' : 'error',
-    endedAt: Date.now(),
+    endedAt: at,
   });
 
   const { parent } = event;

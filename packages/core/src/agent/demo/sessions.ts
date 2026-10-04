@@ -1,4 +1,4 @@
-import { nextId, type Entry } from '../../conversation/entries.js';
+import type { Entry } from '../../conversation/entries.js';
 import type { SavedSession } from '../../conversation/session.js';
 
 const HOUR = 3_600_000;
@@ -45,23 +45,23 @@ export function demoSessions(): SavedSession[] {
 
 function demoSession(title: string, hoursAgo: number, turns: Turn[]): SavedSession {
   const updatedAt = Date.now() - hoursAgo * HOUR;
-  const entries: Entry[] = [{ id: nextId(), kind: 'banner' }];
+  const entries: Entry[] = [{ id: 'banner', kind: 'banner' }];
+  const id = () => `e${entries.length}`;
 
   for (const [prompt, thinking, reply] of turns) {
-    entries.push(
-      { id: nextId(), kind: 'user', text: prompt },
-      { id: nextId(), kind: 'thinking', text: thinking },
-      { id: nextId(), kind: 'text', text: reply },
-    );
+    entries.push({ id: id(), kind: 'user', text: prompt });
+    entries.push({ id: id(), kind: 'thinking', text: thinking });
+    entries.push({ id: id(), kind: 'text', text: reply });
   }
 
   return {
-    id: `demo_${nextId()}`,
+    id: `demo_${title.toLowerCase().replace(/\W+/g, '-')}`,
     title,
     createdAt: updatedAt - HOUR,
     updatedAt,
     entries,
     todos: [],
     usage: { contextTokens: 6_000 * turns.length, contextWindow: 200_000, cost: 0.02 * turns.length },
+    lastEntry: entries.length - 1,
   };
 }

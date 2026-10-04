@@ -28,7 +28,7 @@ export class ConversationController {
   }
 
   dispatch(action: Action) {
-    this.context.store.set(this.context.atoms.dispatch, action);
+    this.context.dispatch(action);
   }
 
   save() {

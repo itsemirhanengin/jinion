@@ -146,6 +146,6 @@ export class WorktreeController {
   }
 
   private dispatch(worktree: Worktree | undefined) {
-    this.context.store.set(this.context.atoms.dispatch, { type: 'worktree', worktree });
+    this.context.dispatch({ type: 'worktree', worktree });
   }
 }

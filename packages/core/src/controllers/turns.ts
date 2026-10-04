@@ -85,7 +85,7 @@ export class TurnController {
   }
 
   private dispatch(action: Action) {
-    this.context.store.set(this.context.atoms.dispatch, action);
+    this.context.dispatch(action);
   }
 
   private async *afterPreparing(events: () => AsyncIterable<AgentEvent>) {

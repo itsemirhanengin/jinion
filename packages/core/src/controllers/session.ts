@@ -1,6 +1,7 @@
 import type { AgentSession } from '../agent/agent.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { NoticeTone } from '../conversation/entries.js';
+import type { Action, StampedAction } from '../conversation/reducer.js';
 import { firstLine } from '../lib/text.js';
 import { skillsAtom } from '../state/agent.js';
 import { type SessionAtoms, type SessionStart, sessionAtoms } from '../state/session.js';
@@ -35,6 +36,7 @@ export class Session {
   readonly tasks: TaskController;
   readonly worktrees: WorktreeController;
   private readonly unsubscribe: () => void;
+  private readonly listeners = new Set<(stamped: StampedAction) => void>();
 
   constructor(
     private readonly app: Jinion,
@@ -50,6 +52,7 @@ export class Session {
       screen: app.screen,
       agent,
       atoms: this.atoms,
+      dispatch: (action) => this.dispatch(action),
       notice: (text, tone) => this.notice(text, tone),
       notify: (body) => app.notify(body, this),
     };
@@ -89,7 +92,14 @@ export class Session {
   }
 
   notice(text: string, tone?: NoticeTone) {
-    this.app.store.set(this.atoms.dispatch, { type: 'notice', text, tone });
+    this.dispatch({ type: 'notice', text, tone });
+  }
+
+  /** Follows every change to its conversation, in order, as a client replaying them needs. */
+  onAction(listener: (stamped: StampedAction) => void) {
+    this.listeners.add(listener);
+
+    return () => void this.listeners.delete(listener);
   }
 
   /**
@@ -132,7 +142,16 @@ export class Session {
     return kept;
   }
 
+  /** The one way its conversation changes: stamped once, so replaying it anywhere gives the same result. */
+  private dispatch(action: Action) {
+    const stamped = { action, at: Date.now() };
+
+    this.app.store.set(this.atoms.dispatch, stamped);
+    for (const listener of this.listeners) listener(stamped);
+  }
+
   private end() {
+    this.listeners.clear();
     this.unsubscribe();
     this.agent.close();
   }
@@ -165,6 +184,6 @@ export class Session {
         return this.turns.followAgent();
     }
 
-    store.set(this.atoms.dispatch, { type: 'event', event });
+    this.dispatch({ type: 'event', event });
   }
 }

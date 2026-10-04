@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { AgentEvent } from '../../src/agent/events.js';
 import { editTurns } from '../../src/conversation/edits.js';
 import type { Entry } from '../../src/conversation/entries.js';
-import { reduce } from '../../src/conversation/reducer.js';
+import { type Action, reduce as reduceAt } from '../../src/conversation/reducer.js';
 import { createSessionState, inRunningTurn, type SessionState } from '../../src/conversation/session.js';
 import { conversationDigest, titleDue } from '../../src/conversation/titles.js';
+
+const NOW = Date.UTC(2026, 9, 4, 12);
+
+const reduce = (session: SessionState, action: Action) => reduceAt(session, action, NOW);
 
 const events = (session: SessionState, ...list: AgentEvent[]) =>
   list.reduce((current, event) => reduce(current, { type: 'event', event }), session);
@@ -12,6 +16,23 @@ const events = (session: SessionState, ...list: AgentEvent[]) =>
 const kinds = (session: SessionState) => session.entries.map((entry) => (entry.kind === 'tool' ? `tool:${entry.status}` : entry.kind));
 
 describe('reduce', () => {
+  it('gives the same conversation each time it replays the same actions, as a client following one does', () => {
+    const start = createSessionState(200_000);
+
+    const actions: Action[] = [
+      { type: 'submit', text: 'fix the build' },
+      { type: 'event', event: { type: 'thinking', delta: 'hmm' } },
+      { type: 'event', event: { type: 'text', delta: 'Fixed.' } },
+      { type: 'notice', text: 'Saved.' },
+      { type: 'finish', outcome: 'interrupted' },
+    ];
+
+    const replay = () => actions.reduce(reduce, structuredClone(start));
+
+    expect(replay()).toEqual(replay());
+    expect(replay().entries.map((entry) => entry.id)).toEqual(['banner', 'e1', 'e2', 'e3', 'e4', 'e5']);
+  });
+
   it('starts a turn with the user’s text, titled after it', () => {
     const session = reduce(createSessionState(200_000), { type: 'submit', text: 'fix the build', prompt: 'fix the build\nfully' });
 
@@ -256,10 +277,10 @@ describe('titles', () => {
     const third = reduce(atTwo, { type: 'submit', text: 'and the docs' });
 
     expect(titleDue(third)).toBe(false);
-    expect(titleDue(third, Date.now() + 20 * 60_000)).toBe(true);
-    expect(titleDue(atTwo, Date.now() + 20 * 60_000)).toBe(false);
+    expect(titleDue(third, NOW + 20 * 60_000)).toBe(true);
+    expect(titleDue(atTwo, NOW + 20 * 60_000)).toBe(false);
 
-    expect(titleDue(titled(first, 'user'), Date.now() + 60 * 60_000)).toBe(false);
+    expect(titleDue(titled(first, 'user'), NOW + 60 * 60_000)).toBe(false);
   });
 
   it('takes a title only for the conversation it was asked for, keeping who gave it', () => {

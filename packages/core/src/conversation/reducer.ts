@@ -1,11 +1,10 @@
-import type { Status } from './entries.js';
-import type { NoticeTone } from './entries.js';
+import type { NewEntry, NoticeTone, Status } from './entries.js';
 import type { AgentEvent } from '../agent/events.js';
 import type { Worktree } from '../git/worktrees.js';
 import { applyEvent } from './apply-event.js';
 import { turnChanges } from './edits.js';
-import { isBackground, lastToolRun, nextId, noticeEntry, type Entry } from './entries.js';
-import { addEntries, updateTool, type SessionState } from './session.js';
+import { isBackground, lastToolRun, noticeEntry, type Entry } from './entries.js';
+import { addNewEntries, updateTool, type SessionState } from './session.js';
 import { titleOf } from './titles.js';
 
 export type Action =
@@ -21,66 +20,68 @@ export type Action =
   | { type: 'notice'; text: string; tone?: NoticeTone }
   | { type: 'worktree'; worktree?: Worktree };
 
-export type TurnOutcome = 'done' | 'interrupted' | 'failed';
-
-/** Pure, so everything that happens on screen can be tested without React. */
-export function reduce(session: SessionState, action: Action): SessionState {
-  return endThinking(session, next(session, action));
+/** An action with the time it happened, stamped once where it is dispatched. */
+export interface StampedAction {
+  action: Action;
+  at: number;
 }
 
-function endThinking(before: SessionState, after: SessionState): SessionState {
+export type TurnOutcome = 'done' | 'interrupted' | 'failed';
+
+/**
+ * Pure: the same conversation and the same action, at the same time, give the same conversation anywhere. So a client
+ * that replays a session's actions holds what the session holds, and everything on screen can be tested without React.
+ */
+export function reduce(session: SessionState, action: Action, at: number): SessionState {
+  return endThinking(session, next(session, action, at), at);
+}
+
+function endThinking(before: SessionState, after: SessionState, at: number): SessionState {
   const open = before.entries.at(-1);
   if (open?.kind !== 'thinking' || open.endedAt !== undefined) return after;
 
   const index = after.entries.findIndex((entry) => entry.id === open.id);
   if (index === -1 || (index === after.entries.length - 1 && after.busySince !== undefined)) return after;
 
-  const entries = after.entries.map((entry, at) => (at === index ? { ...entry, endedAt: Date.now() } : entry));
+  const entries = after.entries.map((entry, position) => (position === index ? { ...entry, endedAt: at } : entry));
 
   return { ...after, entries };
 }
 
-function next(session: SessionState, action: Action): SessionState {
+function next(session: SessionState, action: Action, at: number): SessionState {
   switch (action.type) {
     case 'submit':
       return {
-        ...addEntries(session, { id: nextId(), kind: 'user', text: action.text, prompt: action.prompt }),
+        ...addNewEntries(session, { kind: 'user', text: action.text, prompt: action.prompt }),
         title: session.title ?? titleOf(action.text),
-        busySince: Date.now(),
+        busySince: at,
         turnFrom: session.entries.length,
       };
 
     case 'agent-turn':
-      return { ...session, busySince: Date.now(), turnFrom: session.entries.length };
+      return { ...session, busySince: at, turnFrom: session.entries.length };
 
     case 'retitle':
       if (action.session !== session.id) return session;
 
-      return { ...session, title: action.title, titled: { by: action.by, turns: action.turns, at: Date.now() } };
+      return { ...session, title: action.title, titled: { by: action.by, turns: action.turns, at } };
 
     case 'steer':
-      return addEntries(session, {
-        id: nextId(),
-        kind: 'user',
-        text: action.text,
-        prompt: action.prompt,
-        steered: true,
-        promptId: action.id,
-      });
+      return addNewEntries(session, { kind: 'user', text: action.text, prompt: action.prompt, steered: true, promptId: action.id });
 
     case 'event':
-      return applyEvent(session, action.event);
+      return applyEvent(session, action.event, at);
 
     case 'approval':
       return updateTool(session, action.id, ({ waiting: _, ...entry }) =>
-        action.waiting ? { ...entry, waiting: true } : { ...entry, approvedAt: Date.now() },
+        action.waiting ? { ...entry, waiting: true } : { ...entry, approvedAt: at },
       );
 
     case 'finish':
-      return finish(session, action.outcome, action.message);
+      return finish(session, action.outcome, action.message, at);
 
     case 'notice':
-      return addEntries(session, noticeEntry(action.text, action.tone ?? 'muted'));
+      return addNewEntries(session, noticeEntry(action.text, action.tone ?? 'muted'));
 
     case 'worktree':
       return { ...session, worktree: action.worktree };
@@ -97,9 +98,9 @@ function next(session: SessionState, action: Action): SessionState {
   }
 }
 
-function finish(session: SessionState, outcome: TurnOutcome, message?: string): SessionState {
+function finish(session: SessionState, outcome: TurnOutcome, message: string | undefined, at: number): SessionState {
   const cancel = <T extends { status: Status; endedAt?: number }>(call: T): T =>
-    call.status === 'running' ? { ...call, status: 'cancelled', endedAt: Date.now() } : call;
+    call.status === 'running' ? { ...call, status: 'cancelled', endedAt: at } : call;
 
   // A subagent sent to the background goes on after the turn, and its calls with it.
   const entries: Entry[] = session.entries.map((entry) =>
@@ -109,10 +110,11 @@ function finish(session: SessionState, outcome: TurnOutcome, message?: string): 
   );
 
   const changes = turnChanges(entries, session.turnFrom ?? entries.length);
+  const added: NewEntry[] = [];
 
-  if (changes) entries.push(changes);
-  if (outcome === 'interrupted') entries.push(noticeEntry('Interrupted. Tell jinion what to do instead.', 'warning'));
-  if (outcome === 'failed') entries.push(noticeEntry(message ?? 'Something went wrong.', 'error'));
+  if (changes) added.push(changes);
+  if (outcome === 'interrupted') added.push(noticeEntry('Interrupted. Tell jinion what to do instead.', 'warning'));
+  if (outcome === 'failed') added.push(noticeEntry(message ?? 'Something went wrong.', 'error'));
 
-  return { ...session, entries, busySince: undefined, turnFrom: undefined, compacting: undefined };
+  return addNewEntries({ ...session, entries, busySince: undefined, turnFrom: undefined, compacting: undefined }, ...added);
 }

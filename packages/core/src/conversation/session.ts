@@ -2,7 +2,7 @@ import type { TodoGroup } from '../agent/todos.js';
 import type { AgentResume } from '../agent/agent.js';
 import type { Usage } from '../agent/usage.js';
 import type { Worktree } from '../git/worktrees.js';
-import { nextId, type Entry, type ToolEntry } from './entries.js';
+import type { Entry, NewEntry, ToolEntry } from './entries.js';
 
 export interface SessionState {
   id: string;
@@ -20,17 +20,20 @@ export interface SessionState {
   agentSession?: string;
   /** Where the conversation works, when it has a worktree of its own. */
   worktree?: Worktree;
+  /** The last id the conversation gave an entry of its own; saved, so a resumed one goes on from it. */
+  lastEntry?: number;
 }
 
 export type SavedSession = Omit<SessionState, 'busySince' | 'turnFrom' | 'compacting' | 'title'> & { title: string; updatedAt: number };
 
 export function createSessionState(contextWindow: number): SessionState {
   return {
-    id: `session_${Date.now().toString(36)}_${nextId()}`,
+    id: `session_${Date.now().toString(36)}_${crypto.randomUUID().slice(0, 8)}`,
     createdAt: Date.now(),
-    entries: [{ id: nextId(), kind: 'banner' }],
+    entries: [{ id: 'banner', kind: 'banner' }],
     todos: [],
     usage: { contextTokens: 0, contextWindow, cost: 0 },
+    lastEntry: 0,
   };
 }
 
@@ -60,10 +63,19 @@ export const resumeOf = (saved: SavedSession): AgentResume | undefined =>
 export const inRunningTurn = (session: Pick<SessionState, 'busySince' | 'turnFrom'>, index: number) =>
   session.busySince !== undefined && index >= (session.turnFrom ?? 0);
 
+/** For entries whose id comes from outside, such as a tool call the agent named. */
 export const addEntries = (session: SessionState, ...entries: Entry[]): SessionState => ({
   ...session,
   entries: [...session.entries, ...entries],
 });
+
+/** Ids come from the conversation's own count, so replaying its actions anywhere gives the same entries. */
+export function addNewEntries(session: SessionState, ...entries: NewEntry[]): SessionState {
+  let last = session.lastEntry ?? 0;
+  const made = entries.map((entry) => ({ ...entry, id: `e${++last}` }) as Entry);
+
+  return { ...session, entries: [...session.entries, ...made], lastEntry: last };
+}
 
 export function updateTool(session: SessionState, id: string, update: (entry: ToolEntry) => Entry): SessionState {
   return {

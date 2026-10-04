@@ -49,12 +49,12 @@ export interface ToolCallEntry {
   endedAt?: number;
 }
 
-let sequence = 0;
-/** Saved sessions come back in later runs, so ids carry a per-run prefix to stay unique next to their entries. */
-const run = Math.random().toString(36).slice(2, 8);
-export const nextId = () => `${run}${++sequence}`;
+/** An entry before the conversation gives it an id. */
+export type NewEntry = DistributiveOmit<Entry, 'id'>;
 
-export const noticeEntry = (text: string, tone: NoticeTone): Entry => ({ id: nextId(), kind: 'notice', text, tone });
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+
+export const noticeEntry = (text: string, tone: NoticeTone): NewEntry => ({ kind: 'notice', text, tone });
 
 export const isBackground = (entry: ToolEntry) =>
   (entry.run.name === 'bash' || entry.run.name === 'agent') && entry.run.result?.background !== undefined;

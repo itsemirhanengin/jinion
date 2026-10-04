@@ -1,4 +1,4 @@
-import { isPrompt, nextId, type ChangedFile, type Entry } from './entries.js';
+import { isPrompt, type ChangedFile, type Entry, type NewEntry } from './entries.js';
 
 /** From the agent's edits rather than git, for `/diff`'s turn views. */
 export interface EditTurn {
@@ -61,10 +61,10 @@ export function changedFiles(edits: Edit[]): (ChangedFile & { patch: string })[]
 }
 
 /** A turn the agent started itself goes with the message before it, as in `/diff`. */
-export function turnChanges(entries: Entry[], from: number): Entry | undefined {
+export function turnChanges(entries: Entry[], from: number): NewEntry | undefined {
   const files = changedFiles(entries.slice(from).flatMap(editsOf)).map(({ patch: _, ...file }) => file);
   const turn = entries.slice(0, from + 1).findLast(isPrompt);
   if (files.length === 0 || !turn) return undefined;
 
-  return { id: nextId(), kind: 'changes', turn: turn.id, files };
+  return { kind: 'changes', turn: turn.id, files };
 }
