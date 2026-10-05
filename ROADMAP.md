@@ -61,6 +61,47 @@ are private by default; `@jinion/tui` and `@jinion/virtualization` go too, unles
 
 ## Next
 
+### The desktop app
+
+`apps/desktop`, the core's second client, in Electron. What was decided before starting it:
+
+- **Electron**, since the core is Node and runs in Electron's own Node processes as it is; Monaco, xterm.js and
+  node-pty, which the IDE side needs, are at home there, as VS Code and Cursor show. Tauri would need the core as a Node
+  sidecar and bridges for the terminal and LSP.
+- **A window per project, a core per window.** The core works in one folder (`info.cwd`: its settings, memory and saved
+  conversations), so a window opens one project, as in VS Code. A projects screen lists the recent ones and opens a
+  folder.
+- **Three kinds of process.** The main process holds the windows, menus and updates, and draws nothing. Each window's
+  core runs in a `utilityProcess`, so a busy core never stalls a window or another project. The renderer is a client
+  like the TUI, a `JinionClient` from `@jinion/core/api/client`. The two talk over a `MessagePort` the main process
+  hands to both ends, a transport next to the in-process, stdio and WebSocket ones, so no port is open and no token is
+  needed (`connectWebSocket` uses Node's `ws` and can't run in a renderer anyway). The renderer is sandboxed with
+  context isolation; its preload only passes the port.
+- **The design system is `packages/ui`**, as `@jinion/tui` is for the terminal. `@jinion/ui` (the theme and
+  primitives) and `@jinion/ui/chat` (messages, tool views, the diff card, todos, the composer, the ask, permission and
+  plan panels) know nothing about Jinion; their types are their own, shaped like the core's, so the app passes one to
+  the other. Tailwind v4 for the styles, Base UI for menus, dialogs and popovers, lucide for icons, the system font.
+  The look follows Jinion's earlier design: a light sidebar of threads, the open ones as tabs, the conversation in a
+  centered column, a composer with the mode, model, permissions and branch under it.
+- **Two modes in one window**, as Cursor has: Agent, with the conversation in the middle and the code out of the way,
+  as in the earlier design; IDE, with the editor in the middle, the file tree, a terminal below and the conversation
+  beside it. Agent comes first.
+- **Threads are sessions.** The sidebar lists the project's saved conversations (`saved/list`), the tabs are the open
+  sessions (`sessions/*`), each with whether it works and the lines it changed.
+
+Steps, design first, as the TUI was built:
+
+1. **Design.** `packages/ui` and a playground (`pnpm dev:ui`) that draws each piece from sample conversations, then
+   the Agent screen as a whole.
+2. **The shell.** `apps/desktop`: the core with the demo backend in a utility process, the `MessagePort` transport, and
+   the renderer drawing the demo's scenarios live through the API, with streaming, dialogs and tabs.
+3. **Real work.** The real backends, the projects screen, sign-in, models, modes and permissions, worktrees and the
+   branch from the composer, notifications, a Mac app's menus and shortcuts.
+4. **IDE mode.** Monaco with the files the agent touches, the file tree, a terminal (xterm.js over node-pty, on a stream
+   of its own, as planned for terminal panes), diffs to review; LSP after.
+5. **Shipping.** Signed and notarized builds, updates read from an address of their own (GitHub marks one release
+   "Latest" for both products), `@jinion/desktop` on its own version, from 0.2.0.
+
 ### Codex, the rest
 
 The Codex adapter (`agent/codex/`) works through `codex app-server`, which every conversation shares, each as a
@@ -160,6 +201,7 @@ Steps, each one leaving Jinion working as it does today:
 5. **Tabs in the TUI** (done). A session per tab; the bar shows from two tabs on, with a spinner on one that works and
    `?` on one that waits on the user, and takes clicks. `ctrl+n` or `/tab` opens a tab, `alt+1..9` goes to one,
    `/close` closes it, and `/resume` opens into a new tab. A worktree per tab only when worktrees are on.
+6. **The desktop app**, under Next.
 
 Known before starting:
 
