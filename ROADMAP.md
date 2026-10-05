@@ -83,22 +83,50 @@ are private by default; `@jinion/tui` and `@jinion/virtualization` go too, unles
   the other. Tailwind v4 for the styles, Base UI for menus, dialogs and popovers, lucide for icons, the system font.
   The look follows Jinion's earlier design: a light sidebar of threads, the open ones as tabs, the conversation in a
   centered column, a composer with the mode, model, permissions and branch under it.
-- **Two modes in one window**, as Cursor has: Agent, with the conversation in the middle and the code out of the way,
-  as in the earlier design; IDE, with the editor in the middle, the file tree, a terminal below and the conversation
-  beside it. Agent comes first.
-- **Threads are sessions.** The sidebar lists the project's saved conversations (`saved/list`), the tabs are the open
-  sessions (`sessions/*`), each with whether it works and the lines it changed.
+- **The agent first.** The conversation is the middle of the window and the code is out of the way: a panel shows it
+  when asked, read-only. An editor, a terminal and an IDE layout come later, as does a product that is only the chat.
+- **Light first, dark later**, so the colors are named variables a dark set can override.
+
+How the window behaves, as agreed:
+
+- **The window.** A sidebar (`⌘B`): New thread, Skills and Memory, then the project's threads, those open or working
+  first, each with its state and how long ago it changed; the account and limits at its foot. A top row: the project,
+  the open threads as tabs, the button for the side panel. The conversation and the composer in the middle. The side
+  panel on the right, closed until asked for, its width dragged.
+- **Threads are sessions.** The sidebar lists the saved ones (`saved/list`), the tabs are the open ones (`sessions/*`).
+  New thread opens a tab, a saved thread opens into one, closing a tab keeps the thread in the sidebar. One that works
+  in the background shows a spinner on its tab and another mark when it waits on the user; a desktop notification
+  comes when it ends or waits while the window isn't in focus (`client/focus`).
+- **The conversation.** Reads, searches and listings fold into one line (`Explored 3 files, 1 search`), each edit is a
+  diff card whose Open shows it in the side panel, a command is a card whose output folds, a subagent a group of its
+  own calls; web, MCP, notices and compaction get small lines. A turn ends on a card of what it changed, which opens
+  them in the panel. Rewind is on a message's hover, showing which files go back before it asks.
+- **The composer.** `@` for files, `/` for the command palette, images pasted or dropped. Under it the mode (`⇧Tab`
+  goes through them) and the model, grouped by backend, one of another backend handing the conversation over; below,
+  local or worktree, the branch, and how full the context is. While a turn runs, Send becomes Stop (`Esc` too) and
+  what is typed queues above the composer. While the turn runs, its todos stay above the composer, and fold into one
+  line in the conversation when it ends. A permission, a question or a plan to approve takes the composer's place
+  until answered, and marks the tab.
+- **The side panel.** Changes: the files the thread changed, each diff highlighted, unified or side by side. Files: the
+  tree with what the agent touched marked, a file opening read-only; a path in the conversation opens there at its
+  line. Tasks: the todos, background commands with their output and a stop, subagents. It follows the tab shown; open
+  or closed and its width are the window's. It doesn't open by itself when the agent edits: its button gets a mark.
+  The API has no call for a file's contents yet: `files/read` is to add, which keeps the protocol's version.
+- **The rest.** A projects screen of recent folders, kept by the desktop app rather than the core. Sign-in through a
+  link the browser opens, usage and limits, screens for memory, skills and MCP servers, whose calls the API has.
+  Shortcuts: `⌘N` new thread, `⌘W` close the tab, `⌘1`-`⌘9` go to a tab, `⌘K` the palette, `⌘L` the composer.
 
 Steps, design first, as the TUI was built:
 
-1. **Design.** `packages/ui` and a playground (`pnpm dev:ui`) that draws each piece from sample conversations, then
-   the Agent screen as a whole.
-2. **The shell.** `apps/desktop`: the core with the demo backend in a utility process, the `MessagePort` transport, and
-   the renderer drawing the demo's scenarios live through the API, with streaming, dialogs and tabs.
-3. **Real work.** The real backends, the projects screen, sign-in, models, modes and permissions, worktrees and the
-   branch from the composer, notifications, a Mac app's menus and shortcuts.
-4. **IDE mode.** Monaco with the files the agent touches, the file tree, a terminal (xterm.js over node-pty, on a stream
-   of its own, as planned for terminal panes), diffs to review; LSP after.
+1. **Design** (done). `packages/ui` and its playground (`pnpm dev:ui`), drawing each piece from sample conversations.
+2. **The app on sample data** (now). `apps/desktop` in Electron, its own window, every part clickable, with no core
+   behind it: projects, threads, tabs, the composer's menus, the side panel, skills and memory, and replies played
+   from a few scripted scenarios, one of them asking a permission. The sample data has the API's shapes and goes
+   through the core's reducer, so the core takes its place without the screens changing.
+3. **The core behind it.** The core in a utility process and the `MessagePort` transport, the demo backend first, then
+   the real ones; sign-in, worktrees and the branch, notifications, a window per project, a Mac app's menus.
+4. **The code.** An editor (Monaco) for the files the agent touches, a terminal (xterm.js over node-pty, on a stream of
+   its own, as planned for terminal panes), LSP after.
 5. **Shipping.** Signed and notarized builds, updates read from an address of their own (GitHub marks one release
    "Latest" for both products), `@jinion/desktop` on its own version, from 0.2.0.
 
