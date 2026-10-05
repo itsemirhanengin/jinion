@@ -1,4 +1,4 @@
-import { classNames } from '@jinion/ui';
+import { classNames, FadeText } from '@jinion/ui';
 import { Columns2, Plus, X } from 'lucide-react';
 import type { ComponentType } from 'react';
 import { TabContext, useLayout, useWorkbench } from './context.js';
@@ -68,7 +68,7 @@ function Tab({ tab, active, preview }: { tab: TabRef; active: boolean; preview: 
   return (
     <div
       className={classNames(
-        'group relative flex h-7 max-w-56 min-w-0 shrink-0 items-center rounded-lg',
+        'group flex h-7 w-44 min-w-24 shrink items-center rounded-lg pr-1',
         active ? 'bg-shade text-ink' : 'text-muted hover:bg-shade hover:text-ink',
       )}
     >
@@ -77,19 +77,22 @@ function Tab({ tab, active, preview }: { tab: TabRef; active: boolean; preview: 
         onClick={() => workbench.open(tab, { preview })}
         onDoubleClick={() => workbench.pin(key)}
         onAuxClick={(event) => event.button === 1 && workbench.close(key)}
-        className="flex h-full min-w-0 cursor-default items-center gap-2 pr-2.5 pl-2.5 group-hover:pr-7"
+        className="flex h-full min-w-0 flex-1 cursor-default items-center gap-2 pr-1 pl-2.5"
       >
         {Mark && <Mark id={tab.id} />}
-        <span className={classNames('min-w-0 truncate', preview && 'italic')}>
+        <FadeText className={classNames(preview && 'italic')}>
           <Title id={tab.id} />
-        </span>
+        </FadeText>
       </button>
       <button
         type="button"
         aria-label="Close"
         title="Close"
         onClick={() => workbench.close(key)}
-        className="absolute right-1 hidden size-5 cursor-default items-center justify-center rounded-md text-muted group-hover:flex hover:bg-shade hover:text-ink"
+        className={classNames(
+          'flex size-5 shrink-0 cursor-default items-center justify-center rounded-md text-muted hover:bg-shade hover:text-ink focus-visible:opacity-100',
+          active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+        )}
       >
         <X className="size-3.5" />
       </button>
