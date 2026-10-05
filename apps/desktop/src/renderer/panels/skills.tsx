@@ -1,21 +1,24 @@
 import type { AgentCommand } from '@jinion/core/agent/agent';
-import { List, Page } from '@jinion/ui';
-import { useSetAtom } from 'jotai';
+import { Empty, List, Page } from '@jinion/ui';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { Plug, Shapes } from 'lucide-react';
 import { draftsAtom, viewAtom } from '../state/app.js';
-import { useActiveSession, useJinion } from '../state/session.js';
+import { useActiveSession, useCore } from '../state/session.js';
 
 /** The skills and MCP prompts the agent has, each sent as a slash command; picking one starts a message with it. */
 export function Skills() {
-  const jinion = useJinion();
+  const core = useCore();
   const session = useActiveSession();
+  const app = useAtomValue(core.appAtom);
   const setDrafts = useSetAtom(draftsAtom);
   const setView = useSetAtom(viewAtom);
 
-  const groups = Map.groupBy(jinion.skills, (skill) => skill.group);
+  // A backend lists its skills once its first session has started, so they are the active session's backend's.
+  const skills = (session && app?.skills[session.fields.agent]) ?? [];
+  const groups = Map.groupBy(skills, (skill) => skill.group);
 
-  const use = (skill: AgentCommand) => {
-    const id = session?.id ?? jinion.open();
+  const use = async (skill: AgentCommand) => {
+    const id = session?.id ?? (await core.open());
 
     setDrafts((drafts) => ({ ...drafts, [id]: `/${skill.name} ` }));
     setView('thread');
@@ -23,12 +26,13 @@ export function Skills() {
 
   return (
     <Page title="Skills" description="What the agent can do on a slash command: the project's skills, yours, and prompts from MCP servers. Pick one to start a message with it.">
-      {[...groups].map(([group, skills]) => (
+      {skills.length === 0 && <Empty>The agent lists its skills once a conversation has started. Send a first message, then come back.</Empty>}
+      {[...groups].map(([group, list]) => (
         <section key={group} className="flex flex-col gap-2">
           <h2 className="text-small font-medium text-muted">{group}</h2>
           <List>
-            {skills.map((skill) => (
-              <button key={skill.name} type="button" onClick={() => use(skill)} className="flex cursor-default items-center gap-3 px-4 py-3 text-left hover:bg-hover/50">
+            {list.map((skill) => (
+              <button key={skill.name} type="button" onClick={() => void use(skill)} className="flex cursor-default items-center gap-3 px-4 py-3 text-left hover:bg-hover/50">
                 {skill.source === 'mcp' ? <Plug className="size-4 shrink-0 text-faint" /> : <Shapes className="size-4 shrink-0 text-faint" />}
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-mono text-code">

@@ -1,18 +1,15 @@
-import type { AgentMode } from '@jinion/core/agent/agent';
 import { nextMode } from '@jinion/core/agent/modes';
 import { useSetAtom, useStore } from 'jotai';
 import { useEffect } from 'react';
 import { panelAtom, sidebarAtom, viewAtom } from '../state/app.js';
-import { useJinion } from '../state/session.js';
-
-const MODES: AgentMode[] = ['manual', 'edits', 'plan', 'auto'];
+import { useCore } from '../state/session.js';
 
 /**
  * The window's shortcuts: ⌘N a new thread, ⌘W closes the tab, ⌘1-9 go to a tab, ⌘B the sidebar, ⌘⌥B the side panel,
  * ⌘L the composer, ⇧Tab the next mode, Esc stops the turn.
  */
 export function useShortcuts() {
-  const jinion = useJinion();
+  const core = useCore();
   const store = useStore();
   const setView = useSetAtom(viewAtom);
   const setSidebar = useSetAtom(sidebarAtom);
@@ -20,7 +17,9 @@ export function useShortcuts() {
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      const { sessions, active } = store.get(jinion.sessionsAtom);
+      const { sessions } = store.get(core.sessionsAtom);
+      const shown = store.get(core.client.shownAtom);
+      const snapshot = shown ? store.get(core.session(shown)) : undefined;
       const command = event.metaKey || event.ctrlKey;
 
       const handled = () => {
@@ -30,16 +29,16 @@ export function useShortcuts() {
 
       if (command && event.key === 'n') {
         handled();
-        jinion.open();
+        void core.open();
         setView('thread');
       } else if (command && event.key === 'w') {
         handled();
-        if (active) jinion.close(active);
+        if (shown) void core.close(shown);
       } else if (command && /^[1-9]$/.test(event.key)) {
         const tab = sessions[Number(event.key) - 1];
 
         handled();
-        if (tab) jinion.activate(tab.id);
+        if (tab) void core.activate(tab.id);
         setView('thread');
       } else if (command && event.altKey && event.code === 'KeyB') {
         handled();
@@ -51,20 +50,19 @@ export function useShortcuts() {
         handled();
         setView('thread');
         requestAnimationFrame(() => document.querySelector('textarea')?.focus());
-      } else if (event.shiftKey && event.key === 'Tab' && active) {
-        handled();
+      } else if (event.shiftKey && event.key === 'Tab' && shown && snapshot) {
+        const modes = store.get(core.appAtom)?.agents.find((agent) => agent.name === snapshot.fields.agent)?.modes ?? [];
 
-        const { fields } = store.get(jinion.session(active));
-
-        jinion.setMode(active, nextMode(MODES, fields.mode));
-      } else if (event.key === 'Escape' && active && store.get(jinion.session(active)).fields.working) {
         handled();
-        jinion.interrupt(active);
+        if (modes.length > 0) void core.setMode(shown, nextMode(modes, snapshot.fields.mode));
+      } else if (event.key === 'Escape' && shown && snapshot?.fields.working) {
+        handled();
+        void core.interrupt(shown);
       }
     };
 
     addEventListener('keydown', keyDown, true);
 
     return () => removeEventListener('keydown', keyDown, true);
-  }, [jinion]);
+  }, [core]);
 }

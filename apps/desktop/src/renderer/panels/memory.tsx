@@ -2,9 +2,9 @@ import type { MemoryNote } from '@jinion/core/api/schemas';
 import { Button, classNames, Empty, List, Page } from '@jinion/ui';
 import { Prose } from '@jinion/ui/chat';
 import { useAtomValue } from 'jotai';
-import { ChevronRight } from 'lucide-react';
-import { useState } from 'react';
-import { useJinion } from '../state/session.js';
+import { ChevronRight, LoaderCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useCore } from '../state/session.js';
 
 const SCOPES = [
   { scope: 'project', title: 'This project', note: 'Kept in the project, for everyone who works on it with Jinion' },
@@ -13,12 +13,18 @@ const SCOPES = [
 
 /** What the agent remembers between conversations, and a way to forget a note that no longer holds. */
 export function Memory() {
-  const jinion = useJinion();
-  const notes = useAtomValue(jinion.memoryAtom);
+  const core = useCore();
+  const notes = useAtomValue(core.memoryAtom);
+
+  useEffect(() => {
+    void core.refreshMemory();
+  }, []);
 
   return (
     <Page title="Memory" description="What the agent keeps for later conversations: your preferences, decisions made together, facts about the project.">
-      {SCOPES.map(({ scope, title, note }) => {
+      {!notes && <LoaderCircle className="size-4 animate-spin text-faint" />}
+      {notes &&
+        SCOPES.map(({ scope, title, note }) => {
         const shown = notes.filter((each) => each.scope === scope);
 
         return (
@@ -32,7 +38,7 @@ export function Memory() {
             ) : (
               <List>
                 {shown.map((each) => (
-                  <Note key={each.id} note={each} onForget={() => jinion.forget(each)} />
+                  <Note key={each.id} note={each} onForget={() => void core.forget(each)} />
                 ))}
               </List>
             )}

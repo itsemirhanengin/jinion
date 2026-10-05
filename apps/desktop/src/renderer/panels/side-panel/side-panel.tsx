@@ -37,7 +37,9 @@ export function SidePanel() {
       onResize={(width) => setPanel((current) => ({ ...current, width }))}
     >
       {panel.tab === 'changes' && <Changes files={changes} selected={selected} onSelect={select} />}
-      {panel.tab === 'files' && <Files touched={changes.map((file) => file.path)} selected={selected} onSelect={select} />}
+      {panel.tab === 'files' && session && (
+        <Files session={session.id} working={session.fields.working} touched={changes.map((file) => file.path)} selected={selected} onSelect={select} />
+      )}
       {panel.tab === 'tasks' && session && <Tasks session={session} />}
     </Frame>
   );

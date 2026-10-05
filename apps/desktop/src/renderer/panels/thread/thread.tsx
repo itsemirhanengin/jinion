@@ -1,17 +1,19 @@
-import { Conversation, PermissionPanel, Queued, TodoList, Working } from '@jinion/ui/chat';
+import type { AgentMode } from '@jinion/core/agent/agent';
+import { MODES } from '@jinion/core/agent/modes';
+import { AskPanel, Conversation, PermissionPanel, PlanPanel, Queued, TodoList, Working } from '@jinion/ui/chat';
 import { useSetAtom } from 'jotai';
 import { ArrowUpRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
-import { suggestions } from '../../mock/scenarios.js';
-import { draftsAtom, panelAtom, panelFileAtom } from '../../state/app.js';
-import { useActiveSession, useJinion } from '../../state/session.js';
+import { panelAtom, panelFileAtom } from '../../state/app.js';
+import { useActiveSession, useCore } from '../../state/session.js';
 import { Composer } from './composer.js';
 import { Entries } from './entries.js';
 
+const SUGGESTIONS = ['Explain how this project is put together', 'Find a bug and fix it', 'Add tests for the code that has none'];
+
 export function Thread() {
-  const jinion = useJinion();
+  const core = useCore();
   const session = useActiveSession();
-  const setDrafts = useSetAtom(draftsAtom);
   const setPanel = useSetAtom(panelAtom);
   const setPanelFile = useSetAtom(panelFileAtom);
   const end = useRef<HTMLDivElement>(null);
@@ -36,18 +38,15 @@ export function Thread() {
     if (atEnd.current) end.current?.scrollIntoView({ block: 'end' });
   }, [session?.seq, session?.fields.working]);
 
-  if (!session) return <Empty onNew={() => jinion.open()} />;
+  if (!session) return <Empty onNew={() => void core.open()} />;
 
   const { id, state, fields } = session;
   const started = state.entries.some((entry) => entry.kind === 'user');
-  const dialog = fields.dialog?.id === 'permission' ? fields.dialog : undefined;
+  const { dialog } = fields;
+  const suggestions = core.examples.length > 0 ? core.examples : SUGGESTIONS;
 
   const actions = {
-    rewind: (entry: string) => {
-      const text = jinion.rewind(id, entry);
-
-      if (text !== undefined) setDrafts((all) => ({ ...all, [id]: text }));
-    },
+    rewind: (entry: string) => void core.rewind(id, entry),
     openChange: (path: string) => {
       setPanelFile((files) => ({ ...files, [id]: path }));
       setPanel((panel) => ({ ...panel, open: true, tab: 'changes' }));
@@ -63,12 +62,24 @@ export function Thread() {
               <TodoList groups={state.todos} />
             </div>
           )}
-          <Queued messages={fields.queue.map((message) => message.text)} onRemove={(index) => jinion.unqueue(id, index)} />
-          {dialog ? (
-            <PermissionPanel request={dialog.request} onAnswer={(decision) => jinion.answer(id, decision)} />
-          ) : (
-            <Composer id={id} snapshot={session} />
+          <Queued messages={fields.queue.map((message) => message.text)} />
+          {dialog?.id === 'permission' && <PermissionPanel request={dialog.request} onAnswer={(decision) => void core.answerPermission(id, decision)} />}
+          {dialog?.id === 'ask' && (
+            <AskPanel
+              key={dialog.questions.map((question) => question.id).join()}
+              questions={dialog.questions}
+              onAnswer={(answers) => void core.answerQuestions(id, answers)}
+            />
           )}
+          {dialog?.id === 'plan' && (
+            <PlanPanel
+              options={dialog.modes.map((mode) => ({ id: mode, label: `Yes, in ${MODES[mode].name}` }))}
+              onDecide={(decision) =>
+                void core.answerPlan(id, decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision)
+              }
+            />
+          )}
+          {!dialog && <Composer id={id} snapshot={session} />}
         </>
       }
     >
@@ -78,14 +89,14 @@ export function Thread() {
           {fields.working && state.busySince && <Working since={state.busySince} />}
         </>
       ) : (
-        <Start project={jinion.project.name} onPick={(text) => jinion.submit(id, text)} />
+        <Start project={core.project.name} suggestions={suggestions} onPick={(text) => void core.submit(id, text)} />
       )}
       <div ref={end} />
     </Conversation>
   );
 }
 
-function Start({ project, onPick }: { project: string; onPick: (text: string) => void }) {
+function Start({ project, suggestions, onPick }: { project: string; suggestions: string[]; onPick: (text: string) => void }) {
   return (
     <div className="flex flex-col items-start gap-5 pt-[18vh]">
       <div className="flex flex-col gap-1">

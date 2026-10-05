@@ -3,11 +3,11 @@ import { Button, Empty } from '@jinion/ui';
 import { TodoList } from '@jinion/ui/chat';
 import { Bot, Square, Terminal } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { useJinion } from '../../state/session.js';
+import { useCore } from '../../state/session.js';
 
 /** The thread's todos, its commands in the background with their output, and its subagents. */
 export function Tasks({ session }: { session: SessionSnapshot & { id: string } }) {
-  const jinion = useJinion();
+  const core = useCore();
 
   const { state, fields } = session;
   const agents = state.entries.flatMap((entry) => (entry.kind === 'tool' && entry.run.name === 'agent' ? [entry] : []));
@@ -36,7 +36,7 @@ export function Tasks({ session }: { session: SessionSnapshot & { id: string } }
                 <code className="min-w-0 flex-1 truncate font-mono text-code">{task.title}</code>
                 <span className={task.status === 'running' ? 'text-small text-working' : 'text-small text-faint'}>{task.status}</span>
                 {task.status === 'running' && (
-                  <Button size="icon" aria-label="Stop" onClick={() => jinion.stopTask(session.id, task.id)} className="[&_svg]:size-3 [&_svg]:fill-current">
+                  <Button size="icon" aria-label="Stop" onClick={() => void core.stopTask(session.id, task.id)} className="[&_svg]:size-3 [&_svg]:fill-current">
                     <Square />
                   </Button>
                 )}

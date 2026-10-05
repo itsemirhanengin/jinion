@@ -1,21 +1,27 @@
+import { accountLabel } from '@jinion/core/agent/accounts';
 import { Button, Sidebar as Frame, SidebarHeader, SidebarItem, SidebarSection, StatusIcon } from '@jinion/ui';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { Brain, ChevronLeft, PanelLeft, Shapes, SquarePen } from 'lucide-react';
+import { Brain, ChevronLeft, CircleUserRound, PanelLeft, Shapes, SquarePen } from 'lucide-react';
+import type { Core } from '../core/core.js';
 import { ago } from '../lib/time.js';
-import type { MockJinion } from '../mock/jinion.js';
-import { projectAtom, sidebarAtom, viewAtom } from '../state/app.js';
-import { statusOf, useJinion, useSession } from '../state/session.js';
+import { closeProject, sidebarAtom, viewAtom } from '../state/app.js';
+import { statusOf, useActiveSession, useCore, useSession } from '../state/session.js';
 
 export function Sidebar() {
-  const jinion = useJinion();
+  const core = useCore();
   const [view, setView] = useAtom(viewAtom);
-  const setProject = useSetAtom(projectAtom);
   const setSidebar = useSetAtom(sidebarAtom);
-  const { sessions, active } = useAtomValue(jinion.sessionsAtom);
-  const saved = useAtomValue(jinion.savedAtom);
+  const { sessions } = useAtomValue(core.sessionsAtom);
+  const shown = useAtomValue(core.client.shownAtom);
+  const saved = useAtomValue(core.savedAtom);
+  const app = useAtomValue(core.appAtom);
+  const session = useActiveSession();
 
-  const show = (go: () => void) => {
-    go();
+  const agent = session?.fields.agent;
+  const identity = agent ? app?.identities[agent] : undefined;
+
+  const show = (go: () => unknown) => {
+    void go();
     setView('thread');
   };
 
@@ -26,25 +32,25 @@ export function Sidebar() {
           <PanelLeft />
         </Button>
         <span className="flex-1" />
-        <Button size="small" onClick={() => setProject(undefined)} className="[&_svg]:size-3.5">
+        <Button size="small" onClick={closeProject} className="[&_svg]:size-3.5">
           <ChevronLeft />
           Projects
         </Button>
       </SidebarHeader>
       <SidebarSection>
-        <SidebarItem icon={<SquarePen />} label="New thread" onClick={() => show(() => jinion.open())} />
+        <SidebarItem icon={<SquarePen />} label="New thread" onClick={() => show(() => core.open())} />
         <SidebarItem icon={<Shapes />} label="Skills" active={view === 'skills'} onClick={() => setView('skills')} />
         <SidebarItem icon={<Brain />} label="Memory" active={view === 'memory'} onClick={() => setView('memory')} />
       </SidebarSection>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <SidebarSection title="Threads">
-          {sessions.map((session) => (
+          {sessions.map((each) => (
             <OpenThread
-              key={session.id}
-              jinion={jinion}
-              id={session.id}
-              active={view === 'thread' && session.id === active}
-              onClick={() => show(() => jinion.activate(session.id))}
+              key={each.id}
+              core={core}
+              id={each.id}
+              active={view === 'thread' && each.id === shown}
+              onClick={() => show(() => core.activate(each.id))}
             />
           ))}
           {saved.map((thread) => (
@@ -53,19 +59,28 @@ export function Sidebar() {
               icon={<StatusIcon status="idle" />}
               label={thread.title}
               trailing={ago(thread.updatedAt)}
-              onClick={() => show(() => jinion.resume(thread.id))}
+              onClick={() => show(() => core.resume(thread.id))}
             />
           ))}
         </SidebarSection>
       </div>
+      <SidebarSection>
+        <SidebarItem
+          icon={<CircleUserRound />}
+          label={identity?.signedIn ? accountLabel(identity) || identity.name : 'Sign in'}
+          trailing={agent}
+          active={view === 'accounts'}
+          onClick={() => setView('accounts')}
+        />
+      </SidebarSection>
     </Frame>
   );
 }
 
-function OpenThread({ jinion, id, active, onClick }: { jinion: MockJinion; id: string; active: boolean; onClick: () => void }) {
-  const snapshot = useSession(jinion, id);
+function OpenThread({ core, id, active, onClick }: { core: Core; id: string; active: boolean; onClick: () => void }) {
+  const snapshot = useSession(core, id);
 
-  const status = statusOf(snapshot) ?? 'idle';
+  const status = (snapshot && statusOf(snapshot)) ?? 'idle';
 
-  return <SidebarItem icon={<StatusIcon status={status} />} label={snapshot.state.title ?? 'New thread'} trailing="open" active={active} onClick={onClick} />;
+  return <SidebarItem icon={<StatusIcon status={status} />} label={snapshot?.state.title ?? 'New thread'} trailing="open" active={active} onClick={onClick} />;
 }
