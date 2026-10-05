@@ -1,14 +1,16 @@
 import type { SessionSnapshot } from '@jinion/core/api/schemas';
 import { WindowTabs } from '@jinion/native-tabs';
-import { Button, Spinner, StatusIcon } from '@jinion/ui';
+import { Button, classNames, Spinner, StatusIcon } from '@jinion/ui';
 import { LayoutToggles, WorkbenchProvider, WorkbenchView } from '@jinion/workbench';
 import { atom, Provider, useAtomValue } from 'jotai';
+import { LayoutGrid } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Core } from '../core/core.js';
 import { NoThread } from '../features/threads/no-thread.js';
 import { Projects } from '../panels/projects.js';
 import { closeProject, coreAtom, coresAtom, moveProject, openProject, projectAtom, projectsAtom, showProjects } from '../state/app.js';
 import { statusOf } from '../state/session.js';
+import { ProjectPicker } from './project-picker.js';
 import { useThreadTabs } from './thread-tabs.js';
 import { workbenchOf } from './workbench.js';
 
@@ -35,9 +37,10 @@ export function App() {
         active={project}
         onSelect={(path) => void openProject(path)}
         onClose={closeProject}
-        onNew={showProjects}
         onMove={moveProject}
         inset={TRAFFIC_LIGHTS}
+        leading={<ProjectsButton shown={!project} />}
+        adding={<ProjectPicker />}
         trailing={
           workbench && (
             <WorkbenchProvider workbench={workbench}>
@@ -70,6 +73,25 @@ function ProjectWindow({ core }: { core: Core }) {
   if (gone) return <Failed text="This project's core stopped. Open the project again to start it." />;
 
   return <WorkbenchView workbench={workbench} onNewTab={() => core.act(core.open())} Empty={NoThread} />;
+}
+
+/** At the left of the title bar: back to the projects screen, pressed while it shows. */
+function ProjectsButton({ shown }: { shown: boolean }) {
+  return (
+    <button
+      type="button"
+      aria-label="Projects"
+      aria-pressed={shown}
+      title="Projects"
+      onClick={showProjects}
+      className={classNames(
+        'flex size-7 shrink-0 cursor-default items-center justify-center rounded-lg',
+        shown ? 'bg-selected text-ink' : 'text-muted hover:bg-shade hover:text-ink',
+      )}
+    >
+      <LayoutGrid className="size-4" />
+    </button>
+  );
 }
 
 /** On a project's tab: the spinner while a thread there works, `?` while one waits on the user. */
