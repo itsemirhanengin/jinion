@@ -856,6 +856,33 @@
             "result"
           ]
         },
+        "files/read": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "path"
+              ]
+            },
+            "result": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
         "accounts/list": {
           "type": "object",
           "properties": {
@@ -1160,6 +1187,7 @@
         "git/changes",
         "git/diff",
         "files/list",
+        "files/read",
         "accounts/list",
         "accounts/select",
         "accounts/remove",
