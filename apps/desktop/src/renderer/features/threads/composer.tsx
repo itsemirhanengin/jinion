@@ -1,17 +1,19 @@
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import type { SessionSnapshot } from '@jinion/core/api/schemas';
-import { ChoiceMenu, Pill } from '@jinion/ui';
+import { ChoiceMenu, classNames, Pill } from '@jinion/ui';
 import { Composer as ComposerBox, ComposerFooter } from '@jinion/ui/chat';
 import { useAtom, useAtomValue } from 'jotai';
-import { Eye, GitBranch, GitFork, Hand, Laptop, PencilLine, Sparkles } from 'lucide-react';
+import { GitBranch, GitFork, Laptop } from 'lucide-react';
 import { useEffect } from 'react';
 import { draftsAtom } from '../../state/app.js';
 import { useCore } from '../../state/session.js';
 
-const MODE_ICONS: Record<AgentMode, typeof Hand> = { manual: Hand, edits: PencilLine, plan: Eye, auto: Sparkles };
+/** How much the mode lets the agent do on its own, from asking for everything to asking for nothing. */
+const MODE_DOTS: Record<AgentMode, string> = { manual: 'bg-faint', plan: 'bg-accent', edits: 'bg-added', auto: 'bg-warning' };
 
-export function Composer({ id, snapshot }: { id: string; snapshot: SessionSnapshot }) {
+/** `large` stands alone in the middle of a thread that hasn't started. */
+export function Composer({ id, snapshot, large }: { id: string; snapshot: SessionSnapshot; large?: boolean }) {
   const core = useCore();
   const [drafts, setDrafts] = useAtom(draftsAtom);
   const app = useAtomValue(core.appAtom);
@@ -24,7 +26,6 @@ export function Composer({ id, snapshot }: { id: string; snapshot: SessionSnapsh
   }, [id, fields.working]);
 
   const draft = drafts[id] ?? '';
-  const ModeIcon = MODE_ICONS[fields.mode];
   const modes = app?.agents.find((agent) => agent.name === fields.agent)?.modes ?? [fields.mode];
   const models = app?.models ?? {};
   const model = models[fields.agent]?.find((option) => option.id === fields.selection.model);
@@ -34,7 +35,7 @@ export function Composer({ id, snapshot }: { id: string; snapshot: SessionSnapsh
   const setDraft = (text: string) => setDrafts((all) => ({ ...all, [id]: text }));
 
   const submit = () => {
-    void core.submit(id, draft.trim());
+    core.act(core.submit(id, draft.trim()));
     setDraft('');
   };
 
@@ -44,18 +45,20 @@ export function Composer({ id, snapshot }: { id: string; snapshot: SessionSnapsh
         value={draft}
         onChange={setDraft}
         onSubmit={submit}
-        placeholder={fields.working ? 'Tell the agent something while it works' : 'Ask, plan or build. / for commands'}
+        placeholder={fields.working ? 'Tell the agent something while it works' : 'Ask for a change. / for commands'}
         busy={fields.working}
-        onStop={() => void core.interrupt(id)}
+        large={large}
+        onStop={() => core.act(core.interrupt(id))}
         controls={
           <>
             <ChoiceMenu
               side="top"
               value={fields.mode}
-              onChange={(mode) => void core.setMode(id, mode as AgentMode)}
-              groups={[{ choices: modes.map((mode) => ({ value: mode, label: MODES[mode].name, description: MODES[mode].description })) }]}
+              onChange={(mode) => core.act(core.setMode(id, mode as AgentMode))}
+              groups={[{ choices: modes.map((mode) => ({ value: mode, label: MODES[mode].name, description: MODES[mode].description, hint: mode === fields.mode ? undefined : '⇧Tab' })) }]}
               trigger={
-                <Pill tone="soft" icon={<ModeIcon />}>
+                <Pill>
+                  <span className={classNames('size-1.5 shrink-0 rounded-full', MODE_DOTS[fields.mode])} />
                   {MODES[fields.mode].name}
                 </Pill>
               }
@@ -64,46 +67,49 @@ export function Composer({ id, snapshot }: { id: string; snapshot: SessionSnapsh
               side="top"
               value={`${fields.agent}/${fields.selection.model}`}
               onChange={(value) => {
-                const [agent, model] = value.split('/') as [string, string];
+                const [agent, chosen] = value.split('/') as [string, string];
 
-                void core.setModel(id, { model }, agent);
+                core.act(core.setModel(id, { model: chosen }, agent));
               }}
               groups={Object.entries(models).map(([agent, options]) => ({
                 label: agent,
                 choices: options.map((option) => ({ value: `${agent}/${option.id}`, label: option.name, description: option.description })),
               }))}
-              trigger={<Pill>{model?.name ?? fields.selection.model}</Pill>}
+              trigger={
+                <Pill>
+                  {model?.name ?? fields.selection.model}
+                  {fields.selection.effort && <span className="text-faint capitalize">{fields.selection.effort}</span>}
+                </Pill>
+              }
             />
           </>
         }
       />
       <ComposerFooter
         start={
-          <ChoiceMenu
-            side="top"
-            value={fields.wantsWorktree ? 'worktree' : 'local'}
-            onChange={(where) => void core.setWorktree(id, where === 'worktree')}
-            groups={[
-              {
-                choices: [
-                  { value: 'local', label: 'Local', description: 'Works in the project folder' },
-                  { value: 'worktree', label: 'Worktree', description: 'Works on a branch of its own, in a copy under ~/.jinion' },
-                ],
-              },
-            ]}
-            trigger={<Pill icon={fields.wantsWorktree ? <GitFork /> : <Laptop />}>{fields.wantsWorktree ? 'Worktree' : 'Local'}</Pill>}
-          />
-        }
-        end={
           <>
-            {full > 0 && <span className="px-2 text-small text-faint tabular-nums">{full}% context</span>}
             {branch && (
               <Pill icon={<GitBranch />} chevron={false}>
                 {branch}
               </Pill>
             )}
+            <ChoiceMenu
+              side="top"
+              value={fields.wantsWorktree ? 'worktree' : 'local'}
+              onChange={(where) => core.act(core.setWorktree(id, where === 'worktree'))}
+              groups={[
+                {
+                  choices: [
+                    { value: 'local', label: 'Local', description: 'Works in the project folder' },
+                    { value: 'worktree', label: 'Worktree', description: 'Works on a branch of its own, in a copy under ~/.jinion' },
+                  ],
+                },
+              ]}
+              trigger={<Pill icon={fields.wantsWorktree ? <GitFork /> : <Laptop />}>{fields.wantsWorktree ? 'Worktree' : 'Local'}</Pill>}
+            />
           </>
         }
+        end={full > 0 && <span className="px-2 text-faint tabular-nums">{full}% of context</span>}
       />
     </>
   );
