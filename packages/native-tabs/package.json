@@ -1,0 +1,27 @@
+{
+  "name": "@jinion/native-tabs",
+  "version": "0.0.0",
+  "description": "A row of window tabs in the title bar, drawn by hand in the manner of macOS's own",
+  "license": "MIT",
+  "homepage": "https://jinion.co",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "scripts": {
+    "typecheck": "tsc"
+  },
+  "dependencies": {
+    "@jinion/ui": "workspace:*",
+    "lucide-react": "^1.52.0"
+  },
+  "peerDependencies": {
+    "react": ">=19.3.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "react": "^19.3.0"
+  }
+}

@@ -11,6 +11,7 @@
     "dev:docs": "pnpm --filter @jinion/docs dev",
     "dev:website": "pnpm --filter @jinion/website dev",
     "dev:ui": "pnpm --filter @jinion/ui dev",
+    "dev:workbench": "pnpm --filter @jinion/workbench dev",
     "dev:desktop": "pnpm --filter @jinion/desktop dev",
     "start": "pnpm --filter @jinion/cli start",
     "build": "turbo run build",
