@@ -28,7 +28,9 @@ function Search() {
   const wanted = query.trim().toLowerCase();
   const titled = sessions.map((session) => ({ id: session.id, title: core.client.store.get(core.session(session.id))?.state.title ?? 'New thread', open: true }));
 
-  const threads = [...titled, ...saved.map((thread) => ({ id: thread.id, title: thread.title, open: false }))].filter((thread) =>
+  const closed = saved.filter((thread) => !sessions.some((session) => session.id === thread.id));
+
+  const threads = [...titled, ...closed.map((thread) => ({ id: thread.id, title: thread.title, open: false }))].filter((thread) =>
     thread.title.toLowerCase().includes(wanted),
   );
 

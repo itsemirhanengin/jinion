@@ -98,7 +98,7 @@ function ThreadList() {
   // Whether a thread is open as a tab shows only in its row's background, never as a group of its own.
   const earlier = [
     ...snapshots.filter((each) => !busy.includes(each)).map(({ id, snapshot }) => ({ id, open: true, at: snapshot?.state.createdAt ?? 0 })),
-    ...saved.map((thread) => ({ id: thread.id, open: false, at: thread.updatedAt })),
+    ...saved.filter((thread) => !snapshots.some(({ id }) => id === thread.id)).map((thread) => ({ id: thread.id, open: false, at: thread.updatedAt })),
   ].sort((a, b) => b.at - a.at);
 
   return (
