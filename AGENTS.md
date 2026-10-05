@@ -13,9 +13,9 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 A coding agent in the terminal. `packages/core` is Jinion without a screen, `apps/cli` the terminal app (`jinion`) that
 drives it, `packages/tui` the terminal UI framework the app is built on (Ink and React), `packages/virtualization` the
-list virtualizer under its scroll view, `packages/spacing` the checker for the vertical layout below, `apps/docs` the
-docs site, `apps/website` the page at jinion.co. `ROADMAP.md` has what is left to build, including the API that will
-let a desktop app drive the core too.
+list virtualizer under its scroll view, `packages/ui` the design system of the desktop app to come (React and Tailwind,
+drawn in its playground with `pnpm dev:ui`), `packages/spacing` the checker for the vertical layout below, `apps/docs`
+the docs site, `apps/website` the page at jinion.co. `ROADMAP.md` has what is left to build, the desktop app first.
 
 ## Architecture
 
@@ -69,6 +69,9 @@ Rules that keep it that way:
 - **`@jinion/tui` knows nothing about Jinion.** Generic pieces come from `@jinion/tui`, the chat kit (messages, tool
   views, composer, ask/permission/plan panels) from `@jinion/tui/chat`. It has no state library; its stores use
   `useSyncExternalStore`.
+- **`@jinion/ui` knows nothing about Jinion either.** It is the same for the desktop: primitives and the window's
+  pieces from `@jinion/ui`, the chat kit from `@jinion/ui/chat`, the tokens in `theme.css`. Its types are its own,
+  shaped like the core's. The agent's markdown goes through `Prose`, which never renders raw HTML.
 - **One concern per file**, named after it. Split a file when it holds unrelated things, not to hit a line count.
 - **Reuse before writing**: `lib/format.ts` for numbers, durations and plurals, `lib/text.ts`, `errorMessage`,
   `useAsync` for a promise in a component, `usePager` for scrolled full-screen views.
@@ -140,7 +143,7 @@ or a one-line fix, can go straight to `main`.
 
 ## Versions and releases
 
-Changesets keeps the versions. `core`, `cli`, `tui` and `virtualization` each have their own; `docs`, `website` and
+Changesets keeps the versions. `core`, `cli`, `tui`, `ui` and `virtualization` each have their own; `docs`, `website` and
 `spacing` have none (`ignore` in `.changeset/config.json`). The products are what users install: `@jinion/cli` now, the
 desktop app later. Each has its own version and releases on its own; they aren't kept in step.
 

@@ -27,6 +27,7 @@ apps/cli                 @jinion/cli              the `jinion` command, a termin
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React
+packages/ui              @jinion/ui               the desktop app's design system, on React and Tailwind
 packages/virtualization  @jinion/virtualization   mounts only what is in view of a long list
 packages/spacing         @jinion/spacing          checks the blank lines between statements
 ```
@@ -37,6 +38,7 @@ pnpm dev                 # run the CLI from source, in this repository
 pnpm dev --demo          # the scripted demo
 pnpm dev:docs            # the docs at http://localhost:3000
 pnpm dev:website         # jinion.co
+pnpm dev:ui              # the desktop app's pieces, drawn from sample conversations
 pnpm typecheck
 pnpm test                # pnpm test:watch while working
 pnpm lint                # Biome and the spacing checker; pnpm lint:fix applies the fixes
