@@ -785,6 +785,9 @@
               "properties": {
                 "session": {
                   "type": "string"
+                },
+                "uncommitted": {
+                  "type": "boolean"
                 }
               },
               "required": [
@@ -796,6 +799,106 @@
               "items": {
                 "$ref": "#/$defs/RepoChanges"
               }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/stage": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "session",
+                "files"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/unstage": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "files": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "session",
+                "files"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "git/commit": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "repo": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "session",
+                "repo",
+                "message"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "commit": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "commit"
+              ]
             }
           },
           "required": [
@@ -1185,6 +1288,9 @@
         "dialog/cancel",
         "git/status",
         "git/changes",
+        "git/stage",
+        "git/unstage",
+        "git/commit",
         "git/diff",
         "files/list",
         "files/read",
@@ -3504,6 +3610,13 @@
         },
         "binary": {
           "type": "boolean"
+        },
+        "staged": {
+          "type": "string",
+          "enum": [
+            "all",
+            "some"
+          ]
         }
       },
       "required": [

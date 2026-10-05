@@ -122,7 +122,13 @@ export const requests = {
 
   /** In the folder the session works in, its worktree or the project. */
   'git/status': { params: session, result: GitStatus.nullable() },
-  'git/changes': { params: session, result: z.array(RepoChanges) },
+  /** `uncommitted` keeps to what isn't committed, with what is staged, rather than a clean branch's own commits. */
+  'git/changes': { params: session.extend({ uncommitted: z.boolean().optional() }), result: z.array(RepoChanges) },
+  /** Files from the session's last `git/changes`, by their absolute paths, into the index or out of it. */
+  'git/stage': { params: session.extend({ files: z.array(z.string()) }), result: done },
+  'git/unstage': { params: session.extend({ files: z.array(z.string()) }), result: done },
+  /** What is staged in the repository whose root is `repo`; the new commit, short. */
+  'git/commit': { params: session.extend({ repo: z.string(), message: z.string().min(1) }), result: z.object({ commit: z.string() }) },
   /** A file from the session's last `git/changes`, by its absolute path. */
   'git/diff': { params: session.extend({ file: z.string() }), result: z.string() },
   'files/list': { params: session, result: z.array(z.string()) },
