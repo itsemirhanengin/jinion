@@ -5,7 +5,7 @@ import { useWorkbench } from '@jinion/workbench';
 import { useEffect, useRef } from 'react';
 import { Problem } from '../../panels/problem.js';
 import { useCore, useSession } from '../../state/session.js';
-import { openChange } from '../changes/changes.js';
+import { openChanges } from '../changes/changes.js';
 import { Composer } from './composer.js';
 import { Entries } from './entries.js';
 
@@ -45,7 +45,7 @@ export function ThreadView({ id }: { id: string }) {
 
   const actions = {
     rewind: (entry: string) => core.act(core.rewind(id, entry)),
-    openChange: (path: string) => openChange(workbench, id, path),
+    openChange: (path: string) => openChanges(core, workbench, id, path),
   };
 
   // What takes the composer's place while the agent asks, the composer otherwise.

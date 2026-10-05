@@ -14,6 +14,15 @@ test('reads a unified patch into numbered lines, a gap between hunks as an empty
   ]);
 });
 
+test('skips the headers git writes before the first hunk', () => {
+  const patch = ['diff --git a/app.ts b/app.ts', 'index 5626abf..f719efd 100644', '--- a/app.ts', '+++ b/app.ts', '@@ -1 +1 @@', '-one', '+two'].join('\n');
+
+  expect(diffLines(patch)).toEqual([
+    { kind: 'removed', text: 'one', number: 1 },
+    { kind: 'added', text: 'two', number: 1 },
+  ]);
+});
+
 test('leaves the numbers out of a patch without hunk headers', () => {
   expect(diffLines([' keep', '+new'].join('\n'))).toEqual([
     { kind: 'context', text: 'keep', number: undefined },

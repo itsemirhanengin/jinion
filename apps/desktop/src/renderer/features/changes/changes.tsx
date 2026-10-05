@@ -1,99 +1,76 @@
-import { LineCounts } from '@jinion/ui';
+import { changedFiles, editTurns } from '@jinion/core/conversation/edits';
+import { ChoiceMenu, LineCounts, Pill } from '@jinion/ui';
 import { DiffCard } from '@jinion/ui/chat';
-import { Dot, type Feature, useLayout, useWorkbench, type Workbench } from '@jinion/workbench';
-import { useAtomValue } from 'jotai';
-import { GitCompare } from 'lucide-react';
+import type { Feature, Workbench } from '@jinion/workbench';
+import { useRef, useState } from 'react';
+import type { Core } from '../../core/core.js';
 import { diffLines } from '../../lib/diff.js';
+import { reveal, useReveal } from '../../state/reveal.js';
 import { changesOf, useCore, useSession } from '../../state/session.js';
 
-/** The files the shown thread changed, each opening its diff in a tab. */
+/** What a thread changed, as a tab of its own: every file's diff one under another, for the whole thread or one turn. */
 export function changes(): Feature {
-  return {
-    id: 'changes',
-    activity: { title: 'Changes', icon: <GitCompare />, Badge: Changed, Sidebar: ChangeList },
-    tabs: [{ kind: 'diff', Title: DiffTitle, Content: DiffTab }],
-  };
+  return { id: 'changes', tabs: [{ kind: 'changes', Title: () => 'Changes', Content: ChangesTab }] };
 }
 
-/** Shows a change's diff in a tab of its own; a single click's tab gives way to the next one's. */
-export function openChange(workbench: Workbench, session: string, path: string, preview = true) {
-  workbench.open({ kind: 'diff', id: `${session}|${path}` }, { preview });
+/** Opens the thread's changes, scrolled to `path` when given. */
+export function openChanges(core: Core, workbench: Workbench, session: string, path?: string) {
+  workbench.open({ kind: 'changes', id: session });
+  if (path) reveal(core, `changes:${session}`, path);
 }
 
-function Changed() {
-  const files = useShownChanges();
+const ALL = 'all';
 
-  return files.length > 0 ? <Dot /> : null;
-}
-
-function ChangeList() {
-  const workbench = useWorkbench();
+function ChangesTab({ id }: { id: string }) {
   const core = useCore();
-  const shown = useAtomValue(core.client.shownAtom);
-  const files = useShownChanges();
-  const open = useLayout((layout) => layout.groups[layout.focused]?.active);
+  const snapshot = useSession(core, id);
 
-  if (!shown || files.length === 0) return <p className="px-2 text-pretty text-muted">The files the thread changes show here.</p>;
+  const [turn, setTurn] = useState(ALL);
+  const list = useRef<HTMLDivElement>(null);
+
+  const turns = snapshot ? editTurns(snapshot.state.entries) : [];
+  const picked = turns.find((each) => each.id === turn);
+  const files = picked ? changedFiles(picked.edits) : snapshot ? changesOf(snapshot) : [];
+  const added = files.reduce((sum, file) => sum + file.added, 0);
+  const removed = files.reduce((sum, file) => sum + file.removed, 0);
+
+  useReveal(`changes:${id}`, list, files.length);
+
+  if (!snapshot) return <Note>This thread is closed, and its changes with it.</Note>;
+  if (turns.length === 0) return <Note>The files this thread changes show here, each with its diff.</Note>;
 
   return (
-    <ul className="flex flex-col">
-      {files.map((file) => {
-        const name = file.path.slice(file.path.lastIndexOf('/') + 1);
-
-        return (
-          <li key={file.path}>
-            <button
-              type="button"
-              onClick={() => openChange(workbench, shown, file.path)}
-              onDoubleClick={() => openChange(workbench, shown, file.path, false)}
-              className={`flex h-8 w-full cursor-default items-center gap-2 rounded-lg px-2 text-left ${open === `diff:${shown}|${file.path}` ? 'bg-selected' : 'hover:bg-shade'}`}
-            >
-              <span className="shrink-0">{name}</span>
-              <span className="min-w-0 flex-1 truncate text-faint">{file.path.slice(0, -name.length - 1)}</span>
-              {file.created && <span className="shrink-0 text-faint">new</span>}
-              <LineCounts added={file.added} removed={file.removed} />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-function DiffTitle({ id }: { id: string }) {
-  const path = id.slice(id.indexOf('|') + 1);
-
-  return path.slice(path.lastIndexOf('/') + 1);
-}
-
-function DiffTab({ id }: { id: string }) {
-  const core = useCore();
-  const session = id.slice(0, id.indexOf('|'));
-  const path = id.slice(id.indexOf('|') + 1);
-  const snapshot = useSession(core, session);
-
-  const file = snapshot && changesOf(snapshot).find((each) => each.path === path);
-
-  return (
-    <div className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-240 flex-col gap-3 px-8 py-6">
-        <p className="truncate text-muted" title={path}>
-          {path}
-        </p>
-        {file ? (
-          <DiffCard key={path} path={path} lines={diffLines(file.patch)} folded={Number.POSITIVE_INFINITY} bare />
-        ) : (
-          <p className="text-muted">This change is gone with its thread.</p>
-        )}
+    <div ref={list} className="h-full overflow-y-auto">
+      <div className="mx-auto flex max-w-240 flex-col gap-4 px-8 py-6">
+        <div className="flex items-center gap-3">
+          <p className="font-medium">
+            {files.length} {files.length === 1 ? 'file' : 'files'} changed
+          </p>
+          <LineCounts added={added} removed={removed} />
+          <div className="flex-1" />
+          <ChoiceMenu
+            value={turn}
+            onChange={setTurn}
+            groups={[
+              { choices: [{ value: ALL, label: 'The whole thread' }] },
+              {
+                label: 'One turn',
+                choices: turns.map((each, index) => ({ value: each.id, label: each.prompt, hint: index === 0 ? 'Last' : undefined })),
+              },
+            ]}
+            trigger={<Pill className="max-w-80">{picked ? picked.prompt : 'The whole thread'}</Pill>}
+          />
+        </div>
+        {files.map((file) => (
+          <div key={file.path} data-path={file.path} className="scroll-mt-4">
+            <DiffCard path={file.path} lines={diffLines(file.patch)} folded={Number.POSITIVE_INFINITY} bare />
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function useShownChanges() {
-  const core = useCore();
-  const shown = useAtomValue(core.client.shownAtom);
-  const snapshot = useSession(core, shown ?? '');
-
-  return shown && snapshot ? changesOf(snapshot) : [];
+function Note({ children }: { children: string }) {
+  return <p className="mx-auto max-w-120 px-8 py-16 text-center text-pretty text-muted">{children}</p>;
 }
