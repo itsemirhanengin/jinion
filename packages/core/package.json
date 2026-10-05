@@ -1,6 +1,6 @@
 {
   "name": "@jinion/core",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Jinion without a screen: the agent, conversations, settings, memory, git and MCP, for any client to drive",
   "license": "MIT",
   "homepage": "https://jinion.co",
