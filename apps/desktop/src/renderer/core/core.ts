@@ -20,6 +20,7 @@ export interface CoreScreen {
  */
 export class Core {
   readonly client: JinionClient;
+  /** Every saved thread, the open ones too: a list leaves those out as it draws, against the sessions open then. */
   readonly savedAtom = atom<SavedSummary[]>([]);
   readonly memoryAtom = atom<MemoryNote[] | undefined>(undefined);
   /** Folders end in `/`, as `files/list` names them. */
@@ -193,13 +194,6 @@ export class Core {
   }
 
   private async refreshSaved() {
-    const { sessions } = this.client.store.get(this.client.sessionsAtom);
-    const open = new Set(sessions.map((session) => session.id));
-    const saved = await this.client.request('saved/list', {});
-
-    this.client.store.set(
-      this.savedAtom,
-      saved.filter((thread) => !open.has(thread.id)),
-    );
+    this.client.store.set(this.savedAtom, await this.client.request('saved/list', {}));
   }
 }
