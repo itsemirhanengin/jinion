@@ -1,5 +1,5 @@
 ---
-"@jinion/core": minor
+"@jinion/core": patch
 "@jinion/cli": patch
 ---
 

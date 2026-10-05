@@ -156,7 +156,7 @@ desktop app later. Each has its own version and releases on its own; they aren't
 - A changeset names every product the change reaches, not only the packages it touches: a fix in `core` that both
   products show names `@jinion/core`, `@jinion/cli` and the desktop app. A product that depends on a bumped package
   gets a patch by itself, but its changelog then says only "Updated dependencies".
-- Under 1.0, `minor` is a release worth naming (the desktop app's first is 0.1.0), `patch` everything else.
+- Under 1.0, `minor` is a release worth naming, `patch` everything else.
 - A release is a commit on `main`: `pnpm changeset version` raises the versions and writes each package's
   `CHANGELOG.md`, then `pnpm changeset git-tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
   on `main`, which is one more reason only finished work is merged.
