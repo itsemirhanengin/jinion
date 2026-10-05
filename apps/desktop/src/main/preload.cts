@@ -11,6 +11,7 @@ const desktop: DesktopBridge = {
   pickFolder: () => ipcRenderer.invoke('projects:pick'),
   openProject: (path) => ipcRenderer.invoke('projects:open', path),
   forgetProject: (path) => ipcRenderer.invoke('projects:forget', path),
+  projectSessions: (path) => ipcRenderer.invoke('projects:sessions', path),
   onCoreExit: (listener) => ipcRenderer.on('core-exit', (_event, { path }: { path: string }) => listener(path)),
 };
 

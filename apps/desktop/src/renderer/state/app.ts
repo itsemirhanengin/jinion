@@ -1,4 +1,5 @@
 import { atom, createStore } from 'jotai';
+import type { RecentProject } from '../../main/bridge.js';
 import { Core } from '../core/core.js';
 import { saveProjects, savedProjects } from './saved.js';
 
@@ -17,7 +18,36 @@ export const coreAtom = atom<Core | { error: string } | undefined>(undefined);
 /** Every core that answered, by its folder, so each project's tab can show whether a thread there works or waits. */
 export const coresAtom = atom<Record<string, Core>>({});
 
+/** The folders opened before, newest first, as the projects screen and the `+` menu list them; undefined until read. */
+export const recentAtom = atom<RecentProject[] | undefined>(undefined);
+
 const cores = new Map<string, Promise<Core>>();
+
+export async function refreshRecent() {
+  appStore.set(recentAtom, await window.desktop.recentProjects());
+}
+
+export async function forgetRecent(path: string) {
+  await window.desktop.forgetProject(path);
+  appStore.set(recentAtom, (all) => all?.filter((project) => project.path !== path));
+}
+
+/** The system's folder picker; the folder picked opens as a project. */
+export async function pickFolder() {
+  const path = await window.desktop.pickFolder();
+
+  if (path) void openProject(path);
+}
+
+/** Opens the project's tab with a thread in it: the saved one `resume` names, or a new one. */
+export async function openThread(path: string, resume?: string) {
+  await openProject(path);
+
+  const core = appStore.get(coreAtom);
+  if (!(core instanceof Core) || core.project.path !== path) return;
+
+  core.act(resume ? core.resume(resume) : core.open());
+}
 
 /** Opens the folder as a tab, or goes to its tab, starting its core the first time; cores stay while the app runs. */
 export async function openProject(path: string) {

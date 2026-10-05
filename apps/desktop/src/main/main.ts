@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
+import { savedSessions } from '@jinion/core/api/saved';
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron';
-import { connectCore, stopCores } from './cores.js';
+import { connectCore, demo, stopCores } from './cores.js';
 import { forgetProject, recentProjects, rememberProject } from './projects.js';
 import { shellPath } from './shell-path.js';
 
@@ -37,6 +38,7 @@ function answer() {
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('projects:recent', () => recentProjects());
   ipcMain.handle('projects:forget', (_event, path: string) => forgetProject(path));
+  ipcMain.handle('projects:sessions', (_event, path: string) => savedSessions(path, demo));
 
   ipcMain.handle('projects:pick', async (event) => {
     const window = BrowserWindow.fromWebContents(event.sender);
