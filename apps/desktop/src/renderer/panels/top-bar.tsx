@@ -1,23 +1,34 @@
-import { Avatar, Button, ChoiceMenu, Pill, Tab, Tabs } from '@jinion/ui';
+import { Button, ChoiceMenu, Pill, Tab, Tabs } from '@jinion/ui';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { PanelLeft, PanelRight, Plus } from 'lucide-react';
-import type { MockJinion } from '../mock/jinion.js';
-import { projects } from '../mock/projects.js';
-import { panelAtom, projectAtom, seenChangesAtom, sidebarAtom, viewAtom } from '../state/app.js';
-import { changesOf, statusOf, useActiveSession, useJinion, useSession } from '../state/session.js';
+import { useEffect, useState } from 'react';
+import type { RecentProject } from '../../main/bridge.js';
+import type { Core } from '../core/core.js';
+import { openProject, panelAtom, seenChangesAtom, sidebarAtom, viewAtom } from '../state/app.js';
+import { changesOf, statusOf, useActiveSession, useCore, useSession } from '../state/session.js';
 
 export function TopBar() {
-  const jinion = useJinion();
+  const core = useCore();
   const [sidebar, setSidebar] = useAtom(sidebarAtom);
   const [panel, setPanel] = useAtom(panelAtom);
-  const setProject = useSetAtom(projectAtom);
   const [view, setView] = useAtom(viewAtom);
-  const { sessions, active } = useAtomValue(jinion.sessionsAtom);
+  const { sessions } = useAtomValue(core.sessionsAtom);
+  const shown = useAtomValue(core.client.shownAtom);
   const seen = useAtomValue(seenChangesAtom);
   const session = useActiveSession();
+  const [recent, setRecent] = useState<RecentProject[]>([core.project]);
+
+  useEffect(() => {
+    void window.desktop.recentProjects().then(setRecent);
+  }, []);
 
   const changed = session ? changesOf(session).length : 0;
   const marked = !panel.open && changed > (session ? (seen[session.id] ?? 0) : 0);
+
+  const goTo = (go: () => unknown) => {
+    void go();
+    setView('thread');
+  };
 
   return (
     <>
@@ -30,37 +41,20 @@ export function TopBar() {
         </>
       )}
       <ChoiceMenu
-        value={jinion.project.id}
-        onChange={(id) => setProject(id)}
-        groups={[{ label: 'Projects', choices: projects.map((project) => ({ value: project.id, label: project.name, description: project.path })) }]}
+        value={core.project.path}
+        onChange={(path) => void openProject(path)}
+        groups={[{ label: 'Projects', choices: recent.map((project) => ({ value: project.path, label: project.name, description: project.path })) }]}
         trigger={
           <Pill tone="accent" chevron="up-down">
-            {jinion.project.name}
+            {core.project.name}
           </Pill>
         }
       />
       <Tabs>
         {sessions.map((each) => (
-          <SessionTab
-            key={each.id}
-            jinion={jinion}
-            id={each.id}
-            active={view === 'thread' && each.id === active}
-            onClick={() => {
-              jinion.activate(each.id);
-              setView('thread');
-            }}
-          />
+          <SessionTab key={each.id} core={core} id={each.id} active={view === 'thread' && each.id === shown} onClick={() => goTo(() => core.activate(each.id))} />
         ))}
-        <Button
-          size="icon"
-          aria-label="New thread"
-          onClick={() => {
-            jinion.open();
-            setView('thread');
-          }}
-          className="[&_svg]:size-4"
-        >
+        <Button size="icon" aria-label="New thread" onClick={() => goTo(() => core.open())} className="[&_svg]:size-4">
           <Plus />
         </Button>
       </Tabs>
@@ -73,27 +67,30 @@ export function TopBar() {
         <PanelRight />
         {marked && <span className="absolute top-1 right-1 size-1.5 rounded-full bg-working" />}
       </Button>
-      <Avatar name="Emirhan" />
     </>
   );
 }
 
-function SessionTab({ jinion, id, active, onClick }: { jinion: MockJinion; id: string; active: boolean; onClick: () => void }) {
-  const snapshot = useSession(jinion, id);
+function SessionTab({ core, id, active, onClick }: { core: Core; id: string; active: boolean; onClick: () => void }) {
+  const snapshot = useSession(core, id);
+  const setView = useSetAtom(viewAtom);
 
-  const files = changesOf(snapshot);
-  const status = statusOf(snapshot);
+  const files = snapshot ? changesOf(snapshot) : [];
+  const status = snapshot && statusOf(snapshot);
 
   return (
     <Tab
-      title={snapshot.state.title ?? 'New thread'}
+      title={snapshot?.state.title ?? 'New thread'}
       status={status}
       added={files.reduce((sum, file) => sum + file.added, 0)}
       removed={files.reduce((sum, file) => sum + file.removed, 0)}
       badge={status ? undefined : 'New'}
       active={active}
       onClick={onClick}
-      onClose={() => jinion.close(id)}
+      onClose={() => {
+        void core.close(id);
+        setView('thread');
+      }}
     />
   );
 }

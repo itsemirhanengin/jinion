@@ -1,8 +1,8 @@
 import { classNames, CodeView } from '@jinion/ui';
 import { useAtomValue } from 'jotai';
 import { ChevronRight, FileText, Folder } from 'lucide-react';
-import { useState } from 'react';
-import { useJinion } from '../../state/session.js';
+import { useEffect, useMemo, useState } from 'react';
+import { useCore } from '../../state/session.js';
 
 export interface FilesProps {
   /** The files the agent changed, marked in the tree. */
@@ -17,26 +17,41 @@ interface Node {
   children?: Node[];
 }
 
-/** The project's tree, and the picked file read-only. */
-export function Files({ touched, selected, onSelect }: FilesProps) {
-  const jinion = useJinion();
-  const files = useAtomValue(jinion.filesAtom);
+/** The project's tree, and the picked file read-only; both read again when a turn ends. */
+export function Files({ session, working, touched, selected, onSelect }: FilesProps & { session: string; working: boolean }) {
+  const core = useCore();
+  const files = useAtomValue(core.filesAtom);
+  const [content, setContent] = useState<{ path: string; text?: string; problem?: string }>();
 
-  const tree = treeOf(Object.keys(files));
-  const content = selected ? files[selected] : undefined;
+  useEffect(() => {
+    if (!working) void core.refreshFiles(session);
+  }, [session, working]);
+
+  useEffect(() => {
+    if (!selected || working) return;
+
+    core.read(session, selected).then(
+      (text) => setContent({ path: selected, text }),
+      (error: Error) => setContent({ path: selected, problem: error.message }),
+    );
+  }, [session, selected, working]);
+
+  // Folders come named too, ending in `/`; the tree makes its own from the files' paths.
+  const tree = useMemo(() => treeOf(files.filter((path) => !path.endsWith('/'))), [files]);
+  const shown = selected && content?.path === selected ? content : undefined;
 
   return (
     <div className="flex h-full flex-col">
-      <div className={classNames('overflow-y-auto py-1', content !== undefined ? 'max-h-[40%] shrink-0 border-b border-line' : 'flex-1')}>
+      <div className={classNames('overflow-y-auto py-1', shown ? 'max-h-[40%] shrink-0 border-b border-line' : 'flex-1')}>
         {tree.map((node) => (
           <TreeNode key={node.path} node={node} depth={0} touched={touched} selected={selected} onSelect={onSelect} />
         ))}
       </div>
-      {content !== undefined && selected && (
+      {shown && (
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex h-8 shrink-0 items-center px-3 font-mono text-code text-muted">{selected}</div>
+          <div className="flex h-8 shrink-0 items-center px-3 font-mono text-code text-muted">{shown.path}</div>
           <div className="min-h-0 flex-1 overflow-auto">
-            <CodeView key={selected} code={content} path={selected} />
+            {shown.text !== undefined ? <CodeView key={shown.path} code={shown.text} path={shown.path} /> : <p className="p-3 text-muted">{shown.problem}</p>}
           </div>
         </div>
       )}

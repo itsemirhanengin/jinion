@@ -106,6 +106,13 @@ function ToolView({ entry, actions }: { entry: ToolEntry; actions: EntryActions 
     case 'agent':
       return <Subagent description={run.input.description} calls={entry.children ?? []} />;
 
+    case 'plan':
+      return (
+        <div className="rounded-xl border border-accent/30 bg-accent-soft/30 px-4 py-3">
+          <Prose text={run.input.plan} />
+        </div>
+      );
+
     default:
       return <ToolLine {...describe(run)} />;
   }

@@ -1,28 +1,28 @@
-import { changedFiles, editTurns } from '@jinion/core/conversation/edits';
 import type { SessionSnapshot } from '@jinion/core/api/schemas';
+import { changedFiles, editTurns } from '@jinion/core/conversation/edits';
 import type { Status } from '@jinion/ui';
 import { atom, useAtomValue } from 'jotai';
-import type { MockJinion } from '../mock/jinion.js';
-import { jinionAtom } from './app.js';
+import type { Core } from '../core/core.js';
+import { appStore, coreAtom } from './app.js';
 
-/** Inside the project's window, where a core is always open. */
-export function useJinion() {
-  return useAtomValue(jinionAtom)!;
+/** Inside a project's window, where its core is always open. */
+export function useCore() {
+  return useAtomValue(coreAtom, { store: appStore }) as Core;
 }
 
 const none = atom(undefined);
 
-/** The thread in the active tab, or `undefined` while none is open. */
+/** The thread in the active tab once the client holds it, or `undefined` while none is. */
 export function useActiveSession() {
-  const jinion = useJinion();
-  const { active } = useAtomValue(jinion.sessionsAtom);
-  const snapshot = useAtomValue(active ? jinion.session(active) : none);
+  const core = useCore();
+  const shown = useAtomValue(core.client.shownAtom);
+  const snapshot = useAtomValue(shown ? core.session(shown) : none);
 
-  return active && snapshot ? { id: active, ...snapshot } : undefined;
+  return shown && snapshot ? { id: shown, ...snapshot } : undefined;
 }
 
-export function useSession(jinion: MockJinion, id: string) {
-  return useAtomValue(jinion.session(id));
+export function useSession(core: Core, id: string) {
+  return useAtomValue(core.session(id));
 }
 
 export function statusOf({ state, fields }: SessionSnapshot): Status | undefined {
