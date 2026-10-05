@@ -86,27 +86,22 @@ are private by default; `@jinion/tui` and `@jinion/virtualization` go too, unles
 - **The agent first.** A new tab is a new thread, not a file; an empty project shows a composer. Files, diffs and the
   rest open beside threads as tabs of their own.
 
-How it looks, decided after trying a look made only of the terminal's:
+How it looks, picked from three directions drawn side by side after Codex's, OpenCode's and Cursor's desktop apps (the
+Leaf page of `pnpm dev:ui` is the reference, and the app matches it):
 
-- **The app soft, the machine sharp.** Whatever a person touches (the bars, tabs, menus, buttons, the composer,
-  settings, the agent's prose) is a Mac app's: the system font at 13/20, a few consistent icons. What the machine did
-  (commands, output, paths, diffs, tool calls, the status bar's values) is JetBrains Mono at 12/20, in blocks tinted by
-  their state.
-- **Two radii and one shadow.** Buttons are fully round; what holds things (cards, menus, popovers, inputs, the user's
-  message) is a surface at 8px; what sits in a surface, a menu's row, takes its radius less the gap, 4px. Only what
-  floats over the content (menus, popovers, the palette, dialogs) casts the one shadow; cards and panels are set apart
-  by their border and tint. A tinted block's border is a shade of its own tint (`tinted`), as a hover is a shade of
-  what is under it, never a gray line drawn over it. The cards the agent answers with (a diff, what a turn
-  changed, a command) have a plain 1px border around their tint, the title in their first row; the terminal's dashed
-  frame with `+` corners was tried and didn't carry over.
-- **What carries over from the terminal is its character**, not its look: color only where it means something (the
-  model blue, paths cyan, cost purple, `+` green, `-` red), tinted surfaces rather than badges and cards, label and
-  value rows, short plain copy, everything clickable with a hover a shade of what is under it.
-- **Light and dark alike.** The tokens start from `packages/tui`'s themes, the light colors darkened to 4.5:1 at 13px
-  and the neutrals one cool family. A 4px grid; motion only on color and opacity, 120ms.
-- **Made by a person.** No sparkles, gradients, glow, rounded cards, shimmer, centered "How can I help" screens, an
-  icon on every row, or Tailwind's own palette; every value has a reason, and every state is drawn, not only the happy
-  one.
+- **Gray chrome, a white sheet.** The title bar, the activity bar, the sidebar and the right panel sit on zinc-gray
+  chrome; the tabs and what they show are on a white sheet with rounded corners, a faint ring and the slightest
+  shadow. Nothing else gets a border: rows, tabs and buttons show a hover and a selection as black at a low opacity.
+- **Quiet work, one anchor.** The user's message is a white bubble that stays on top while its answer scrolls. What the
+  agent did is quiet gray lines that open (`Explored 4 files, 2 searches ›`, `Ran pnpm test 4.2s ›`); an edit opens as a
+  diff card with line numbers, and a turn ends on `3 files changed +48 -3  Review`. The composer floats over the end of
+  the conversation; under it the branch, local or worktree, and how full the context is.
+- **Color only where it means something.** The primary `#181E33` for the send button and what works (the terminal's
+  `| / - \` spinner); amber for what waits (`?`); green and red for added and removed. The system font at 13/20,
+  JetBrains Mono at 12/20 for code and diffs. `theme.css` holds it all, light and dark.
+- **Made by a person.** No sparkles, gradients, glow, shimmer, centered "How can I help" screens, an icon on every row,
+  or Tailwind's own palette; every value has a reason, and every state is drawn, not only the happy one. Earlier tries
+  are kept in the history: a look made of the terminal's frames and tints didn't carry over to a Mac app.
 
 How the window is laid out, after VS Code's workbench:
 
@@ -132,13 +127,13 @@ How the window is laid out, after VS Code's workbench:
 - **The tabs.** A thread, a diff, a file (read-only, an editor later), a page (Skills, Memory, MCP, settings, usage),
   later a terminal or the dev server's preview. A tab opened by a single click is a preview, in italics, which the
   next click replaces; a double click or working in it keeps it. The middle splits into two groups at most.
-- **The panels.** The right one shows the agent: the thread shown, or the last one beside a file, with its changes,
-  todos and subagents. The bottom one has tabs of its own: terminals, the output of scripts, problems from lint and
+- **The panels.** The right one, on the chrome, lists what there is to look at (Changes, Files, Tasks, with their
+  counts), each opening its sidebar or panel. The bottom one, in the sheet, has tabs of its own: terminals, the output of scripts, problems from lint and
   typecheck. Buttons at the top right open and close the sidebar, the bottom panel and the right panel, as in VS Code.
   A view doesn't know where it is, so moving one between the sidebar and the panels can come later without changing
   it.
-- **The status bar** is the project's state: branch, git, problems on one side; model, context and limits on the
-  other. Each piece opens what it is about.
+- **The status bar** is the workbench's, for a feature that wants one; the app draws none, since the branch and the
+  context sit under the composer.
 - **Every feature is one module.** It tells the workbench its activity item, sidebar, tab kinds, panel views, status
   items, commands and shortcuts; the workbench draws them and knows none of them. A new feature is a new module, and
   the layout doesn't change.
@@ -180,18 +175,18 @@ Steps, design first, as the TUI was built:
    thread another Jinion has open is refused, as it should be for writing, but it should still open to read: the core
    could answer `session/subscribe` for a saved thread without claiming it, and the window show it without a composer.
    The other calls the screens make still drop their failures; they should go through `Core.act` too.
-4. **The workbench** (now, on `feat/desktop-workbench`). The interface drawn again from scratch, as above:
-   - **4a.** The tokens in `packages/ui`'s `theme.css`, light and dark, and the agent's card (`Frame`), drawn on one page
-     of the playground to judge in pixels.
+4. **The workbench** (done, on `feat/desktop-workbench`). The interface drawn again from scratch, as above:
+   - **4a** (done). The tokens in `packages/ui`'s `theme.css`, light and dark, after the Leaf direction.
    - **4b** (done). `packages/native-tabs` and `packages/workbench`, with a playground on made-up features
      (`pnpm dev:workbench`): the activity bar, sidebars, tabs with previews and two groups, the right and bottom
      panels, the status bar, the shortcuts, and the `Feature` each one is described by. Left for later: dragging a tab
      between groups, a view moved between the sidebar and the panels, the palette over the features' commands.
-   - **4c.** `apps/desktop` on them: project tabs, then Threads, Git, Files, Skills, Memory and accounts as modules,
-     the agent in the right panel, the status bar. The old sidebar, top bar and side panel go, and `packages/ui`'s
-     `shell/` with them.
-   - **4d.** The chat kit drawn again in the new look, its cards on `Frame`, and the small transitions everywhere
-     (hover, open and close, a card folding), which the tokens leave out.
+   - **4c** (done). `apps/desktop` on them, in `features/`: Threads (the open sessions as tabs, kept as one with the
+     core's by `useThreadTabs`), Changes, Files, Skills, Memory and the account, the tools on the right, Tasks at the
+     bottom; project tabs along the top. The old sidebar, top bar, side panel and `packages/ui`'s `shell/` are gone.
+   - **4d** (done). Short transitions (a hover's color, a line or a menu opening, a tab's content fading in, none when
+     the system asks for less motion); the window in macOS's appearance, dark checked screen by screen; Search, finding
+     files and threads by name; the open project tabs and each project's panels and pages kept across launches.
 5. **The code.** An editor (Monaco) for the files the agent touches, terminals in the bottom panel, the dev server's
    preview as a tab where clicking an element hands it to the composer, LSP after.
    Terminals run in the core (node-pty, on a stream of their own), not in the window, so the agent can read their
