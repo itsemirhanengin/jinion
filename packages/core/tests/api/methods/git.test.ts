@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { ApiCode } from '../../../src/api/protocol.js';
 import { serve } from '../../support/api.js';
-import { repo } from '../../support/git.js';
+import { git, repo } from '../../support/git.js';
 import { sandboxEach } from '../../support/sandbox.js';
 
 const box = sandboxEach();
@@ -47,6 +47,16 @@ describe('git methods', () => {
 
     repo(api, (path) => writeFileSync(join(path, 'server.ts'), 'one\n'));
     repo(web, (path) => writeFileSync(join(path, 'page.tsx'), 'one\n'));
+
+    // The core commits with the user's own config, which a CI runner doesn't have.
+    for (const [key, value] of [
+      ['user.name', 'Jinion'],
+      ['user.email', 'tests@jinion.co'],
+      ['commit.gpgsign', 'false'],
+    ]) {
+      git(api, 'config', key!, value!);
+    }
+
     writeFileSync(join(api, 'server.ts'), 'two\n');
     writeFileSync(join(api, 'limits.ts'), 'new\n');
     writeFileSync(join(web, 'page.tsx'), 'two\n');
