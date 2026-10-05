@@ -1,83 +1,97 @@
-import { ChevronDown, ChevronUp, Maximize2, Undo2 } from 'lucide-react';
+import { Maximize2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
-import { Line } from '../code/code-view.js';
-import { languageOf, useTokens } from '../code/highlight.js';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
 import { LineCounts } from '../primitives/line-counts.js';
+import { WorkLine } from './work-line.js';
 
 export type DiffLineKind = 'context' | 'added' | 'removed';
 
 export interface DiffLine {
   kind: DiffLineKind;
   text: string;
+  /** Its line in the file: the new file's for context and added lines, the old one's for removed. */
+  number?: number;
 }
 
 export interface DiffCardProps {
   path: string;
   lines: DiffLine[];
-  /** How many lines show before the card is opened. */
+  /** How many lines show before the card is opened in full. */
   folded?: number;
+  /** Drawn as the card alone, without the line that opens it, as in a tab of its own. */
+  bare?: boolean;
   onRevert?: () => void;
   onOpen?: () => void;
 }
 
-const looks: Record<DiffLineKind, string> = {
-  context: 'border-transparent',
-  added: 'border-added bg-added-soft',
-  removed: 'border-removed bg-removed-soft',
+const rows: Record<DiffLineKind, string> = {
+  context: '',
+  added: 'bg-added-surface text-added-ink',
+  removed: 'bg-removed-surface text-removed-ink',
 };
 
-export function DiffCard({ path, lines, folded = 12, onRevert, onOpen }: DiffCardProps) {
-  const [open, setOpen] = useState(false);
+const signs: Record<DiffLineKind, string> = { context: ' ', added: '+', removed: '-' };
 
-  // The lines are colored together, so a construct spanning several reads as it does in the file.
-  const tokens = useTokens(lines.map((line) => line.text).join('\n'), languageOf(path));
+/** An edit the agent made: `Edited server.ts +6 -2`, the lines it changed under it. */
+export function DiffCard({ path, lines, folded = 12, bare, onRevert, onOpen }: DiffCardProps) {
+  const [open, setOpen] = useState(true);
+  const [whole, setWhole] = useState(false);
 
   const added = lines.filter((line) => line.kind === 'added').length;
   const removed = lines.filter((line) => line.kind === 'removed').length;
-  const folds = lines.length > folded;
-  const shown = folds && !open ? lines.slice(0, folded) : lines;
   const name = path.slice(path.lastIndexOf('/') + 1);
-  const folder = path.slice(0, path.length - name.length);
+  const folds = lines.length > folded && !whole;
+  const shown = folds ? lines.slice(0, folded) : lines;
 
-  return (
-    <div className="overflow-hidden rounded-xl border border-line bg-raised">
-      <div className="flex h-10 items-center gap-2 border-b border-line pr-1.5 pl-3">
-        <span className="min-w-0 truncate" title={path}>
-          {folder && <span className="text-faint">{folder}</span>}
-          <span className="font-medium">{name}</span>
+  const card = (
+    <div className="animate-enter overflow-hidden rounded-xl bg-background ring-1 ring-edge">
+      <div className="flex h-9 items-center gap-2 border-b border-line bg-raised pr-1 pl-3">
+        <span className="min-w-0 flex-1 truncate font-medium" title={path}>
+          {name}
         </span>
-        <LineCounts added={added} removed={removed} />
-        <span className="flex-1" />
+        <span className="font-mono text-mono">
+          <LineCounts added={added} removed={removed} />
+        </span>
         {onRevert && (
-          <Button size="icon" aria-label="Revert" onClick={onRevert} className="[&_svg]:size-3.5">
+          <Button size="icon" aria-label="Revert" title="Revert" onClick={onRevert}>
             <Undo2 />
           </Button>
         )}
         {onOpen && (
-          <Button size="icon" aria-label="Open" onClick={onOpen} className="[&_svg]:size-3.5">
+          <Button size="icon" aria-label="Open" title="Open" onClick={onOpen}>
             <Maximize2 />
           </Button>
         )}
       </div>
-      <pre className="overflow-x-auto py-1.5 font-mono text-mono select-text">
+      <div className="overflow-x-auto py-1.5 font-mono text-mono select-text">
         {shown.map((line, index) => (
-          <div key={index} className={classNames('min-w-fit border-l-2 px-3 whitespace-pre', looks[line.kind])}>
-            <Line tokens={tokens?.[index]} text={line.text} />
+          <div key={index} className={classNames('flex min-w-fit whitespace-pre', rows[line.kind])}>
+            <span className="w-12 shrink-0 pr-3 text-right text-faint tabular-nums select-none">{line.number}</span>
+            <span className={classNames('w-5 shrink-0 select-none', line.kind === 'added' && 'text-added', line.kind === 'removed' && 'text-removed')}>
+              {signs[line.kind]}
+            </span>
+            <span className="pr-4">{line.text}</span>
           </div>
         ))}
-      </pre>
+      </div>
       {folds && (
-        <button
-          type="button"
-          aria-label={open ? 'Show less' : 'Show all'}
-          onClick={() => setOpen(!open)}
-          className="flex h-6 w-full cursor-default items-center justify-center text-faint hover:bg-hover/60 hover:text-muted"
-        >
-          {open ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+        <button type="button" onClick={() => setWhole(true)} className="flex h-8 w-full cursor-default items-center border-t border-line px-3 text-muted hover:bg-shade hover:text-ink">
+          Show all {lines.length} lines
         </button>
       )}
+    </div>
+  );
+
+  if (bare) return card;
+
+  return (
+    <div className="flex flex-col gap-2">
+      <WorkLine open={open} onToggle={() => setOpen(!open)}>
+        <span className="truncate">Edited {name}</span>
+        <LineCounts added={added} removed={removed} />
+      </WorkLine>
+      {open && card}
     </div>
   );
 }

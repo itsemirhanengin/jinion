@@ -10,166 +10,154 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
 
-  --text-title: 16px;
-  --text-title--line-height: 24px;
-  --text-ui: 13px;
-  --text-ui--line-height: 20px;
-  --text-small: 12px;
-  --text-small--line-height: 16px;
-  --text-mono: 12px;
-  --text-mono--line-height: 20px;
+  --text-title: 1rem;
+  --text-title--line-height: 1.5rem;
+  --text-ui: 0.8125rem;
+  --text-ui--line-height: 1.25rem;
+  --text-small: 0.75rem;
+  --text-small--line-height: 1rem;
+  --text-mono: 0.75rem;
+  --text-mono--line-height: 1.25rem;
 
-  /* Buttons are rounded-full; what holds things is a surface; what sits in one is its radius less the gap between. */
-  --radius-surface: 8px;
-  --radius-inner: 4px;
+  /* Motion is short and only fades or nudges: what opens appears in place, and nothing slides the layout around. */
+  --animate-enter: enter 160ms ease-out;
+  --animate-fade: fade 140ms ease-out;
+
+  @keyframes enter {
+    from {
+      opacity: 0;
+      transform: translateY(-2px);
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
 }
 
+/* The window is gray chrome around white sheets; edges and hovers are black at a low opacity, so they suit any gray. */
 :root,
 .light {
   color-scheme: light;
 
-  --background: #fbfbfc;
-  --raised: #f3f4f6;
+  --chrome: #f4f4f5;
+  --background: #ffffff;
+  --raised: #fafafa;
   --floating: #ffffff;
-  --ink: #1f2328;
-  --muted: #6b7079;
-  --line: #e4e6ea;
-  --frame: #a0a4ab;
-  --shade: rgb(0 0 0 / 0.04);
-  --edge: black;
-  --selection: #add6ff;
-  --floating-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+  --ink: #09090b;
+  --muted: #71717a;
+  --faint: #a1a1aa;
+  --line: rgb(0 0 0 / 0.06);
+  --edge: rgb(0 0 0 / 0.08);
+  --shade: rgb(9 9 11 / 0.05);
+  --selected: rgb(9 9 11 / 0.06);
+  --selection: #c9d7f5;
 
-  --surface-neutral: #f0f1f4;
-  --surface-user: #eceef3;
-  --surface-pending: #e8edf7;
-  --surface-success: #e8f2e4;
-  --surface-error: #f7e6e5;
-
-  --accent: #2f6fc6;
-  --code: #1f7a7a;
-  --success: #2f7d32;
-  --warning: #93600f;
-  --error: #b8362f;
-  --heading: #8f6a10;
-  --variable: #7d45b3;
-  --string: #a3462f;
-
-  --added: #2f7d32;
-  --removed: #b8362f;
-  --added-surface: #e3f0de;
-  --removed-surface: #f6e1df;
-  --added-highlight: #a6d69c;
-  --removed-highlight: #eba5a0;
+  --primary: #181e33;
+  --on-primary: #ffffff;
+  --accent: #2563eb;
+  --warning: #d97706;
+  --error: #dc2626;
+  --added: #059669;
+  --removed: #dc2626;
+  --added-surface: #ecfdf5;
+  --removed-surface: #fef2f2;
+  --added-ink: #022c22;
+  --removed-ink: #450a0a;
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: #1b1d22;
-  --raised: #21242a;
-  --floating: #262a31;
-  --ink: #d4d7dd;
-  --muted: #8a909b;
-  --line: #2a2e35;
-  --frame: #5a606b;
-  --shade: rgb(255 255 255 / 0.04);
-  --edge: white;
-  --selection: #264f78;
-  --floating-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  --chrome: #18181b;
+  --background: #0f0f11;
+  --raised: #141416;
+  --floating: #242427;
+  --ink: #fafafa;
+  --muted: #a1a1aa;
+  --faint: #71717a;
+  --line: rgb(255 255 255 / 0.06);
+  --edge: rgb(255 255 255 / 0.1);
+  --shade: rgb(255 255 255 / 0.05);
+  --selected: rgb(255 255 255 / 0.07);
+  --selection: #2b3a5c;
 
-  --surface-neutral: #1f2228;
-  --surface-user: #262a33;
-  --surface-pending: #1d2230;
-  --surface-success: #1b261d;
-  --surface-error: #2c1c1f;
-
-  --accent: #61afef;
-  --code: #56b6c2;
-  --success: #98c379;
-  --warning: #e5c07b;
-  --error: #e06c75;
-  --heading: #e5c07b;
-  --variable: #c678dd;
-  --string: #ce9178;
-
-  --added: #98c379;
-  --removed: #e06c75;
-  --added-surface: #1f3324;
-  --removed-surface: #3a2024;
-  --added-highlight: #2f5536;
-  --removed-highlight: #6a2d35;
+  --primary: #e4e7f1;
+  --on-primary: #181e33;
+  --accent: #60a5fa;
+  --warning: #fbbf24;
+  --error: #f87171;
+  --added: #34d399;
+  --removed: #f87171;
+  --added-surface: rgb(16 185 129 / 0.1);
+  --removed-surface: rgb(239 68 68 / 0.1);
+  --added-ink: #d1fae5;
+  --removed-ink: #fee2e2;
 }
 
 @theme inline {
+  --color-chrome: var(--chrome);
   --color-background: var(--background);
   --color-raised: var(--raised);
   --color-floating: var(--floating);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
+  --color-faint: var(--faint);
   --color-line: var(--line);
-  --color-frame: var(--frame);
+  --color-edge: var(--edge);
+  --color-shade: var(--shade);
+  --color-selected: var(--selected);
   --color-selection: var(--selection);
 
-  --color-surface-neutral: var(--surface-neutral);
-  --color-surface-user: var(--surface-user);
-  --color-surface-pending: var(--surface-pending);
-  --color-surface-success: var(--surface-success);
-  --color-surface-error: var(--surface-error);
-
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
   --color-accent: var(--accent);
-  --color-code: var(--code);
-  --color-success: var(--success);
   --color-warning: var(--warning);
   --color-error: var(--error);
-  --color-heading: var(--heading);
-  --color-variable: var(--variable);
-  --color-string: var(--string);
-
   --color-added: var(--added);
   --color-removed: var(--removed);
   --color-added-surface: var(--added-surface);
   --color-removed-surface: var(--removed-surface);
-  --color-added-highlight: var(--added-highlight);
-  --color-removed-highlight: var(--removed-highlight);
+  --color-added-ink: var(--added-ink);
+  --color-removed-ink: var(--removed-ink);
 
-  --shadow-floating: var(--floating-shadow);
-
-  /* The earlier names, until the chat kit is drawn again in the new look. */
+  /* The earlier names, until every piece is drawn again in the new look. */
   --color-canvas: var(--background);
   --color-sidebar: var(--raised);
-  --color-hover: var(--surface-neutral);
-  --color-faint: var(--muted);
-  --color-primary: var(--ink);
-  --color-on-primary: var(--background);
-  --color-accent-soft: var(--surface-pending);
-  --color-working: var(--accent);
+  --color-hover: var(--shade);
+  --color-accent-soft: var(--shade);
+  --color-working: var(--primary);
   --color-waiting: var(--warning);
   --color-added-soft: var(--added-surface);
   --color-removed-soft: var(--removed-surface);
 }
 
-/* A shade of whatever is under it, so a tinted block stays its own color. */
-@utility hover-shade {
-  &:hover {
-    background-image: linear-gradient(var(--shade), var(--shade));
-  }
-}
-
-/* A tinted block's edge is a shade of its own tint, never a gray line drawn over it. */
-@utility tinted {
-  background-color: var(--tint);
-  border: 1px solid color-mix(in oklab, var(--tint) 92%, var(--edge));
-}
-
 @layer base {
-  /* On body only: on html it would turn rem into 13px and shrink the whole 4px grid. */
+  /* On body only: on html it would turn rem into 13px and shrink every size. */
   body {
-    @apply bg-background font-sans text-ui text-ink;
+    @apply bg-chrome font-sans text-ui text-ink antialiased;
   }
 
   :where(.font-mono, code, pre, kbd) {
     font-variant-ligatures: none;
+  }
+
+  :where(button, a, input, textarea) {
+    transition:
+      background-color 100ms ease-out,
+      color 100ms ease-out,
+      box-shadow 100ms ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation: none !important;
+      transition: none !important;
+    }
   }
 
   ::selection {
@@ -179,10 +167,10 @@
 
 @layer components {
   .prose {
-    @apply flex flex-col gap-2;
+    @apply flex flex-col gap-3 text-pretty text-ink/85;
 
     & :where(ul, ol) {
-      @apply flex flex-col gap-0.5 pl-5;
+      @apply flex flex-col gap-1 pl-5;
     }
 
     & ul {
@@ -194,7 +182,11 @@
     }
 
     & :where(h1, h2, h3, h4) {
-      @apply mt-1 font-semibold;
+      @apply mt-2 font-semibold text-ink;
+    }
+
+    & strong {
+      @apply font-semibold text-ink;
     }
 
     & a {
@@ -202,13 +194,11 @@
     }
 
     & :not(pre) > code {
-      @apply font-mono text-mono text-code;
+      @apply rounded-md bg-shade px-1 py-0.5 font-mono text-mono;
     }
 
     & pre {
-      --tint: var(--surface-neutral);
-
-      @apply tinted overflow-x-auto rounded-surface px-[2ch] py-2 font-mono text-mono;
+      @apply overflow-x-auto rounded-xl bg-raised px-4 py-3 font-mono text-mono ring-1 ring-edge;
     }
 
     & blockquote {

@@ -1,4 +1,4 @@
-import { ArrowUp, ImagePlus, Mic, Square } from 'lucide-react';
+import { ArrowUp, ImagePlus, Mic } from 'lucide-react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
@@ -15,9 +15,11 @@ export interface ComposerProps {
   onStop?: () => void;
   onAttach?: () => void;
   onDictate?: () => void;
+  /** Taller, as alone in the middle of a thread that hasn't started. */
+  large?: boolean;
 }
 
-export function Composer({ value, onChange, onSubmit, placeholder, controls, busy, onStop, onAttach, onDictate }: ComposerProps) {
+export function Composer({ value, onChange, onSubmit, placeholder, controls, busy, onStop, onAttach, onDictate, large }: ComposerProps) {
   const empty = value.trim() === '';
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -29,53 +31,58 @@ export function Composer({ value, onChange, onSubmit, placeholder, controls, bus
   };
 
   return (
-    <div className="flex flex-col rounded-2xl border border-line bg-raised shadow-[0_1px_2px_rgb(0_0_0/0.04)] focus-within:border-ink/20">
+    <div className="rounded-2xl bg-floating shadow-sm ring-1 ring-edge">
       <textarea
+        name="message"
+        aria-label="Message"
         value={value}
         rows={2}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
         onKeyDown={keyDown}
-        className="field-sizing-content max-h-72 min-h-14 resize-none bg-transparent px-4 pt-3.5 outline-none placeholder:text-faint"
-      />
-      <div className="flex items-center gap-1 px-3 pt-1 pb-2.5">
-        {controls}
-        <span className="flex-1" />
-        {onDictate && (
-          <Button size="icon" aria-label="Dictate" onClick={onDictate} className="[&_svg]:size-4">
-            <Mic />
-          </Button>
+        className={classNames(
+          'field-sizing-content block max-h-72 w-full resize-none bg-transparent px-4 pt-3 outline-none placeholder:text-faint',
+          large ? 'min-h-32' : 'min-h-16',
         )}
+      />
+      <div className="flex items-center gap-1 px-2 pb-2">
         {onAttach && (
-          <Button size="icon" aria-label="Attach an image" onClick={onAttach} className="[&_svg]:size-4">
+          <Button size="icon" aria-label="Attach an image" title="Attach an image" onClick={onAttach}>
             <ImagePlus />
           </Button>
         )}
-        {busy ? (
-          <Button size="icon" variant="primary" aria-label="Stop" onClick={onStop} className="[&_svg]:size-3 [&_svg]:fill-current">
-            <Square />
+        {controls}
+        <span className="flex-1" />
+        {onDictate && (
+          <Button size="icon" aria-label="Dictate" title="Dictate" onClick={onDictate}>
+            <Mic />
           </Button>
+        )}
+        {busy ? (
+          <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="flex size-7 cursor-default items-center justify-center rounded-full bg-primary">
+            <span className="size-2.5 rounded-[2px] bg-on-primary" />
+          </button>
         ) : (
-          <Button
-            size="icon"
-            variant="primary"
+          <button
+            type="button"
             aria-label="Send"
+            title="Send"
             disabled={empty}
             onClick={onSubmit}
-            className={classNames('[&_svg]:size-4', empty && 'bg-faint')}
+            className={classNames('flex size-7 cursor-default items-center justify-center rounded-full text-on-primary', empty ? 'bg-primary/30' : 'bg-primary')}
           >
-            <ArrowUp />
-          </Button>
+            <ArrowUp className="size-4 shrink-0" />
+          </button>
         )}
       </div>
     </div>
   );
 }
 
-/** The row under the composer: where the agent works, what it may do, the branch. */
+/** The row under the composer: the branch, where the agent works, how full the context is. */
 export function ComposerFooter({ start, end }: { start?: ReactNode; end?: ReactNode }) {
   return (
-    <div className="flex items-center gap-1 px-1 pt-1.5">
+    <div className="flex items-center gap-1 px-1 pt-2 text-muted">
       {start}
       <span className="flex-1" />
       {end}

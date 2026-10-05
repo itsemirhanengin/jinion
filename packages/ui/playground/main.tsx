@@ -2,14 +2,12 @@ import '@jinion/ui/theme.css';
 import { classNames } from '@jinion/ui';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AgentScreen } from './pages/agent-screen.js';
 import { ChatPieces } from './pages/chat-pieces.js';
+import { Leaf } from './pages/leaf.js';
 import { Primitives } from './pages/primitives.js';
-import { Tokens } from './pages/tokens.js';
 
 const pages = [
-  { id: 'tokens', title: 'Tokens', Page: Tokens },
-  { id: 'agent', title: 'Agent screen', Page: AgentScreen },
+  { id: 'leaf', title: 'Leaf', Page: Leaf },
   { id: 'chat', title: 'Conversation', Page: ChatPieces },
   { id: 'primitives', title: 'Primitives', Page: Primitives },
 ];

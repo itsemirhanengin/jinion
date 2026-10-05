@@ -1,5 +1,5 @@
 import { Check, MessageCircleQuestion } from 'lucide-react';
-import { useState } from 'react';
+import { type FormEvent, useState } from 'react';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
 
@@ -30,84 +30,129 @@ export interface AskPanelProps {
   onAnswer: (answers: QuestionAnswer[]) => void;
 }
 
-/** What the agent asks to go on, in the composer's place; sent once every question has an answer. */
+/** What the agent asks to go on, one question at a time in the composer's place; sent once the last is answered. */
 export function AskPanel({ questions, onAnswer }: AskPanelProps) {
-  const [answers, setAnswers] = useState<QuestionAnswer[]>(() => questions.map(() => ({ options: [] })));
+  const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
 
-  const answered = answers.every((answer) => answer.options.length > 0 || answer.text?.trim());
+  const question = questions[answers.length];
+  if (!question) return null;
 
-  const pick = (question: number, option: number) =>
-    setAnswers((all) =>
-      all.map((answer, index) => {
-        if (index !== question) return answer;
-        if (!questions[index]!.multiple) return { options: [option] };
+  const answer = (value: QuestionAnswer) => {
+    const next = [...answers, value];
 
-        const options = answer.options.includes(option) ? answer.options.filter((each) => each !== option) : [...answer.options, option];
-
-        return { ...answer, options };
-      }),
-    );
-
-  const type = (question: number, text: string) =>
-    setAnswers((all) => all.map((answer, index) => (index === question ? { options: questions[index]!.multiple ? answer.options : [], text } : answer)));
+    if (next.length === questions.length) onAnswer(next);
+    else setAnswers(next);
+  };
 
   return (
-    <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto rounded-2xl border border-working/40 bg-raised p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
-      {questions.map((question, index) => (
-        <div key={question.id} className="flex flex-col gap-2">
-          <div className="flex items-start gap-2 font-medium">
-            <MessageCircleQuestion className="mt-0.5 size-4 shrink-0 text-working" />
-            {question.prompt}
-          </div>
-          <div className="flex flex-col gap-1 pl-6">
-            {question.options.map((option, optionIndex) => {
-              const chosen = answers[index]!.options.includes(optionIndex);
+    <QuestionStep
+      key={answers.length}
+      question={question}
+      step={questions.length > 1 ? `${answers.length + 1} of ${questions.length}` : undefined}
+      last={answers.length === questions.length - 1}
+      onAnswer={answer}
+      onBack={answers.length > 0 ? () => setAnswers(answers.slice(0, -1)) : undefined}
+    />
+  );
+}
 
-              return (
-                <button
-                  key={optionIndex}
-                  type="button"
-                  onClick={() => pick(index, optionIndex)}
+interface QuestionStepProps {
+  question: Question;
+  step?: string;
+  last: boolean;
+  onAnswer: (answer: QuestionAnswer) => void;
+  onBack?: () => void;
+}
+
+/** One question: a single choice answers on a click; several, or words of one's own, answer with Next. */
+function QuestionStep({ question, step, last, onAnswer, onBack }: QuestionStepProps) {
+  const [chosen, setChosen] = useState<number[]>([]);
+  const [text, setText] = useState('');
+
+  const typed = text.trim();
+  const ready = chosen.length > 0 || typed !== '';
+
+  const pick = (option: number) => {
+    if (!question.multiple) {
+      onAnswer({ options: [option] });
+
+      return;
+    }
+
+    setChosen((all) => (all.includes(option) ? all.filter((each) => each !== option) : [...all, option]));
+  };
+
+  const submit = (event?: FormEvent) => {
+    event?.preventDefault();
+    if (ready) onAnswer({ options: question.multiple ? chosen : [], text: typed || undefined });
+  };
+
+  return (
+    <form onSubmit={submit} className="flex animate-enter flex-col gap-3 rounded-2xl bg-floating p-4 shadow-sm ring-1 ring-edge">
+      <div className="flex items-start gap-2">
+        <MessageCircleQuestion className="mt-0.5 size-4 shrink-0 text-primary" />
+        <p className="min-w-0 flex-1 font-medium text-pretty">{question.prompt}</p>
+        {step && <span className="shrink-0 text-faint tabular-nums">{step}</span>}
+      </div>
+      <div className="flex max-h-[40vh] flex-col gap-1 overflow-y-auto">
+        {question.options.map((option, index) => {
+          const on = chosen.includes(index);
+
+          return (
+            <button
+              key={index}
+              type="button"
+              onClick={() => pick(index)}
+              className={classNames('flex cursor-default items-start gap-3 rounded-lg px-3 py-2 text-left', on ? 'bg-selected' : 'hover:bg-shade')}
+            >
+              {question.multiple ? (
+                <span
                   className={classNames(
-                    'flex cursor-default items-start gap-2.5 rounded-lg border px-3 py-2 text-left transition-colors',
-                    chosen ? 'border-working/50 bg-working/5' : 'border-line hover:bg-hover/50',
+                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded ring-1',
+                    on ? 'bg-primary text-on-primary ring-primary' : 'ring-faint',
                   )}
                 >
-                  <span
-                    className={classNames(
-                      'mt-0.5 flex size-4 shrink-0 items-center justify-center border',
-                      question.multiple ? 'rounded' : 'rounded-full',
-                      chosen ? 'border-working bg-working text-on-primary' : 'border-faint',
-                    )}
-                  >
-                    {chosen && <Check className="size-3" />}
-                  </span>
-                  <span className="flex min-w-0 flex-col">
-                    <span>
-                      {option.label}
-                      {option.recommended && <span className="ml-1.5 text-small text-accent">recommended</span>}
-                    </span>
-                    {option.description && <span className="text-small text-muted">{option.description}</span>}
-                  </span>
-                </button>
-              );
-            })}
-            {question.other !== false && (
-              <input
-                value={answers[index]!.text ?? ''}
-                onChange={(event) => type(index, event.target.value)}
-                placeholder="Or say it in your own words"
-                className="h-9 rounded-lg border border-line bg-canvas px-3 outline-none placeholder:text-faint focus:border-ink/30"
-              />
-            )}
-          </div>
-        </div>
-      ))}
-      <div className="flex justify-end">
-        <Button variant="primary" size="small" disabled={!answered} onClick={() => onAnswer(answers)}>
-          Send
-        </Button>
+                  {on && <Check className="size-3" />}
+                </span>
+              ) : (
+                <span className="mt-0.5 w-4 shrink-0 text-faint tabular-nums">{index + 1}</span>
+              )}
+              <span className="flex min-w-0 flex-col">
+                <span>
+                  {option.label}
+                  {option.recommended && <span className="ml-1.5 text-muted">recommended</span>}
+                </span>
+                {option.description && <span className="text-pretty text-muted">{option.description}</span>}
+              </span>
+            </button>
+          );
+        })}
       </div>
-    </div>
+      {question.other !== false && (
+        <input
+          name="answer"
+          aria-label="Your own answer"
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          placeholder="Or say it in your own words"
+          className="h-9 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
+        />
+      )}
+      {(onBack || question.multiple || typed) && (
+        <div className="flex items-center gap-2">
+          {onBack && (
+            <Button size="small" onClick={onBack}>
+              Back
+            </Button>
+          )}
+          <span className="flex-1" />
+          {(question.multiple || typed) && (
+            <Button type="submit" variant="primary" size="small" disabled={!ready}>
+              {last ? 'Send' : 'Next'}
+            </Button>
+          )}
+        </div>
+      )}
+    </form>
   );
 }

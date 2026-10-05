@@ -4,34 +4,26 @@ import { classNames } from '../lib/class-names.js';
 
 export interface PillProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
-  /** `accent` marks what the whole window is about, such as the project. */
-  tone?: 'plain' | 'soft' | 'accent';
   chevron?: 'down' | 'up-down' | false;
 }
 
-const tones = {
-  plain: 'text-ink/80 hover:bg-hover hover:text-ink',
-  soft: 'bg-hover/70 text-ink hover:bg-hover',
-  accent: 'bg-accent-soft text-accent hover:bg-accent-soft/80',
-};
-
-/** What opens a choice: the mode, the model, the project. */
-export function Pill({ icon, tone = 'plain', chevron = 'down', className, children, type = 'button', ...props }: PillProps) {
+/** What opens a choice: the mode, the model, the branch. */
+export function Pill({ icon, chevron = 'down', className, children, type = 'button', ...props }: PillProps) {
   const Chevron = chevron === 'up-down' ? ChevronsUpDown : ChevronDown;
 
   return (
     <button
       type={type}
       className={classNames(
-        'inline-flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-full px-2.5 font-medium transition-colors [&_svg]:size-3.5',
-        tones[tone],
+        'inline-flex h-7 shrink-0 cursor-default items-center gap-1.5 rounded-lg pl-2 text-ink/70 hover:bg-shade hover:text-ink data-popup-open:bg-shade data-popup-open:text-ink',
+        chevron ? 'pr-1.5' : 'pr-2',
         className,
       )}
       {...props}
     >
-      {icon}
-      <span className="truncate">{children}</span>
-      {chevron && <Chevron className="opacity-60" />}
+      {icon && <span className="flex shrink-0 [&_svg]:size-4">{icon}</span>}
+      <span className="flex items-center gap-1.5 truncate">{children}</span>
+      {chevron && <Chevron className="size-3.5 shrink-0 text-faint" />}
     </button>
   );
 }

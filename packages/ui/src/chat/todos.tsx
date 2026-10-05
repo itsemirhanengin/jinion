@@ -1,6 +1,8 @@
-import { Circle, CircleCheck, LoaderCircle } from 'lucide-react';
+import { Circle, CircleCheck } from 'lucide-react';
 import { useState } from 'react';
 import { classNames } from '../lib/class-names.js';
+import { Spinner } from '../primitives/spinner.js';
+import { WorkLine } from './work-line.js';
 
 export type TodoStatus = 'pending' | 'active' | 'done';
 
@@ -15,9 +17,13 @@ export interface TodoGroup {
 }
 
 const icons = {
-  pending: <Circle className="size-3.5 shrink-0 text-faint" />,
-  active: <LoaderCircle className="size-3.5 shrink-0 animate-spin text-working" />,
-  done: <CircleCheck className="size-3.5 shrink-0 text-accent" />,
+  pending: <Circle className="size-4 shrink-0 text-faint" />,
+  active: (
+    <span className="flex size-4 shrink-0 justify-center">
+      <Spinner />
+    </span>
+  ),
+  done: <CircleCheck className="size-4 shrink-0 text-added" />,
 };
 
 /** The agent's todos in one line, `Completed 5 of 5 todos`, that opens into the list. */
@@ -29,12 +35,17 @@ export function Todos({ groups }: { groups: TodoGroup[] }) {
   const finished = done === items.length;
 
   return (
-    <div className="flex flex-col gap-2">
-      <button type="button" onClick={() => setOpen(!open)} className="inline-flex w-fit cursor-default items-center gap-1.5 text-muted">
-        {finished ? 'Completed' : 'Done'} {done} of {items.length} todos
-        {finished ? icons.done : icons.active}
-      </button>
-      {open && <TodoList groups={groups} />}
+    <div className="flex flex-col gap-1">
+      <WorkLine open={open} onToggle={() => setOpen(!open)}>
+        <span>
+          {finished ? 'Completed' : 'Done'} {done} of {items.length} todos
+        </span>
+      </WorkLine>
+      {open && (
+        <div className="ml-1.5 animate-enter border-l border-line py-1 pl-4">
+          <TodoList groups={groups} />
+        </div>
+      )}
     </div>
   );
 }
@@ -44,7 +55,7 @@ export function TodoList({ groups }: { groups: TodoGroup[] }) {
     <div className="flex flex-col gap-2">
       {groups.map((group, index) => (
         <div key={index} className="flex flex-col gap-1">
-          {groups.length > 1 && <span className="text-small text-faint">{group.title}</span>}
+          {groups.length > 1 && <span className="text-muted">{group.title}</span>}
           {group.items.map((item, itemIndex) => (
             <div key={itemIndex} className="flex items-center gap-2">
               {icons[item.status]}
