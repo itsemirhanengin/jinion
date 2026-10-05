@@ -24,7 +24,7 @@ servers, every command and shortcut.
 ```text
 packages/core            @jinion/core             Jinion without a screen: the agent, conversations, settings
 apps/cli                 @jinion/cli              the `jinion` command, a terminal app on the core
-apps/desktop             @jinion/desktop          the desktop app, in Electron, on sample data for now
+apps/desktop             @jinion/desktop          the desktop app, in Electron, on the core
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React
@@ -40,7 +40,7 @@ pnpm dev --demo          # the scripted demo
 pnpm dev:docs            # the docs at http://localhost:3000
 pnpm dev:website         # jinion.co
 pnpm dev:ui              # the desktop app's pieces, drawn from sample conversations
-pnpm dev:desktop         # the desktop app in its own window
+pnpm dev:desktop         # the desktop app in its own window; --demo for the scripted backend
 pnpm typecheck
 pnpm test                # pnpm test:watch while working
 pnpm lint                # Biome and the spacing checker; pnpm lint:fix applies the fixes

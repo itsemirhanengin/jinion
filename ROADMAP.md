@@ -119,16 +119,22 @@ How the window behaves, as agreed:
 Steps, design first, as the TUI was built:
 
 1. **Design** (done). `packages/ui` and its playground (`pnpm dev:ui`), drawing each piece from sample conversations.
-2. **The app on sample data** (now). `apps/desktop` in Electron, its own window, every part clickable, with no core
-   behind it: projects, threads, tabs, the composer's menus, the side panel, skills and memory, and replies played
-   from a few scripted scenarios, one of them asking a permission. The sample data has the API's shapes and goes
-   through the core's reducer, so the core takes its place without the screens changing.
-3. **The core behind it.** The core in a utility process and the `MessagePort` transport, the demo backend first, then
-   the real ones; sign-in, worktrees and the branch, notifications, a window per project, a Mac app's menus.
+2. **The app on sample data** (done). `apps/desktop` in Electron, every part clickable on scripted replies with the
+   API's shapes, until the core took their place.
+3. **The core behind it** (now). Done: opening a project is picking a folder, its core's cwd, kept in the recent
+   projects; each folder's core in a utility process of its own, reached over a `MessagePort` (`portTransport`) the
+   main process hands the page through the preload; the screens on `JinionClient`, with the demo backend
+   (`pnpm dev:desktop --demo`) and with Claude and Codex; the ask, permission and plan panels; accounts, signing in
+   with Claude or ChatGPT; `files/read` for the side panel. Left: a window per project, a Mac app's menus, `@` file
+   mentions and the `/` palette in the composer, images, the views a slash command opens (the core sends them as
+   `screen/view`, which the app ignores for now), and taking a queued message back, which the API has no call for.
+   Then the whole interface is drawn again, the earlier screenshot set aside, likely on shadcn for the primitives.
 4. **The code.** An editor (Monaco) for the files the agent touches, a terminal (xterm.js over node-pty, on a stream of
    its own, as planned for terminal panes), LSP after.
 5. **Shipping.** Signed and notarized builds, updates read from an address of their own (GitHub marks one release
-   "Latest" for both products), `@jinion/desktop` on its own version, from 0.2.0.
+   "Latest" for both products), `@jinion/desktop` on its own version, from 0.2.0. The Agent SDK runs Claude with the
+   `node` on `PATH`, which an app opened from the Finder doesn't have as a terminal does; the packaged app needs the
+   shell's `PATH`, or a Node of its own to point the SDK at.
 
 ### Codex, the rest
 
