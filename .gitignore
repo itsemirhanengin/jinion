@@ -1,5 +1,6 @@
 node_modules
 dist
+apps/desktop/release
 .turbo
 *.log
 .DS_Store
