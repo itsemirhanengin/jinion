@@ -135,7 +135,7 @@ co-author lines. Split a large change into several commits, one per logical part
 Work happens on a branch, one per piece of work that earns a line in a changelog: a feature, a fix, a translation. It
 is named after its commit type, as `feat/desktop-app`, `fix/codex-rewind`, `docs/russian`. The steps of that work are
 commits on the same branch, not branches of their own. The branch goes into `main` through a pull request once CI
-passes, merged by rebase so its commits land as they are; the user merges. A very small change, such as a typo or a
+passes, merged by rebase so its commits land as they are, once the user approves. A very small change, such as a typo or a
 one-line fix, can go straight to `main`.
 
 ## Versions
