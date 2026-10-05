@@ -34,7 +34,7 @@ export function Changes({ files, selected, onSelect }: ChangesProps) {
               file === shown ? 'bg-hover' : 'hover:bg-hover/50',
             )}
           >
-            <span className="min-w-0 flex-1 truncate font-mono text-code">{file.path}</span>
+            <span className="min-w-0 flex-1 truncate font-mono text-mono">{file.path}</span>
             {file.created && <span className="text-small text-accent">new</span>}
             <LineCounts added={file.added} removed={file.removed} />
           </button>

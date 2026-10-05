@@ -29,9 +29,9 @@ export function PermissionPanel({ request, onAnswer }: PermissionPanelProps) {
         {request.title}
       </div>
       {request.command && (
-        <pre className="overflow-x-auto rounded-lg border border-line bg-sidebar px-3 py-2 font-mono text-code select-text">{request.command}</pre>
+        <pre className="overflow-x-auto rounded-lg border border-line bg-sidebar px-3 py-2 font-mono text-mono select-text">{request.command}</pre>
       )}
-      {request.subject && <div className="font-mono text-code text-muted">{request.subject}</div>}
+      {request.subject && <div className="font-mono text-mono text-muted">{request.subject}</div>}
       {request.description && <p className="text-muted">{request.description}</p>}
       {note === undefined ? (
         <div className="flex flex-wrap items-center gap-2">

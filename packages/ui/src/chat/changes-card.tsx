@@ -29,7 +29,7 @@ export function ChangesCard({ files, onOpen }: { files: ChangedFile[]; onOpen?: 
           onClick={() => onOpen?.(file.path)}
           className="flex h-8 w-full cursor-default items-center gap-2 px-3 text-left hover:bg-hover/50"
         >
-          <span className="min-w-0 flex-1 truncate font-mono text-code">{file.path}</span>
+          <span className="min-w-0 flex-1 truncate font-mono text-mono">{file.path}</span>
           {file.created && <span className="text-small text-accent">new</span>}
           <LineCounts added={file.added} removed={file.removed} />
         </button>

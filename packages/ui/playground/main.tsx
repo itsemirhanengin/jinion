@@ -5,8 +5,10 @@ import { createRoot } from 'react-dom/client';
 import { AgentScreen } from './pages/agent-screen.js';
 import { ChatPieces } from './pages/chat-pieces.js';
 import { Primitives } from './pages/primitives.js';
+import { Tokens } from './pages/tokens.js';
 
 const pages = [
+  { id: 'tokens', title: 'Tokens', Page: Tokens },
   { id: 'agent', title: 'Agent screen', Page: AgentScreen },
   { id: 'chat', title: 'Conversation', Page: ChatPieces },
   { id: 'primitives', title: 'Primitives', Page: Primitives },

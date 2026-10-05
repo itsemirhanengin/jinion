@@ -112,7 +112,7 @@ export function Accounts() {
                   ref={(field) => field?.focus()}
                   value={code}
                   onChange={(event) => setCode(event.target.value)}
-                  className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 font-mono text-code outline-none focus:border-ink/30"
+                  className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 font-mono text-mono outline-none focus:border-ink/30"
                 />
                 <Button type="submit" variant="primary" size="small">
                   Send

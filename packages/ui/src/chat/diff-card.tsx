@@ -61,7 +61,7 @@ export function DiffCard({ path, lines, folded = 12, onRevert, onOpen }: DiffCar
           </Button>
         )}
       </div>
-      <pre className="overflow-x-auto py-1.5 font-mono text-code select-text">
+      <pre className="overflow-x-auto py-1.5 font-mono text-mono select-text">
         {shown.map((line, index) => (
           <div key={index} className={classNames('min-w-fit border-l-2 px-3 whitespace-pre', looks[line.kind])}>
             <Line tokens={tokens?.[index]} text={line.text} />

@@ -49,7 +49,7 @@ export function Files({ session, working, touched, selected, onSelect }: FilesPr
       </div>
       {shown && (
         <div className="flex min-h-0 flex-1 flex-col">
-          <div className="flex h-8 shrink-0 items-center px-3 font-mono text-code text-muted">{shown.path}</div>
+          <div className="flex h-8 shrink-0 items-center px-3 font-mono text-mono text-muted">{shown.path}</div>
           <div className="min-h-0 flex-1 overflow-auto">
             {shown.text !== undefined ? <CodeView key={shown.path} code={shown.text} path={shown.path} /> : <p className="p-3 text-muted">{shown.problem}</p>}
           </div>

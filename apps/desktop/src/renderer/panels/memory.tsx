@@ -67,7 +67,7 @@ function Note({ note, onForget }: { note: MemoryNote; onForget: () => void }) {
         <div className="flex flex-col gap-3 px-4 pb-4 pl-11">
           <Prose text={note.content} />
           <div className="flex items-center gap-2">
-            <span className="flex-1 truncate font-mono text-code text-faint">{note.path}</span>
+            <span className="flex-1 truncate font-mono text-mono text-faint">{note.path}</span>
             <Button variant="outline" size="small" onClick={onForget}>
               Forget
             </Button>

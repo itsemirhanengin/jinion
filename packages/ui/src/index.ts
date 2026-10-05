@@ -8,6 +8,8 @@ export { Button } from './primitives/button.js';
 export type { ButtonProps, ButtonSize, ButtonVariant } from './primitives/button.js';
 export { ChoiceMenu } from './primitives/choice-menu.js';
 export type { Choice, ChoiceGroup, ChoiceMenuProps } from './primitives/choice-menu.js';
+export { Frame } from './primitives/frame.js';
+export type { FrameProps, FrameTone } from './primitives/frame.js';
 export { LineCounts } from './primitives/line-counts.js';
 export { Pill } from './primitives/pill.js';
 export type { PillProps } from './primitives/pill.js';

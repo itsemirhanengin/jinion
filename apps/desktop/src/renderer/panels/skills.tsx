@@ -35,7 +35,7 @@ export function Skills() {
               <button key={skill.name} type="button" onClick={() => void use(skill)} className="flex cursor-default items-center gap-3 px-4 py-3 text-left hover:bg-hover/50">
                 {skill.source === 'mcp' ? <Plug className="size-4 shrink-0 text-faint" /> : <Shapes className="size-4 shrink-0 text-faint" />}
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="font-mono text-code">
+                  <span className="font-mono text-mono">
                     /{skill.name}
                     {skill.argumentHint && <span className="text-faint"> {skill.argumentHint}</span>}
                   </span>
