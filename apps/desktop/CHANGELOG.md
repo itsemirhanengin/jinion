@@ -1,6 +1,6 @@
----
-"@jinion/desktop": minor
----
+# @jinion/desktop
+
+## 0.0.1
 
 The first version of Jinion's desktop app, for Apple silicon, unsigned.
 
