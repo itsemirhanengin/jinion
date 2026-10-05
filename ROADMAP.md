@@ -183,11 +183,13 @@ Steps, design first, as the TUI was built:
 4. **The workbench** (now, on `feat/desktop-workbench`). The interface drawn again from scratch, as above:
    - **4a.** The tokens in `packages/ui`'s `theme.css`, light and dark, and the agent's card (`Frame`), drawn on one page
      of the playground to judge in pixels.
-   - **4b.** `packages/native-tabs` and `packages/workbench`, with a playground of their own on made-up features: the
-     activity bar, sidebars, tabs with previews and two groups, the right and bottom panels, the status bar, and the
-     registry features go through. `packages/ui`'s `shell/` goes.
+   - **4b** (done). `packages/native-tabs` and `packages/workbench`, with a playground on made-up features
+     (`pnpm dev:workbench`): the activity bar, sidebars, tabs with previews and two groups, the right and bottom
+     panels, the status bar, the shortcuts, and the `Feature` each one is described by. Left for later: dragging a tab
+     between groups, a view moved between the sidebar and the panels, the palette over the features' commands.
    - **4c.** `apps/desktop` on them: project tabs, then Threads, Git, Files, Skills, Memory and accounts as modules,
-     the agent in the right panel, the status bar. The old sidebar, top bar and side panel go.
+     the agent in the right panel, the status bar. The old sidebar, top bar and side panel go, and `packages/ui`'s
+     `shell/` with them.
    - **4d.** The chat kit drawn again in the new look, its cards on `Frame`, and the small transitions everywhere
      (hover, open and close, a card folding), which the tokens leave out.
 5. **The code.** An editor (Monaco) for the files the agent touches, terminals in the bottom panel, the dev server's
