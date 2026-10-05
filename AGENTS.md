@@ -135,18 +135,28 @@ co-author lines. Split a large change into several commits, one per logical part
 Work happens on a branch, one per piece of work that earns a line in a changelog: a feature, a fix, a translation. It
 is named after its commit type, as `feat/desktop-app`, `fix/codex-rewind`, `docs/russian`. The steps of that work are
 commits on the same branch, not branches of their own. The branch goes into `main` through a pull request once CI
-passes, merged by rebase so its commits land as they are, once the user approves. A very small change, such as a typo or a
-one-line fix, can go straight to `main`.
+passes, merged by rebase so its commits land as they are, once the user approves. A very small change, such as a typo
+or a one-line fix, can go straight to `main`.
 
-## Versions
+## Versions and releases
 
 Changesets keeps the versions. `core`, `cli`, `tui` and `virtualization` each have their own; `docs`, `website` and
-`spacing` have none (`ignore` in `.changeset/config.json`). The version users see is `@jinion/cli`'s.
+`spacing` have none (`ignore` in `.changeset/config.json`). The products are what users install: `@jinion/cli` now, the
+desktop app later. Each has its own version and releases on its own; they aren't kept in step.
 
-- A branch that changes a published package carries a changeset for it: `pnpm changeset`, or a file in `.changeset/`
-  naming each package with `patch` or `minor` and one line for its changelog. The bump is agreed with the user before
-  the merge. A package that depends on a bumped one gets a patch by itself.
+- A branch that changes a published package carries a changeset for it: a file in `.changeset/` naming each package
+  with `patch` or `minor`, and the line for its changelog (`pnpm changeset` asks the same in a terminal). The bump is
+  agreed with the user before the merge.
+- A changeset names every product the change reaches, not only the packages it touches: a fix in `core` that both
+  products show names `@jinion/core`, `@jinion/cli` and the desktop app. A product that depends on a bumped package
+  gets a patch by itself, but its changelog then says only "Updated dependencies".
 - Under 1.0, `minor` is a release worth naming (the desktop app with its core makes 0.2.0), `patch` everything else.
 - A release is a commit on `main`: `pnpm changeset version` raises the versions and writes each package's
-  `CHANGELOG.md`, then `pnpm changeset tag` tags each package, as `@jinion/cli@0.2.0`.
+  `CHANGELOG.md`, then `pnpm changeset tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
+  on `main`, which is one more reason only finished work is merged.
+- A GitHub release is made for a product's tag only, titled with the product (`Jinion CLI 0.2.0`), with that version's
+  section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its installers. The other packages
+  get tags and no release. Tags and releases go out once the user approves.
+- GitHub marks one release "Latest", whichever product came last, so the desktop app's updater reads an address of its
+  own rather than the latest release.
 - `PROTOCOL_VERSION` is separate: it follows the API's rule above, not the packages.
