@@ -1,10 +1,14 @@
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { connectCore, stopCores } from './cores.js';
+import { forgetProject, recentProjects, rememberProject } from './projects.js';
 
 const devServer = process.env.VITE_DEV_SERVER_URL;
+let quitting = false;
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(menu());
+  answer();
   openWindow();
 
   app.on('activate', () => {
@@ -16,6 +20,37 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// The cores get to save their sessions before the app goes.
+app.on('before-quit', (event) => {
+  if (quitting) return;
+
+  quitting = true;
+  event.preventDefault();
+  void stopCores().then(() => app.quit());
+});
+
+function answer() {
+  ipcMain.handle('app:version', () => app.getVersion());
+  ipcMain.handle('projects:recent', () => recentProjects());
+  ipcMain.handle('projects:forget', (_event, path: string) => forgetProject(path));
+
+  ipcMain.handle('projects:pick', async (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender);
+    const options = { title: 'Open a project', buttonLabel: 'Open', properties: ['openDirectory', 'createDirectory'] as const };
+    const picked = window ? await dialog.showOpenDialog(window, { ...options, properties: [...options.properties] }) : undefined;
+
+    return picked?.canceled === false ? picked.filePaths[0] : undefined;
+  });
+
+  ipcMain.handle('projects:open', (event, path: string) => {
+    const project = rememberProject(path);
+
+    connectCore(path, event.sender);
+
+    return project;
+  });
+}
+
 function openWindow() {
   const window = new BrowserWindow({
     width: 1440,
@@ -26,12 +61,16 @@ function openWindow() {
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 18, y: 20 },
     backgroundColor: '#ffffff',
-    webPreferences: { sandbox: true, contextIsolation: true },
+    webPreferences: {
+      sandbox: true,
+      contextIsolation: true,
+      preload: fileURLToPath(new URL('./preload.cjs', import.meta.url)),
+    },
   });
 
   window.once('ready-to-show', () => window.show());
 
-  // A link in a conversation opens in the browser; the app's window only ever shows the app.
+  // A link in a conversation, or the page a sign-in opens, goes to the browser; the app's window only shows the app.
   window.webContents.setWindowOpenHandler(({ url }) => {
     openOutside(url);
 
