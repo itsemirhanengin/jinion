@@ -1,3 +1,5 @@
+import { readFile, realpath, stat } from 'node:fs/promises';
+import { isAbsolute, relative, resolve } from 'node:path';
 import { readChanges } from '../../git/changes.js';
 import { fileDiff } from '../../git/repos.js';
 import { readGitStatus } from '../../git/status.js';
@@ -33,4 +35,18 @@ export const gitMethods: Methods = (connection) => {
   });
 
   connection.answer('files/list', ({ session }) => listProjectFiles(connection.find(session).folder));
+  connection.answer('files/read', ({ session, path }) => readInFolder(connection.find(session).folder, path));
 };
+
+const MAX_READ_BYTES = 2 * 1024 * 1024;
+
+// Real paths on both sides, so neither `..` nor a link pointing out of the folder reaches a file beyond it.
+async function readInFolder(folder: string, path: string) {
+  const [root, file] = await Promise.all([realpath(folder), realpath(resolve(folder, path)).catch(() => undefined)]);
+  const inside = file !== undefined && !relative(root, file).startsWith('..') && !isAbsolute(relative(root, file));
+  const info = inside ? await stat(file) : undefined;
+  if (!file || !info?.isFile()) throw new RpcError(ApiCode.unknownFile, `${path} isn't a file in this session's folder.`);
+  if (info.size > MAX_READ_BYTES) throw new RpcError(ApiCode.unsupported, `${path} is too large to show here.`);
+
+  return readFile(file, 'utf8');
+}

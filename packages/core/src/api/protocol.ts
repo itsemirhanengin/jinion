@@ -126,6 +126,8 @@ export const requests = {
   /** A file from the session's last `git/changes`, by its absolute path. */
   'git/diff': { params: session.extend({ file: z.string() }), result: z.string() },
   'files/list': { params: session, result: z.array(z.string()) },
+  /** A file in the folder the session works in, by its path there, as `files/list` names it; any other is refused. */
+  'files/read': { params: session.extend({ path: z.string() }), result: z.string() },
 
   // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on.
   'accounts/list': { params: empty, result: z.array(AgentAccount) },
