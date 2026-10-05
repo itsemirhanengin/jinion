@@ -127,7 +127,10 @@ Steps, design first, as the TUI was built:
    (`pnpm dev:desktop --demo`) and with Claude and Codex; the ask, permission and plan panels; accounts, signing in
    with Claude or ChatGPT; `files/read` for the side panel. Left: a window per project, a Mac app's menus, `@` file
    mentions and the `/` palette in the composer, images, the views a slash command opens (the core sends them as
-   `screen/view`, which the app ignores for now), and taking a queued message back, which the API has no call for.
+   `screen/view`, which the app ignores for now), and taking a queued message back, which the API has no call for. A
+   thread another Jinion has open is refused, as it should be for writing, but it should still open to read: the core
+   could answer `session/subscribe` for a saved thread without claiming it, and the window show it without a composer.
+   The other calls the screens make still drop their failures; they should go through `Core.act` too.
    Then the whole interface is drawn again, the earlier screenshot set aside, likely on shadcn for the primitives.
 4. **The code.** An editor (Monaco) for the files the agent touches, a terminal (xterm.js over node-pty, on a stream of
    its own, as planned for terminal panes), LSP after.
