@@ -3,8 +3,8 @@ import { parseArgs } from 'node:util';
 import { run, type ColorScheme } from '@jinion/tui';
 import { findServer } from '@jinion/core/api/server-file';
 import { connectWebSocket } from '@jinion/core/api/websocket';
+import { coreOptions, startCore } from '@jinion/core/host';
 import { App } from './app/app.js';
-import { coreOptions, startCore } from './host.js';
 import { serve } from './serve.js';
 
 const { version } = createRequire(import.meta.url)('../package.json') as { version: string };

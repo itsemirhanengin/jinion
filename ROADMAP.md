@@ -150,7 +150,7 @@ Jinion's note tools as dynamic tools, Codex's questions); bumping it means runni
 
 `/model` lists every backend's models under its name, and a model of another moves the conversation there with a
 handover: the new backend gets the conversation so far as text with its next prompt (`conversation/handoff.ts`). Kimi,
-OpenCode's models or local ones would come in the same way, as an `AgentBackend` added in `apps/cli/src/host.ts`.
+OpenCode's models or local ones would come in the same way, as an `AgentBackend` added in `packages/core/src/host.ts`.
 
 ## Smaller items
 
