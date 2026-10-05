@@ -5,7 +5,9 @@ import { type PointerEvent, type ReactNode, useRef } from 'react';
 export interface WindowTab {
   id: string;
   title: string;
-  /** After the title: a dot for a project with a thread that waits. */
+  /** After the title, dimmed, such as the branch. */
+  detail?: string;
+  /** Before the title: a project's thread at work, or one waiting. */
   mark?: ReactNode;
 }
 
@@ -32,12 +34,11 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
     if (!onMove || event.button !== 0) return;
 
     const start = event.clientX;
-    const target = event.currentTarget;
     let index = from;
 
     dragged.current = false;
-    target.setPointerCapture(event.pointerId);
 
+    // Followed on the window rather than captured: a capture would send the click to the tab's box, not its button.
     const move = (moved: globalThis.PointerEvent) => {
       if (Math.abs(moved.clientX - start) < DRAG_DISTANCE && !dragged.current) return;
 
@@ -54,68 +55,65 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
     };
 
     const up = () => {
-      target.removeEventListener('pointermove', move);
-      target.removeEventListener('pointerup', up);
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
     };
 
-    target.addEventListener('pointermove', move);
-    target.addEventListener('pointerup', up);
+    addEventListener('pointermove', move);
+    addEventListener('pointerup', up);
   };
 
   return (
-    <div
-      style={{ paddingLeft: inset }}
-      className="flex h-10 shrink-0 items-stretch border-b border-line bg-raised bg-linear-to-b from-(--shade) to-(--shade) [-webkit-app-region:drag]"
-    >
-      <div ref={row} className="flex min-w-0 items-stretch [-webkit-app-region:no-drag]">
+    <div style={{ paddingLeft: inset }} className="flex h-11 shrink-0 items-center gap-1 bg-chrome pr-3 [-webkit-app-region:drag]">
+      {/* A row that scrolls sideways clips up and down too, so it leaves room for the shown tab's ring and shadow. */}
+      <div ref={row} className="flex min-w-0 items-center gap-1 overflow-x-auto px-0.5 py-1.5 [scrollbar-width:none] [-webkit-app-region:no-drag]">
         {tabs.map((tab, index) => (
           <div
             key={tab.id}
             onPointerDown={(event) => pointerDown(event, index)}
             className={classNames(
-              'group relative flex w-56 min-w-28 shrink items-center border-r border-line transition-colors duration-120 first:border-l',
-              tab.id === active ? 'bg-raised text-ink' : 'hover-shade text-muted hover:text-ink',
+              'group relative flex h-7 w-44 min-w-24 shrink items-center rounded-lg',
+              tab.id === active ? 'bg-floating text-ink shadow-xs ring-1 ring-edge' : 'text-muted hover:bg-shade hover:text-ink',
             )}
           >
-            {tab.id === active && <span className="absolute inset-x-0 -bottom-px h-px bg-raised" />}
-            {onClose && (
-              <button
-                type="button"
-                aria-label={`Close ${tab.title}`}
-                onClick={() => onClose(tab.id)}
-                className="hover-shade absolute left-1.5 flex size-5 cursor-default items-center justify-center rounded-full text-muted opacity-0 transition-opacity duration-120 group-hover:opacity-100 hover:text-ink [&_svg]:size-3"
-              >
-                <X />
-              </button>
-            )}
             <button
               type="button"
               onClick={() => {
                 if (!dragged.current) onSelect(tab.id);
               }}
-              className="flex h-full min-w-0 flex-1 cursor-default items-center justify-center gap-1.5 px-7"
+              className="flex h-full min-w-0 flex-1 cursor-default items-center gap-2 px-2.5 group-hover:pr-7"
             >
-              <span className="min-w-0 truncate">{tab.title}</span>
               {tab.mark}
+              <span className="min-w-0 truncate">{tab.title}</span>
+              {tab.detail && <span className="min-w-0 truncate text-faint">{tab.detail}</span>}
             </button>
+            {onClose && (
+              <button
+                type="button"
+                aria-label={`Close ${tab.title}`}
+                title="Close"
+                onClick={() => onClose(tab.id)}
+                className="absolute right-1 hidden size-5 cursor-default items-center justify-center rounded-md text-muted group-hover:flex hover:bg-shade hover:text-ink"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
         ))}
       </div>
       {onNew && (
-        <div className="flex shrink-0 items-center px-1.5 [-webkit-app-region:no-drag]">
-          <button
-            type="button"
-            aria-label="New tab"
-            title="New tab"
-            onClick={onNew}
-            className="hover-shade flex size-6 cursor-default items-center justify-center rounded-full text-muted transition-colors duration-120 hover:text-ink [&_svg]:size-3.5"
-          >
-            <Plus />
-          </button>
-        </div>
+        <button
+          type="button"
+          aria-label="Open a project"
+          title="Open a project"
+          onClick={onNew}
+          className="flex size-7 shrink-0 cursor-default items-center justify-center rounded-lg text-muted hover:bg-shade hover:text-ink [-webkit-app-region:no-drag]"
+        >
+          <Plus className="size-4" />
+        </button>
       )}
       <div className="flex-1" />
-      {trailing && <div className="flex shrink-0 items-center px-2 [-webkit-app-region:no-drag]">{trailing}</div>}
+      {trailing && <div className="flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">{trailing}</div>}
     </div>
   );
 }

@@ -20,17 +20,20 @@ export interface WorkbenchViewProps {
   Empty?: ComponentType;
 }
 
-/** A project's window under the row of project tabs: the activity bar, sidebar, tabs, panels and status bar. */
+/**
+ * A project's window under the row of project tabs: gray chrome holding the activity bar, the sidebar and the right
+ * panel, around a white sheet with the tabs and the bottom panel.
+ */
 export function WorkbenchView({ workbench, onNewTab, Empty }: WorkbenchViewProps) {
   useShortcuts(workbench);
 
   return (
     <WorkbenchProvider workbench={workbench}>
-      <div className="flex h-full min-h-0 flex-col bg-background text-ink">
+      <div className="flex h-full min-h-0 animate-fade flex-col bg-chrome text-ink">
         <div className="flex min-h-0 flex-1">
           <ActivityBar />
           <Sidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
+          <div className="mb-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-background shadow-xs ring-1 ring-edge">
             <Groups onNewTab={onNewTab} Empty={Empty} />
             <Panel place="bottom" />
           </div>
