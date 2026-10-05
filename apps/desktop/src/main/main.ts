@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url';
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron';
 import { connectCore, stopCores } from './cores.js';
 import { forgetProject, recentProjects, rememberProject } from './projects.js';
 import { shellPath } from './shell-path.js';
@@ -63,8 +63,9 @@ function openWindow() {
     minHeight: 600,
     show: false,
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 18, y: 20 },
-    backgroundColor: '#ffffff',
+    trafficLightPosition: { x: 16, y: 16 },
+    // The chrome's color in the system's appearance, so the window shows no other while the page loads.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#18181b' : '#f4f4f5',
     webPreferences: {
       sandbox: true,
       contextIsolation: true,

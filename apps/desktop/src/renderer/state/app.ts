@@ -1,19 +1,27 @@
 import { atom, createStore } from 'jotai';
 import { Core } from '../core/core.js';
+import { saveProjects, savedProjects } from './saved.js';
 
-/** The app's own store: which project is open. Each project's window reads its core's store instead. */
+/** The app's own store: which projects are open as tabs, and the one shown. Each project's window reads its core's store. */
 export const appStore = createStore();
 
-/** The folder open in the window; undefined on the projects screen. */
+/** The folders open as tabs along the top, in their order. */
+export const projectsAtom = atom<string[]>([]);
+
+/** The folder shown; undefined on the projects screen. */
 export const projectAtom = atom<string | undefined>(undefined);
 
-/** The open folder's core once it answered, or why it couldn't open. */
+/** The shown folder's core once it answered, or why it couldn't open. */
 export const coreAtom = atom<Core | { error: string } | undefined>(undefined);
+
+/** Every core that answered, by its folder, so each project's tab can show whether a thread there works or waits. */
+export const coresAtom = atom<Record<string, Core>>({});
 
 const cores = new Map<string, Promise<Core>>();
 
-/** Goes to the folder's window, opening its core the first time; cores stay while the app runs, so threads go on. */
+/** Opens the folder as a tab, or goes to its tab, starting its core the first time; cores stay while the app runs. */
 export async function openProject(path: string) {
+  appStore.set(projectsAtom, (open) => (open.includes(path) ? open : [...open, path]));
   appStore.set(projectAtom, path);
   appStore.set(coreAtom, undefined);
 
@@ -27,9 +35,35 @@ export async function openProject(path: string) {
   }
 }
 
-export function closeProject() {
+/** Closes the project's tab and shows the one beside it, or the projects screen after the last. */
+export function closeProject(path: string) {
+  const open = appStore.get(projectsAtom);
+  const index = open.indexOf(path);
+  const rest = open.filter((each) => each !== path);
+
+  appStore.set(projectsAtom, rest);
+  if (appStore.get(projectAtom) !== path) return;
+
+  const next = rest[index] ?? rest[index - 1];
+
+  if (next) void openProject(next);
+  else showProjects();
+}
+
+export function showProjects() {
   appStore.set(projectAtom, undefined);
   appStore.set(coreAtom, undefined);
+}
+
+export function moveProject(from: number, to: number) {
+  appStore.set(projectsAtom, (open) => {
+    const next = [...open];
+    const [path] = next.splice(from, 1);
+
+    next.splice(to, 0, path!);
+
+    return next;
+  });
 }
 
 function coreFor(path: string) {
@@ -45,6 +79,7 @@ function coreFor(path: string) {
     fillPrompt: (session, text) => core?.client.store.set(draftsAtom, (drafts) => ({ ...drafts, [session]: text })),
   }).then((opened) => {
     core = opened;
+    appStore.set(coresAtom, (all) => ({ ...all, [path]: opened }));
 
     return opened;
   });
@@ -68,22 +103,15 @@ function focusCores(focused: boolean) {
   for (const opening of cores.values()) void opening.then((core) => core.client.focus(focused));
 }
 
-// What follows lives in each project's store, so every project keeps its own.
-
-/** What the window's middle shows: the thread in the active tab, or a screen of its own. */
-export const viewAtom = atom<'thread' | 'skills' | 'memory' | 'accounts'>('thread');
-
-export const sidebarAtom = atom(true);
-
-export type PanelTab = 'changes' | 'files' | 'tasks';
-
-export const panelAtom = atom({ open: false, tab: 'changes' as PanelTab, width: 480 });
-
-/** Where the panel points in each thread, so it follows the tab shown. */
-export const panelFileAtom = atom<Record<string, string | undefined>>({});
-
-/** How many changed files of each thread the user has seen, so the panel's button can mark new ones. */
-export const seenChangesAtom = atom<Record<string, number>>({});
-
-/** What is typed in each thread's composer: the app's, as in the terminal app. */
+/** What is typed in each thread's composer: the app's, as in the terminal app; in each project's store. */
 export const draftsAtom = atom<Record<string, string>>({});
+
+// The project tabs come back as they were left; only the one shown starts its core, the others when picked.
+const saved = savedProjects();
+
+appStore.set(projectsAtom, saved.open);
+if (saved.shown) void openProject(saved.shown);
+
+for (const each of [projectsAtom, projectAtom]) {
+  appStore.sub(each, () => saveProjects({ open: appStore.get(projectsAtom), shown: appStore.get(projectAtom) }));
+}

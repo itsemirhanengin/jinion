@@ -2,7 +2,7 @@ import type { SessionState } from '@jinion/core/conversation/session';
 import type { Entry, ToolCallEntry, ToolEntry } from '@jinion/core/conversation/entries';
 import { inRunningTurn } from '@jinion/core/conversation/session';
 import type { ToolRun } from '@jinion/core/agent/tools';
-import { ChangesCard, CommandCard, DiffCard, Notice, Prose, Thinking, Todos, ToolGroup, ToolLine, UserMessage } from '@jinion/ui/chat';
+import { ChangesCard, CommandCard, DiffCard, Notice, Prose, Thinking, Todos, ToolGroup, ToolLine, Turn, UserMessage } from '@jinion/ui/chat';
 import type { ReactNode } from 'react';
 import { diffLines } from '../../lib/diff.js';
 import { took } from '../../lib/time.js';
@@ -37,7 +37,25 @@ export function Entries({ state, actions }: { state: SessionState; actions: Entr
     items.push(entry);
   });
 
-  return items.map((item) => <EntryView key={item.id} item={item} actions={actions} />);
+  return turnsOf(items).map((turn) => (
+    <Turn key={turn[0]!.id}>
+      {turn.map((item) => (
+        <EntryView key={item.id} item={item} actions={actions} />
+      ))}
+    </Turn>
+  ));
+}
+
+/** Each user message with what came after it, so the message stays on top while its answer scrolls. */
+function turnsOf(items: Item[]) {
+  const turns: Item[][] = [];
+
+  for (const item of items) {
+    if (item.kind === 'user' || turns.length === 0) turns.push([item]);
+    else turns.at(-1)!.push(item);
+  }
+
+  return turns;
 }
 
 function EntryView({ item, actions }: { item: Item; actions: EntryActions }): ReactNode {
@@ -66,7 +84,7 @@ function EntryView({ item, actions }: { item: Item; actions: EntryActions }): Re
       return <Notice text={`${item.task.title} ${item.task.status}.`} />;
 
     case 'changes':
-      return <ChangesCard files={item.files} onOpen={actions.openChange} />;
+      return <ChangesCard files={item.files} onOpen={actions.openChange} onReview={() => item.files[0] && actions.openChange(item.files[0].path)} />;
 
     case 'explored':
       return (
@@ -108,7 +126,7 @@ function ToolView({ entry, actions }: { entry: ToolEntry; actions: EntryActions 
 
     case 'plan':
       return (
-        <div className="rounded-xl border border-accent/30 bg-accent-soft/30 px-4 py-3">
+        <div className="rounded-xl bg-raised px-4 py-3 ring-1 ring-edge">
           <Prose text={run.input.plan} />
         </div>
       );

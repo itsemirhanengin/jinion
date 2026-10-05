@@ -1,8 +1,9 @@
 import type { AgentCommand } from '@jinion/core/agent/agent';
 import { Empty, List, Page } from '@jinion/ui';
+import { useWorkbench } from '@jinion/workbench';
 import { useAtomValue, useSetAtom } from 'jotai';
 import { Plug, Shapes } from 'lucide-react';
-import { draftsAtom, viewAtom } from '../state/app.js';
+import { draftsAtom } from '../state/app.js';
 import { useActiveSession, useCore } from '../state/session.js';
 
 /** The skills and MCP prompts the agent has, each sent as a slash command; picking one starts a message with it. */
@@ -11,7 +12,7 @@ export function Skills() {
   const session = useActiveSession();
   const app = useAtomValue(core.appAtom);
   const setDrafts = useSetAtom(draftsAtom);
-  const setView = useSetAtom(viewAtom);
+  const workbench = useWorkbench();
 
   // A backend lists its skills once its first session has started, so they are the active session's backend's.
   const skills = (session && app?.skills[session.fields.agent]) ?? [];
@@ -21,7 +22,7 @@ export function Skills() {
     const id = session?.id ?? (await core.open());
 
     setDrafts((drafts) => ({ ...drafts, [id]: `/${skill.name} ` }));
-    setView('thread');
+    workbench.open({ kind: 'thread', id });
   };
 
   return (
@@ -32,7 +33,7 @@ export function Skills() {
           <h2 className="text-small font-medium text-muted">{group}</h2>
           <List>
             {list.map((skill) => (
-              <button key={skill.name} type="button" onClick={() => void use(skill)} className="flex cursor-default items-center gap-3 px-4 py-3 text-left hover:bg-hover/50">
+              <button key={skill.name} type="button" onClick={() => void use(skill)} className="flex cursor-default items-center gap-3 px-4 py-3 text-left hover:bg-shade">
                 {skill.source === 'mcp' ? <Plug className="size-4 shrink-0 text-faint" /> : <Shapes className="size-4 shrink-0 text-faint" />}
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-mono text-mono">
