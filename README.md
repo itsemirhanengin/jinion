@@ -24,6 +24,7 @@ servers, every command and shortcut.
 ```text
 packages/core            @jinion/core             Jinion without a screen: the agent, conversations, settings
 apps/cli                 @jinion/cli              the `jinion` command, a terminal app on the core
+apps/desktop             @jinion/desktop          the desktop app, in Electron, on sample data for now
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React
@@ -39,11 +40,15 @@ pnpm dev --demo          # the scripted demo
 pnpm dev:docs            # the docs at http://localhost:3000
 pnpm dev:website         # jinion.co
 pnpm dev:ui              # the desktop app's pieces, drawn from sample conversations
+pnpm dev:desktop         # the desktop app in its own window
 pnpm typecheck
 pnpm test                # pnpm test:watch while working
 pnpm lint                # Biome and the spacing checker; pnpm lint:fix applies the fixes
 pnpm build
 ```
+
+The desktop app needs Electron's binary, which pnpm 11 doesn't always download on install. When `pnpm dev:desktop` says
+it is missing, run `node apps/desktop/node_modules/electron/install.js` once.
 
 Packages export their TypeScript sources under the `development` condition, so `pnpm dev`, `pnpm typecheck` and
 `pnpm test` work without building first. If your shell sets `NODE_ENV=production`, run the tests with
