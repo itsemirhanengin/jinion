@@ -4,6 +4,7 @@ import { LoaderCircle } from 'lucide-react';
 import type { Core } from '../core/core.js';
 import { Accounts } from '../panels/accounts.js';
 import { Memory } from '../panels/memory.js';
+import { Problem } from '../panels/problem.js';
 import { Projects } from '../panels/projects.js';
 import { SidePanel } from '../panels/side-panel/side-panel.js';
 import { Sidebar } from '../panels/sidebar.js';
@@ -43,6 +44,7 @@ function ProjectWindow({ core }: { core: Core }) {
     <div className="flex h-full">
       <div className="min-w-0 flex-1">
         <Window sidebar={sidebar && <Sidebar />} top={<TopBar />}>
+          <Problem />
           {view === 'thread' && <Thread />}
           {view === 'skills' && <Skills />}
           {view === 'memory' && <Memory />}

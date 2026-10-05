@@ -27,6 +27,8 @@ export class Core {
   readonly branchAtom = atom<string | undefined>(undefined);
   /** Set when the core stopped, so the window can say so instead of waiting. */
   readonly goneAtom = atom(false);
+  /** Why the last call the user made failed, such as a thread another Jinion has open; shown until dismissed. */
+  readonly problemAtom = atom<string | undefined>(undefined);
   /** Prompts to start with, which the demo backend has. */
   examples: string[] = [];
   private closed?: () => void;
@@ -94,6 +96,11 @@ export class Core {
   gone() {
     this.client.store.set(this.goneAtom, true);
     this.closed?.();
+  }
+
+  /** A call nothing waits on, whose failure the window shows rather than drops. */
+  act(call: Promise<unknown> | undefined) {
+    void call?.catch((error: Error) => this.client.store.set(this.problemAtom, error.message));
   }
 
   async open() {

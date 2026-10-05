@@ -1,7 +1,7 @@
 import { accountLabel } from '@jinion/core/agent/accounts';
 import { Button, Sidebar as Frame, SidebarHeader, SidebarItem, SidebarSection, StatusIcon } from '@jinion/ui';
 import { useAtom, useAtomValue, useSetAtom } from 'jotai';
-import { Brain, ChevronLeft, CircleUserRound, PanelLeft, Shapes, SquarePen } from 'lucide-react';
+import { Brain, ChevronLeft, CircleUserRound, Lock, PanelLeft, Shapes, SquarePen } from 'lucide-react';
 import type { Core } from '../core/core.js';
 import { ago } from '../lib/time.js';
 import { closeProject, sidebarAtom, viewAtom } from '../state/app.js';
@@ -56,10 +56,10 @@ export function Sidebar() {
           {saved.map((thread) => (
             <SidebarItem
               key={thread.id}
-              icon={<StatusIcon status="idle" />}
+              icon={thread.openElsewhere ? <Lock className="size-3.5 text-faint" aria-label="Open in another Jinion" /> : <StatusIcon status="idle" />}
               label={thread.title}
-              trailing={ago(thread.updatedAt)}
-              onClick={() => show(() => core.resume(thread.id))}
+              trailing={thread.openElsewhere ? 'elsewhere' : ago(thread.updatedAt)}
+              onClick={() => show(() => core.act(core.resume(thread.id)))}
             />
           ))}
         </SidebarSection>
