@@ -4,6 +4,7 @@ import type { PermissionDecision } from '@jinion/core/agent/permissions';
 import type { QuestionAnswer } from '@jinion/core/agent/questions';
 import { JinionClient } from '@jinion/core/api/client';
 import { portTransport } from '@jinion/core/api/port-transport';
+import type { RepoChanges } from '@jinion/core/api/protocol';
 import type { MemoryNote, SavedSummary } from '@jinion/core/api/schemas';
 import { atom } from 'jotai';
 import type { RecentProject } from '../../main/bridge.js';
@@ -26,6 +27,8 @@ export class Core {
   /** Folders end in `/`, as `files/list` names them. */
   readonly filesAtom = atom<string[]>([]);
   readonly branchAtom = atom<string | undefined>(undefined);
+  /** What isn't committed in each repository of the shown thread's folder; undefined until read. */
+  readonly gitAtom = atom<RepoChanges[] | undefined>(undefined);
   /** Set when the core stopped, so the window can say so instead of waiting. */
   readonly goneAtom = atom(false);
   /** Why the last call the user made failed, such as a thread another Jinion has open; shown until dismissed. */
@@ -191,6 +194,25 @@ export class Core {
     const status = await this.client.request('git/status', { session });
 
     this.client.store.set(this.branchAtom, status?.repos[0]?.branch);
+  }
+
+  async refreshGit(session: string) {
+    this.client.store.set(this.gitAtom, await this.client.request('git/changes', { session, uncommitted: true }));
+  }
+
+  /** A changed file's diff against the last commit, by its absolute path. */
+  gitDiff(session: string, file: string) {
+    return this.client.request('git/diff', { session, file });
+  }
+
+  async stage(session: string, files: string[], staged: boolean) {
+    await this.client.request(staged ? 'git/stage' : 'git/unstage', { session, files });
+    await this.refreshGit(session);
+  }
+
+  async commit(session: string, repo: string, message: string) {
+    await this.client.request('git/commit', { session, repo, message });
+    await this.refreshGit(session);
   }
 
   private async refreshSaved() {

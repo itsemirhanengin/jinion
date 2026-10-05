@@ -18,8 +18,8 @@ export function saveProjects(projects: SavedProjects) {
 }
 
 /**
- * The project's layout as it was left, with only its pages for tabs: a thread's, a diff's or a file's tab belongs to a
- * session that may have closed since, and the sessions still open come back as tabs by themselves.
+ * The project's layout as it was left, with only its pages and the git tab: a thread's, its changes' or a file's tab
+ * belongs to a session that may have closed since, and the sessions still open come back as tabs by themselves.
  */
 export function savedLayout(path: string): Layout | undefined {
   const layout = read<Layout>(LAYOUT + path);
@@ -27,7 +27,7 @@ export function savedLayout(path: string): Layout | undefined {
 
   const groups = layout.groups
     .map((group) => {
-      const tabs = group.tabs.filter((tab) => tab.kind === 'page');
+      const tabs = group.tabs.filter((tab) => tab.kind === 'page' || tab.kind === 'git');
       const kept = (key?: string) => (key && tabs.some((tab) => `${tab.kind}:${tab.id}` === key) ? key : undefined);
 
       return { tabs, active: kept(group.active) ?? (tabs[0] && `${tabs[0].kind}:${tabs[0].id}`), preview: kept(group.preview) };
