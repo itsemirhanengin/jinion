@@ -1,5 +1,7 @@
 import { ChevronDown, ChevronUp, Maximize2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
+import { Line } from '../code/code-view.js';
+import { languageOf, useTokens } from '../code/highlight.js';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
 import { LineCounts } from '../primitives/line-counts.js';
@@ -29,6 +31,9 @@ const looks: Record<DiffLineKind, string> = {
 export function DiffCard({ path, lines, folded = 12, onRevert, onOpen }: DiffCardProps) {
   const [open, setOpen] = useState(false);
 
+  // The lines are colored together, so a construct spanning several reads as it does in the file.
+  const tokens = useTokens(lines.map((line) => line.text).join('\n'), languageOf(path));
+
   const added = lines.filter((line) => line.kind === 'added').length;
   const removed = lines.filter((line) => line.kind === 'removed').length;
   const folds = lines.length > folded;
@@ -56,10 +61,10 @@ export function DiffCard({ path, lines, folded = 12, onRevert, onOpen }: DiffCar
           </Button>
         )}
       </div>
-      <pre className="overflow-x-auto py-1.5 font-mono text-code">
+      <pre className="overflow-x-auto py-1.5 font-mono text-code select-text">
         {shown.map((line, index) => (
-          <div key={index} className={classNames('min-w-fit border-l-2 px-3', looks[line.kind])}>
-            {line.text || ' '}
+          <div key={index} className={classNames('min-w-fit border-l-2 px-3 whitespace-pre', looks[line.kind])}>
+            <Line tokens={tokens?.[index]} text={line.text} />
           </div>
         ))}
       </pre>

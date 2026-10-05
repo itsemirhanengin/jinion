@@ -91,7 +91,7 @@ export function AgentScreen() {
           <ToolGroup title="Checked" summary="1 command">
             <ToolLine label="Ran" detail="pnpm test, 25 passed" />
           </ToolGroup>
-          <Todos items={todos} />
+          <Todos groups={todos} />
           <Prose text={summary} />
         </Conversation>
       </Window>

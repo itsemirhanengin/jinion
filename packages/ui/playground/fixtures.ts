@@ -1,5 +1,5 @@
 import type { Status } from '@jinion/ui';
-import type { DiffLine, TodoItem } from '@jinion/ui/chat';
+import type { DiffLine, TodoGroup } from '@jinion/ui/chat';
 
 export const project = 'acme-api';
 
@@ -74,12 +74,27 @@ export const serverFile: DiffLine[] = [
   { kind: 'added', text: "app.use('/api', rateLimit, routes);" },
 ];
 
-export const todos: TodoItem[] = [
-  { content: 'Read how the routes are mounted', status: 'completed' },
-  { content: 'Write the rate limit middleware', status: 'completed' },
-  { content: 'Put it in front of /api', status: 'completed' },
-  { content: 'Add a test for the 429', status: 'completed' },
-  { content: 'Run the tests', status: 'completed' },
+export const todos: TodoGroup[] = [
+  {
+    title: 'Build',
+    items: [
+      { text: 'Read how the routes are mounted', status: 'done' },
+      { text: 'Write the rate limit middleware', status: 'done' },
+      { text: 'Put it in front of /api', status: 'done' },
+    ],
+  },
+  {
+    title: 'Verification',
+    items: [
+      { text: 'Add a test for the 429', status: 'done' },
+      { text: 'Run the tests', status: 'done' },
+    ],
+  },
+];
+
+export const runningTodos: TodoGroup[] = [
+  { ...todos[0]!, items: todos[0]!.items.map((item, index) => ({ ...item, status: index < 2 ? 'done' : 'active' })) },
+  { ...todos[1]!, items: todos[1]!.items.map((item) => ({ ...item, status: 'pending' })) },
 ];
 
 export const summary = `Requests to \`/api\` are now limited to **100 a minute for each API key**, or for each IP when a request has no key.
