@@ -5,7 +5,7 @@ import { app, MessageChannelMain, type UtilityProcess, utilityProcess, type WebC
 const cores = new Map<string, UtilityProcess>();
 
 /** `--demo` plays the core's scripted backend instead of Claude and Codex, as `jinion --demo` does. */
-const demo = process.argv.includes('--demo');
+export const demo = process.argv.includes('--demo');
 
 /** Starts the folder's core when it isn't running, and hands the page a port to it; one core serves a folder. */
 export function connectCore(path: string, contents: WebContents) {

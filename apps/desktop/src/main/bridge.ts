@@ -1,3 +1,5 @@
+import type { SavedSummary } from '@jinion/core/api/schemas';
+
 /** What the preload hands the page as `window.desktop`: the little the main process does for it. */
 export interface DesktopBridge {
   version(): Promise<string>;
@@ -7,6 +9,8 @@ export interface DesktopBridge {
   /** Starts the folder's core when it isn't running, and sends a port to it as a `jinion-core-port` message. */
   openProject(path: string): Promise<RecentProject>;
   forgetProject(path: string): Promise<void>;
+  /** The folder's saved threads, read without starting its core. */
+  projectSessions(path: string): Promise<SavedSummary[]>;
   /** Called with the folder whose core stopped, so the page can say so. */
   onCoreExit(listener: (path: string) => void): void;
 }
