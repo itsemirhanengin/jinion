@@ -1,11 +1,16 @@
 import type { DiffLine } from '@jinion/ui/chat';
 
+const GIT_HEADER = /^(diff --git |index |--- |\+\+\+ |new file mode|deleted file mode|old mode|new mode|similarity index|rename from|rename to|Binary files)/;
+
 /** A unified patch's lines with their numbers, without its hunk headers; a gap between hunks shows as an empty line. */
 export function diffLines(patch: string): DiffLine[] {
   const lines: DiffLine[] = [];
   let at: { before: number; after: number } | undefined;
 
-  for (const line of patch.split('\n')) {
+  for (const line of patch.replace(/\n$/, '').split('\n')) {
+    // Git's own diff starts with headers, `+++ b/file` among them, before its first hunk.
+    if (!at && GIT_HEADER.test(line)) continue;
+
     const hunk = /^@@ -(\d+)(?:,\d+)? \+(\d+)/.exec(line);
 
     if (hunk) {
