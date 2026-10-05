@@ -1,3 +1,5 @@
+export { AskPanel } from './ask-panel.js';
+export type { AskPanelProps, Question, QuestionAnswer, QuestionOption } from './ask-panel.js';
 export { ChangesCard } from './changes-card.js';
 export type { ChangedFile } from './changes-card.js';
 export { CommandCard } from './command-card.js';
@@ -12,6 +14,8 @@ export { Notice } from './notice.js';
 export type { NoticeTone } from './notice.js';
 export { PermissionPanel } from './permission-panel.js';
 export type { PermissionDecision, PermissionPanelProps, PermissionRequest } from './permission-panel.js';
+export { PlanPanel } from './plan-panel.js';
+export type { PlanDecision, PlanOption, PlanPanelProps } from './plan-panel.js';
 export { Prose } from './prose.js';
 export { Queued } from './queued.js';
 export { Thinking } from './thinking.js';
