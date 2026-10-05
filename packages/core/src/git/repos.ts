@@ -2,6 +2,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
+import { stagedFiles } from './staging.js';
 import type { FileChange, Repo, RepoState } from './types.js';
 
 const git = promisify(execFile);
@@ -82,21 +83,23 @@ export async function repoChanges(repo: Repo, since?: string): Promise<FileChang
   const run = (args: string[]) => git('git', args, { cwd: repo.root, maxBuffer: 64 * 1024 * 1024 }).then(({ stdout }) => stdout);
   const range = since ? [since, 'HEAD', '-M'] : head ? ['HEAD', '-M'] : ['--cached'];
 
-  const [numstat, names, untracked] = await Promise.all([
+  const [numstat, names, untracked, staged] = await Promise.all([
     run(['diff', ...range, '--numstat', '-z']),
     run(['diff', ...range, '--name-status', '-z']),
     since ? '' : run(['ls-files', '--others', '--exclude-standard', '-z']),
+    since ? new Map<string, 'all' | 'some'>() : stagedFiles(repo).catch(() => new Map<string, 'all' | 'some'>()),
   ]);
 
   const kinds = parseNameStatus(names);
 
-  const changes = parseNumstat(numstat).map(({ file, insertions, deletions, binary }) => ({
+  const changes: FileChange[] = parseNumstat(numstat).map(({ file, insertions, deletions, binary }) => ({
     file,
     absolute: join(repo.root, file),
-    kind: kinds.get(file) ?? ('modified' as const),
+    kind: kinds.get(file) ?? 'modified',
     insertions,
     deletions,
     binary,
+    ...(staged.has(file) && { staged: staged.get(file) }),
   }));
 
   for (const file of untracked.split('\0').filter(Boolean)) {

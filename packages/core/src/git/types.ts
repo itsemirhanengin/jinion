@@ -26,6 +26,8 @@ export const FileChange = z.object({
   insertions: z.number(),
   deletions: z.number(),
   binary: z.boolean(),
+  /** In uncommitted changes, how much of the file's change is staged; absent when none is. */
+  staged: z.enum(['all', 'some']).optional(),
 });
 
 export type FileChange = z.infer<typeof FileChange>;
