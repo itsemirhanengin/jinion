@@ -80,13 +80,13 @@ export class Workbench {
     this.update(layouts.focusGroup(this.layout, group));
   }
 
-  /** The activity's sidebar opens or closes; one without a sidebar opens its page. */
+  /** The activity's sidebar opens or closes, and its page opens with the sidebar; one without a sidebar opens its page. */
   activate(id: string) {
     const activity = this.activities.find((candidate) => candidate.id === id);
     if (!activity) return;
 
     if (activity.Sidebar) this.update(layouts.toggleActivity(this.layout, id));
-    else if (activity.page) this.open(activity.page);
+    if (activity.page && (!activity.Sidebar || this.layout.activity === id)) this.open(activity.page);
   }
 
   toggleSidebar() {

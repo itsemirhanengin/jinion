@@ -12,7 +12,7 @@ export interface Feature {
   commands?: Command[];
 }
 
-/** An item of the activity bar: it opens its sidebar, or its page as a tab when it has no sidebar. */
+/** An item of the activity bar: it opens its sidebar, its page as a tab, or both. */
 export interface Activity {
   title: string;
   icon: ReactNode;
