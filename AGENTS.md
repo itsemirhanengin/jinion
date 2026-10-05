@@ -25,7 +25,7 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 
 | Folder | What lives there |
 | --- | --- |
-| `apps/cli/src/main.tsx`, `host.ts`, `serve.ts` | Flags; the core's options from them (`coreOptions`) and the core in this process (`startCore`); then `run(<App />)` on it, `jinion serve` without a screen, or `jinion --attach` to a running server. The only files of the app that build the core. |
+| `apps/cli/src/main.tsx`, `serve.ts` | Flags; the core's options from them and the core in this process, through `coreOptions` and `startCore` from `@jinion/core/host`, which the desktop app uses too; then `run(<App />)` on it, `jinion serve` without a screen, or `jinion --attach` to a running server. The only files of the app that build the core. |
 | `apps/cli/src/app/` | The React shell: `App` connects a `JinionClient` (following every open session), initializes it and provides it as `useApi()` with the client's store; `Layout` is the conversation, aside, prompt and status line; `keys.ts` the app's shortcuts (listed in `shortcuts.ts`); `views.tsx` and `dialogs.tsx` draw the views and dialogs the core asks for. |
 | `apps/cli/src/state/` | The app's atoms, derived from the client's store: the shown session's conversation and fields, and the app's fields. |
 | `apps/cli/src/panels/` | One component per panel, a folder for one with several parts. A new panel gets a `View` in the core's `controllers/context.ts` and a case in `app/views.tsx`. |

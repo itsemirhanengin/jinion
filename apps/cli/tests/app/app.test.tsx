@@ -12,7 +12,7 @@ import type { AgentAccount, AgentAccounts } from '@jinion/core/agent/accounts';
 import type { AgentBackend } from '@jinion/core/agent/agent';
 import { contextWarning, hasWorkLeft } from '../../src/app/activity.js';
 import { App } from '../../src/app/app.js';
-import { startCore } from '../../src/host.js';
+import { startCore } from '@jinion/core/host';
 import { MemoryStore } from '@jinion/core/memory/store';
 import { MemorySessionStore } from '@jinion/core/conversation/store';
 import { git, repo } from '@jinion/core/testing/git';
