@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
+  "baseBranch": "main",
+  "access": "public",
+  "ignore": ["@jinion/docs", "@jinion/website", "@jinion/spacing"],
+  "privatePackages": { "version": true, "tag": true },
+  "fixed": [],
+  "linked": [],
+  "format": "auto",
+  "updateInternalDependencies": "patch",
+  "commit": false,
+  "changelog": "@changesets/cli/changelog"
+}

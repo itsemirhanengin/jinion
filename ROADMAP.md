@@ -44,9 +44,10 @@ them. A change to an English page needs the same change in its `.tr.mdx`. What i
 ## Going public
 
 The repository is private, and `@jinion/cli` isn't on npm yet, so the docs' install command and their links to GitHub
-fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, publish
-`packages/core`, then `apps/cli` (which depends on it), each with `npm publish --access public`, since scoped packages
-are private by default; `@jinion/tui` and `@jinion/virtualization` too, unless they get bundled into the CLI.
+fail until then. The `@jinion` organization on npm is claimed. When the repository goes public, drop
+`"private": true` from `apps/cli` (it keeps the CLI from being published by mistake until then) and run
+`pnpm changeset publish`, which publishes each package whose version isn't on npm yet as public, since scoped packages
+are private by default; `@jinion/tui` and `@jinion/virtualization` go too, unless they get bundled into the CLI.
 
 - **claude.ai login stays, knowingly.** The Agent SDK's overview says Anthropic doesn't allow third-party products,
   agents built on the SDK included, to offer claude.ai login or its rate limits unless it approved them. Jinion offers
