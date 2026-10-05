@@ -152,7 +152,7 @@ desktop app later. Each has its own version and releases on its own; they aren't
   gets a patch by itself, but its changelog then says only "Updated dependencies".
 - Under 1.0, `minor` is a release worth naming (the desktop app with its core makes 0.2.0), `patch` everything else.
 - A release is a commit on `main`: `pnpm changeset version` raises the versions and writes each package's
-  `CHANGELOG.md`, then `pnpm changeset tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
+  `CHANGELOG.md`, then `pnpm changeset git-tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
   on `main`, which is one more reason only finished work is merged.
 - A GitHub release is made for a product's tag only, titled with the product (`Jinion CLI 0.2.0`), with that version's
   section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its installers. The other packages
