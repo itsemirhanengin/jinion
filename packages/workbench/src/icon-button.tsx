@@ -17,7 +17,7 @@ export function IconButton({ label, onClick, pressed, children }: IconButtonProp
       title={label}
       onClick={onClick}
       className={classNames(
-        'hover-shade flex size-6 shrink-0 cursor-default items-center justify-center rounded-full transition-colors duration-120 hover:text-ink [&_svg]:size-3.5',
+        'flex size-7 shrink-0 cursor-default items-center justify-center rounded-lg hover:bg-shade hover:text-ink [&_svg]:size-4 [&_svg]:shrink-0',
         pressed ? 'text-ink' : 'text-muted',
       )}
     >

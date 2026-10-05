@@ -20,6 +20,8 @@ export interface Activity {
   foot?: boolean;
   Badge?: ComponentType;
   Sidebar?: ComponentType;
+  /** Buttons at the end of the sidebar's header, such as New thread. */
+  Actions?: ComponentType;
   page?: TabRef;
 }
 
@@ -29,6 +31,8 @@ export interface TabKind {
   /** Drawn before the title: a file's icon, a thread's state. */
   Mark?: ComponentType<{ id: string }>;
   Content: ComponentType<{ id: string }>;
+  /** When the user closes one, such as a thread's tab closing its session. */
+  onClose?: (id: string) => void;
 }
 
 export interface View {
@@ -50,5 +54,7 @@ export interface Command {
   title: string;
   /** As `mod+shift+t`, where mod is ⌘ on a Mac and Ctrl elsewhere. */
   keys?: string;
+  /** Its keys do nothing, and go on to the page, unless this holds: Esc stops a turn only while one runs. */
+  when?: () => boolean;
   run: (workbench: Workbench) => void;
 }

@@ -1,6 +1,6 @@
 import { classNames } from '@jinion/ui';
-import type { Activity } from './feature.js';
 import { useLayout, useWorkbench } from './context.js';
+import type { Activity } from './feature.js';
 
 export function ActivityBar() {
   const workbench = useWorkbench();
@@ -8,7 +8,7 @@ export function ActivityBar() {
   const foot = workbench.activities.filter((activity) => activity.foot);
 
   return (
-    <nav className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-line bg-raised py-2">
+    <nav className="flex w-12 shrink-0 flex-col items-center gap-1 pt-1 pb-3">
       {top.map((activity) => (
         <Item key={activity.id} activity={activity} />
       ))}
@@ -33,13 +33,13 @@ function Item({ activity }: { activity: Activity & { id: string } }) {
       aria-pressed={open}
       onClick={() => workbench.activate(activity.id)}
       className={classNames(
-        'hover-shade relative flex size-8 cursor-default items-center justify-center rounded-full transition-colors duration-120 [&_svg]:size-4.5',
-        open ? 'bg-surface-neutral text-ink' : 'text-muted hover:text-ink',
+        'relative flex size-8 cursor-default items-center justify-center rounded-lg [&_svg]:size-4 [&_svg]:shrink-0',
+        open ? 'bg-selected text-ink' : 'text-muted hover:bg-shade hover:text-ink',
       )}
     >
       {activity.icon}
       {Badge && (
-        <span className="absolute -top-0.5 -right-0.5">
+        <span className="absolute top-1.5 right-1.5">
           <Badge />
         </span>
       )}

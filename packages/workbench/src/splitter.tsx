@@ -8,11 +8,13 @@ export interface SplitterProps {
   max: number;
   /** Whether dragging toward the end of the axis makes the part smaller, as for a panel on the right or at the bottom. */
   reversed?: boolean;
+  /** Drawn as a line, as between the sheet and its bottom panel; elsewhere it is only the gap that drags. */
+  visible?: boolean;
   onResize: (size: number) => void;
 }
 
-/** The line between two parts, dragged to resize the one it belongs to. */
-export function Splitter({ axis, size, min, max, reversed, onResize }: SplitterProps) {
+/** What is dragged to resize the part it belongs to. */
+export function Splitter({ axis, size, min, max, reversed, visible, onResize }: SplitterProps) {
   const pointerDown = (event: PointerEvent<HTMLDivElement>) => {
     const start = axis === 'x' ? event.clientX : event.clientY;
     const target = event.currentTarget;
@@ -39,9 +41,9 @@ export function Splitter({ axis, size, min, max, reversed, onResize }: SplitterP
       aria-hidden
       onPointerDown={pointerDown}
       className={classNames(
-        'relative z-10 shrink-0 bg-line',
-        axis === 'x' ? 'w-px cursor-col-resize before:absolute before:inset-y-0 before:-inset-x-1' : 'h-px cursor-row-resize before:absolute before:inset-x-0 before:-inset-y-1',
-        'before:content-[""] hover:bg-frame',
+        'relative z-10 shrink-0',
+        axis === 'x' ? 'w-2 cursor-col-resize' : 'h-px cursor-row-resize before:absolute before:inset-x-0 before:-inset-y-1 before:content-[""]',
+        visible && 'bg-line',
       )}
     />
   );

@@ -45,8 +45,21 @@ export class Workbench {
     this.update(layouts.openTab(this.layout, ref, options));
   }
 
+  /** Closes the tab as the user does, telling its kind. */
   close(key: string) {
+    const tab = this.layout.groups.flatMap((group) => group.tabs).find((each) => layouts.keyOf(each) === key);
+
+    this.remove(key);
+    if (tab) this.kinds.get(tab.kind)?.onClose?.(tab.id);
+  }
+
+  /** Takes the tab away without telling its kind, as when what it shows is gone already. */
+  remove(key: string) {
     this.update(layouts.closeTab(this.layout, key));
+  }
+
+  tabs() {
+    return this.layout.groups.flatMap((group) => group.tabs);
   }
 
   closeActive() {

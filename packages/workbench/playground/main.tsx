@@ -1,21 +1,26 @@
 import './playground.css';
 import { WindowTabs } from '@jinion/native-tabs';
-import { LayoutToggles, Workbench, WorkbenchProvider, WorkbenchView } from '@jinion/workbench';
+import { StatusIcon } from '@jinion/ui';
+import { emptyLayout, IconButton, LayoutToggles, Workbench, WorkbenchProvider, WorkbenchView } from '@jinion/workbench';
+import { Moon, Sun } from 'lucide-react';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { features, newThread } from './features.js';
+import { features, NewThread, newThread } from './features.js';
 
 const projects = [
-  { id: 'acme-api', title: 'acme-api' },
-  { id: 'bugece-web', title: 'bugece-web' },
+  { id: 'acme-api', title: 'acme-api', mark: <StatusIcon status="working" /> },
+  { id: 'bugece-web', title: 'bugece-web', mark: <StatusIcon status="waiting" /> },
+  { id: 'jinion', title: 'jinion', mark: <StatusIcon status="idle" /> },
 ];
 
-const workbenches = new Map(projects.map((project) => [project.id, new Workbench(features)]));
+const layout = { ...emptyLayout, activity: 'threads', lastActivity: 'threads', right: { open: true, size: 224, view: 'tools' } };
+
+const workbenches = new Map(projects.map((project) => [project.id, new Workbench(features, layout)]));
 
 function Playground() {
   const [tabs, setTabs] = useState(projects);
   const [active, setActive] = useState(projects[0]!.id);
-  const [scheme, setScheme] = useState<'light' | 'dark'>('light');
+  const [scheme, setScheme] = useState<'light' | 'dark'>(location.hash === '#dark' ? 'dark' : 'light');
 
   const workbench = workbenches.get(active)!;
 
@@ -30,35 +35,29 @@ function Playground() {
     });
 
   return (
-    <div className={`${scheme} flex h-full flex-col bg-background text-ink`}>
+    <div className={`${scheme} flex h-full flex-col bg-chrome text-ink`}>
       <WorkbenchProvider workbench={workbench}>
         <WindowTabs
-          tabs={tabs.map((tab) => ({ ...tab, mark: tab.id === 'bugece-web' && <span className="size-1.5 rounded-full bg-warning" /> }))}
+          tabs={tabs}
           active={active}
           onSelect={setActive}
           onMove={move}
+          onClose={() => undefined}
+          onNew={() => undefined}
           inset={12}
           trailing={
-            <div className="flex items-center gap-2">
-              <button type="button" onClick={() => setScheme(scheme === 'light' ? 'dark' : 'light')} className="hover-shade rounded-full px-2.5 text-small text-muted">
-                {scheme === 'light' ? 'Dark' : 'Light'}
-              </button>
+            <>
+              <IconButton label={scheme === 'light' ? 'Dark' : 'Light'} onClick={() => setScheme(scheme === 'light' ? 'dark' : 'light')}>
+                {scheme === 'light' ? <Moon /> : <Sun />}
+              </IconButton>
               <LayoutToggles />
-            </div>
+            </>
           }
         />
       </WorkbenchProvider>
       <div className="min-h-0 flex-1">
-        <WorkbenchView key={active} workbench={workbench} onNewTab={() => workbench.open(newThread())} Empty={Empty} />
+        <WorkbenchView key={active} workbench={workbench} onNewTab={() => workbench.open(newThread())} Empty={NewThread} />
       </div>
-    </div>
-  );
-}
-
-function Empty() {
-  return (
-    <div className="flex h-full items-center justify-center px-8">
-      <div className="w-full max-w-160 rounded-surface border border-line bg-floating px-3 py-2.5 text-muted">Ask for a change, / for commands, @ for files</div>
     </div>
   );
 }
