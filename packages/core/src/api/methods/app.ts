@@ -1,8 +1,8 @@
-import { firstPrompt, type SavedSession } from '../../conversation/session.js';
 import type { Methods } from '../connection.js';
 import { appFields, readFields } from '../fields.js';
-import { ApiCode, PROTOCOL_VERSION, type SavedSummary } from '../protocol.js';
+import { ApiCode, PROTOCOL_VERSION } from '../protocol.js';
 import { RpcCode, RpcError } from '../rpc.js';
+import { savedSummary } from '../saved.js';
 import { supported } from './supported.js';
 
 /**
@@ -37,7 +37,7 @@ export const appMethods: Methods = (connection) => {
   connection.answer('app/quit', () => app.quit());
 
   connection.answer('saved/list', () =>
-    app.saved.list().map((session) => ({ ...summary(session), openElsewhere: app.saved.openElsewhere(session.id) !== undefined || undefined })),
+    app.saved.list().map((session) => ({ ...savedSummary(session), openElsewhere: app.saved.openElsewhere(session.id) !== undefined || undefined })),
   );
 
   connection.answer('memory/list', () => app.memory.list().map((memory) => ({ ...memory, path: app.memory.path(memory) })));
@@ -71,9 +71,3 @@ export const appMethods: Methods = (connection) => {
   });
 };
 
-function summary(session: SavedSession): SavedSummary {
-  const { id, title, updatedAt, entries, worktree } = session;
-  const messages = entries.filter((entry) => entry.kind === 'user' || entry.kind === 'text').length;
-
-  return { id, title, updatedAt, messages, firstPrompt: firstPrompt(session), worktree: worktree?.name };
-}
