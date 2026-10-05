@@ -13,24 +13,49 @@
   --text-small--line-height: 18px;
   --text-code: 11.5px;
   --text-code--line-height: 18px;
+}
 
-  --color-canvas: #ffffff;
-  --color-sidebar: #f7f8f9;
-  --color-raised: #ffffff;
-  --color-hover: #eceef1;
-  --color-line: #e3e6ea;
-  --color-ink: #1b1f24;
-  --color-muted: #6b7380;
-  --color-faint: #9ca3ae;
-  --color-primary: #1d2433;
-  --color-accent: #2e6a45;
-  --color-accent-soft: #e2eee5;
-  --color-working: #3b6fd8;
-  --color-waiting: #c27a12;
-  --color-added: #1e7b3e;
-  --color-added-soft: #e7f4eb;
-  --color-removed: #c33a2f;
-  --color-removed-soft: #fbeae8;
+/* The colors are variables, so a dark set only has to override them. */
+:root {
+  --canvas: #ffffff;
+  --sidebar: #f7f8f9;
+  --raised: #ffffff;
+  --hover: #eceef1;
+  --line: #e3e6ea;
+  --ink: #1b1f24;
+  --muted: #6b7380;
+  --faint: #9ca3ae;
+  --primary: #1d2433;
+  --on-primary: #ffffff;
+  --accent: #2e6a45;
+  --accent-soft: #e2eee5;
+  --working: #3b6fd8;
+  --waiting: #c27a12;
+  --added: #1e7b3e;
+  --added-soft: #e7f4eb;
+  --removed: #c33a2f;
+  --removed-soft: #fbeae8;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-sidebar: var(--sidebar);
+  --color-raised: var(--raised);
+  --color-hover: var(--hover);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-working: var(--working);
+  --color-waiting: var(--waiting);
+  --color-added: var(--added);
+  --color-added-soft: var(--added-soft);
+  --color-removed: var(--removed);
+  --color-removed-soft: var(--removed-soft);
 }
 
 @layer base {
