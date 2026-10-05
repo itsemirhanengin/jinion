@@ -2,7 +2,7 @@ import './playground.css';
 import { WindowTabs } from '@jinion/native-tabs';
 import { StatusIcon } from '@jinion/ui';
 import { emptyLayout, IconButton, LayoutToggles, Workbench, WorkbenchProvider, WorkbenchView } from '@jinion/workbench';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Plus, Sun } from 'lucide-react';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { features, NewThread, newThread } from './features.js';
@@ -43,7 +43,11 @@ function Playground() {
           onSelect={setActive}
           onMove={move}
           onClose={() => undefined}
-          onNew={() => undefined}
+          adding={
+            <IconButton label="Open a project" onClick={() => undefined}>
+              <Plus />
+            </IconButton>
+          }
           inset={12}
           trailing={
             <>
