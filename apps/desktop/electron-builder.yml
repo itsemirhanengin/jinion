@@ -1,0 +1,15 @@
+appId: co.jinion.desktop
+productName: Jinion
+# The agents' programs (claude, codex) are spawned from disk, which a file inside an asar archive can't be.
+asar: false
+# The app folder comes from `pnpm deploy`, already holding what it needs; nothing in it builds native code.
+npmRebuild: false
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch: [arm64]
+  # Unsigned until there is a Developer ID to sign and notarize with; the first open asks the user to confirm.
+  identity: null
+dmg:
+  title: Jinion ${version}

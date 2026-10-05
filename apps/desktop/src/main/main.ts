@@ -2,9 +2,13 @@ import { fileURLToPath } from 'node:url';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell } from 'electron';
 import { connectCore, stopCores } from './cores.js';
 import { forgetProject, recentProjects, rememberProject } from './projects.js';
+import { shellPath } from './shell-path.js';
 
 const devServer = process.env.VITE_DEV_SERVER_URL;
 let quitting = false;
+
+// Read before any core starts, since each takes the environment it is forked with.
+if (app.isPackaged) process.env.PATH = shellPath() ?? process.env.PATH;
 
 app.whenReady().then(() => {
   Menu.setApplicationMenu(menu());

@@ -1,7 +1,7 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
-    "includes": ["**", "!**/dist", "!**/node_modules", "!**/.turbo", "!**/.next", "!**/.source", "!**/next-env.d.ts", "!**/fixtures", "!**/__snapshots__"]
+    "includes": ["**", "!**/dist", "!**/release", "!**/node_modules", "!**/.turbo", "!**/.next", "!**/.source", "!**/next-env.d.ts", "!**/fixtures", "!**/__snapshots__"]
   },
   // Lint only for now; formatting everything at once would rewrite most files.
   "formatter": { "enabled": false },

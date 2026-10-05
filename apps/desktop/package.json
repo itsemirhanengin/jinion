@@ -1,34 +1,42 @@
 {
   "name": "@jinion/desktop",
+  "productName": "Jinion",
   "version": "0.0.1",
   "description": "Jinion's desktop app, in Electron",
   "license": "MIT",
   "homepage": "https://jinion.co",
+  "author": "Jinion",
   "private": true,
   "type": "module",
   "main": "dist/main/main.js",
+  "files": [
+    "dist/main",
+    "dist/renderer"
+  ],
   "scripts": {
     "dev": "tsx scripts/dev.ts",
     "build": "tsc -p tsconfig.main.json && vite build",
+    "package": "tsx scripts/package.ts",
     "start": "electron .",
     "typecheck": "tsc",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@jinion/core": "workspace:*",
-    "@jinion/ui": "workspace:*",
-    "jotai": "^3.0.1",
-    "lucide-react": "^1.52.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "@jinion/core": "workspace:*"
   },
   "devDependencies": {
+    "@jinion/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "jotai": "^3.0.1",
+    "lucide-react": "^1.52.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "tsx": "^4.23.15",
     "vite": "^8.3.2",
     "vitest": "^5.0.3"
