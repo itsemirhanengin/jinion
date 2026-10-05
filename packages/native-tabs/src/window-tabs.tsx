@@ -1,5 +1,5 @@
-import { classNames } from '@jinion/ui';
-import { Plus, X } from 'lucide-react';
+import { classNames, FadeText } from '@jinion/ui';
+import { X } from 'lucide-react';
 import { type PointerEvent, type ReactNode, useRef } from 'react';
 
 export interface WindowTab {
@@ -16,17 +16,20 @@ export interface WindowTabsProps {
   active?: string;
   onSelect: (id: string) => void;
   onClose?: (id: string) => void;
-  onNew?: () => void;
   onMove?: (from: number, to: number) => void;
   /** Room at the left for the window's own buttons, as macOS's traffic lights. */
   inset?: number;
+  /** Before the tabs, such as a way home. */
+  leading?: ReactNode;
+  /** Right after the last tab, such as a `+` that opens one. */
+  adding?: ReactNode;
   trailing?: ReactNode;
 }
 
 const DRAG_DISTANCE = 4;
 
 /** The title bar as a row of tabs, one per window's content, which drag to reorder as macOS's do. */
-export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, inset = 0, trailing }: WindowTabsProps) {
+export function WindowTabs({ tabs, active, onSelect, onClose, onMove, inset = 0, leading, adding, trailing }: WindowTabsProps) {
   const row = useRef<HTMLDivElement>(null);
   const dragged = useRef(false);
 
@@ -65,6 +68,7 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
 
   return (
     <div style={{ paddingLeft: inset }} className="flex h-11 shrink-0 items-center gap-1 bg-chrome pr-3 [-webkit-app-region:drag]">
+      {leading && <div className="mr-1 flex shrink-0 items-center [-webkit-app-region:no-drag]">{leading}</div>}
       {/* A row that scrolls sideways clips up and down too, so it leaves room for the shown tab's ring and shadow. */}
       <div ref={row} className="flex min-w-0 items-center gap-1 overflow-x-auto px-0.5 py-1.5 [scrollbar-width:none] [-webkit-app-region:no-drag]">
         {tabs.map((tab, index) => (
@@ -72,7 +76,7 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
             key={tab.id}
             onPointerDown={(event) => pointerDown(event, index)}
             className={classNames(
-              'group relative flex h-7 w-44 min-w-24 shrink items-center rounded-lg',
+              'group flex h-7 w-44 min-w-24 shrink items-center rounded-lg pr-1',
               tab.id === active ? 'bg-floating text-ink shadow-xs ring-1 ring-edge' : 'text-muted hover:bg-shade hover:text-ink',
             )}
           >
@@ -81,11 +85,13 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
               onClick={() => {
                 if (!dragged.current) onSelect(tab.id);
               }}
-              className="flex h-full min-w-0 flex-1 cursor-default items-center gap-2 px-2.5 group-hover:pr-7"
+              className="flex h-full min-w-0 flex-1 cursor-default items-center gap-2 pr-1 pl-2.5"
             >
               {tab.mark}
-              <span className="min-w-0 truncate">{tab.title}</span>
-              {tab.detail && <span className="min-w-0 truncate text-faint">{tab.detail}</span>}
+              <FadeText>
+                {tab.title}
+                {tab.detail && <span className="ml-2 text-faint">{tab.detail}</span>}
+              </FadeText>
             </button>
             {onClose && (
               <button
@@ -93,7 +99,10 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
                 aria-label={`Close ${tab.title}`}
                 title="Close"
                 onClick={() => onClose(tab.id)}
-                className="absolute right-1 hidden size-5 cursor-default items-center justify-center rounded-md text-muted group-hover:flex hover:bg-shade hover:text-ink"
+                className={classNames(
+                  'flex size-5 shrink-0 cursor-default items-center justify-center rounded-md text-muted hover:bg-shade hover:text-ink focus-visible:opacity-100',
+                  tab.id === active ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+                )}
               >
                 <X className="size-3.5" />
               </button>
@@ -101,17 +110,7 @@ export function WindowTabs({ tabs, active, onSelect, onClose, onNew, onMove, ins
           </div>
         ))}
       </div>
-      {onNew && (
-        <button
-          type="button"
-          aria-label="Open a project"
-          title="Open a project"
-          onClick={onNew}
-          className="flex size-7 shrink-0 cursor-default items-center justify-center rounded-lg text-muted hover:bg-shade hover:text-ink [-webkit-app-region:no-drag]"
-        >
-          <Plus className="size-4" />
-        </button>
-      )}
+      {adding && <div className="flex shrink-0 items-center [-webkit-app-region:no-drag]">{adding}</div>}
       <div className="flex-1" />
       {trailing && <div className="flex shrink-0 items-center gap-1 [-webkit-app-region:no-drag]">{trailing}</div>}
     </div>
