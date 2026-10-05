@@ -13,9 +13,10 @@ This block is written and re-added by `turbo` before repository-scoped commands 
 
 A coding agent in the terminal. `packages/core` is Jinion without a screen, `apps/cli` the terminal app (`jinion`) that
 drives it, `packages/tui` the terminal UI framework the app is built on (Ink and React), `packages/virtualization` the
-list virtualizer under its scroll view, `packages/ui` the design system of the desktop app to come (React and Tailwind,
-drawn in its playground with `pnpm dev:ui`), `packages/spacing` the checker for the vertical layout below, `apps/docs`
-the docs site, `apps/website` the page at jinion.co. `ROADMAP.md` has what is left to build, the desktop app first.
+list virtualizer under its scroll view, `apps/desktop` the desktop app in Electron (`pnpm dev:desktop`), on sample data
+until the core is behind it, `packages/ui` its design system (React and Tailwind, drawn in its playground with
+`pnpm dev:ui`), `packages/spacing` the checker for the vertical layout below, `apps/docs` the docs site, `apps/website`
+the page at jinion.co. `ROADMAP.md` has what is left to build, the desktop app first.
 
 ## Architecture
 
@@ -31,6 +32,8 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 | `apps/cli/src/prompt/` | What the user types, which is the client's: each session's draft and the history (`draft.ts`; the core only puts text in a draft, through `Screen.fillPrompt`), pasted text and images (`attachments.ts`), and `usePrompt`, which sends them as a `Submission`. |
 | `apps/cli/src/ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
 | `apps/cli/src/status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
+| `apps/desktop/src/main/` | Electron's main process: the window, its menu (which leaves `⌘N`, `⌘W` and the rest to the page) and links opened in the browser. It draws nothing. `scripts/dev.ts` runs it beside Vite's dev server. |
+| `apps/desktop/src/renderer/` | The page, sandboxed: `app/` the shell and its shortcuts, `state/` the app's atoms (the open project, the view, the panels, each thread's draft), `panels/` one component per screen or panel. `mock/` stands in for the core until it is behind the app: `MockJinion` has the API's shapes, changes conversations with the core's reducer, and plays scripted `scenarios.ts`; the screens read it as they will read a `JinionClient`. |
 | `packages/core/src/api/` | The API clients drive the core through: JSON-RPC 2.0 (`rpc.ts`, one peer for both sides) over a `Transport`: in process (`transport.ts`), a line per message over streams (`stream-transport.ts`, for stdio), or WebSocket on 127.0.0.1 with a token and an Origin check (`websocket.ts`, its address and token in `server-file.ts`); every method's params and result and every notification in `protocol.ts`, in zod, with the API's own shapes in `schemas.ts` and the JSON Schema clients in other languages use made from them (`json-schema.ts`, written to `schema/api.json` by `pnpm --filter @jinion/core schema`); `server.ts` over one `Jinion` with a `Connection` per client, whose handlers are in `methods/`, one file per area, and `client.ts`, which holds what the server tells it in its own store. A client follows a session from a snapshot, then replays its numbered actions with the same reducer; the rest is named fields (`fields.ts`). `client.ts` takes only types and the reducer from the core, so a client carries no app of its own. |
 | `packages/core/src/commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
 | `packages/core/src/controllers/` | What the app does, as plain classes. `jinion.ts` is the app: its backends, each with what its sessions share (accounts, MCP, models, skills), the sessions open in it (`openSession`, `activate`, `close`; a conversation is never open twice) and the one the user looks at; `session.ts` is one conversation, on one backend that `/model` can change, with its turns and queue, dialogs, conversation, worktree, model, mode, tasks and input. They reach the screen only through the `Screen` port in `context.ts`. |
