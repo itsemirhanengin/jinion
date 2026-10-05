@@ -1,6 +1,6 @@
-import { ChevronRight, LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
-import { classNames } from '../lib/class-names.js';
+import { Spinner } from '../primitives/spinner.js';
+import { WorkLine } from './work-line.js';
 
 export interface CommandCardProps {
   command: string;
@@ -13,7 +13,7 @@ export interface CommandCardProps {
   background?: boolean;
 }
 
-/** A shell command the agent ran, its output folded until opened. */
+/** A shell command the agent ran, as one line whose output opens under it. */
 export function CommandCard({ command, output, exitCode, took, background }: CommandCardProps) {
   const [open, setOpen] = useState(false);
 
@@ -21,24 +21,16 @@ export function CommandCard({ command, output, exitCode, took, background }: Com
   const failed = exitCode !== undefined && exitCode !== 0;
 
   return (
-    <div className="overflow-hidden rounded-xl border border-line bg-raised">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex h-9 w-full cursor-default items-center gap-2 px-3 text-left hover:bg-hover/50"
-      >
-        <ChevronRight className={classNames('size-3.5 shrink-0 text-faint transition-transform', open && 'rotate-90')} />
-        <code className="min-w-0 flex-1 truncate font-mono text-mono">
-          <span className="text-faint">$ </span>
-          {command}
-        </code>
-        {running && <LoaderCircle className="size-3.5 shrink-0 animate-spin text-working" />}
-        {background && <span className="shrink-0 text-small text-faint">in the background</span>}
-        {failed && <span className="shrink-0 text-small text-removed">exit {exitCode}</span>}
-        {took && <span className="shrink-0 text-small text-faint">{took}</span>}
-      </button>
+    <div className="flex flex-col gap-1">
+      <WorkLine open={open} onToggle={() => setOpen(!open)}>
+        {running ? <Spinner /> : <span className="shrink-0">Ran</span>}
+        <code className="min-w-0 truncate font-mono text-mono">{command}</code>
+        {background && <span className="shrink-0 text-faint">in the background</span>}
+        {failed && <span className="shrink-0 text-error">exit {exitCode}</span>}
+        {took && <span className="shrink-0 text-faint tabular-nums">{took}</span>}
+      </WorkLine>
       {open && (
-        <pre className="max-h-72 overflow-auto border-t border-line bg-sidebar px-3 py-2 font-mono text-mono whitespace-pre text-ink/80 select-text">
+        <pre className="max-h-72 animate-enter overflow-auto rounded-xl bg-raised px-4 py-3 font-mono text-mono whitespace-pre text-ink/80 ring-1 ring-edge select-text">
           {output.length > 0 ? output.join('\n') : <span className="text-faint">No output</span>}
         </pre>
       )}

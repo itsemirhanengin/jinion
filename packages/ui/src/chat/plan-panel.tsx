@@ -25,9 +25,9 @@ export function PlanPanel({ options, onDecide }: PlanPanelProps) {
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-accent/40 bg-raised p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+    <div className="flex flex-col gap-3 rounded-2xl bg-floating p-4 shadow-sm ring-1 ring-edge">
       <div className="flex items-center gap-2 font-medium">
-        <ClipboardCheck className="size-4 text-accent" />
+        <ClipboardCheck className="size-4 text-primary" />
         Build from this plan?
       </div>
       {note === undefined ? (
@@ -48,7 +48,7 @@ export function PlanPanel({ options, onDecide }: PlanPanelProps) {
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="What should change in the plan?"
-            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 outline-none focus:border-ink/30"
+            className="h-8 min-w-0 flex-1 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
           />
           <Button type="submit" variant="primary" size="small">
             Send

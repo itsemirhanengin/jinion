@@ -23,13 +23,13 @@ export function PermissionPanel({ request, onAnswer }: PermissionPanelProps) {
   const [note, setNote] = useState<string>();
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-waiting/40 bg-raised p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)]">
+    <div className="flex flex-col gap-3 rounded-2xl bg-floating p-4 shadow-sm ring-1 ring-edge">
       <div className="flex items-center gap-2 font-medium">
-        <ShieldQuestion className="size-4 text-waiting" />
+        <ShieldQuestion className="size-4 text-warning" />
         {request.title}
       </div>
       {request.command && (
-        <pre className="overflow-x-auto rounded-lg border border-line bg-sidebar px-3 py-2 font-mono text-mono select-text">{request.command}</pre>
+        <pre className="overflow-x-auto rounded-xl bg-raised px-3 py-2 font-mono ring-1 ring-edge text-mono select-text">{request.command}</pre>
       )}
       {request.subject && <div className="font-mono text-mono text-muted">{request.subject}</div>}
       {request.description && <p className="text-muted">{request.description}</p>}
@@ -63,7 +63,7 @@ export function PermissionPanel({ request, onAnswer }: PermissionPanelProps) {
             value={note}
             onChange={(event) => setNote(event.target.value)}
             placeholder="What should the agent do instead?"
-            className="h-8 min-w-0 flex-1 rounded-lg border border-line bg-canvas px-3 outline-none focus:border-ink/30"
+            className="h-8 min-w-0 flex-1 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
           />
           <Button type="submit" variant="primary" size="small">
             Send

@@ -1,6 +1,5 @@
-import { ChevronDown } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
-import { classNames } from '../lib/class-names.js';
+import { WorkLine } from './work-line.js';
 
 export interface ToolGroupProps {
   /** What the calls did together, such as `Explored`. */
@@ -16,17 +15,13 @@ export function ToolGroup({ title, summary, defaultOpen = false, children }: Too
   const [open, setOpen] = useState(defaultOpen);
 
   return (
-    <div className="flex flex-col gap-1.5">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="inline-flex w-fit cursor-default items-center gap-1 font-medium text-ink/90"
-      >
-        {title}
-        {summary && <span className="font-normal text-faint">{summary}</span>}
-        <ChevronDown className={classNames('size-3.5 text-faint transition-transform', !open && '-rotate-90')} />
-      </button>
-      {open && <div className="flex flex-col gap-1">{children}</div>}
+    <div className="flex flex-col gap-1">
+      <WorkLine open={open} onToggle={() => setOpen(!open)}>
+        <span className="truncate">
+          {title} {summary}
+        </span>
+      </WorkLine>
+      {open && <div className="ml-1.5 flex animate-enter flex-col gap-1 border-l border-line py-1 pl-4">{children}</div>}
     </div>
   );
 }

@@ -31,20 +31,20 @@ export function ChoiceMenu({ trigger, groups, value, onChange, side = 'bottom' }
       <Menu.Trigger render={trigger} />
       <Menu.Portal>
         <Menu.Positioner side={side} align="start" sideOffset={6} className="z-50 outline-none">
-          <Menu.Popup className="max-h-[min(28rem,var(--available-height))] min-w-60 overflow-y-auto rounded-xl border border-line bg-raised p-1 text-ui text-ink shadow-[0_8px_30px_rgb(0_0_0/0.12)] outline-none">
+          <Menu.Popup className="max-h-[min(28rem,var(--available-height))] min-w-60 origin-(--transform-origin) overflow-y-auto rounded-xl bg-floating p-1 text-ui text-ink shadow-lg ring-1 ring-edge transition-[opacity,scale] duration-150 ease-out outline-none data-ending-style:scale-97 data-ending-style:opacity-0 data-starting-style:scale-97 data-starting-style:opacity-0">
             <Menu.RadioGroup value={value} onValueChange={(next: string) => onChange(next)}>
               {groups.map((group, index) => (
                 <Menu.Group key={group.label ?? index} className="flex flex-col py-0.5">
-                  {group.label && <Menu.GroupLabel className="px-2.5 pt-1.5 pb-1 text-small text-faint">{group.label}</Menu.GroupLabel>}
+                  {group.label && <Menu.GroupLabel className="px-2 pt-1.5 pb-1 text-muted">{group.label}</Menu.GroupLabel>}
                   {group.choices.map((choice) => (
                     <Menu.RadioItem
                       key={choice.value}
                       value={choice.value}
-                      className="flex cursor-default items-center gap-2 rounded-lg px-2.5 py-1.5 outline-none data-highlighted:bg-hover"
+                      className="flex cursor-default items-center gap-2 rounded-lg px-2 py-1.5 outline-none data-highlighted:bg-shade"
                     >
-                      <span className="flex size-3.5 shrink-0">
+                      <span className="flex size-4 shrink-0">
                         <Menu.RadioItemIndicator>
-                          <Check className="size-3.5 text-accent" />
+                          <Check className="size-4 text-ink" />
                         </Menu.RadioItemIndicator>
                       </span>
                       <span className="flex min-w-0 flex-1 flex-col">

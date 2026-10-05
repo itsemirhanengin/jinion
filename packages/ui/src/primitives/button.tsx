@@ -11,15 +11,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<ButtonVariant, string> = {
-  primary: 'bg-primary text-on-primary hover:bg-primary/90',
-  outline: 'border border-line bg-raised text-ink hover:bg-hover',
-  ghost: 'text-muted hover:bg-hover hover:text-ink',
+  primary: 'bg-primary font-medium text-on-primary hover:bg-primary/90',
+  outline: 'bg-background font-medium text-ink shadow-xs ring-1 ring-edge hover:bg-raised',
+  ghost: 'text-muted hover:bg-shade hover:text-ink',
 };
 
 const sizes: Record<ButtonSize, string> = {
-  small: 'h-7 gap-1.5 rounded-full px-3 text-small',
-  medium: 'h-8 gap-2 rounded-lg px-3',
-  icon: 'size-7 justify-center rounded-full',
+  small: 'h-7 gap-1.5 rounded-lg px-2.5 [&_svg]:size-4',
+  medium: 'h-8 gap-2 rounded-lg px-3 [&_svg]:size-4',
+  icon: 'size-7 justify-center rounded-lg [&_svg]:size-4',
 };
 
 export function Button({ variant = 'ghost', size = 'medium', className, type = 'button', ...props }: ButtonProps) {
@@ -27,7 +27,7 @@ export function Button({ variant = 'ghost', size = 'medium', className, type = '
     <button
       type={type}
       className={classNames(
-        'inline-flex shrink-0 cursor-default items-center font-medium transition-colors disabled:pointer-events-none disabled:opacity-40',
+        'inline-flex shrink-0 cursor-default items-center disabled:pointer-events-none disabled:opacity-40 [&_svg]:shrink-0',
         variants[variant],
         sizes[size],
         className,

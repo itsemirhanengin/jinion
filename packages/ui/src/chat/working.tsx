@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Spinner } from '../primitives/spinner.js';
 
 /** The line under a running turn: what it is doing and for how long. */
 export function Working({ since, label = 'Working' }: { since: number; label?: string }) {
@@ -15,11 +16,8 @@ export function Working({ since, label = 'Working' }: { since: number; label?: s
 
   return (
     <div className="flex items-center gap-2 text-muted">
-      <span className="relative flex size-2">
-        <span className="absolute inline-flex size-full animate-ping rounded-full bg-working opacity-60" />
-        <span className="relative inline-flex size-2 rounded-full bg-working" />
-      </span>
-      <span className="animate-pulse">{label}</span>
+      <Spinner />
+      <span>{label}</span>
       <span className="text-faint tabular-nums">{took}</span>
       <span className="text-faint">· Esc to stop</span>
     </div>

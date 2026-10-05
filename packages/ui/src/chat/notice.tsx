@@ -4,11 +4,11 @@ export type NoticeTone = 'muted' | 'success' | 'warning' | 'error';
 
 const tones: Record<NoticeTone, string> = {
   muted: 'text-muted',
-  success: 'text-accent',
-  warning: 'text-waiting',
-  error: 'text-removed',
+  success: 'text-added',
+  warning: 'text-warning',
+  error: 'text-error',
 };
 
 export function Notice({ text, tone = 'muted' }: { text: string; tone?: NoticeTone }) {
-  return <div className={classNames('text-small', tones[tone])}>{text}</div>;
+  return <p className={classNames('text-pretty', tones[tone])}>{text}</p>;
 }
