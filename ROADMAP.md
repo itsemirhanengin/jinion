@@ -134,10 +134,12 @@ Steps, design first, as the TUI was built:
    Then the whole interface is drawn again, the earlier screenshot set aside, likely on shadcn for the primitives.
 4. **The code.** An editor (Monaco) for the files the agent touches, a terminal (xterm.js over node-pty, on a stream of
    its own, as planned for terminal panes), LSP after.
-5. **Shipping.** Signed and notarized builds, updates read from an address of their own (GitHub marks one release
-   "Latest" for both products), `@jinion/desktop` on its own version, from 0.2.0. The Agent SDK runs Claude with the
-   `node` on `PATH`, which an app opened from the Finder doesn't have as a terminal does; the packaged app needs the
-   shell's `PATH`, or a Node of its own to point the SDK at.
+5. **Shipping.** Started: `pnpm --filter @jinion/desktop package` builds an unsigned `.dmg` for Apple silicon, which
+   0.1.0 ships with (`pnpm deploy` copies what the app needs out of the workspace, `electron-builder` packs it without
+   asar, since `claude` and `codex` are spawned from disk; the app reads the login shell's `PATH`, which one opened
+   from the Finder lacks). Left: signing and notarizing with a Developer ID, an icon, Intel and universal builds,
+   updates read from an address of their own (GitHub marks one release "Latest" for both products), and the agents'
+   versions locked: `deploy` resolves the Agent SDK's range afresh rather than from the lockfile.
 
 ### Codex, the rest
 

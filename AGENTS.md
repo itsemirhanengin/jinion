@@ -32,7 +32,7 @@ Dependencies point down this list; nothing lower imports from higher up. The app
 | `apps/cli/src/prompt/` | What the user types, which is the client's: each session's draft and the history (`draft.ts`; the core only puts text in a draft, through `Screen.fillPrompt`), pasted text and images (`attachments.ts`), and `usePrompt`, which sends them as a `Submission`. |
 | `apps/cli/src/ui/` | Pieces drawn in the conversation (`ui/entries/`, one file per entry or tool kind), the banner, small UI hooks (`use-async`, `use-pager`). |
 | `apps/cli/src/status/` | The status line: one segment per object in `segments/`, the data they draw from in `data.ts`. |
-| `apps/desktop/src/main/` | Electron's main process, which draws nothing: the window and its menu (which leaves `⌘N`, `⌘W` and the rest to the page), links opened in the browser, the recent projects (`projects.ts`), and a core per folder in a utility process (`cores.ts` starts `core-process.ts`, which builds it with `@jinion/core/host`). The page gets a port to it through `preload.cts`, CommonJS as a sandboxed preload must be; `bridge.ts` is what the preload offers. `scripts/dev.ts` builds the core and runs all of it beside Vite's dev server. |
+| `apps/desktop/src/main/` | Electron's main process, which draws nothing: the window and its menu (which leaves `⌘N`, `⌘W` and the rest to the page), links opened in the browser, the recent projects (`projects.ts`), and a core per folder in a utility process (`cores.ts` starts `core-process.ts`, which builds it with `@jinion/core/host`). The page gets a port to it through `preload.cts`, CommonJS as a sandboxed preload must be; `bridge.ts` is what the preload offers; `shell-path.ts` gives an app opened from the Finder the login shell's `PATH`. `scripts/dev.ts` builds the core and runs all of it beside Vite's dev server; `scripts/package.ts` makes the `.dmg`. |
 | `apps/desktop/src/renderer/` | The page, sandboxed: `core/` a project's `Core`, a `JinionClient` over the port with the calls the screens make; `app/` the shell and its shortcuts; `state/` the app's atoms (the open project in the app's store; the view, the panels and each thread's draft in the project's store, its client's); `panels/` one component per screen or panel. |
 | `packages/core/src/api/` | The API clients drive the core through: JSON-RPC 2.0 (`rpc.ts`, one peer for both sides) over a `Transport`: in process (`transport.ts`), a line per message over streams (`stream-transport.ts`, for stdio), or WebSocket on 127.0.0.1 with a token and an Origin check (`websocket.ts`, its address and token in `server-file.ts`); every method's params and result and every notification in `protocol.ts`, in zod, with the API's own shapes in `schemas.ts` and the JSON Schema clients in other languages use made from them (`json-schema.ts`, written to `schema/api.json` by `pnpm --filter @jinion/core schema`); `server.ts` over one `Jinion` with a `Connection` per client, whose handlers are in `methods/`, one file per area, and `client.ts`, which holds what the server tells it in its own store. A client follows a session from a snapshot, then replays its numbered actions with the same reducer; the rest is named fields (`fields.ts`). `client.ts` takes only types and the reducer from the core, so a client carries no app of its own. |
 | `packages/core/src/commands/` | Slash commands, one file per group, in `builtin.ts` in palette order. A command gets the `Jinion` and calls controllers or opens a view (`screen.openView({ id: 'model' })`). |
@@ -156,13 +156,14 @@ desktop app later. Each has its own version and releases on its own; they aren't
 - A changeset names every product the change reaches, not only the packages it touches: a fix in `core` that both
   products show names `@jinion/core`, `@jinion/cli` and the desktop app. A product that depends on a bumped package
   gets a patch by itself, but its changelog then says only "Updated dependencies".
-- Under 1.0, `minor` is a release worth naming (the desktop app with its core makes 0.2.0), `patch` everything else.
+- Under 1.0, `minor` is a release worth naming (the desktop app's first is 0.1.0), `patch` everything else.
 - A release is a commit on `main`: `pnpm changeset version` raises the versions and writes each package's
   `CHANGELOG.md`, then `pnpm changeset git-tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
   on `main`, which is one more reason only finished work is merged.
 - A GitHub release is made for a product's tag only, titled with the product (`Jinion CLI 0.2.0`), with that version's
-  section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its installers. The other packages
-  get tags and no release. Tags and releases go out once the user approves.
+  section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its `.dmg`, built after
+  `changeset version` so it has the new version (`pnpm --filter @jinion/desktop package`). The other packages get
+  tags and no release. Tags and releases go out once the user approves.
 - GitHub marks one release "Latest", whichever product came last, so the desktop app's updater reads an address of its
   own rather than the latest release.
 - `PROTOCOL_VERSION` is separate: it follows the API's rule above, not the packages.
