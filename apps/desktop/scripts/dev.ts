@@ -12,8 +12,15 @@ try {
   process.exit(1);
 }
 
-const compiled = spawnSync('tsc', ['-p', 'tsconfig.main.json'], { stdio: 'inherit' });
-if (compiled.status !== 0) process.exit(compiled.status ?? 1);
+// The core runs in a utility process, which loads its built JavaScript rather than its sources.
+for (const [command, args] of [
+  ['pnpm', ['--filter', '@jinion/core', 'build']],
+  ['tsc', ['-p', 'tsconfig.main.json']],
+] as const) {
+  const { status } = spawnSync(command, args, { stdio: 'inherit' });
+
+  if (status !== 0) process.exit(status ?? 1);
+}
 
 const server = await createServer({ configFile: 'vite.config.ts' });
 
