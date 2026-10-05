@@ -41,6 +41,7 @@ pnpm dev:docs            # the docs at http://localhost:3000
 pnpm dev:website         # jinion.co
 pnpm dev:ui              # the desktop app's pieces, drawn from sample conversations
 pnpm dev:desktop         # the desktop app in its own window; --demo for the scripted backend
+pnpm --filter @jinion/desktop package   # an unsigned .dmg in apps/desktop/release
 pnpm typecheck
 pnpm test                # pnpm test:watch while working
 pnpm lint                # Biome and the spacing checker; pnpm lint:fix applies the fixes
