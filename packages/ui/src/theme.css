@@ -1,0 +1,79 @@
+@import "tailwindcss";
+
+/* The classes in these components count wherever the theme is imported. */
+@source "./";
+
+@theme {
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  --text-ui: 13px;
+  --text-ui--line-height: 20px;
+  --text-small: 12px;
+  --text-small--line-height: 18px;
+  --text-code: 11.5px;
+  --text-code--line-height: 18px;
+
+  --color-canvas: #ffffff;
+  --color-sidebar: #f7f8f9;
+  --color-raised: #ffffff;
+  --color-hover: #eceef1;
+  --color-line: #e3e6ea;
+  --color-ink: #1b1f24;
+  --color-muted: #6b7380;
+  --color-faint: #9ca3ae;
+  --color-primary: #1d2433;
+  --color-accent: #2e6a45;
+  --color-accent-soft: #e2eee5;
+  --color-working: #3b6fd8;
+  --color-waiting: #c27a12;
+  --color-added: #1e7b3e;
+  --color-added-soft: #e7f4eb;
+  --color-removed: #c33a2f;
+  --color-removed-soft: #fbeae8;
+}
+
+@layer base {
+  html,
+  body {
+    @apply bg-canvas font-sans text-ui text-ink antialiased;
+  }
+}
+
+@layer components {
+  .prose {
+    @apply flex flex-col gap-2;
+
+    & :where(ul, ol) {
+      @apply flex flex-col gap-0.5 pl-5;
+    }
+
+    & ul {
+      @apply list-disc;
+    }
+
+    & ol {
+      @apply list-decimal;
+    }
+
+    & :where(h1, h2, h3, h4) {
+      @apply mt-1 font-semibold;
+    }
+
+    & a {
+      @apply text-accent underline underline-offset-2;
+    }
+
+    & :not(pre) > code {
+      @apply rounded bg-hover px-1 py-px font-mono text-code;
+    }
+
+    & pre {
+      @apply overflow-x-auto rounded-lg border border-line bg-sidebar px-3 py-2 font-mono text-code;
+    }
+
+    & blockquote {
+      @apply border-l-2 border-line pl-3 text-muted;
+    }
+  }
+}
