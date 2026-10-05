@@ -1,67 +1,179 @@
 @import "tailwindcss";
+@import "@fontsource-variable/jetbrains-mono";
 
 /* The classes in these components count wherever the theme is imported. */
 @source "./";
 
-@theme {
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", Inter, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+@custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, Menlo, monospace;
+
+  --text-title: 16px;
+  --text-title--line-height: 24px;
   --text-ui: 13px;
   --text-ui--line-height: 20px;
   --text-small: 12px;
-  --text-small--line-height: 18px;
-  --text-code: 11.5px;
-  --text-code--line-height: 18px;
+  --text-small--line-height: 16px;
+  --text-mono: 12px;
+  --text-mono--line-height: 20px;
+
+  /* Buttons are rounded-full; what holds things is a surface; what sits in one is its radius less the gap between. */
+  --radius-surface: 8px;
+  --radius-inner: 4px;
 }
 
-/* The colors are variables, so a dark set only has to override them. */
-:root {
-  --canvas: #ffffff;
-  --sidebar: #f7f8f9;
-  --raised: #ffffff;
-  --hover: #eceef1;
-  --line: #e3e6ea;
-  --ink: #1b1f24;
-  --muted: #6b7380;
-  --faint: #9ca3ae;
-  --primary: #1d2433;
-  --on-primary: #ffffff;
-  --accent: #2e6a45;
-  --accent-soft: #e2eee5;
-  --working: #3b6fd8;
-  --waiting: #c27a12;
-  --added: #1e7b3e;
-  --added-soft: #e7f4eb;
-  --removed: #c33a2f;
-  --removed-soft: #fbeae8;
+:root,
+.light {
+  color-scheme: light;
+
+  --background: #fbfbfc;
+  --raised: #f3f4f6;
+  --floating: #ffffff;
+  --ink: #1f2328;
+  --muted: #6b7079;
+  --line: #e4e6ea;
+  --frame: #a0a4ab;
+  --shade: rgb(0 0 0 / 0.04);
+  --edge: black;
+  --selection: #add6ff;
+  --floating-shadow: 0 2px 8px rgb(0 0 0 / 0.08);
+
+  --surface-neutral: #f0f1f4;
+  --surface-user: #eceef3;
+  --surface-pending: #e8edf7;
+  --surface-success: #e8f2e4;
+  --surface-error: #f7e6e5;
+
+  --accent: #2f6fc6;
+  --code: #1f7a7a;
+  --success: #2f7d32;
+  --warning: #93600f;
+  --error: #b8362f;
+  --heading: #8f6a10;
+  --variable: #7d45b3;
+  --string: #a3462f;
+
+  --added: #2f7d32;
+  --removed: #b8362f;
+  --added-surface: #e3f0de;
+  --removed-surface: #f6e1df;
+  --added-highlight: #a6d69c;
+  --removed-highlight: #eba5a0;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #1b1d22;
+  --raised: #21242a;
+  --floating: #262a31;
+  --ink: #d4d7dd;
+  --muted: #8a909b;
+  --line: #2a2e35;
+  --frame: #5a606b;
+  --shade: rgb(255 255 255 / 0.04);
+  --edge: white;
+  --selection: #264f78;
+  --floating-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+
+  --surface-neutral: #1f2228;
+  --surface-user: #262a33;
+  --surface-pending: #1d2230;
+  --surface-success: #1b261d;
+  --surface-error: #2c1c1f;
+
+  --accent: #61afef;
+  --code: #56b6c2;
+  --success: #98c379;
+  --warning: #e5c07b;
+  --error: #e06c75;
+  --heading: #e5c07b;
+  --variable: #c678dd;
+  --string: #ce9178;
+
+  --added: #98c379;
+  --removed: #e06c75;
+  --added-surface: #1f3324;
+  --removed-surface: #3a2024;
+  --added-highlight: #2f5536;
+  --removed-highlight: #6a2d35;
 }
 
 @theme inline {
-  --color-canvas: var(--canvas);
-  --color-sidebar: var(--sidebar);
+  --color-background: var(--background);
   --color-raised: var(--raised);
-  --color-hover: var(--hover);
-  --color-line: var(--line);
+  --color-floating: var(--floating);
   --color-ink: var(--ink);
   --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --color-primary: var(--primary);
-  --color-on-primary: var(--on-primary);
+  --color-line: var(--line);
+  --color-frame: var(--frame);
+  --color-selection: var(--selection);
+
+  --color-surface-neutral: var(--surface-neutral);
+  --color-surface-user: var(--surface-user);
+  --color-surface-pending: var(--surface-pending);
+  --color-surface-success: var(--surface-success);
+  --color-surface-error: var(--surface-error);
+
   --color-accent: var(--accent);
-  --color-accent-soft: var(--accent-soft);
-  --color-working: var(--working);
-  --color-waiting: var(--waiting);
+  --color-code: var(--code);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-heading: var(--heading);
+  --color-variable: var(--variable);
+  --color-string: var(--string);
+
   --color-added: var(--added);
-  --color-added-soft: var(--added-soft);
   --color-removed: var(--removed);
-  --color-removed-soft: var(--removed-soft);
+  --color-added-surface: var(--added-surface);
+  --color-removed-surface: var(--removed-surface);
+  --color-added-highlight: var(--added-highlight);
+  --color-removed-highlight: var(--removed-highlight);
+
+  --shadow-floating: var(--floating-shadow);
+
+  /* The earlier names, until the chat kit is drawn again in the new look. */
+  --color-canvas: var(--background);
+  --color-sidebar: var(--raised);
+  --color-hover: var(--surface-neutral);
+  --color-faint: var(--muted);
+  --color-primary: var(--ink);
+  --color-on-primary: var(--background);
+  --color-accent-soft: var(--surface-pending);
+  --color-working: var(--accent);
+  --color-waiting: var(--warning);
+  --color-added-soft: var(--added-surface);
+  --color-removed-soft: var(--removed-surface);
+}
+
+/* A shade of whatever is under it, so a tinted block stays its own color. */
+@utility hover-shade {
+  &:hover {
+    background-image: linear-gradient(var(--shade), var(--shade));
+  }
+}
+
+/* A tinted block's edge is a shade of its own tint, never a gray line drawn over it. */
+@utility tinted {
+  background-color: var(--tint);
+  border: 1px solid color-mix(in oklab, var(--tint) 92%, var(--edge));
 }
 
 @layer base {
-  html,
+  /* On body only: on html it would turn rem into 13px and shrink the whole 4px grid. */
   body {
-    @apply bg-canvas font-sans text-ui text-ink antialiased;
+    @apply bg-background font-sans text-ui text-ink;
+  }
+
+  :where(.font-mono, code, pre, kbd) {
+    font-variant-ligatures: none;
+  }
+
+  ::selection {
+    background: var(--selection);
   }
 }
 
@@ -90,11 +202,13 @@
     }
 
     & :not(pre) > code {
-      @apply rounded bg-hover px-1 py-px font-mono text-code;
+      @apply font-mono text-mono text-code;
     }
 
     & pre {
-      @apply overflow-x-auto rounded-lg border border-line bg-sidebar px-3 py-2 font-mono text-code;
+      --tint: var(--surface-neutral);
+
+      @apply tinted overflow-x-auto rounded-surface px-[2ch] py-2 font-mono text-mono;
     }
 
     & blockquote {

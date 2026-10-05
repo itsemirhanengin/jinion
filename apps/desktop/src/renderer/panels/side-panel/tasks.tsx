@@ -33,7 +33,7 @@ export function Tasks({ session }: { session: SessionSnapshot & { id: string } }
             <div key={task.id} className="overflow-hidden rounded-xl border border-line">
               <div className="flex h-9 items-center gap-2 border-b border-line pr-1.5 pl-3">
                 <Terminal className="size-3.5 text-muted" />
-                <code className="min-w-0 flex-1 truncate font-mono text-code">{task.title}</code>
+                <code className="min-w-0 flex-1 truncate font-mono text-mono">{task.title}</code>
                 <span className={task.status === 'running' ? 'text-small text-working' : 'text-small text-faint'}>{task.status}</span>
                 {task.status === 'running' && (
                   <Button size="icon" aria-label="Stop" onClick={() => void core.stopTask(session.id, task.id)} className="[&_svg]:size-3 [&_svg]:fill-current">
@@ -41,7 +41,7 @@ export function Tasks({ session }: { session: SessionSnapshot & { id: string } }
                   </Button>
                 )}
               </div>
-              <pre className="max-h-60 overflow-auto bg-sidebar px-3 py-2 font-mono text-code whitespace-pre select-text">{task.output || ' '}</pre>
+              <pre className="max-h-60 overflow-auto bg-sidebar px-3 py-2 font-mono text-mono whitespace-pre select-text">{task.output || ' '}</pre>
             </div>
           ))}
         </Section>

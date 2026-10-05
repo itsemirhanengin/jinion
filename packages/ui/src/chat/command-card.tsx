@@ -28,7 +28,7 @@ export function CommandCard({ command, output, exitCode, took, background }: Com
         className="flex h-9 w-full cursor-default items-center gap-2 px-3 text-left hover:bg-hover/50"
       >
         <ChevronRight className={classNames('size-3.5 shrink-0 text-faint transition-transform', open && 'rotate-90')} />
-        <code className="min-w-0 flex-1 truncate font-mono text-code">
+        <code className="min-w-0 flex-1 truncate font-mono text-mono">
           <span className="text-faint">$ </span>
           {command}
         </code>
@@ -38,7 +38,7 @@ export function CommandCard({ command, output, exitCode, took, background }: Com
         {took && <span className="shrink-0 text-small text-faint">{took}</span>}
       </button>
       {open && (
-        <pre className="max-h-72 overflow-auto border-t border-line bg-sidebar px-3 py-2 font-mono text-code whitespace-pre text-ink/80 select-text">
+        <pre className="max-h-72 overflow-auto border-t border-line bg-sidebar px-3 py-2 font-mono text-mono whitespace-pre text-ink/80 select-text">
           {output.length > 0 ? output.join('\n') : <span className="text-faint">No output</span>}
         </pre>
       )}
