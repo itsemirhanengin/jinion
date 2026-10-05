@@ -103,6 +103,47 @@
           }
         }
       }
+    },
+    {
+      // The desktop app's renderer is a sandboxed page: of the core it takes types, the reducer and pure helpers, as
+      // `JinionClient` does, never what runs the agent or touches the disk.
+      "includes": ["apps/desktop/src/renderer/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "patterns": [
+                  {
+                    "group": [
+                      "@jinion/core/controllers/**",
+                      "@jinion/core/state/**",
+                      "@jinion/core/settings/**",
+                      "@jinion/core/git/**",
+                      "@jinion/core/memory/**",
+                      "@jinion/core/mcp/**",
+                      "@jinion/core/prompt/**",
+                      "@jinion/core/usage/**",
+                      "@jinion/core/lib/**",
+                      "@jinion/core/agent/claude/**",
+                      "@jinion/core/agent/codex/**",
+                      "@jinion/core/agent/demo/**",
+                      "@jinion/core/conversation/store",
+                      "@jinion/core/commands/**",
+                      "@jinion/core/api/server",
+                      "@jinion/core/api/connection",
+                      "@jinion/core/api/methods/**",
+                      "@jinion/core/api/websocket"
+                    ],
+                    "message": "The renderer runs in a sandboxed page; what it needs beyond types and the reducer comes over the API."
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
