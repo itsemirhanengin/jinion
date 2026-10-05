@@ -68,35 +68,85 @@ are private by default; `@jinion/tui` and `@jinion/virtualization` go too, unles
 - **Electron**, since the core is Node and runs in Electron's own Node processes as it is; Monaco, xterm.js and
   node-pty, which the IDE side needs, are at home there, as VS Code and Cursor show. Tauri would need the core as a Node
   sidecar and bridges for the terminal and LSP.
-- **A window per project, a core per window.** The core works in one folder (`info.cwd`: its settings, memory and saved
-  conversations), so a window opens one project, as in VS Code. A projects screen lists the recent ones and opens a
-  folder.
+- **A tab per project, a core per project.** The core works in one folder (`info.cwd`: its settings, memory and saved
+  conversations), so each project is a tab along the top of the window, as macOS's native tabs show VS Code's windows,
+  each with its own core. Its `+` opens a folder from the recent ones.
 - **Three kinds of process.** The main process holds the windows, menus and updates, and draws nothing. Each window's
   core runs in a `utilityProcess`, so a busy core never stalls a window or another project. The renderer is a client
   like the TUI, a `JinionClient` from `@jinion/core/api/client`. The two talk over a `MessagePort` the main process
   hands to both ends, a transport next to the in-process, stdio and WebSocket ones, so no port is open and no token is
   needed (`connectWebSocket` uses Node's `ws` and can't run in a renderer anyway). The renderer is sandboxed with
   context isolation; its preload only passes the port.
-- **The design system is `packages/ui`**, as `@jinion/tui` is for the terminal. `@jinion/ui` (the theme and
-  primitives) and `@jinion/ui/chat` (messages, tool views, the diff card, todos, the composer, the ask, permission and
-  plan panels) know nothing about Jinion; their types are their own, shaped like the core's, so the app passes one to
-  the other. Tailwind v4 for the styles, Base UI for menus, dialogs and popovers, lucide for icons, the system font.
-  The look follows Jinion's earlier design: a light sidebar of threads, the open ones as tabs, the conversation in a
-  centered column, a composer with the mode, model, permissions and branch under it.
-- **The agent first.** The conversation is the middle of the window and the code is out of the way: a panel shows it
-  when asked, read-only. An editor, a terminal and an IDE layout come later, as does a product that is only the chat.
-- **Light first, dark later**, so the colors are named variables a dark set can override.
+- **Packages, each with one job**, none of them knowing about Jinion: `@jinion/ui` holds only the look (the tokens in
+  `theme.css`, the primitives) and `@jinion/ui/chat` the chat kit (messages, tool views, the diff card, todos, the
+  composer, the ask, permission and plan panels), their types their own and shaped like the core's.
+  `@jinion/native-tabs` is the row of project tabs in the title bar, drawn by hand rather than with macOS's tabs.
+  `@jinion/workbench` is the window's frame and what goes in it (below). Tailwind v4 for the styles, Base UI for menus,
+  dialogs and popovers. `apps/desktop` brings Jinion's features to the workbench.
+- **The agent first.** A new tab is a new thread, not a file; an empty project shows a composer. Files, diffs and the
+  rest open beside threads as tabs of their own.
 
-How the window behaves, as agreed:
+How it looks, decided after trying a look made only of the terminal's:
 
-- **The window.** A sidebar (`⌘B`): New thread, Skills and Memory, then the project's threads, those open or working
-  first, each with its state and how long ago it changed; the account and limits at its foot. A top row: the project,
-  the open threads as tabs, the button for the side panel. The conversation and the composer in the middle. The side
-  panel on the right, closed until asked for, its width dragged.
-- **Threads are sessions.** The sidebar lists the saved ones (`saved/list`), the tabs are the open ones (`sessions/*`).
-  New thread opens a tab, a saved thread opens into one, closing a tab keeps the thread in the sidebar. One that works
-  in the background shows a spinner on its tab and another mark when it waits on the user; a desktop notification
-  comes when it ends or waits while the window isn't in focus (`client/focus`).
+- **The app soft, the machine sharp.** Whatever a person touches (the bars, tabs, menus, buttons, the composer,
+  settings, the agent's prose) is a Mac app's: the system font at 13/20, a few consistent icons. What the machine did
+  (commands, output, paths, diffs, tool calls, the status bar's values) is JetBrains Mono at 12/20, in blocks tinted by
+  their state.
+- **Two radii and one shadow.** Buttons are fully round; what holds things (cards, menus, popovers, inputs, the user's
+  message) is a surface at 8px; what sits in a surface, a menu's row, takes its radius less the gap, 4px. Only what
+  floats over the content (menus, popovers, the palette, dialogs) casts the one shadow; cards and panels are set apart
+  by their border and tint. A tinted block's border is a shade of its own tint (`tinted`), as a hover is a shade of
+  what is under it, never a gray line drawn over it. The cards the agent answers with (a diff, what a turn
+  changed, a command) have a plain 1px border around their tint, the title in their first row; the terminal's dashed
+  frame with `+` corners was tried and didn't carry over.
+- **What carries over from the terminal is its character**, not its look: color only where it means something (the
+  model blue, paths cyan, cost purple, `+` green, `-` red), tinted surfaces rather than badges and cards, label and
+  value rows, short plain copy, everything clickable with a hover a shade of what is under it.
+- **Light and dark alike.** The tokens start from `packages/tui`'s themes, the light colors darkened to 4.5:1 at 13px
+  and the neutrals one cool family. A 4px grid; motion only on color and opacity, 120ms.
+- **Made by a person.** No sparkles, gradients, glow, rounded cards, shimmer, centered "How can I help" screens, an
+  icon on every row, or Tailwind's own palette; every value has a reason, and every state is drawn, not only the happy
+  one.
+
+How the window is laid out, after VS Code's workbench:
+
+```
++------------------------------------------------------------------------+
+| [coding-agent] [bugece-web] [+]                      project tabs      |
++---+------------+-------------------------------------+-----------------+
+| T |  sidebar   | [login fix] [auth.ts diff] [+]      |  right panel    |
+| S |            |                                     |  (the agent     |
+| G |            |       tabs: threads, diffs,         |   beside a      |
+| K |            |       files, pages                  |   file)         |
+|   |            +-------------------------------------+                 |
+|   |            | bottom panel: terminals, output     |                 |
++---+------------+-------------------------------------+-----------------+
+| main · clean · 0 problems         Opus 5.5 · ctx 40% · 5h 67% left     |
++------------------------------------------------------------------------+
+```
+
+- **The activity bar**, thin on the left: Threads, Search, Git, Skills, Memory, and settings and the account at its
+  foot, each item with a badge when something there waits. An item either opens its own sidebar (Threads lists the
+  threads, Git the changed files), where a click opens a tab, or goes straight to a page of its own (Skills), which
+  opens as a tab too, so the middle only ever shows tabs.
+- **The tabs.** A thread, a diff, a file (read-only, an editor later), a page (Skills, Memory, MCP, settings, usage),
+  later a terminal or the dev server's preview. A tab opened by a single click is a preview, in italics, which the
+  next click replaces; a double click or working in it keeps it. The middle splits into two groups at most.
+- **The panels.** The right one shows the agent: the thread shown, or the last one beside a file, with its changes,
+  todos and subagents. The bottom one has tabs of its own: terminals, the output of scripts, problems from lint and
+  typecheck. Buttons at the top right open and close the sidebar, the bottom panel and the right panel, as in VS Code.
+  A view doesn't know where it is, so moving one between the sidebar and the panels can come later without changing
+  it.
+- **The status bar** is the project's state: branch, git, problems on one side; model, context and limits on the
+  other. Each piece opens what it is about.
+- **Every feature is one module.** It tells the workbench its activity item, sidebar, tab kinds, panel views, status
+  items, commands and shortcuts; the workbench draws them and knows none of them. A new feature is a new module, and
+  the layout doesn't change.
+- **Attention goes up, the layout stays.** A thread that waits marks its tab, then the Threads item, then its project's
+  tab, then a desktop notification while the window isn't in focus (`client/focus`). Nothing opens or moves by itself.
+- **Each project keeps its layout**: the open tabs, splits, which panels are open and their sizes.
+- **Threads are sessions.** The Threads sidebar lists the saved ones (`saved/list`), the tabs are the open ones
+  (`sessions/*`); closing a tab keeps the thread in the list.
 - **The conversation.** Reads, searches and listings fold into one line (`Explored 3 files, 1 search`), each edit is a
   diff card whose Open shows it in the side panel, a command is a card whose output folds, a subagent a group of its
   own calls; web, MCP, notices and compaction get small lines. A turn ends on a card of what it changed, which opens
@@ -107,14 +157,13 @@ How the window behaves, as agreed:
   what is typed queues above the composer. While the turn runs, its todos stay above the composer, and fold into one
   line in the conversation when it ends. A permission, a question or a plan to approve takes the composer's place
   until answered, and marks the tab.
-- **The side panel.** Changes: the files the thread changed, each diff highlighted, unified or side by side. Files: the
-  tree with what the agent touched marked, a file opening read-only; a path in the conversation opens there at its
-  line. Tasks: the todos, background commands with their output and a stop, subagents. It follows the tab shown; open
-  or closed and its width are the window's. It doesn't open by itself when the agent edits: its button gets a mark.
-  The API has no call for a file's contents yet: `files/read` is to add, which keeps the protocol's version.
-- **The rest.** A projects screen of recent folders, kept by the desktop app rather than the core. Sign-in through a
-  link the browser opens, usage and limits, screens for memory, skills and MCP servers, whose calls the API has.
-  Shortcuts: `⌘N` new thread, `⌘W` close the tab, `⌘1`-`⌘9` go to a tab, `⌘K` the palette, `⌘L` the composer.
+- **Changes and files.** The Git sidebar lists the files changed, each opening its diff in a tab, unified or side by
+  side; a files sidebar holds the tree with what the agent touched marked, a file opening read-only. A path in the
+  conversation opens its file at its line. Background commands with their output and a stop are in the bottom panel.
+- **The rest.** The recent folders are kept by the desktop app rather than the core. Sign-in through a link the
+  browser opens, usage and limits, pages for memory, skills and MCP servers, whose calls the API has. Shortcuts: `⌘T`
+  and `⌘N` a new thread, `⌘W` close the tab, `⌘1`-`⌘9` go to a tab, `⌘B` the sidebar, `⌘J` the bottom panel, `⌘K` the
+  palette, `⌘L` the composer.
 
 Steps, design first, as the TUI was built:
 
@@ -131,10 +180,21 @@ Steps, design first, as the TUI was built:
    thread another Jinion has open is refused, as it should be for writing, but it should still open to read: the core
    could answer `session/subscribe` for a saved thread without claiming it, and the window show it without a composer.
    The other calls the screens make still drop their failures; they should go through `Core.act` too.
-   Then the whole interface is drawn again, the earlier screenshot set aside, likely on shadcn for the primitives.
-4. **The code.** An editor (Monaco) for the files the agent touches, a terminal (xterm.js over node-pty, on a stream of
-   its own, as planned for terminal panes), LSP after.
-5. **Shipping.** Started: `pnpm --filter @jinion/desktop package` builds an unsigned `.dmg` for Apple silicon, which
+4. **The workbench** (now, on `feat/desktop-workbench`). The interface drawn again from scratch, as above:
+   - **4a.** The tokens in `packages/ui`'s `theme.css`, light and dark, and the agent's card (`Frame`), drawn on one page
+     of the playground to judge in pixels.
+   - **4b.** `packages/native-tabs` and `packages/workbench`, with a playground of their own on made-up features: the
+     activity bar, sidebars, tabs with previews and two groups, the right and bottom panels, the status bar, and the
+     registry features go through. `packages/ui`'s `shell/` goes.
+   - **4c.** `apps/desktop` on them: project tabs, then Threads, Git, Files, Skills, Memory and accounts as modules,
+     the agent in the right panel, the status bar. The old sidebar, top bar and side panel go.
+   - **4d.** The chat kit drawn again in the new look, its cards on `Frame`, and the small transitions everywhere
+     (hover, open and close, a card folding), which the tokens leave out.
+5. **The code.** An editor (Monaco) for the files the agent touches, terminals in the bottom panel, the dev server's
+   preview as a tab where clicking an element hands it to the composer, LSP after.
+   Terminals run in the core (node-pty, on a stream of their own), not in the window, so the agent can read their
+   output: a bug reported, it adds a log, runs the app, reads what the log printed and fixes the bug, as a person would.
+6. **Shipping.** Started: `pnpm --filter @jinion/desktop package` builds an unsigned `.dmg` for Apple silicon, which
    0.0.1 ships with (`pnpm deploy` copies what the app needs out of the workspace, `electron-builder` packs it without
    asar, since `claude` and `codex` are spawned from disk; the app reads the login shell's `PATH`, which one opened
    from the Finder lacks). Left: signing and notarizing with a Developer ID, an icon, Intel and universal builds,
@@ -169,6 +229,15 @@ OpenCode's models or local ones would come in the same way, as an `AgentBackend`
   (0.3.286) has no call for them. Add them to `panels/rewind/` once it does.
 - **Claude Code's live diff panel.** In a wide terminal, Claude Code shows `/diff` beside the conversation and updates
   it while the agent works; Jinion's `/diff` is the full-screen viewer, as in Claude Code's classic renderer.
+
+## Later: a frontend specialist
+
+What sets Jinion apart from the other coding agents: it writes backend code too, but it specializes in the frontend.
+That means tools of its own for frontend work, skills for it, and a system prompt with real weight on it: how a
+design system is built, how a screen is laid out, what makes an interface feel made by hand rather than generated.
+The user is a UI developer of ten years, from the days every design was coded by hand, and that experience goes into
+Jinion step by step, as it comes up while building it. Nothing is designed for it yet; keep it in mind when a choice
+touches the prompt, the tools or the skills.
 
 ## Later: a system prompt sized to the request
 
