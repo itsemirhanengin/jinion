@@ -1,5 +1,13 @@
 # @jinion/core
 
+## 0.0.8
+
+### Patch Changes
+
+- 86213a0: A command the agent runs in a terminal gives a prompt again once it ends, ctrl+c included, as a terminal does, and its
+  terminal keeps how it ended. A long command's name fades out in the terminal list rather than pushing its status past
+  the edge.
+
 ## 0.0.7
 
 ### Patch Changes

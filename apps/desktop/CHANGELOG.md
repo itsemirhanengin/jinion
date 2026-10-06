@@ -1,5 +1,13 @@
 # @jinion/desktop
 
+## 0.0.10
+
+Two fixes to the terminals.
+
+- A command the agent runs in a terminal gives a prompt again once it ends, ctrl+c included, as any terminal does; the
+  terminal still shows how the command ended.
+- A long command's name fades out in the terminal list rather than pushing its status past the edge.
+
 ## 0.0.9
 
 Terminals in the bottom panel, shared by every thread of the project.
