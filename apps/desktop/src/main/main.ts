@@ -12,6 +12,9 @@ let quitting = false;
 if (app.isPackaged) process.env.PATH = shellPath() ?? process.env.PATH;
 
 app.whenReady().then(() => {
+  // A packaged app has its icon in its bundle; run from the sources it would show Electron's.
+  if (!app.isPackaged) app.dock?.setIcon(fileURLToPath(new URL('../../resources/icon.png', import.meta.url)));
+
   Menu.setApplicationMenu(menu());
   answer();
   openWindow();

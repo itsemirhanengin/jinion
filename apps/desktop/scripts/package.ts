@@ -11,6 +11,8 @@ const out = fileURLToPath(new URL('../release/', import.meta.url));
 const app = join(mkdtempSync(join(tmpdir(), 'jinion-desktop-')), 'app');
 const electron = (createRequire(import.meta.url)('electron/package.json') as { version: string }).version;
 const config = fileURLToPath(new URL('../electron-builder.yml', import.meta.url));
+// From the repository rather than the app folder, which holds only what the app runs with.
+const icon = fileURLToPath(new URL('../resources/icon.icns', import.meta.url));
 
 rmSync(out, { recursive: true, force: true });
 
@@ -28,7 +30,7 @@ const before = readFileSync(state);
 
 run('pnpm', ['--filter', '@jinion/desktop', 'deploy', '--prod', '--legacy', '--config.node-linker=hoisted', app]);
 writeFileSync(state, before);
-run('electron-builder', ['--mac', '--projectDir', app, '--config', config, `-c.electronVersion=${electron}`, `-c.directories.output=${out}`]);
+run('electron-builder', ['--mac', '--projectDir', app, '--config', config, `-c.electronVersion=${electron}`, `-c.directories.output=${out}`, `-c.mac.icon=${icon}`]);
 
 const { version } = JSON.parse(readFileSync(`${app}/package.json`, 'utf8')) as { version: string };
 
