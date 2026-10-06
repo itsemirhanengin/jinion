@@ -10,7 +10,7 @@ const SCROLLBACK = 5000;
 
 export interface TerminalStart {
   cwd: string;
-  /** Run in the user's shell, by the agent; the terminal ends with it. Without one, the shell itself, for the user. */
+  /** Run in the user's shell, by the agent, which gives a prompt once it ends. Without one, the shell itself, for the user. */
   command?: string;
   cols?: number;
   rows?: number;
@@ -35,19 +35,24 @@ export class Terminals {
     const shell = process.env.SHELL || '/bin/zsh';
     const id = `terminal-${++this.count}`;
 
-    const pty = spawn(shell, command ? ['-lc', command] : ['-l'], { name: 'xterm-256color', cols, rows, cwd, env: terminalEnv() });
+    const pty = spawn(shell, command ? ['-lc', thenShell(command, shell)] : ['-l'], { name: 'xterm-256color', cols, rows, cwd, env: terminalEnv() });
     const info: TerminalInfo = { id, title: command ?? basename(shell), cwd, agent: command !== undefined, running: true, startedAt: Date.now() };
-    const terminal = new Terminal(info, pty, cols, rows);
+
+    const ended = (exitCode: number) => {
+      info.running = false;
+      info.exitCode = exitCode;
+      this.changed();
+    };
+
+    const terminal = new Terminal(info, pty, cols, rows, ended);
 
     this.running.set(id, terminal);
     pty.onData((data) => this.emitOutput({ id, seq: terminal.wrote(data), data }));
 
+    // A command that took its shell with it, as `exit 2` does, stays to be read; a shell the user left goes, as a
+    // terminal does.
     pty.onExit(({ exitCode }) => {
-      info.running = false;
-      info.exitCode = exitCode;
-
-      // A shell the user left goes, as a terminal does; what the agent ran stays to be read.
-      if (info.agent) this.changed();
+      if (info.agent && info.running) ended(exitCode);
       else this.close(id);
     });
 
@@ -87,7 +92,7 @@ export class Terminals {
     return this.find(id).text(lines);
   }
 
-  /** Resolves once the terminal's command ends, or after `ms`, whichever comes first. */
+  /** Resolves once the agent's command ends, or the shell does, or after `ms`, whichever comes first. */
   settle(id: string, ms: number) {
     return this.find(id).settle(ms);
   }
@@ -130,23 +135,57 @@ export class Terminals {
   }
 }
 
+/** The private escape sequence the wrapper around the agent's command reports its exit code with. */
+const COMMAND_END = 7337;
+
+/**
+ * The agent's command, then the user's shell in its place, as a terminal shows a prompt again once a command ends; the
+ * exit code goes before it, in an escape sequence the copy of the screen reads and the screen doesn't show.
+ */
+function thenShell(command: string, shell: string) {
+  return [
+    // A handler rather than ignoring the signal, which the command would inherit: ctrl+c stops the command, not this.
+    'trap : INT',
+    command,
+    `printf '\\033]${COMMAND_END};%s\\007' "$?"`,
+    'trap - INT',
+    `exec '${shell.replaceAll("'", `'\\''`)}' -l`,
+  ].join('\n');
+}
+
 /** One pty and the copy of its screen; output is numbered as it comes, and the copy knows how far it has read. */
 class Terminal {
   private readonly copy: InstanceType<typeof xterm.Terminal>;
   private readonly serializer = new serialize.SerializeAddon();
   private seq = 0;
   private parsed = 0;
-  private readonly exited: Promise<void>;
+  /** The pty runs; it outlives the agent's command, as the shell takes its place. */
+  private alive = true;
+  private readonly ended: Promise<void>;
 
   constructor(
     readonly info: TerminalInfo,
     private readonly pty: IPty,
     cols: number,
     rows: number,
+    onCommandEnd: (exitCode: number) => void,
   ) {
     this.copy = new xterm.Terminal({ cols, rows, scrollback: SCROLLBACK, allowProposedApi: true });
     this.copy.loadAddon(this.serializer);
-    this.exited = new Promise((resolve) => pty.onExit(() => resolve()));
+
+    this.ended = new Promise((resolve) => {
+      pty.onExit(() => {
+        this.alive = false;
+        resolve();
+      });
+
+      this.copy.parser.registerOscHandler(COMMAND_END, (code) => {
+        onCommandEnd(Number(code));
+        resolve();
+
+        return true;
+      });
+    });
   }
 
   wrote(data: string) {
@@ -158,11 +197,11 @@ class Terminal {
   }
 
   input(data: string) {
-    if (this.info.running) this.pty.write(data);
+    if (this.alive) this.pty.write(data);
   }
 
   resize(cols: number, rows: number) {
-    if (this.info.running) this.pty.resize(cols, rows);
+    if (this.alive) this.pty.resize(cols, rows);
     this.copy.resize(cols, rows);
   }
 
@@ -195,11 +234,11 @@ class Terminal {
   }
 
   settle(ms: number) {
-    return Promise.race([this.exited, new Promise<void>((resolve) => setTimeout(resolve, ms))]);
+    return Promise.race([this.ended, new Promise<void>((resolve) => setTimeout(resolve, ms))]);
   }
 
   dispose() {
-    if (this.info.running) this.pty.kill();
+    if (this.alive) this.pty.kill();
     this.copy.dispose();
   }
 
