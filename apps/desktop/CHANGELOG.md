@@ -1,5 +1,19 @@
 # @jinion/desktop
 
+## 0.0.7
+
+A composer that does what the terminal's does.
+
+- `/` lists the commands and the skills, `$` the skills and `@` the project's files, over the composer or under the line
+  you type when there is no room above.
+- Files after `@` show as soft blue pills and skills after `$` as violet ones.
+- Images go in by pasting, dropping or the attach button, at the caret under their file name, so a message can say
+  which image it means; a click opens one large.
+- While a turn runs, Tab queues a message, and a queued one can be taken back to edit or removed.
+- A command opens what it shows where the window has it: `/model` and `/mode` their menus, `/context` what fills the
+  context, `/diff` the Git tab, `/memory`, `/usage` and `/account` their pages, `/tasks` the bottom panel.
+- Menus, lists and tooltips are lighter: one line a row, the description faint beside the name.
+
 ## 0.0.6
 
 A profile page in place of Accounts.

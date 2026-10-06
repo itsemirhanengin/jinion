@@ -1,6 +1,6 @@
 {
   "name": "@jinion/native-tabs",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A row of window tabs in the title bar, drawn by hand in the manner of macOS's own",
   "license": "MIT",
   "homepage": "https://jinion.co",

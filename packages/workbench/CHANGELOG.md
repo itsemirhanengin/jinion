@@ -1,5 +1,12 @@
 # @jinion/workbench
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [ce193fb]
+  - @jinion/ui@0.0.6
+
 ## 0.0.5
 
 ### Patch Changes

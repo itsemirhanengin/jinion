@@ -1,5 +1,12 @@
 # @jinion/cli
 
+## 0.0.7
+
+### Patch Changes
+
+- Updated dependencies [ce193fb]
+  - @jinion/core@0.0.6
+
 ## 0.0.6
 
 ### Patch Changes
