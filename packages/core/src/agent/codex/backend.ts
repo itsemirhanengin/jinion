@@ -1,5 +1,6 @@
 import type { DebugLog } from '../../lib/debug.js';
 import type { MemoryStore } from '../../memory/store.js';
+import type { Terminals } from '../../terminals/terminals.js';
 import type { AgentBackend, AgentCommand, AgentMode, SessionOptions } from '../agent.js';
 import type { AgentMcp } from '../mcp.js';
 import type { ModelOption } from '../models.js';
@@ -18,6 +19,7 @@ export interface CodexBackendOptions {
   /** Jinion's, which Codex is told as it connects. */
   version: string;
   memory?: MemoryStore;
+  terminals?: Terminals;
   debug?: DebugLog;
   /** Tests give a fake app-server. */
   start?: () => CodexProcess;

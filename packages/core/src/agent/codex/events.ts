@@ -1,7 +1,8 @@
 import type { AgentEvent } from '../events.js';
 import type { TodoStatus } from '../todos.js';
 import type { ToolCall, ToolResult } from '../tools.js';
-import { MEMORY_TOOLS } from './memory.js';
+import { terminalCall } from '../../terminals/tools.js';
+import { isTerminalTool, MEMORY_TOOLS } from './jinion-tools.js';
 import { type Notification, type ThreadItem, threadOf } from './protocol.js';
 import { CodexTasks } from './tasks.js';
 import { commandCall, commandResult, contentText, editCall, outputLines, searchHits } from './tool-calls.js';
@@ -323,6 +324,8 @@ export class CodexEvents {
 }
 
 function dynamicCall(tool: string, input: unknown): ToolCall {
+  if (isTerminalTool(tool)) return terminalCall(tool, input);
+
   const action = MEMORY_TOOLS[tool];
   if (!action) return { name: 'other', input: { title: tool, detail: json(input) } };
 

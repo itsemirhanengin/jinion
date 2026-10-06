@@ -58,8 +58,13 @@ Never make up or guess URLs unless you are sure they help with programming. Use 
 - No emojis unless the user asks for them. Don't end a sentence with a colon right before a tool call, since the call may not be shown: write "Let me read the file." rather than "Let me read the file:".
 - When you got something wrong that matters, correct it plainly and go on, without apologies. Don't flag slips that change nothing.`;
 
-export function systemPrompt(cwd: string, memory?: MemoryStore) {
-  return [BASE, environment(cwd), projectInstructions(cwd), memory && memorySection(memory)].filter(Boolean).join('\n\n');
+/** Only where a client shows the project's terminals, as the desktop app does. */
+const TERMINALS = `# Terminals
+- Start a command that keeps running, such as a dev server or a watcher, with run_in_terminal rather than Bash in the background, so the user sees it in the project's terminals; read its output later with read_terminal.
+- When the user mentions an error in their terminal, read it there with read_terminal.`;
+
+export function systemPrompt(cwd: string, memory?: MemoryStore, terminals = false) {
+  return [BASE, terminals && TERMINALS, environment(cwd), projectInstructions(cwd), memory && memorySection(memory)].filter(Boolean).join('\n\n');
 }
 
 function environment(cwd: string) {

@@ -10,6 +10,11 @@ const box = sandboxEach();
 const gitLine = () => systemPrompt(box.project).split('\n').find((line) => line.startsWith('- Git: '));
 
 describe('systemPrompt', () => {
+  it('tells the agent about the project’s terminals only where a client shows them', () => {
+    expect(systemPrompt(box.project)).not.toContain('run_in_terminal');
+    expect(systemPrompt(box.project, undefined, true)).toContain('with run_in_terminal rather than Bash in the background');
+  });
+
   it('names the project’s branch', () => {
     repo(box.project, (path) => box.write(join(path, 'a.ts'), ''));
     expect(gitLine()).toBe('- Git: on branch main');

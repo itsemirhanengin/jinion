@@ -1,11 +1,30 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { ClaudeApprovals } from '../../../src/agent/claude/approvals.js';
 import { guardReason, readsRepositories } from '../../../src/agent/claude/guard.js';
+import { jinionTool, RUN_IN_TERMINAL } from '../../../src/agent/claude/jinion-tools.js';
 import { accountsDir } from '../../../src/agent/claude/paths.js';
 
 const cwd = '/work/project';
 const bash = (command: string) => guardReason('Bash', { command }, cwd);
+
+describe('Jinion’s own tools', () => {
+  const approvals = new ClaudeApprovals({ project: cwd, cwd: () => cwd, turn: () => undefined, onPlanApproved: async () => {} });
+  const signal = new AbortController().signal;
+  const pre = (name: string, input: object) => approvals.guard({ hook_event_name: 'PreToolUse', tool_name: name, tool_input: input } as never, undefined, { signal });
+
+  it('lets the tools that read a terminal run without asking', async () => {
+    await expect(pre(jinionTool('read_terminal'), { id: 'terminal-1' })).resolves.toMatchObject({ hookSpecificOutput: { permissionDecision: 'allow' } });
+  });
+
+  it('holds a command started in a terminal to what a command in Bash is', async () => {
+    await expect(pre(RUN_IN_TERMINAL, { command: 'git commit -m x' })).resolves.toMatchObject({
+      hookSpecificOutput: { permissionDecision: 'ask', permissionDecisionReason: 'Jinion asks before every commit.' },
+    });
+    await expect(pre(RUN_IN_TERMINAL, { command: 'pnpm dev' })).resolves.toEqual({});
+  });
+});
 
 describe('guardReason', () => {
   it('asks before commits, wherever they sit in a command line', () => {

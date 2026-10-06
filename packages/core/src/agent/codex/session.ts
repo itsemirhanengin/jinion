@@ -3,6 +3,7 @@ import type { DebugLog } from '../../lib/debug.js';
 import { errorMessage } from '../../lib/errors.js';
 import { Inbox } from '../../lib/inbox.js';
 import type { MemoryStore } from '../../memory/store.js';
+import type { Terminals } from '../../terminals/terminals.js';
 import type { AgentMode, AgentPrompt, AgentSession, RewindScope, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { ModelSelection } from '../models.js';
@@ -10,7 +11,7 @@ import type { ContextUsage } from '../usage.js';
 import { answer } from './approvals.js';
 import type { CodexConnection } from './connection.js';
 import { CodexEvents, DEFAULT_CONTEXT_WINDOW } from './events.js';
-import { developerInstructions, memoryToolSpecs } from './memory.js';
+import { developerInstructions, type JinionTools, jinionToolSpecs } from './jinion-tools.js';
 import { modeSettings } from './modes.js';
 import { changesFrom, previewOf, restore } from './rewind.js';
 import type { Notification, SandboxPolicy, ServerRequest, ThreadStarted, Turn, UserInput } from './protocol.js';
@@ -18,7 +19,7 @@ import type { Notification, SandboxPolicy, ServerRequest, ThreadStarted, Turn, U
 /** What a session takes from the backend it belongs to. */
 export interface CodexHost {
   connect(): CodexConnection;
-  readonly options: { memory?: MemoryStore; debug?: DebugLog };
+  readonly options: { memory?: MemoryStore; terminals?: Terminals; debug?: DebugLog };
   /** A skill's file by its name, for the skills a prompt mentions with `$`. */
   skillPath(name: string): string | undefined;
   closed(session: CodexSession): void;
@@ -215,8 +216,15 @@ export class CodexSession implements AgentSession {
       turn: () => this.turn?.context,
       edits: (item) => this.events.edits(item),
       steer: (note) => this.steer({ text: note }),
-      memory: this.host.options.memory,
+      mode: () => this.currentMode,
+      tools: this.tools(),
     });
+  }
+
+  private tools(): JinionTools {
+    const { memory, terminals } = this.host.options;
+
+    return { memory, terminals, cwd: () => this.cwd };
   }
 
   /** Codex stopped: a turn in progress fails, and the next one starts the thread again in a new app-server. */
@@ -362,7 +370,7 @@ export class CodexSession implements AgentSession {
       ? await this.request<ThreadStarted>('thread/resume', { ...settings, threadId: this.resume, excludeTurns: true })
       : await this.request<ThreadStarted>('thread/start', {
           ...settings,
-          dynamicTools: memory ? memoryToolSpecs(memory) : undefined,
+          dynamicTools: jinionToolSpecs(this.tools()),
           // Only a paginated history can be taken back to before a turn, as `/rewind` does.
           historyMode: 'paginated',
         });

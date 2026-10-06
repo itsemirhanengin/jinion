@@ -1,7 +1,8 @@
+import { TERMINAL_ACTIONS, type TerminalAction, terminalCall } from '../../terminals/tools.js';
 import type { AgentEvent } from '../events.js';
 import type { GrepMatch, SearchHit, ToolCall } from '../tools.js';
 import { type Input, isObject, number, text } from './input.js';
-import { MEMORY_SERVER } from './memory.js';
+import { isJinionTool, JINION_SERVER, jinionTool } from './jinion-tools.js';
 import { addPatch, type Hunk, hunksToPatch, replacePatch, splitLines } from '../patches.js';
 import type { PlanFile } from './plan.js';
 import { skillLabel } from './plugins.js';
@@ -82,20 +83,23 @@ export function toCall(name: string, input: Input, { path, plan }: ToolContext):
     case 'WebSearch':
       return { name: 'search', input: { query: text(input.query) } };
 
-    case `mcp__${MEMORY_SERVER}__remember`:
+    case jinionTool('remember'):
       return { name: 'memory', input: { action: 'remember', detail: `${text(input.scope)} · ${text(input.title)}` } };
 
-    case `mcp__${MEMORY_SERVER}__recall`: {
+    case jinionTool('recall'): {
       const ids = Array.isArray(input.ids) ? (input.ids as unknown[]).map(text) : [];
 
       return { name: 'memory', input: { action: 'recall', detail: ids.length > 0 ? ids.join(', ') : 'every note' } };
     }
 
-    case `mcp__${MEMORY_SERVER}__forget`:
+    case jinionTool('forget'):
       return { name: 'memory', input: { action: 'forget', detail: text(input.id) } };
 
     default: {
       if (isTodoTool(name)) return undefined;
+
+      const action = isJinionTool(name) ? name.slice(`mcp__${JINION_SERVER}__`.length) : undefined;
+      if (action && TERMINAL_ACTIONS.has(action)) return terminalCall(action as TerminalAction, input);
 
       const mcp = mcpTool(name);
       if (mcp) return { name: 'mcp', input: { ...mcp, arguments: toolArguments(input) } };
