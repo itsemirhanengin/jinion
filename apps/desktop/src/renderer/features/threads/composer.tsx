@@ -5,7 +5,7 @@ import { ChoiceMenu, classNames, Pill } from '@jinion/ui';
 import { Composer as ComposerBox, ComposerFooter } from '@jinion/ui/chat';
 import { useAtom, useAtomValue } from 'jotai';
 import { GitBranch, GitFork, Laptop } from 'lucide-react';
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { draftsAtom } from '../../state/app.js';
 import { useCore } from '../../state/session.js';
 
@@ -13,7 +13,7 @@ import { useCore } from '../../state/session.js';
 const MODE_DOTS: Record<AgentMode, string> = { manual: 'bg-faint', plan: 'bg-accent', edits: 'bg-added', auto: 'bg-warning' };
 
 /** `large` stands alone in the middle of a thread that hasn't started. */
-export function Composer({ id, snapshot, large }: { id: string; snapshot: SessionSnapshot; large?: boolean }) {
+export function Composer({ id, snapshot, large, header }: { id: string; snapshot: SessionSnapshot; large?: boolean; header?: ReactNode }) {
   const core = useCore();
   const [drafts, setDrafts] = useAtom(draftsAtom);
   const app = useAtomValue(core.appAtom);
@@ -48,6 +48,7 @@ export function Composer({ id, snapshot, large }: { id: string; snapshot: Sessio
         placeholder={fields.working ? 'Tell the agent something while it works' : 'Ask for a change. / for commands'}
         busy={fields.working}
         large={large}
+        header={header}
         onStop={() => core.act(core.interrupt(id))}
         controls={
           <>

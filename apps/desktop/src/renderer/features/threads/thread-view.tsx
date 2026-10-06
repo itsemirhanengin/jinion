@@ -1,11 +1,14 @@
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
-import { AskPanel, Conversation, PermissionPanel, PlanPanel, Queued, TodoList, Working } from '@jinion/ui/chat';
+import { AskPanel, Conversation, PermissionPanel, PlanPanel, Queued, TodoBar, Working } from '@jinion/ui/chat';
 import { useWorkbench } from '@jinion/workbench';
-import { useEffect, useRef } from 'react';
+import { useAtomValue } from 'jotai';
+import { useEffect } from 'react';
+import { fileReference } from '../../lib/references.js';
 import { Problem } from '../../panels/problem.js';
 import { useCore, useSession } from '../../state/session.js';
 import { openChanges } from '../changes/changes.js';
+import { openFile } from '../files/files.js';
 import { Composer } from './composer.js';
 import { Entries } from './entries.js';
 
@@ -14,29 +17,14 @@ export function ThreadView({ id }: { id: string }) {
   const core = useCore();
   const workbench = useWorkbench();
   const session = useSession(core, id);
-  const end = useRef<HTMLDivElement>(null);
-  const atEnd = useRef(true);
+  const files = useAtomValue(core.filesAtom);
 
   const started = session?.state.entries.some((entry) => entry.kind === 'user') ?? false;
 
+  // The project's files tell which code in the agent's words names a file.
   useEffect(() => {
-    const node = end.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(([seen]) => {
-      atEnd.current = seen?.isIntersecting ?? true;
-    });
-
-    observer.observe(node);
-    node.scrollIntoView({ block: 'end' });
-
-    return () => observer.disconnect();
-  }, [id, started]);
-
-  // Follows the conversation as it grows, as long as the user hasn't scrolled away from its end.
-  useEffect(() => {
-    if (atEnd.current) end.current?.scrollIntoView({ block: 'end' });
-  }, [session?.seq, session?.fields.working]);
+    if (files.length === 0) core.act(core.refreshFiles(id));
+  }, [core, id]);
 
   if (!session) return null;
 
@@ -46,22 +34,27 @@ export function ThreadView({ id }: { id: string }) {
   const actions = {
     rewind: (entry: string) => core.act(core.rewind(id, entry)),
     openChange: (path: string) => openChanges(core, workbench, id, path),
+    openFile: (path: string, lines?: string) => openFile(core, workbench, id, path, lines),
+    openCode: (code: string) => {
+      const file = fileReference(code, files);
+
+      return file && (() => openFile(core, workbench, id, file.path, file.lines));
+    },
   };
+
+  // The running turn's todos are the first line inside whichever box is at the bottom.
+  const todos = fields.working && state.todos.length > 0 ? <TodoBar groups={state.todos} /> : undefined;
 
   // What takes the composer's place while the agent asks, the composer otherwise.
   const bottom = (
     <>
-      {fields.working && state.todos.length > 0 && (
-        <div className="mb-2 rounded-xl bg-floating px-4 py-3 shadow-xs ring-1 ring-edge">
-          <TodoList groups={state.todos} />
-        </div>
-      )}
       <Queued messages={fields.queue.map((message) => message.text)} />
       {dialog?.id === 'permission' && <PermissionPanel request={dialog.request} onAnswer={(decision) => core.act(core.answerPermission(id, decision))} />}
       {dialog?.id === 'ask' && (
         <AskPanel
           key={dialog.questions.map((question) => question.id).join()}
           questions={dialog.questions}
+          header={todos}
           onAnswer={(answers) => core.act(core.answerQuestions(id, answers))}
         />
       )}
@@ -71,7 +64,7 @@ export function ThreadView({ id }: { id: string }) {
           onDecide={(decision) => core.act(core.answerPlan(id, decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision))}
         />
       )}
-      {!dialog && <Composer id={id} snapshot={session} large={!started} />}
+      {!dialog && <Composer id={id} snapshot={session} large={!started} header={todos} />}
     </>
   );
 
@@ -90,9 +83,8 @@ export function ThreadView({ id }: { id: string }) {
   return (
     <Conversation footer={bottom}>
       <Problem />
-      <Entries state={state} actions={actions} />
+      <Entries state={state} working={fields.working} actions={actions} />
       {fields.working && state.busySince && <Working since={state.busySince} />}
-      <div ref={end} />
     </Conversation>
   );
 }
