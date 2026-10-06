@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { findRepos } from '../../git/repos.js';
 import { memorySection } from '../../memory/prompt.js';
 import type { MemoryStore } from '../../memory/store.js';
+import { PLANNING } from '../plans.js';
 
 const INSTRUCTION_FILES = ['AGENTS.md', 'CLAUDE.md'];
 
@@ -64,7 +65,7 @@ const TERMINALS = `# Terminals
 - When the user mentions an error in their terminal, read it there with read_terminal.`;
 
 export function systemPrompt(cwd: string, memory?: MemoryStore, terminals = false) {
-  return [BASE, terminals && TERMINALS, environment(cwd), projectInstructions(cwd), memory && memorySection(memory)].filter(Boolean).join('\n\n');
+  return [BASE, PLANNING, terminals && TERMINALS, environment(cwd), projectInstructions(cwd), memory && memorySection(memory)].filter(Boolean).join('\n\n');
 }
 
 function environment(cwd: string) {

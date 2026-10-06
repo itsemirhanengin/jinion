@@ -3,6 +3,7 @@ import { memorySection } from '../../memory/prompt.js';
 import type { MemoryStore } from '../../memory/store.js';
 import { type MemoryAction, memoryTools } from '../../memory/tools.js';
 import type { Terminals } from '../../terminals/terminals.js';
+import { PLANNING } from '../plans.js';
 import { TERMINAL_ACTIONS, type TerminalAction, terminalTools } from '../../terminals/tools.js';
 
 /** Jinion's notes and terminals come as tools of their own, apart from Codex's memories and commands. */
@@ -64,5 +65,5 @@ export async function runJinionTool({ memory, terminals, cwd }: JinionTools, nam
 export function developerInstructions(store?: MemoryStore) {
   const identity = "You work in Jinion, a coding agent in the user's terminal. To the user you are Jinion.";
 
-  return [identity, store && memorySection(store)].filter(Boolean).join('\n\n');
+  return [identity, PLANNING, store && memorySection(store)].filter(Boolean).join('\n\n');
 }

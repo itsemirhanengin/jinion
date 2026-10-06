@@ -1,5 +1,5 @@
 import type { Question, QuestionAnswer } from '../questions.js';
-import type { RunContext } from '../agent.js';
+import type { PlanDecision, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import type { ToolCall, ToolName, ToolResult, Tools } from '../tools.js';
 import type { Usage } from '../usage.js';
@@ -109,6 +109,18 @@ export class Script {
     yield { type: 'tool-end', id, ok: true, result: { answers } };
 
     return answers;
+  }
+
+  /** Shows the plan and waits for the user to build it, change it, or keep planning. */
+  async *plan(plan: string): AsyncGenerator<AgentEvent, PlanDecision> {
+    const id = this.callId();
+
+    yield { type: 'tool-start', id, call: { name: 'plan', input: { plan } } };
+    const decision = await this.context.approvePlan(['auto', 'edits', 'manual']);
+
+    yield { type: 'tool-end', id, ok: true, result: {} };
+
+    return decision;
   }
 
   private callId() {
