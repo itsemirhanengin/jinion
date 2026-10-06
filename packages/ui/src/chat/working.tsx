@@ -17,7 +17,7 @@ export function Working({ since, label = 'Working' }: { since: number; label?: s
   return (
     <div className="flex items-center gap-2 text-muted">
       <Spinner />
-      <span>{label}</span>
+      <span className="shimmer">{label}</span>
       <span className="text-faint tabular-nums">{took}</span>
       <span className="text-faint">· Esc to stop</span>
     </div>

@@ -1,5 +1,5 @@
-import { Check, MessageCircleQuestion } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { ArrowUp, Check, MessageCircleQuestion } from 'lucide-react';
+import { type FormEvent, type KeyboardEvent, type ReactNode, useState } from 'react';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
 
@@ -28,10 +28,12 @@ export interface QuestionAnswer {
 export interface AskPanelProps {
   questions: Question[];
   onAnswer: (answers: QuestionAnswer[]) => void;
+  /** The first line inside the box, as in the composer, such as the running turn's todos. */
+  header?: ReactNode;
 }
 
 /** What the agent asks to go on, one question at a time in the composer's place; sent once the last is answered. */
-export function AskPanel({ questions, onAnswer }: AskPanelProps) {
+export function AskPanel({ questions, onAnswer, header }: AskPanelProps) {
   const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
 
   const question = questions[answers.length];
@@ -48,8 +50,8 @@ export function AskPanel({ questions, onAnswer }: AskPanelProps) {
     <QuestionStep
       key={answers.length}
       question={question}
+      header={header}
       step={questions.length > 1 ? `${answers.length + 1} of ${questions.length}` : undefined}
-      last={answers.length === questions.length - 1}
       onAnswer={answer}
       onBack={answers.length > 0 ? () => setAnswers(answers.slice(0, -1)) : undefined}
     />
@@ -58,14 +60,18 @@ export function AskPanel({ questions, onAnswer }: AskPanelProps) {
 
 interface QuestionStepProps {
   question: Question;
+  header?: ReactNode;
   step?: string;
-  last: boolean;
   onAnswer: (answer: QuestionAnswer) => void;
   onBack?: () => void;
 }
 
-/** One question: a single choice answers on a click; several, or words of one's own, answer with Next. */
-function QuestionStep({ question, step, last, onAnswer, onBack }: QuestionStepProps) {
+/**
+ * One question in the composer's own box: the question as its first line, the options as lines of the conversation's
+ * height, then the composer's field for words of one's own. A single choice answers on a click; several, or words,
+ * answer with the send button.
+ */
+function QuestionStep({ question, header, step, onAnswer, onBack }: QuestionStepProps) {
   const [chosen, setChosen] = useState<number[]>([]);
   const [text, setText] = useState('');
 
@@ -87,14 +93,24 @@ function QuestionStep({ question, step, last, onAnswer, onBack }: QuestionStepPr
     if (ready) onAnswer({ options: question.multiple ? chosen : [], text: typed || undefined });
   };
 
+  const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
+
+    event.preventDefault();
+    submit();
+  };
+
   return (
-    <form onSubmit={submit} className="flex animate-enter flex-col gap-3 rounded-2xl bg-floating p-4 shadow-sm ring-1 ring-edge">
-      <div className="flex items-start gap-2">
-        <MessageCircleQuestion className="mt-0.5 size-4 shrink-0 text-primary" />
+    <form onSubmit={submit} className="animate-enter rounded-2xl bg-floating shadow-sm ring-1 ring-edge">
+      {header}
+      <div className="flex items-start gap-2 px-4 pt-2.5 pb-1">
+        <span className="flex h-5 w-4 shrink-0 items-center justify-center text-faint [&_svg]:size-3.5">
+          <MessageCircleQuestion />
+        </span>
         <p className="min-w-0 flex-1 font-medium text-pretty">{question.prompt}</p>
         {step && <span className="shrink-0 text-faint tabular-nums">{step}</span>}
       </div>
-      <div className="flex max-h-[40vh] flex-col gap-1 overflow-y-auto">
+      <div className="flex max-h-[40vh] flex-col overflow-y-auto px-2">
         {question.options.map((option, index) => {
           const on = chosen.includes(index);
 
@@ -103,56 +119,55 @@ function QuestionStep({ question, step, last, onAnswer, onBack }: QuestionStepPr
               key={index}
               type="button"
               onClick={() => pick(index)}
-              className={classNames('flex cursor-default items-start gap-3 rounded-lg px-3 py-2 text-left', on ? 'bg-selected' : 'hover:bg-shade')}
+              className={classNames('flex min-h-7 cursor-default items-start gap-2 rounded-lg px-2 py-1 text-left', on ? 'bg-selected' : 'hover:bg-shade')}
             >
-              {question.multiple ? (
-                <span
-                  className={classNames(
-                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded ring-1',
-                    on ? 'bg-primary text-on-primary ring-primary' : 'ring-faint',
-                  )}
-                >
-                  {on && <Check className="size-3" />}
-                </span>
-              ) : (
-                <span className="mt-0.5 w-4 shrink-0 text-faint tabular-nums">{index + 1}</span>
-              )}
-              <span className="flex min-w-0 flex-col">
-                <span>
-                  {option.label}
-                  {option.recommended && <span className="ml-1.5 text-muted">recommended</span>}
-                </span>
-                {option.description && <span className="text-pretty text-muted">{option.description}</span>}
+              <span className="flex h-5 w-4 shrink-0 items-center justify-center">
+                {question.multiple ? (
+                  <span className={classNames('flex size-3.5 items-center justify-center rounded-[4px] ring-1', on ? 'bg-primary text-on-primary ring-primary' : 'ring-faint')}>
+                    {on && <Check className="size-2.5" strokeWidth={3} />}
+                  </span>
+                ) : (
+                  <span className="text-faint tabular-nums">{index + 1}</span>
+                )}
+              </span>
+              <span className="min-w-0 text-pretty">
+                {option.label}
+                {option.recommended && <span className="text-muted"> · recommended</span>}
+                {option.description && <span className="text-faint"> — {option.description}</span>}
               </span>
             </button>
           );
         })}
       </div>
       {question.other !== false && (
-        <input
+        <textarea
           name="answer"
           aria-label="Your own answer"
           value={text}
+          rows={1}
           onChange={(event) => setText(event.target.value)}
-          placeholder="Or say it in your own words"
-          className="h-9 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
+          onKeyDown={keyDown}
+          placeholder="Or answer in your own words"
+          className="field-sizing-content mt-1 block max-h-40 min-h-9 w-full resize-none border-t border-line bg-transparent px-4 pt-2.5 outline-none placeholder:text-faint"
         />
       )}
-      {(onBack || question.multiple || typed) && (
-        <div className="flex items-center gap-2">
-          {onBack && (
-            <Button size="small" onClick={onBack}>
-              Back
-            </Button>
-          )}
-          <span className="flex-1" />
-          {(question.multiple || typed) && (
-            <Button type="submit" variant="primary" size="small" disabled={!ready}>
-              {last ? 'Send' : 'Next'}
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="flex items-center gap-1 px-2 pb-2">
+        {onBack && (
+          <Button size="small" onClick={onBack}>
+            Back
+          </Button>
+        )}
+        <span className="flex-1" />
+        <button
+          type="submit"
+          aria-label="Send"
+          title="Send"
+          disabled={!ready}
+          className={classNames('flex size-7 cursor-default items-center justify-center rounded-full text-on-primary', ready ? 'bg-primary' : 'bg-primary/30')}
+        >
+          <ArrowUp className="size-4 shrink-0" />
+        </button>
+      </div>
     </form>
   );
 }

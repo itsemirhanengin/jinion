@@ -13,7 +13,7 @@ test('counts the lines added and removed', () => {
 });
 
 test('shows the first lines of a long change until opened', () => {
-  const html = renderToStaticMarkup(<DiffCard path="src/server.ts" lines={lines(20)} folded={5} />);
+  const html = renderToStaticMarkup(<DiffCard path="src/server.ts" lines={lines(20)} folded={5} defaultOpen />);
 
   expect(html).toContain('line 4');
   expect(html).not.toContain('line 5');
