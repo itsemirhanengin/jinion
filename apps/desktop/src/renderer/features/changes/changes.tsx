@@ -7,6 +7,8 @@ import type { Core } from '../../core/core.js';
 import { diffLines } from '../../lib/diff.js';
 import { reveal, useReveal } from '../../state/reveal.js';
 import { changesOf, useCore, useSession } from '../../state/session.js';
+import { CommentsBar } from '../comments/comments-bar.js';
+import { useComments } from '../comments/use-comments.js';
 
 /** What a thread changed, as a tab of its own: every file's diff one under another, for the whole thread or one turn. */
 export function changes(): Feature {
@@ -28,6 +30,8 @@ function ChangesTab({ id }: { id: string }) {
   const [turn, setTurn] = useState(ALL);
   const list = useRef<HTMLDivElement>(null);
 
+  const commentsOn = useComments(id, 'changes');
+
   const turns = snapshot ? editTurns(snapshot.state.entries) : [];
   const picked = turns.find((each) => each.id === turn);
   const files = picked ? changedFiles(picked.edits) : snapshot ? changesOf(snapshot) : [];
@@ -48,6 +52,7 @@ function ChangesTab({ id }: { id: string }) {
           </p>
           <LineCounts added={added} removed={removed} />
           <div className="flex-1" />
+          <CommentsBar session={id} />
           <ChoiceMenu
             value={turn}
             onChange={setTurn}
@@ -61,11 +66,15 @@ function ChangesTab({ id }: { id: string }) {
             trigger={<Pill className="max-w-80">{picked ? firstLine(picked.prompt) : 'The whole thread'}</Pill>}
           />
         </div>
-        {files.map((file) => (
-          <div key={file.path} data-path={file.path} className="scroll-mt-4">
-            <DiffCard path={file.path} lines={diffLines(file.patch)} folded={Number.POSITIVE_INFINITY} bare />
-          </div>
-        ))}
+        {files.map((file) => {
+          const lines = diffLines(file.patch);
+
+          return (
+            <div key={file.path} data-path={file.path} className="scroll-mt-4">
+              <DiffCard path={file.path} lines={lines} folded={Number.POSITIVE_INFINITY} bare {...commentsOn(file.path, lines)} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
