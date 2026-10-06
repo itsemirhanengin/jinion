@@ -169,9 +169,9 @@ Steps, design first, as the TUI was built:
    projects; each folder's core in a utility process of its own, reached over a `MessagePort` (`portTransport`) the
    main process hands the page through the preload; the screens on `JinionClient`, with the demo backend
    (`pnpm dev:desktop --demo`) and with Claude and Codex; the ask, permission and plan panels; accounts, signing in
-   with Claude or ChatGPT; `files/read` for the side panel. Left: a window per project, a Mac app's menus, `@` file
-   mentions and the `/` palette in the composer, images, the views a slash command opens (the core sends them as
-   `screen/view`, which the app ignores for now), and taking a queued message back, which the API has no call for. A
+   with Claude or ChatGPT; `files/read` for the side panel; the composer's `/`, `$` and `@` completions, images, the
+   views a slash command opens and taking a queued message back (`session/unqueue`). Left: a window per project, a Mac
+   app's menus, a page for MCP servers (`/mcp` only says so for now) and rewind from the `/` list. A
    thread another Jinion has open is refused, as it should be for writing, but it should still open to read: the core
    could answer `session/subscribe` for a saved thread without claiming it, and the window show it without a composer.
    The other calls the screens make still drop their failures; they should go through `Core.act` too.
@@ -197,6 +197,17 @@ Steps, design first, as the TUI was built:
    from the Finder lacks). Left: signing and notarizing with a Developer ID, an icon, Intel and universal builds,
    updates read from an address of their own (GitHub marks one release "Latest" for both products), and the agents'
    versions locked: `deploy` resolves the Agent SDK's range afresh rather than from the lockfile.
+
+The order agreed for the releases after 0.0.6, one 0.0.x each, with no hurry to 0.1.0: the composer (0.0.7), comments
+on a diff sent to the agent as one message, the terminal, parallel threads in worktrees with a pull request flow, and
+the dev server's preview with picking an element. The plan editor fits in between:
+
+- **Plans of their own.** The right panel gets Plan beside Changes and Tasks, filtered by turn as Changes is, so earlier
+  turns' plans stay at hand. A plan opens as a tab with Approve and Reject in it and an editor to change it before
+  answering: bold, lists, code, headings, and diagrams the planner draws (OMP's plans, with their diagrams, are the bar).
+- **The composer on the same editor.** The composer is a textarea: an image is `[Image #1]` at the caret, drawn as a
+  chip by a layer behind the text, so it can only be as wide as its text. On the plan editor's rich text (TipTap or
+  Lexical), images and `@` files become real chips with a name and an icon.
 
 ### Codex, the rest
 
