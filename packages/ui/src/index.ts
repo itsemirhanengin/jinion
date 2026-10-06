@@ -13,6 +13,8 @@ export { ChoiceMenu } from './primitives/choice-menu.js';
 export type { Choice, ChoiceGroup, ChoiceMenuProps } from './primitives/choice-menu.js';
 export { CopyButton } from './primitives/copy-button.js';
 export { FadeText } from './primitives/fade-text.js';
+export { ImageViewer } from './primitives/image-viewer.js';
+export type { ImageViewerProps } from './primitives/image-viewer.js';
 export { LineCounts } from './primitives/line-counts.js';
 export { Pill } from './primitives/pill.js';
 export type { PillProps } from './primitives/pill.js';

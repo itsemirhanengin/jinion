@@ -56,6 +56,33 @@
   animation: shimmer 1.8s linear infinite;
 }
 
+/* What floats over the window, a menu, a list or a note: a soft shadow and a hairline edge, nothing heavier. */
+@utility float {
+  background-color: var(--floating);
+  color: var(--ink);
+  box-shadow: var(--float-shadow);
+}
+
+/* A row of one: its name, then anything about it faint beside it. */
+@utility menu-row {
+  display: flex;
+  height: 28px;
+  align-items: center;
+  gap: 8px;
+  border-radius: 6px;
+  padding-inline: 8px;
+  cursor: default;
+  outline: none;
+}
+
+@utility menu-label {
+  padding: 8px 8px 2px;
+  font-size: 11px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--faint);
+}
+
 /* The window is gray chrome around white sheets; edges and hovers are black at a low opacity, so they suit any gray. */
 :root,
 .light {
@@ -73,6 +100,13 @@
   --shade: rgb(9 9 11 / 0.05);
   --selected: rgb(9 9 11 / 0.06);
   --selection: #c9d7f5;
+  --float-shadow: 0 6px 24px -8px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.1);
+  --tint-blue: rgb(37 99 235 / 0.1);
+  --tint-blue-ink: #1d4ed8;
+  --tint-violet: rgb(124 58 237 / 0.1);
+  --tint-violet-ink: #6d28d9;
+  --tint-gray: rgb(9 9 11 / 0.07);
+  --tint-gray-ink: #3f3f46;
 
   --primary: #181e33;
   --on-primary: #ffffff;
@@ -102,6 +136,13 @@
   --shade: rgb(255 255 255 / 0.05);
   --selected: rgb(255 255 255 / 0.07);
   --selection: #2b3a5c;
+  --float-shadow: 0 8px 28px -8px rgb(0 0 0 / 0.5), 0 0 0 0.5px rgb(255 255 255 / 0.12);
+  --tint-blue: rgb(96 165 250 / 0.16);
+  --tint-blue-ink: #93c5fd;
+  --tint-violet: rgb(167 139 250 / 0.16);
+  --tint-violet-ink: #c4b5fd;
+  --tint-gray: rgb(255 255 255 / 0.09);
+  --tint-gray-ink: #e4e4e7;
 
   --primary: #e4e7f1;
   --on-primary: #181e33;

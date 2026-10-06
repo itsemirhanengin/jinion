@@ -1,5 +1,6 @@
 import { Popover as BasePopover } from '@base-ui/react/popover';
 import type { ReactElement, ReactNode } from 'react';
+import { MENU_MOTION } from './choice-menu.js';
 
 export interface PopoverProps {
   /** What opens it, such as a `Button`. */
@@ -22,7 +23,7 @@ export function Popover({ trigger, open, onOpenChange, side = 'bottom', align = 
         <BasePopover.Positioner side={side} align={align} sideOffset={6} className="z-50 outline-none">
           <BasePopover.Popup
             finalFocus={returnFocus}
-            className="flex max-h-[min(32rem,var(--available-height))] w-80 origin-(--transform-origin) flex-col overflow-hidden rounded-xl bg-floating text-ui text-ink shadow-lg ring-1 ring-edge transition-[opacity,scale] duration-150 ease-out outline-none data-ending-style:scale-97 data-ending-style:opacity-0 data-starting-style:scale-97 data-starting-style:opacity-0">
+            className={`float flex max-h-[min(32rem,var(--available-height))] w-80 flex-col overflow-hidden rounded-[10px] ${MENU_MOTION}`}>
             {children}
           </BasePopover.Popup>
         </BasePopover.Positioner>
