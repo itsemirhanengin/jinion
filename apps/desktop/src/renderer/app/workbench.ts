@@ -1,6 +1,7 @@
 import { emptyLayout, Workbench } from '@jinion/workbench';
 import type { Core } from '../core/core.js';
 import { featuresOf } from '../features/features.js';
+import { followAgentTerminals } from '../features/terminal/terminal.js';
 import { saveLayout, savedLayout } from '../state/saved.js';
 
 const workbenches = new Map<string, Workbench>();
@@ -23,6 +24,7 @@ export function workbenchOf(core: Core) {
     );
 
     made.subscribe(() => saveLayout(path, made.getLayout()));
+    followAgentTerminals(core, made);
     workbenches.set(path, made);
     workbench = made;
   }

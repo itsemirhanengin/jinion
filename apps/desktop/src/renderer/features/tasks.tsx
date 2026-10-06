@@ -1,3 +1,4 @@
+import type { Entry } from '@jinion/core/conversation/entries';
 import { Button } from '@jinion/ui';
 import { TodoList } from '@jinion/ui/chat';
 import { Bot, Square, Terminal } from 'lucide-react';
@@ -7,23 +8,24 @@ import { useActiveSession, useCore } from '../state/session.js';
 
 /** The bottom panel: the shown thread's todos, its commands in the background with their output, and its subagents. */
 export function tasks(): Feature {
-  return { id: 'tasks', views: [{ id: 'tasks', title: 'Tasks', place: 'bottom', Content: Tasks }] };
+  return { id: 'tasks', views: [{ id: 'tasks', title: 'Tasks', place: 'bottom', Content: Tasks, useVisible: useHasTasks }] };
+}
+
+/** Whether the thread in sight has todos, commands in the background or subagents; Tasks shows only then. */
+export function useHasTasks() {
+  const session = useActiveSession();
+
+  return session !== undefined && agentsOf(session.state.entries).length + session.state.todos.length + session.fields.tasks.length > 0;
 }
 
 function Tasks() {
   const core = useCore();
   const session = useActiveSession();
 
-  if (!session) return <p className="px-4 text-muted">Open a thread to see its tasks.</p>;
+  if (!session) return null;
 
   const { state, fields } = session;
-  const agents = state.entries.flatMap((entry) => (entry.kind === 'tool' && entry.run.name === 'agent' ? [entry] : []));
-
-  if (state.todos.length === 0 && fields.tasks.length === 0 && agents.length === 0) {
-    return (
-      <p className="px-4 text-pretty text-muted">Todos, commands in the background and subagents show here.</p>
-    );
-  }
+  const agents = agentsOf(state.entries);
 
   return (
     <div className="flex flex-col gap-5 px-4 pb-4">
@@ -65,6 +67,8 @@ function Tasks() {
     </div>
   );
 }
+
+const agentsOf = (entries: Entry[]) => entries.flatMap((entry) => (entry.kind === 'tool' && entry.run.name === 'agent' ? [entry] : []));
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (

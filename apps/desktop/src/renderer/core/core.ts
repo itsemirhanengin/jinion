@@ -4,7 +4,7 @@ import type { PermissionDecision } from '@jinion/core/agent/permissions';
 import type { QuestionAnswer } from '@jinion/core/agent/questions';
 import { JinionClient } from '@jinion/core/api/client';
 import { portTransport } from '@jinion/core/api/port-transport';
-import type { PromptFill, RepoChanges, View } from '@jinion/core/api/protocol';
+import type { PromptFill, RepoChanges, TerminalInfo, View } from '@jinion/core/api/protocol';
 import type { Initialized, MemoryNote, SavedSummary } from '@jinion/core/api/schemas';
 import { atom } from 'jotai';
 import type { RecentProject } from '../../main/bridge.js';
@@ -41,6 +41,8 @@ export class Core {
   readonly problemAtom = atom<string | undefined>(undefined);
   /** What a slash command asked to show, until the window shows it; a new object each time, so the same view shows again. */
   readonly viewAtom = atom<{ view: View } | undefined>(undefined);
+  /** The project's terminals, the agent's among them, as the core lists them. */
+  readonly terminalsAtom = atom<TerminalInfo[]>([]);
   /** Prompts to start with, which the demo backend has. */
   examples: string[] = [];
   /** Jinion's own slash commands, as the core listed them. */
@@ -80,6 +82,7 @@ export class Core {
     });
 
     this.client.store.sub(this.client.sessionsAtom, () => void this.refreshSaved());
+    this.client.on('terminals/changed', ({ terminals }) => this.client.store.set(this.terminalsAtom, terminals));
   }
 
   /** Opens the folder's core, starting it when it isn't running, and follows every session open in it. */
@@ -92,6 +95,8 @@ export class Core {
     core.examples = info.examples ?? [];
     core.commands = commands;
     void core.refreshSaved();
+    // A core that ran before this window opened, as after a reload, may have terminals already.
+    core.client.store.set(core.terminalsAtom, await core.client.request('terminals/list', {}));
 
     return core;
   }
@@ -243,6 +248,32 @@ export class Core {
   async commit(session: string, repo: string, message: string) {
     await this.client.request('git/commit', { session, repo, message });
     await this.refreshGit(session);
+  }
+
+  /** A shell in the folder the thread works in, or in the project without one. */
+  openTerminal(session: string | undefined, cols: number, rows: number) {
+    return this.client.request('terminals/open', { session, cols, rows });
+  }
+
+  closeTerminal(terminal: string) {
+    return this.client.request('terminals/close', { terminal });
+  }
+
+  /** The screen as it is, and the output after it from now on, until `detachTerminal`. */
+  attachTerminal(terminal: string) {
+    return this.client.request('terminals/attach', { terminal });
+  }
+
+  detachTerminal(terminal: string) {
+    return this.client.request('terminals/detach', { terminal });
+  }
+
+  typeInTerminal(terminal: string, data: string) {
+    return this.client.request('terminals/write', { terminal, data });
+  }
+
+  resizeTerminal(terminal: string, cols: number, rows: number) {
+    return this.client.request('terminals/resize', { terminal, cols, rows });
   }
 
   private async refreshSaved() {
