@@ -4,6 +4,7 @@ import { changes } from './changes/changes.js';
 import { files } from './files/files.js';
 import { git } from './git/git.js';
 import { pagesFeature } from './pages.js';
+import { plan } from './plan/plan.js';
 import { search } from './search.js';
 import { tasks } from './tasks.js';
 import { terminal } from './terminal/terminal.js';
@@ -12,5 +13,5 @@ import { tools } from './tools.js';
 
 /** Everything a project's window has, in the order of the activity bar; a new feature is a new entry here. */
 export function featuresOf(core: Core): Feature[] {
-  return [threads(core), search(), git(), changes(), files(), ...pagesFeature(), tools(), tasks(), terminal(core)];
+  return [threads(core), search(), git(), changes(), plan(), files(), ...pagesFeature(), tools(), tasks(), terminal(core)];
 }

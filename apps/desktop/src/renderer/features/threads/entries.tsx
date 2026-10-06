@@ -2,15 +2,17 @@ import type { SessionState } from '@jinion/core/conversation/session';
 import type { Entry, ToolCallEntry, ToolEntry } from '@jinion/core/conversation/entries';
 import { inRunningTurn } from '@jinion/core/conversation/session';
 import type { ToolRun } from '@jinion/core/agent/tools';
-import { CopyButton } from '@jinion/ui';
+import { Button, CopyButton } from '@jinion/ui';
 import { ChangesCard, CommandCard, DiffCard, Notice, Prose, Steps, Thinking, Todos, ToolGroup, ToolLine, Turn, UserMessage, WorkLine } from '@jinion/ui/chat';
-import { BookMarked, Bot, FileSearch, FileText, FolderSearch, Globe, MessageCircleQuestion, Plug, Search, Wrench } from 'lucide-react';
+import { BookMarked, Bot, ClipboardList, FileSearch, FileText, FolderSearch, Globe, Maximize2, MessageCircleQuestion, Plug, Search, Wrench } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { diffLines } from '../../lib/diff.js';
 import { took } from '../../lib/time.js';
+import { planTitle } from '../plan/plans.js';
 
 export interface EntryActions {
   rewind(entry: string): void;
+  openPlan(entry: string): void;
   openChange(path: string): void;
   openFile(path: string, lines?: string): void;
   /** What inline code in the agent's words opens, such as the file it names. */
@@ -214,8 +216,19 @@ function ToolView({ entry, live, actions }: { entry: ToolEntry; live: boolean; a
 
     case 'plan':
       return (
-        <div className="rounded-xl bg-raised px-4 py-3 ring-1 ring-edge">
-          <Prose text={run.input.plan} />
+        <div className="overflow-hidden rounded-xl bg-background ring-1 ring-edge">
+          <div className="flex h-9 items-center gap-2 border-b border-line bg-raised pr-1 pl-3">
+            <ClipboardList className="size-4 shrink-0 text-faint" />
+            <span className="shrink-0 font-medium">Plan</span>
+            <span className="min-w-0 flex-1 truncate text-muted">{planTitle(run.input.plan)}</span>
+            <Button size="small" onClick={() => actions.openPlan(entry.id)} title="Open the plan to read it as a document and change it">
+              <Maximize2 />
+              Open
+            </Button>
+          </div>
+          <div className="px-4 py-3">
+            <Prose text={run.input.plan} />
+          </div>
         </div>
       );
 
