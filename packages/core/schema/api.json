@@ -1020,6 +1020,260 @@
             "result"
           ]
         },
+        "terminals/list": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "agent": {
+                    "type": "boolean"
+                  },
+                  "running": {
+                    "type": "boolean"
+                  },
+                  "exitCode": {
+                    "type": "number"
+                  },
+                  "startedAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "cwd",
+                  "agent",
+                  "running",
+                  "startedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/open": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "cols": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 1000
+                },
+                "rows": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 1000
+                }
+              }
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "cwd": {
+                  "type": "string"
+                },
+                "agent": {
+                  "type": "boolean"
+                },
+                "running": {
+                  "type": "boolean"
+                },
+                "exitCode": {
+                  "type": "number"
+                },
+                "startedAt": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "cwd",
+                "agent",
+                "running",
+                "startedAt"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/attach": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "terminal": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "terminal"
+              ]
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "screen": {
+                  "type": "string"
+                },
+                "seq": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "screen",
+                "seq"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/detach": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "terminal": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "terminal"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/write": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "terminal": {
+                  "type": "string"
+                },
+                "data": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "terminal",
+                "data"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/resize": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "terminal": {
+                  "type": "string"
+                },
+                "cols": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 1000
+                },
+                "rows": {
+                  "type": "integer",
+                  "minimum": 2,
+                  "maximum": 1000
+                }
+              },
+              "required": [
+                "terminal",
+                "cols",
+                "rows"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "terminals/close": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "terminal": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "terminal"
+              ]
+            },
+            "result": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
         "accounts/list": {
           "type": "object",
           "properties": {
@@ -1375,6 +1629,13 @@
         "git/diff",
         "files/list",
         "files/read",
+        "terminals/list",
+        "terminals/open",
+        "terminals/attach",
+        "terminals/detach",
+        "terminals/write",
+        "terminals/resize",
+        "terminals/close",
         "accounts/list",
         "accounts/select",
         "accounts/remove",
@@ -1533,6 +1794,70 @@
             "done",
             "total"
           ]
+        },
+        "terminals/changed": {
+          "type": "object",
+          "properties": {
+            "terminals": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "cwd": {
+                    "type": "string"
+                  },
+                  "agent": {
+                    "type": "boolean"
+                  },
+                  "running": {
+                    "type": "boolean"
+                  },
+                  "exitCode": {
+                    "type": "number"
+                  },
+                  "startedAt": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "cwd",
+                  "agent",
+                  "running",
+                  "startedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "terminals"
+          ]
+        },
+        "terminals/output": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "seq": {
+              "type": "number"
+            },
+            "data": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id",
+            "seq",
+            "data"
+          ]
         }
       },
       "required": [
@@ -1547,7 +1872,9 @@
         "screen/exit",
         "accounts/sign-in-link",
         "accounts/sign-in-prompt",
-        "usage/history-progress"
+        "usage/history-progress",
+        "terminals/changed",
+        "terminals/output"
       ]
     },
     "notificationsToServer": {

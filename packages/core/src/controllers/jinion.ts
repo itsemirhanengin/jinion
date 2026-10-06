@@ -11,6 +11,7 @@ import { worktreeExists } from '../git/worktrees.js';
 import { tildify } from '../lib/paths.js';
 import type { MemoryStore } from '../memory/store.js';
 import { loadSettings } from '../settings/user.js';
+import { Terminals } from '../terminals/terminals.js';
 import { agentsAtom, modelsAtom, skillsAtom } from '../state/agent.js';
 import { notificationsAtom, worktreesAtom } from '../state/preferences.js';
 import { DEFAULT_CONTEXT_WINDOW } from '../state/session.js';
@@ -32,6 +33,8 @@ export interface JinionOptions {
   /** The project's saved conversations. */
   saved: SessionStore;
   memory: MemoryStore;
+  /** The project's terminals, which the backends' tools reach too; new ones when left out. */
+  terminals?: Terminals;
   commands: CommandRegistry;
   /** Continued from the start, e.g. for `--continue`. */
   initial?: SavedSession;
@@ -51,6 +54,7 @@ export class Jinion {
   readonly info: AppInfo;
   readonly saved: SessionStore;
   readonly memory: MemoryStore;
+  readonly terminals: Terminals;
   readonly commands: CommandRegistry;
   readonly accounts: AccountController;
   readonly mcp: McpController;
@@ -67,6 +71,7 @@ export class Jinion {
     readonly screen: Screen,
   ) {
     ({ backends: this.backends, info: this.info, saved: this.saved, memory: this.memory, commands: this.commands, onExit: this.onExit } = options);
+    this.terminals = options.terminals ?? new Terminals();
 
     const context: AppContext = {
       store: this.store,
@@ -250,6 +255,7 @@ export class Jinion {
   async quit() {
     const kept = await Promise.all(this.open.map((session) => session.quit()));
 
+    this.terminals.closeAll();
     for (const session of this.open) this.saved.release(session.id);
     this.screen.exit();
     for (const message of kept) if (message) this.onExit?.(message);

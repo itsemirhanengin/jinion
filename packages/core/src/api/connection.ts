@@ -7,6 +7,7 @@ import { dialogMethods } from './methods/dialogs.js';
 import { gitMethods } from './methods/git.js';
 import { sessionMethods } from './methods/session.js';
 import { sessionsMethods } from './methods/sessions.js';
+import { terminalMethods } from './methods/terminals.js';
 import { ApiCode, type ClientContract, clientSchemas, type ServerContract, type Sessions } from './protocol.js';
 import { type Params, type Result, RpcError, RpcPeer } from './rpc.js';
 import type { Transport } from './transport.js';
@@ -24,7 +25,7 @@ export interface Host {
 /** The methods of one area, such as accounts, registered on each connection. */
 export type Methods = (connection: Connection) => void;
 
-const METHODS: Methods[] = [appMethods, sessionsMethods, sessionMethods, dialogMethods, gitMethods, accountMethods];
+const METHODS: Methods[] = [appMethods, sessionsMethods, sessionMethods, dialogMethods, gitMethods, accountMethods, terminalMethods];
 
 /** One client: what it asks of the app, and the sessions it follows. */
 export class Connection {
@@ -33,6 +34,8 @@ export class Connection {
   /** Until the client says otherwise, as a terminal that can't tell. */
   focused = true;
   notifications: 'desktop' | 'bell' = 'desktop';
+  /** The terminals whose output this client gets. */
+  readonly terminals = new Set<string>();
   private readonly following = new Map<string, () => void>();
 
   constructor(
@@ -98,5 +101,6 @@ export class Connection {
 
   closed() {
     for (const id of this.following.keys()) this.unfollow(id);
+    this.terminals.clear();
   }
 }

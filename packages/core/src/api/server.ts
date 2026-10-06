@@ -23,6 +23,11 @@ export class JinionServer implements Host {
     this.app.onSessionsChange(() => this.sessionsChanged());
     watchFields(this.app.store, appFields, (change) => this.broadcast('app/field', change));
     this.watchSessions();
+    this.app.terminals.onChange((terminals) => this.broadcast('terminals/changed', { terminals }));
+
+    this.app.terminals.onOutput((output) => {
+      for (const connection of this.connections) if (connection.terminals.has(output.id)) connection.peer.notify('terminals/output', output);
+    });
   }
 
   connect(transport: Transport) {
