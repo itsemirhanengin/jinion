@@ -11,6 +11,7 @@ export { Conversation, Turn } from './conversation.js';
 export type { ConversationProps } from './conversation.js';
 export { DiffCard } from './diff-card.js';
 export type { DiffCardProps, DiffLine, DiffLineKind } from './diff-card.js';
+export type { DiffComment } from './diff-comment.js';
 export { Notice } from './notice.js';
 export type { NoticeTone } from './notice.js';
 export { PermissionPanel } from './permission-panel.js';
