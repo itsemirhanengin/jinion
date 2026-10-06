@@ -22,6 +22,7 @@ describe('Jinion’s own tools', () => {
     await expect(pre(RUN_IN_TERMINAL, { command: 'git commit -m x' })).resolves.toMatchObject({
       hookSpecificOutput: { permissionDecision: 'ask', permissionDecisionReason: 'Jinion asks before every commit.' },
     });
+
     await expect(pre(RUN_IN_TERMINAL, { command: 'pnpm dev' })).resolves.toEqual({});
   });
 });
