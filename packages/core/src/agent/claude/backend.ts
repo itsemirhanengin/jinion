@@ -3,6 +3,7 @@ import type { ModelOption } from '../models.js';
 import type { DebugLog } from '../../lib/debug.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
+import type { Terminals } from '../../terminals/terminals.js';
 import type { AgentBackend, AgentCommand, AgentMode, SessionOptions } from '../agent.js';
 import type { AgentMcp } from '../mcp.js';
 import { ClaudeAccounts } from './agent-accounts.js';
@@ -18,6 +19,7 @@ export interface ClaudeBackendOptions {
   cwd: string;
   account?: string;
   memory?: MemoryStore;
+  terminals?: Terminals;
   mcp?: McpConfig;
   debug?: DebugLog;
   spawn?: typeof query;

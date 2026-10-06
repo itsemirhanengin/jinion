@@ -1,10 +1,9 @@
-import type { MemoryStore } from '../../memory/store.js';
 import { errorMessage } from '../../lib/errors.js';
-import type { RunContext } from '../agent.js';
+import type { AgentMode, RunContext } from '../agent.js';
 import type { PermissionDecision, PermissionRequest } from '../permissions.js';
 import type { Question, QuestionAnswer } from '../questions.js';
 import { elicit } from './elicitation.js';
-import { runMemoryTool } from './memory.js';
+import { type JinionTools, runJinionTool } from './jinion-tools.js';
 import type { ServerRequest, ServerRequests, UserInputRequest } from './protocol.js';
 import { unwrapShell } from './tool-calls.js';
 
@@ -15,7 +14,9 @@ export interface ApprovalContext {
   edits(item: string): { id: string; path: string }[];
   /** Tells the running turn why the user said no. */
   steer(note: string): void;
-  memory?: MemoryStore;
+  /** Auto runs a command in a terminal without asking, as Codex's reviewer would let a command run. */
+  mode(): AgentMode;
+  tools: JinionTools;
 }
 
 /** What Codex asks during a turn: approvals and questions go to the user, Jinion's own tools run here. */
@@ -66,10 +67,21 @@ export async function answer(request: ServerRequest, context: ApprovalContext): 
       return { answers: turn ? await ask(turn, request.params) : {} };
 
     case 'item/tool/call': {
-      const { tool, arguments: input } = request.params;
+      const { tool, arguments: input, callId } = request.params;
+
+      // Codex leaves Jinion's tools to Jinion, so a command started in a terminal is asked about here.
+      if (tool === 'run_in_terminal' && context.mode() !== 'auto') {
+        const { command } = (input ?? {}) as { command?: unknown };
+        const asked: PermissionRequest = { title: 'jinion wants to run a command in a terminal', command: String(command ?? '') };
+        const decision = await decide(turn, asked, callId, context);
+
+        if (decision !== 'accept' && decision !== 'acceptForSession') {
+          return { contentItems: [{ type: 'inputText', text: "The user said no. Don't try to get around it; ask what to do instead if it's still needed." }], success: false };
+        }
+      }
 
       try {
-        const text = context.memory && runMemoryTool(context.memory, tool, input);
+        const text = await runJinionTool(context.tools, tool, input);
         if (text === undefined) throw new Error(`Jinion has no tool called ${tool}.`);
 
         return { contentItems: [{ type: 'inputText', text }], success: true };

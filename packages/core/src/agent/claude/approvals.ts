@@ -3,7 +3,7 @@ import type { PermissionDecision } from '../permissions.js';
 import type { AgentMode, PlanDecision, RunContext } from '../agent.js';
 import { guardReason, readsRepositories } from './guard.js';
 import type { Input } from './input.js';
-import { isMemoryTool } from './memory.js';
+import { isJinionTool, RUN_IN_TERMINAL } from './jinion-tools.js';
 import { alwaysRules, formatRule, ProjectPermissions, toPermissionRequest } from './permissions.js';
 import { PERMISSION_MODES } from './policy.js';
 import { type ClaudeQuestion, toClaudeAnswers, toQuestions } from './questions.js';
@@ -40,13 +40,15 @@ export class ClaudeApprovals {
   readonly guard: HookCallback = async (input) => {
     if (input.hook_event_name !== 'PreToolUse') return {};
 
-    // Jinion's own memory tools run without asking, and an allow rule for them would print a warning over the UI.
-    if (isMemoryTool(input.tool_name)) {
-      return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion memory' } };
+    // Jinion's own tools that only read or keep notes run without asking; an allow rule for them would print a warning over the UI.
+    if (isJinionTool(input.tool_name) && input.tool_name !== RUN_IN_TERMINAL) {
+      return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'allow', permissionDecisionReason: 'Jinion' } };
     }
 
+    // A command started in a terminal is held to what a command in Bash is.
+    const tool = input.tool_name === RUN_IN_TERMINAL ? 'Bash' : input.tool_name;
     const asksBeforeCommits = this.options.turn()?.asksBeforeCommits() ?? true;
-    const reason = guardReason(input.tool_name, (input.tool_input ?? {}) as Input, this.options.cwd(), asksBeforeCommits);
+    const reason = guardReason(tool, (input.tool_input ?? {}) as Input, this.options.cwd(), asksBeforeCommits);
     if (!reason) return {};
 
     return { hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: 'ask', permissionDecisionReason: reason } };

@@ -18,6 +18,7 @@ import { McpConfig } from './mcp/config.js';
 import { MemoryStore } from './memory/store.js';
 import { loadProjectSettings } from './settings/project.js';
 import { loadSettings } from './settings/user.js';
+import { Terminals } from './terminals/terminals.js';
 
 export interface CoreFlags {
   cwd: string;
@@ -27,6 +28,8 @@ export interface CoreFlags {
   effort?: string;
   debug?: boolean;
   continue?: boolean;
+  /** The client shows the project's terminals, so the agent gets tools to run and read commands there. */
+  terminals?: boolean;
 }
 
 export type CoreOptions = Omit<JinionOptions, 'commands'>;
@@ -36,6 +39,7 @@ export function coreOptions(flags: CoreFlags) {
   const { cwd, version, demo } = flags;
   const { mode } = loadProjectSettings(cwd);
   const memory = new MemoryStore(cwd);
+  const terminals = flags.terminals ? new Terminals() : undefined;
   const debug = flags.debug ? new DebugLog() : undefined;
 
   const settings = loadSettings();
@@ -43,8 +47,8 @@ export function coreOptions(flags: CoreFlags) {
   const backends: AgentBackend[] = demo
     ? [new ScriptedBackend(scenarios, demoCommands)]
     : [
-        new ClaudeBackend({ cwd, account: settings.accounts?.Claude, memory, mcp: new McpConfig(cwd), debug, syncSkills }),
-        new CodexBackend({ cwd, version, memory, debug }),
+        new ClaudeBackend({ cwd, account: settings.accounts?.Claude, memory, terminals, mcp: new McpConfig(cwd), debug, syncSkills }),
+        new CodexBackend({ cwd, version, memory, terminals, debug }),
       ];
 
   const backend = backends.find(({ name }) => name === settings.agent) ?? backends[0]!;
@@ -65,6 +69,7 @@ export function coreOptions(flags: CoreFlags) {
     info: { version, cwd, examples: demo ? ['add rate limiting to the api', 'hello'] : [] },
     saved,
     memory,
+    terminals,
     initial: flags.continue ? saved.list()[0] : undefined,
     onExit: (message) => farewells.push(message),
   };

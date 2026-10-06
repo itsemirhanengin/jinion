@@ -5,6 +5,7 @@ import type { DebugLog } from '../../lib/debug.js';
 import { errorMessage } from '../../lib/errors.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
+import type { Terminals } from '../../terminals/terminals.js';
 import type { AgentMode, AgentPrompt, AgentSession, FileChanges, RewindScope, RunContext } from '../agent.js';
 import type { AgentEvent } from '../events.js';
 import { ClaudeApprovals } from './approvals.js';
@@ -21,6 +22,7 @@ export interface ClaudeHost {
     /** The project. */
     cwd: string;
     memory?: MemoryStore;
+    terminals?: Terminals;
     mcp?: McpConfig;
     debug?: DebugLog;
     spawn?: typeof query;
@@ -292,7 +294,7 @@ export class ClaudeSession implements AgentSession {
   }
 
   private start() {
-    const { memory, mcp, debug, spawn, cwd: project } = this.host.options;
+    const { memory, terminals, mcp, debug, spawn, cwd: project } = this.host.options;
     const { cwd, resume } = this;
 
     this.resume = undefined;
@@ -307,6 +309,7 @@ export class ClaudeSession implements AgentSession {
       account: this.host.account,
       resume,
       memory,
+      terminals,
       mcp,
       approvals: this.approvals,
     });

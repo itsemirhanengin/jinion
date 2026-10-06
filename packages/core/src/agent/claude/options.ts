@@ -2,11 +2,12 @@ import type { EffortLevel, Options } from '@anthropic-ai/claude-agent-sdk';
 import type { ModelSelection } from '../models.js';
 import type { McpConfig } from '../../mcp/config.js';
 import type { MemoryStore } from '../../memory/store.js';
+import type { Terminals } from '../../terminals/terminals.js';
 import type { AgentMode } from '../agent.js';
 import { accountEnv } from './accounts.js';
 import type { ClaudeApprovals } from './approvals.js';
 import { toClaudeServer } from './mcp.js';
-import { MEMORY_SERVER, memoryServer } from './memory.js';
+import { JINION_SERVER, jinionServer } from './jinion-tools.js';
 import { CLAUDE_CODE_SKILLS, claudePlugins, skillPlugins } from './plugins.js';
 import { ALLOWED, askRules, PERMISSION_MODES, TOOLS } from './policy.js';
 import type { ClaudeResume } from './process.js';
@@ -22,11 +23,12 @@ export interface ClaudeSetup {
   account: string;
   resume?: ClaudeResume;
   memory?: MemoryStore;
+  terminals?: Terminals;
   mcp?: McpConfig;
   approvals: ClaudeApprovals;
 }
 
-export function claudeOptions({ cwd, project, selection, mode, account, resume, memory, mcp, approvals }: ClaudeSetup): Options {
+export function claudeOptions({ cwd, project, selection, mode, account, resume, memory, terminals, mcp, approvals }: ClaudeSetup): Options {
   const servers = (mcp?.servers() ?? []).filter((server) => mcp!.isEnabled(server));
   const disabled = mcp?.disabled() ?? [];
   // Forced colors would put escape codes into command output the model reads.
@@ -40,13 +42,13 @@ export function claudeOptions({ cwd, project, selection, mode, account, resume, 
     resumeSessionAt: resume?.at,
     enableFileCheckpointing: true,
     // Not snapshotted, so a resumed conversation sees the notes saved since it began.
-    systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, memory), snapshot: false },
+    systemPrompt: { type: 'custom', prompt: systemPrompt(cwd, memory, terminals !== undefined), snapshot: false },
     // Claude Code's own settings, CLAUDE.md files and memory stay out. Jinion passes the MCP servers configured in files
     // itself; Claude Code adds the account's claude.ai connectors and the plugins' servers.
     settingSources: [],
     mcpServers: {
       ...Object.fromEntries(servers.map((server) => [server.name, toClaudeServer(server.transport)])),
-      ...(memory && { [MEMORY_SERVER]: memoryServer(memory) }),
+      ...((memory || terminals) && { [JINION_SERVER]: jinionServer({ memory, terminals, cwd }) }),
     },
     // Turns off, by name, the servers Claude Code finds itself. Only an admin's policy could turn them back on.
     managedSettings: disabled.length > 0 ? { deniedMcpServers: disabled.map((serverName) => ({ serverName })) } : undefined,

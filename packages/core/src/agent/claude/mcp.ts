@@ -1,7 +1,7 @@
 import type { McpServerConfig, McpServerStatus, query } from '@anthropic-ai/claude-agent-sdk';
 import type { McpConfig, McpSource, McpTransport } from '../../mcp/config.js';
 import type { AgentMcp, McpServerInfo } from '../mcp.js';
-import { MEMORY_SERVER } from './memory.js';
+import { JINION_SERVER } from './jinion-tools.js';
 
 const SOURCES: Record<McpSource, string> = { jinion: 'jinion', claude: 'claude code', project: 'project' };
 
@@ -44,7 +44,7 @@ export function serverInfos(statuses: McpServerStatus[], config: McpConfig): Mcp
   const infos = new Map<string, McpServerInfo>();
 
   for (const status of statuses) {
-    if (status.name === MEMORY_SERVER) continue;
+    if (status.name === JINION_SERVER) continue;
 
     const server = configured.get(status.name);
     const on = enabled(status.name) && status.status !== 'disabled';

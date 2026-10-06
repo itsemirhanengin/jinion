@@ -5,6 +5,7 @@ import { readJson, updateJson } from '../../lib/json-file.js';
 import { projectDir } from '../../lib/paths.js';
 import { GUARD_REASONS } from './guard.js';
 import type { Input } from './input.js';
+import { RUN_IN_TERMINAL } from './jinion-tools.js';
 import { within } from './paths.js';
 import { toolTitle } from './tool-names.js';
 
@@ -28,7 +29,7 @@ export function toPermissionRequest(
   always: PermissionRuleValue[],
   cwd: string,
 ): PermissionRequest {
-  const command = name === 'Bash' && typeof input.command === 'string' ? input.command : undefined;
+  const command = (name === 'Bash' || name === RUN_IN_TERMINAL) && typeof input.command === 'string' ? input.command : undefined;
   const target = [input.file_path, input.url, input.path].find((value) => typeof value === 'string') as string | undefined;
 
   const description = [
@@ -65,6 +66,7 @@ function blockedPathLabel(path: string, cwd: string) {
 
 function defaultTitle(name: string) {
   if (name === 'Bash') return 'jinion wants to run a command';
+  if (name === RUN_IN_TERMINAL) return 'jinion wants to run a command in a terminal';
   if (name === 'Edit' || name === 'Write') return 'jinion wants to change a file';
 
   return `jinion wants to use ${toolTitle(name)}`;
