@@ -27,3 +27,5 @@ export { Empty, List, Page } from './primitives/page.js';
 export { SharedTooltip, Tooltip, TooltipGroup, TooltipTrigger, tooltipHandle } from './primitives/tooltip.js';
 export type { TooltipHandle, TooltipProps } from './primitives/tooltip.js';
 export type { PageProps } from './primitives/page.js';
+export { MarkdownEditor } from './editor/markdown-editor.js';
+export type { MarkdownEditorProps } from './editor/markdown-editor.js';

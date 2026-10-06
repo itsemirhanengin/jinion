@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 import Markdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CopyButton } from '../primitives/copy-button.js';
+import { Diagram } from './diagram.js';
 
 const plugins = [remarkGfm];
 
@@ -44,14 +45,22 @@ export function Prose({ text, onCode }: ProseProps) {
   );
 }
 
-/** A code block, with a button that copies it. */
+/** A code block, with a button that copies it; a Mermaid one drawn as its diagram. */
 function Block({ node: _, children, ...props }: ComponentProps<'pre'> & { node?: unknown }) {
-  return (
+  const code = (
     <div className="group relative">
       <pre {...props}>{children}</pre>
       <CopyButton text={textOf(children)} className="absolute top-1.5 right-1.5 bg-raised opacity-0 group-hover:opacity-100 focus-visible:opacity-100" />
     </div>
   );
+
+  return languageOf(children) === 'mermaid' ? <Diagram text={textOf(children)} fallback={code} /> : code;
+}
+
+function languageOf(node: ReactNode) {
+  const className = node && typeof node === 'object' && 'props' in node ? (node.props as { className?: string }).className : undefined;
+
+  return className?.match(/language-(\S+)/)?.[1];
 }
 
 function textOf(node: ReactNode): string {

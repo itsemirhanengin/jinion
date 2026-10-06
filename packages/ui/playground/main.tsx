@@ -6,9 +6,11 @@ import { ChatPieces } from './pages/chat-pieces.js';
 import { Leaf } from './pages/leaf.js';
 import { Menus } from './pages/menus.js';
 import { Primitives } from './pages/primitives.js';
+import { Plan } from './pages/plan.js';
 import { Terminal } from './pages/terminal.js';
 
 const pages = [
+  { id: 'plan', title: 'Plan', Page: Plan },
   { id: 'terminal', title: 'Terminal', Page: Terminal },
   { id: 'leaf', title: 'Leaf', Page: Leaf },
   { id: 'menus', title: 'Menus', Page: Menus },
