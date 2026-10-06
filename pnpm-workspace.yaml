@@ -5,6 +5,7 @@ allowBuilds:
   electron: true
   electron-winstaller: false
   esbuild: true
+  node-pty: true
 minimumReleaseAgeExclude:
   - '@turbo/darwin-64@2.11.6'
   - '@turbo/darwin-arm64@2.11.6'

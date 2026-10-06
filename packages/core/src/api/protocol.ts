@@ -12,6 +12,7 @@ import { SentAction } from '../conversation/reducer.js';
 import { GitStatus, RepoChanges } from '../git/types.js';
 import { MemoryScope } from '../memory/types.js';
 import { Submission } from '../prompt/submission.js';
+import { TerminalInfo, TerminalOutput } from '../terminals/types.js';
 import {
   AppFieldChange,
   Initialized,
@@ -26,6 +27,7 @@ import {
 export type { AgentInfo, SessionFeatures } from '../agent/agent.js';
 export type { AppInfo, PromptFill, RewindPoint, View } from '../controllers/context.js';
 export type { FileChange, GitStatus, RepoChanges } from '../git/types.js';
+export type { TerminalInfo, TerminalOutput } from '../terminals/types.js';
 export type * from './schemas.js';
 
 /**
@@ -45,6 +47,7 @@ export const ApiCode = {
   unknownFile: -32006,
   /** Another Jinion has the conversation open; `data.pid` is that process. */
   openElsewhere: -32007,
+  unknownTerminal: -32008,
 } as const;
 
 const empty = z.object({});
@@ -57,6 +60,11 @@ const name = z.object({ name: z.string() });
 const account = name.extend({ agent: z.string().optional() });
 
 const session = z.object({ session: z.string() });
+
+const terminal = z.object({ terminal: z.string() });
+
+/** Columns or rows of a terminal. */
+const size = z.number().int().min(2).max(1000).optional();
 
 /** Every method the server answers: what a client sends, checked where it comes in, and what it gets back. */
 export const requests = {
@@ -143,6 +151,19 @@ export const requests = {
   /** A file in the folder the session works in, by its path there, as `files/list` names it; any other is refused. */
   'files/read': { params: session.extend({ path: z.string() }), result: z.string() },
 
+  // The project's terminals, which outlive sessions; their output comes as `terminals/output` to the clients attached.
+  'terminals/list': { params: empty, result: z.array(TerminalInfo) },
+  /** A shell in the folder `session` works in, its worktree or the project, or in the project without one. */
+  'terminals/open': { params: z.object({ session: z.string().optional(), cols: size, rows: size }), result: TerminalInfo },
+  /** The screen as escape codes that draw it, and the `seq` of the last output in it; what comes after is sent from now on. */
+  'terminals/attach': { params: terminal, result: z.object({ screen: z.string(), seq: z.number() }) },
+  'terminals/detach': { params: terminal, result: done },
+  /** What the user types, as the terminal takes it. */
+  'terminals/write': { params: terminal.extend({ data: z.string() }), result: done },
+  'terminals/resize': { params: terminal.extend({ cols: size.unwrap(), rows: size.unwrap() }), result: done },
+  /** Ends what runs in it, and takes it out of the list. */
+  'terminals/close': { params: terminal, result: done },
+
   // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on; an account call
   // with `agent` is about that backend instead.
   'accounts/list': { params: z.object({ agent: z.string().optional() }), result: z.array(AgentAccount) },
@@ -187,6 +208,9 @@ export const notificationsToClient = {
   /** `problem` says why it asks again, e.g. a code that didn't work. */
   'accounts/sign-in-prompt': account.extend({ prompt: z.string(), problem: z.string().optional() }),
   'usage/history-progress': z.object({ done: z.number(), total: z.number() }),
+  /** Every terminal, whenever one opens, ends or closes; one the agent started is new in it. */
+  'terminals/changed': z.object({ terminals: z.array(TerminalInfo) }),
+  'terminals/output': TerminalOutput,
 };
 
 /** The params of everything a client sends, as the server's peer checks them. */
