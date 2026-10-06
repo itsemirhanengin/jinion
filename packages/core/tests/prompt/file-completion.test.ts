@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fileCompletion } from '../../src/prompt/files.js';
+import { fileCompletion } from '../../src/prompt/file-completion.js';
 
 const FILES = ['apps/', 'apps/cli/', 'README.md', 'apps/cli/src/app.tsx', 'apps/cli/src/main.tsx', 'docs/release notes.md'];
 

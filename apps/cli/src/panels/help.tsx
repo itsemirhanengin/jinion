@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Box, ListRow, Panel, Prose, SelectList, Tabs, Text, useInput, useListNavigation, usePanel, useTabs, useTheme, type KeyHint } from '@jinion/tui';
 import { useAtomValue, useSetAtom } from 'jotai';
 import type { AgentCommand } from '@jinion/core/agent/agent';
-import { requiresArgument } from '@jinion/core/commands/registry';
+import { requiresArgument } from '@jinion/core/prompt/command-completion';
 import { skillGroup, sortSkills } from '@jinion/core/prompt/skills';
 import { useApi } from '../app/api.js';
 import { SHORTCUTS } from '../app/shortcuts.js';

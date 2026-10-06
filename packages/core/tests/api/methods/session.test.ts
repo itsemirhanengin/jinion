@@ -121,6 +121,40 @@ describe('session methods', () => {
     await vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
   });
 
+  it('takes a queued message back as it was sent, and nothing once it went', async () => {
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+
+    const waiting: Scenario = {
+      title: 'Wait',
+      async *play(script) {
+        await gate;
+        yield* script.say('done');
+      },
+    };
+
+    const { server, connect } = serve(box.project, { backends: [new ScriptedBackend([waiting], [], 0)] });
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms } = server.app.session;
+    const image = { mediaType: 'image/png', data: 'aGk=' };
+
+    await client.request('session/submit', { session, text: 'go' });
+    await client.request('session/queue', { session, text: 'first' });
+    await client.request('session/queue', { session, text: 'look [Image #1]', prompt: { text: 'look [Image #1]', images: [image] } });
+
+    await expect(client.request('session/unqueue', { session, text: 'look [Image #1]' })).resolves.toEqual({
+      text: 'look [Image #1]',
+      prompt: { text: 'look [Image #1]', images: [image] },
+    });
+
+    expect(store.get(atoms.queue)).toEqual([{ text: 'first' }]);
+
+    release();
+    await vi.waitFor(() => expect(store.get(atoms.queue)).toEqual([]));
+    await expect(client.request('session/unqueue', { session, text: 'first' })).resolves.toBeNull();
+  });
+
   it('opens the rewind on the client that asked, or says there is nothing to go back to', async () => {
     const { server, connect } = serve(box.project);
     const { client, screen, session } = await connect();

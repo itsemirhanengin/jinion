@@ -60,6 +60,18 @@ export class TurnController {
     this.context.store.set(this.context.atoms.queue, (queue) => [...queue, submission]);
   }
 
+  /** Nothing when the turn ended and sent it meanwhile. */
+  unqueue(text: string) {
+    const { store, atoms } = this.context;
+    const queue = store.get(atoms.queue);
+    const index = queue.findIndex((queued) => queued.text === text);
+    if (index === -1) return null;
+
+    store.set(atoms.queue, queue.toSpliced(index, 1));
+
+    return queue[index]!;
+  }
+
   interrupt() {
     this.context.store.get(this.context.atoms.turnAbort)?.abort();
   }

@@ -20,6 +20,7 @@ export const sessionMethods: Methods = (connection) => {
 
   connection.answer('session/submit', ({ session, ...submission }) => typedIn(session).input.submit(submission));
   connection.answer('session/queue', ({ session, ...submission }) => typedIn(session).input.queue(submission));
+  connection.answer('session/unqueue', ({ session, text }) => connection.find(session).turns.unqueue(text));
   connection.answer('session/interrupt', ({ session }) => connection.find(session).turns.interrupt());
   connection.answer('session/notice', ({ session, text, tone }) => connection.find(session).notice(text, tone));
   connection.answer('session/model', ({ session, selection, agent }) => connection.find(session).models.select(selection, agent));
