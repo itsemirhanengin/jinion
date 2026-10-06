@@ -991,7 +991,11 @@
           "properties": {
             "params": {
               "type": "object",
-              "properties": {}
+              "properties": {
+                "agent": {
+                  "type": "string"
+                }
+              }
             },
             "result": {
               "type": "array",
@@ -1012,6 +1016,9 @@
               "type": "object",
               "properties": {
                 "name": {
+                  "type": "string"
+                },
+                "agent": {
                   "type": "string"
                 }
               },
@@ -1036,6 +1043,9 @@
               "properties": {
                 "name": {
                   "type": "string"
+                },
+                "agent": {
+                  "type": "string"
                 }
               },
               "required": [
@@ -1058,6 +1068,9 @@
               "type": "object",
               "properties": {
                 "name": {
+                  "type": "string"
+                },
+                "agent": {
                   "type": "string"
                 }
               },
@@ -1091,6 +1104,9 @@
                 "name": {
                   "type": "string"
                 },
+                "agent": {
+                  "type": "string"
+                },
                 "text": {
                   "type": "string"
                 }
@@ -1116,6 +1132,9 @@
               "type": "object",
               "properties": {
                 "name": {
+                  "type": "string"
+                },
+                "agent": {
                   "type": "string"
                 }
               },
@@ -1258,6 +1277,33 @@
             "params",
             "result"
           ]
+        },
+        "profile/read": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "usage": {
+                  "$ref": "#/$defs/UsageProfile"
+                }
+              },
+              "required": [
+                "usage"
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
         }
       },
       "required": [
@@ -1305,7 +1351,8 @@
         "memory/list",
         "memory/forget",
         "usage/limits",
-        "usage/history"
+        "usage/history",
+        "profile/read"
       ]
     },
     "notificationsToClient": {
@@ -1404,6 +1451,9 @@
             "name": {
               "type": "string"
             },
+            "agent": {
+              "type": "string"
+            },
             "url": {
               "type": "string"
             }
@@ -1417,6 +1467,9 @@
           "type": "object",
           "properties": {
             "name": {
+              "type": "string"
+            },
+            "agent": {
               "type": "string"
             },
             "prompt": {
@@ -4005,6 +4058,117 @@
         "output",
         "cacheRead",
         "cacheWrite"
+      ]
+    },
+    "UsageProfile": {
+      "type": "object",
+      "properties": {
+        "days": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": {
+                "type": "string"
+              },
+              "tokens": {
+                "type": "number"
+              },
+              "messages": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "date",
+              "tokens",
+              "messages"
+            ]
+          }
+        },
+        "tokens": {
+          "type": "number"
+        },
+        "peak": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "tokens": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "date",
+            "tokens"
+          ]
+        },
+        "currentStreak": {
+          "type": "number"
+        },
+        "longestStreak": {
+          "type": "number"
+        },
+        "sessions": {
+          "type": "number"
+        },
+        "messages": {
+          "type": "number"
+        },
+        "toolCalls": {
+          "type": "number"
+        },
+        "activeDays": {
+          "type": "number"
+        },
+        "mostActive": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string"
+            },
+            "messages": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "date",
+            "messages"
+          ]
+        },
+        "models": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "tokens": {
+                "type": "number"
+              },
+              "share": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "tokens",
+              "share"
+            ]
+          }
+        }
+      },
+      "required": [
+        "days",
+        "tokens",
+        "currentStreak",
+        "longestStreak",
+        "sessions",
+        "messages",
+        "toolCalls",
+        "activeDays",
+        "models"
       ]
     },
     "Sessions": {

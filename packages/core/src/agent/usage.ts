@@ -85,6 +85,25 @@ export const UsageHistory = z.object({
 
 export type UsageHistory = z.infer<typeof UsageHistory>;
 
+/** Every backend's history together, as a profile shows it: the totals, each day's tokens and the models used. */
+export const UsageProfile = z.object({
+  days: z.array(z.object({ date: z.string(), tokens: z.number(), messages: z.number() })),
+  tokens: z.number(),
+  /** The day with the most tokens. */
+  peak: z.object({ date: z.string(), tokens: z.number() }).optional(),
+  currentStreak: z.number(),
+  longestStreak: z.number(),
+  sessions: z.number(),
+  messages: z.number(),
+  toolCalls: z.number(),
+  activeDays: z.number(),
+  /** The day with the most messages. */
+  mostActive: z.object({ date: z.string(), messages: z.number() }).optional(),
+  models: z.array(z.object({ name: z.string(), tokens: z.number(), share: z.number() })),
+});
+
+export type UsageProfile = z.infer<typeof UsageProfile>;
+
 export const SeenLimit = z.object({ windows: z.array(LimitWindow), at: z.number() });
 
 export type SeenLimit = z.infer<typeof SeenLimit>;

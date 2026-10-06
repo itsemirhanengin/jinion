@@ -1,3 +1,5 @@
+import { gitUserName } from '../../git/user.js';
+import { mergeHistories, usageProfile } from '../../usage/profile.js';
 import type { Methods } from '../connection.js';
 import { appFields, readFields } from '../fields.js';
 import { ApiCode, PROTOCOL_VERSION } from '../protocol.js';
@@ -60,6 +62,16 @@ export const appMethods: Methods = (connection) => {
     const { backend } = app;
 
     return supported(backend.usage?.bind(backend), backend.name, 'report its usage')({ drivers });
+  });
+
+  // A backend whose history can't be read leaves it out rather than failing the whole profile.
+  connection.answer('profile/read', async () => {
+    const [name, ...histories] = await Promise.all([
+      gitUserName(app.info.cwd),
+      ...app.backends.map((backend) => backend.history?.().catch(() => undefined)),
+    ]);
+
+    return { name, usage: usageProfile(mergeHistories(histories.filter((history) => history !== undefined))) };
   });
 
   connection.answer('usage/history', () => {

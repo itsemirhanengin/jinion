@@ -8,52 +8,61 @@ interface Signing {
 }
 
 /**
- * The accounts of the backend the user looks at. Signing in is a flow: its link and what to type go to the client that
- * started it.
+ * The accounts of the backend the user looks at, or of the one a call names. Signing in is a flow: its link and what to
+ * type go to the client that started it.
  */
 export const accountMethods: Methods = (connection) => {
   const { app } = connection;
+  // By backend and name, since two backends can each have an account of the same name.
   const signing = new Map<string, Signing>();
+
+  const backendOf = (agent?: string) => (agent ? app.named(agent) : app.backend);
+  const keyOf = (name: string, agent?: string) => `${backendOf(agent).name}/${name}`;
 
   connection.peer.onClose(() => {
     for (const { abort } of signing.values()) abort.abort();
   });
 
-  connection.answer('accounts/list', () => {
-    const { backend } = app;
+  connection.answer('accounts/list', ({ agent }) => {
+    const backend = backendOf(agent);
 
     return supported(backend.accounts, backend.name, 'switch accounts').list();
   });
 
-  connection.answer('accounts/select', ({ name }) => app.accounts.select(name));
-  connection.answer('accounts/remove', ({ name }) => app.accounts.remove(name));
+  connection.answer('accounts/select', ({ name, agent }) => app.accounts.select(name, backendOf(agent)));
+  connection.answer('accounts/remove', ({ name, agent }) => app.accounts.remove(name, backendOf(agent)));
 
-  connection.answer('accounts/sign-in', async ({ name }) => {
-    const { backend } = app;
+  connection.answer('accounts/sign-in', async ({ name, agent }) => {
+    const backend = backendOf(agent);
+    const key = keyOf(name, agent);
 
     supported(backend.accounts, backend.name, 'sign in');
-    signing.get(name)?.abort.abort();
+    signing.get(key)?.abort.abort();
 
     const flow: Signing = { abort: new AbortController() };
 
-    signing.set(name, flow);
+    signing.set(key, flow);
 
     try {
-      const signedIn = await app.accounts.signIn(name, {
-        signal: flow.abort.signal,
-        onLink: (url) => connection.peer.notify('accounts/sign-in-link', { name, url }),
-        onPrompt: (prompt, answer, problem) => {
-          flow.answer = answer;
-          connection.peer.notify('accounts/sign-in-prompt', { name, prompt, problem });
+      const signedIn = await app.accounts.signIn(
+        name,
+        {
+          signal: flow.abort.signal,
+          onLink: (url) => connection.peer.notify('accounts/sign-in-link', { name, agent, url }),
+          onPrompt: (prompt, answer, problem) => {
+            flow.answer = answer;
+            connection.peer.notify('accounts/sign-in-prompt', { name, agent, prompt, problem });
+          },
         },
-      });
+        backend,
+      );
 
       return { signedIn };
     } finally {
-      if (signing.get(name) === flow) signing.delete(name);
+      if (signing.get(key) === flow) signing.delete(key);
     }
   });
 
-  connection.answer('accounts/sign-in-answer', ({ name, text }) => signing.get(name)?.answer?.(text));
-  connection.answer('accounts/sign-in-cancel', ({ name }) => signing.get(name)?.abort.abort());
+  connection.answer('accounts/sign-in-answer', ({ name, agent, text }) => signing.get(keyOf(name, agent))?.answer?.(text));
+  connection.answer('accounts/sign-in-cancel', ({ name, agent }) => signing.get(keyOf(name, agent))?.abort.abort());
 };
