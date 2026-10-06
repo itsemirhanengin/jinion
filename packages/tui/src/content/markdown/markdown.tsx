@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { Fragment, useMemo } from 'react';
 import { Box, Text } from 'ink';
 import { lexer, type Token, type Tokens } from 'marked';
 import { useTheme } from '../../runtime/theme.js';
@@ -7,6 +7,7 @@ import { Frame } from '../../primitives/frame.js';
 import { Prose } from '../../primitives/prose.js';
 import { Rule } from '../../primitives/rule.js';
 import { printable } from '../../utils/printable.js';
+import { useSyntax } from '../syntax.js';
 import { decode, Inline } from './inline.js';
 import { LEFT_PIPE, Table } from './table.js';
 
@@ -66,7 +67,7 @@ function Block({ token }: { token: Token }) {
 
       return (
         <Frame title={lang ? <Text color={theme.muted}>{lang}</Text> : undefined}>
-          <Text>{text}</Text>
+          <Code text={text} language={lang} />
         </Frame>
       );
     }
@@ -102,6 +103,27 @@ function Block({ token }: { token: Token }) {
     default:
       return <Text>{token.raw.trimEnd()}</Text>;
   }
+}
+
+function Code({ text, language }: { text: string; language?: string }) {
+  const lines = useSyntax(text, language);
+
+  if (!lines) return <Text>{text}</Text>;
+
+  return (
+    <Text>
+      {lines.map((line, row) => (
+        <Fragment key={row}>
+          {row > 0 && '\n'}
+          {line.map((token, index) => (
+            <Text key={index} color={token.color}>
+              {token.text}
+            </Text>
+          ))}
+        </Fragment>
+      ))}
+    </Text>
+  );
 }
 
 function List({ token }: { token: Tokens.List }) {
