@@ -6,7 +6,7 @@ import { Plug, Shapes } from 'lucide-react';
 import { draftsAtom } from '../state/app.js';
 import { useActiveSession, useCore } from '../state/session.js';
 
-/** The skills and MCP prompts the agent has, each sent as a slash command; picking one starts a message with it. */
+/** The skills and MCP prompts the agent has, each named after `$` anywhere in a message; picking one starts a message with it. */
 export function Skills() {
   const core = useCore();
   const session = useActiveSession();
@@ -21,12 +21,12 @@ export function Skills() {
   const use = async (skill: AgentCommand) => {
     const id = session?.id ?? (await core.open());
 
-    setDrafts((drafts) => ({ ...drafts, [id]: `/${skill.name} ` }));
+    setDrafts((drafts) => ({ ...drafts, [id]: `$${skill.name} ` }));
     workbench.open({ kind: 'thread', id });
   };
 
   return (
-    <Page title="Skills" description="What the agent can do on a slash command: the project's skills, yours, and prompts from MCP servers. Pick one to start a message with it.">
+    <Page title="Skills" description="What the agent can do when a message names it after $: the project's skills, yours, and prompts from MCP servers. Pick one to start a message with it.">
       {skills.length === 0 && <Empty>The agent lists its skills once a conversation has started. Send a first message, then come back.</Empty>}
       {[...groups].map(([group, list]) => (
         <section key={group} className="flex flex-col gap-2">
@@ -37,7 +37,7 @@ export function Skills() {
                 {skill.source === 'mcp' ? <Plug className="size-4 shrink-0 text-faint" /> : <Shapes className="size-4 shrink-0 text-faint" />}
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="font-mono text-mono">
-                    /{skill.name}
+                    ${skill.name}
                     {skill.argumentHint && <span className="text-faint"> {skill.argumentHint}</span>}
                   </span>
                   <span className="truncate text-muted">{skill.description}</span>

@@ -14,6 +14,10 @@ follow();
 dark.addEventListener('change', follow);
 followScrollbars();
 
+// A file dropped beside the composer would open in the window in its place: the packaged page and the file are both
+// file:// URLs, which the main process's guard against leaving the app lets through.
+for (const type of ['dragover', 'drop']) addEventListener(type, (event) => event.preventDefault());
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={appStore}>
