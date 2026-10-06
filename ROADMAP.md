@@ -189,8 +189,11 @@ Steps, design first, as the TUI was built:
      files and threads by name; the open project tabs and each project's panels and pages kept across launches.
 5. **The code.** An editor (Monaco) for the files the agent touches, terminals in the bottom panel, the dev server's
    preview as a tab where clicking an element hands it to the composer, LSP after.
-   Terminals run in the core (node-pty, on a stream of their own), not in the window, so the agent can read their
-   output: a bug reported, it adds a log, runs the app, reads what the log printed and fixes the bug, as a person would.
+   Terminals (done, 0.0.9) run in the core (`terminals/`: node-pty, with a copy of each screen in `@xterm/headless`),
+   not in the window, and belong to the project, so every thread shares them. The agent reads them (`terminals`,
+   `read_terminal`) and starts what keeps running in one (`run_in_terminal`, asked about as a command in Bash is); the
+   CLI shows no terminals, so its agent doesn't get these tools. Left: the agent typing in a terminal of the user's,
+   terminals that outlive the app, and choosing the terminal's font.
 6. **Shipping.** Started: `pnpm --filter @jinion/desktop package` builds an unsigned `.dmg` for Apple silicon, which
    0.0.1 ships with (`pnpm deploy` copies what the app needs out of the workspace, `electron-builder` packs it without
    asar, since `claude` and `codex` are spawned from disk; the app reads the login shell's `PATH`, which one opened
@@ -199,8 +202,8 @@ Steps, design first, as the TUI was built:
    versions locked: `deploy` resolves the Agent SDK's range afresh rather than from the lockfile.
 
 The order agreed for the releases after 0.0.6, one 0.0.x each, with no hurry to 0.1.0: the composer (0.0.7), comments
-on a diff sent to the agent as one message, the terminal, parallel threads in worktrees with a pull request flow, and
-the dev server's preview with picking an element. The plan editor fits in between:
+on a diff sent to the agent as one message (0.0.8), the terminal (0.0.9), parallel threads in worktrees with a pull
+request flow, and the dev server's preview with picking an element. The plan editor fits in between:
 
 - **Plans of their own.** The right panel gets Plan beside Changes and Tasks, filtered by turn as Changes is, so earlier
   turns' plans stay at hand. A plan opens as a tab with Approve and Reject in it and an editor to change it before
