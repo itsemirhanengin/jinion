@@ -1,5 +1,17 @@
 # @jinion/desktop
 
+## 0.0.9
+
+Terminals in the bottom panel, shared by every thread of the project.
+
+- Terminal in the right panel opens one at once; + adds another, and ⌘\ splits the one you type in into panes side by
+  side. The list beside them shows every terminal, a split's panes together.
+- Terminals belong to the project, so a new thread or another one finds them as they were.
+- The agent reads your terminals, and starts what keeps running, such as a dev server, in one of its own: the panel
+  opens on it, with whether it runs or how it ended. It is asked about as any command is.
+- Prompts with powerline arrows and icons show as in other terminals, and stay readable on the light theme.
+- Tasks shows only when a thread has some.
+
 ## 0.0.8
 
 Comments on a diff, sent to the agent as one message.

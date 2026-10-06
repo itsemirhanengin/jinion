@@ -1,5 +1,12 @@
 # @jinion/cli
 
+## 0.0.8
+
+### Patch Changes
+
+- Updated dependencies [417f83d]
+  - @jinion/core@0.0.7
+
 ## 0.0.7
 
 ### Patch Changes
