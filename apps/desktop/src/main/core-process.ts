@@ -4,7 +4,7 @@ import type { MessagePortMain } from 'electron';
 
 // A utility process of its own per folder, so a busy core never stalls the window or another project's core.
 const { cwd, version, demo } = JSON.parse(process.env.JINION_CORE ?? '{}') as { cwd: string; version: string; demo: boolean };
-const { options } = coreOptions({ cwd, version, demo });
+const { options } = coreOptions({ cwd, version, demo, terminals: true });
 const core = startCore(options);
 
 core.server.app.start();

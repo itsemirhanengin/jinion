@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -30,6 +30,17 @@ const before = readFileSync(state);
 
 run('pnpm', ['--filter', '@jinion/desktop', 'deploy', '--prod', '--legacy', '--config.node-linker=hoisted', app]);
 writeFileSync(state, before);
+
+// node-pty 1.1.0 ships its spawn helper without the execute bit, so no terminal could start; the app is never changed
+// at run time, so it gets the bit here.
+const prebuilds = join(app, 'node_modules/node-pty/prebuilds');
+
+for (const platform of readdirSync(prebuilds)) {
+  const helper = join(prebuilds, platform, 'spawn-helper');
+
+  if (existsSync(helper)) chmodSync(helper, 0o755);
+}
+
 run('electron-builder', ['--mac', '--projectDir', app, '--config', config, `-c.electronVersion=${electron}`, `-c.directories.output=${out}`, `-c.mac.icon=${icon}`]);
 
 const { version } = JSON.parse(readFileSync(`${app}/package.json`, 'utf8')) as { version: string };

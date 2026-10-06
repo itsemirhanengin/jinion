@@ -1,0 +1,21 @@
+/*
+ * xterm draws a scrollbar of its own, VS Code's, sized from script. Its thumb stays clear (the theme gives it no color)
+ * and the window's own thumb is drawn inside it: four pixels wide, rounded, three pixels in from the edge, as theme.css
+ * draws every other scrollbar.
+ */
+.xterm .xterm-scrollable-element > .scrollbar > .slider::after {
+  content: "";
+  position: absolute;
+  inset: 3px 3px 3px auto;
+  width: 4px;
+  border-radius: 999px;
+  background-color: color-mix(in srgb, var(--ink) 18%, transparent);
+}
+
+.xterm .xterm-scrollable-element > .scrollbar > .slider:hover::after {
+  background-color: color-mix(in srgb, var(--ink) 30%, transparent);
+}
+
+.xterm .xterm-scrollable-element > .scrollbar > .slider.active::after {
+  background-color: color-mix(in srgb, var(--ink) 40%, transparent);
+}
