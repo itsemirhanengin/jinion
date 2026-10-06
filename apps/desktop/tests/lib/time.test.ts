@@ -14,4 +14,5 @@ test('says how long ago as short as the sidebar wants it', () => {
 test('says how long something took', () => {
   expect(took(400)).toBe('1s');
   expect(took(72_000)).toBe('1m 12s');
+  expect(took(2 * 3_600_000 + 5 * 60_000)).toBe('2h 5m');
 });
