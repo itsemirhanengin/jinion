@@ -55,10 +55,10 @@ function ChangesTab({ id }: { id: string }) {
               { choices: [{ value: ALL, label: 'The whole thread' }] },
               {
                 label: 'One turn',
-                choices: turns.map((each, index) => ({ value: each.id, label: each.prompt, hint: index === 0 ? 'Last' : undefined })),
+                choices: turns.map((each, index) => ({ value: each.id, label: firstLine(each.prompt), hint: index === 0 ? 'Last' : undefined })),
               },
             ]}
-            trigger={<Pill className="max-w-80">{picked ? picked.prompt : 'The whole thread'}</Pill>}
+            trigger={<Pill className="max-w-80">{picked ? firstLine(picked.prompt) : 'The whole thread'}</Pill>}
           />
         </div>
         {files.map((file) => (
@@ -69,6 +69,11 @@ function ChangesTab({ id }: { id: string }) {
       </div>
     </div>
   );
+}
+
+/** A turn by its message's first line that has words, as a long message would make a long line of all of them. */
+function firstLine(prompt: string) {
+  return prompt.split('\n').find((line) => line.trim() !== '')?.trim() ?? prompt;
 }
 
 function Note({ children }: { children: string }) {

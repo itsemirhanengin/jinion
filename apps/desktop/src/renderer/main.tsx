@@ -1,4 +1,5 @@
 import './app/app.css';
+import { followScrollbars } from '@jinion/ui';
 import { Provider } from 'jotai';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -11,6 +12,7 @@ const follow = () => document.documentElement.classList.toggle('dark', dark.matc
 
 follow();
 dark.addEventListener('change', follow);
+followScrollbars();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
