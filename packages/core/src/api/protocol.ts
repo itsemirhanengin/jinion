@@ -93,6 +93,11 @@ export const requests = {
   'session/submit': { params: session.extend(Submission.shape), result: done },
   /** Sent once the running turn ends, or at once when none runs. */
   'session/queue': { params: session.extend(Submission.shape), result: done },
+  /**
+   * Takes a queued message back as it was sent, the first with this text, so the queue moving on can't hand back
+   * another; null when it was sent meanwhile.
+   */
+  'session/unqueue': { params: session.extend({ text: z.string() }), result: Submission.nullable() },
   'session/interrupt': { params: session, result: done },
   /** A line in the conversation from the client, e.g. that a paste couldn't be read. */
   'session/notice': { params: session.extend({ text: z.string(), tone: NoticeTone.optional() }), result: done },

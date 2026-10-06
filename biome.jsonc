@@ -124,6 +124,12 @@
                       "@jinion/core/memory/**",
                       "@jinion/core/mcp/**",
                       "@jinion/core/prompt/**",
+                      // The completion sources are pure, so the composer completes as the TUI's does.
+                      "!@jinion/core/prompt/completion",
+                      "!@jinion/core/prompt/command-completion",
+                      "!@jinion/core/prompt/file-completion",
+                      "!@jinion/core/prompt/skills",
+                      "!@jinion/core/prompt/mentions",
                       "@jinion/core/usage/**",
                       "@jinion/core/lib/**",
                       "@jinion/core/agent/claude/**",

@@ -310,6 +310,40 @@
             "result"
           ]
         },
+        "session/unqueue": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session",
+                "text"
+              ]
+            },
+            "result": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/Submission"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
         "session/interrupt": {
           "type": "object",
           "properties": {
@@ -1318,6 +1352,7 @@
         "session/unsubscribe",
         "session/submit",
         "session/queue",
+        "session/unqueue",
         "session/interrupt",
         "session/notice",
         "session/model",
