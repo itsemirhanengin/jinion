@@ -1,17 +1,20 @@
 import type { FileChange, RepoChanges } from '@jinion/core/api/protocol';
 import { LineCounts } from '@jinion/ui';
-import { DiffCard, type DiffLine } from '@jinion/ui/chat';
+import { DiffCard, type DiffCardProps, type DiffLine } from '@jinion/ui/chat';
 import { FolderGit2, GitBranch } from 'lucide-react';
-import { useEffect, useReducer, useRef } from 'react';
+import { type ReactNode, useEffect, useReducer, useRef } from 'react';
 import { diffLines } from '../../lib/diff.js';
 import { useReveal } from '../../state/reveal.js';
 import { useCore } from '../../state/session.js';
+import { CommentsBar } from '../comments/comments-bar.js';
+import { useComments } from '../comments/use-comments.js';
 import { useGit } from './use-git.js';
 
 /** Every uncommitted file's diff one under another, a heading for each repository when the folder holds several. */
 export function GitDiffs() {
   const { shown, repos } = useGit();
   const { diffs, read } = useDiffs(shown, repos);
+  const commentsOn = useComments(shown, 'git');
   const list = useRef<HTMLDivElement>(null);
 
   const changed = (repos ?? []).filter((repo) => repo.changes.length > 0);
@@ -26,14 +29,18 @@ export function GitDiffs() {
   return (
     <div ref={list} className="h-full overflow-y-auto">
       <div className="mx-auto flex max-w-240 flex-col gap-8 px-8 py-6">
-        {changed.map((repo) => (
+        {changed.map((repo, index) => (
           <section key={repo.repo.root} className="flex flex-col gap-4">
-            <Heading repo={repo} titled={repos.length > 1} />
-            {repo.changes.map((change) => (
-              <div key={change.absolute} data-path={change.absolute} className="scroll-mt-4">
-                <Diff change={change} lines={diffs.get(change.absolute)?.lines} />
-              </div>
-            ))}
+            <Heading repo={repo} titled={repos.length > 1} end={index === 0 && <CommentsBar session={shown} />} />
+            {repo.changes.map((change) => {
+              const lines = diffs.get(change.absolute)?.lines;
+
+              return (
+                <div key={change.absolute} data-path={change.absolute} className="scroll-mt-4">
+                  <Diff change={change} lines={lines} comments={lines && commentsOn(change.absolute, lines)} />
+                </div>
+              );
+            })}
           </section>
         ))}
       </div>
@@ -41,7 +48,7 @@ export function GitDiffs() {
   );
 }
 
-function Heading({ repo, titled }: { repo: RepoChanges; titled: boolean }) {
+function Heading({ repo, titled, end }: { repo: RepoChanges; titled: boolean; end?: ReactNode }) {
   const added = repo.changes.reduce((sum, change) => sum + change.insertions, 0);
   const removed = repo.changes.reduce((sum, change) => sum + change.deletions, 0);
 
@@ -59,15 +66,21 @@ function Heading({ repo, titled }: { repo: RepoChanges; titled: boolean }) {
           <span className="truncate">{repo.branch}</span>
         </span>
       )}
+      {end && (
+        <>
+          <span className="flex-1" />
+          {end}
+        </>
+      )}
     </div>
   );
 }
 
-function Diff({ change, lines }: { change: FileChange; lines?: DiffLine[] }) {
+function Diff({ change, lines, comments }: { change: FileChange; lines?: DiffLine[]; comments?: Partial<DiffCardProps> }) {
   if (change.binary) return <Placeholder path={change.file} text="A binary file, with no lines to show." />;
   if (!lines) return <Placeholder path={change.file} text="Reading the diff" />;
 
-  return <DiffCard path={change.file} lines={lines} folded={Number.POSITIVE_INFINITY} bare />;
+  return <DiffCard path={change.file} lines={lines} folded={Number.POSITIVE_INFINITY} bare {...comments} />;
 }
 
 function Placeholder({ path, text }: { path: string; text: string }) {

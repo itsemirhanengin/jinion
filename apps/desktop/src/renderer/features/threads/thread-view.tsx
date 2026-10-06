@@ -7,8 +7,10 @@ import { useEffect } from 'react';
 import { fileReference } from '../../lib/references.js';
 import { Problem } from '../../panels/problem.js';
 import { draftImagesAtom, draftsAtom } from '../../state/app.js';
+import { draftCommentsAtom } from '../../state/comments.js';
 import { useCore, useSession } from '../../state/session.js';
 import { openChanges } from '../changes/changes.js';
+import { takeQueued } from '../comments/queued.js';
 import { openFile } from '../files/files.js';
 import { Composer } from './composer.js';
 import { draftOf } from './draft.js';
@@ -50,15 +52,25 @@ export function ThreadView({ id }: { id: string }) {
     const submission = await core.unqueue(id, fields.queue[index]!.text).catch((error: Error) => core.client.store.set(core.problemAtom, error.message));
     if (!submission) return;
 
+    const queued = takeQueued(store, id, submission.text);
+
     const { text, images } = draftOf(
-      submission,
+      queued ? { ...submission, text: queued.typed } : submission,
       (store.get(draftImagesAtom)[id] ?? []).map((image) => image.name),
     );
 
     const typed = store.get(draftsAtom)[id]?.trim();
 
-    store.set(draftsAtom, (drafts) => ({ ...drafts, [id]: typed ? `${text}\n${typed}` : text }));
+    store.set(draftsAtom, (drafts) => ({ ...drafts, [id]: typed && text ? `${text}\n${typed}` : text || typed || '' }));
     store.set(draftImagesAtom, (all) => ({ ...all, [id]: [...(all[id] ?? []), ...images] }));
+    if (queued) store.set(draftCommentsAtom, (all) => ({ ...all, [id]: [...(all[id] ?? []), ...queued.comments] }));
+  };
+
+  const removeQueued = (index: number) => {
+    const { text } = fields.queue[index]!;
+
+    takeQueued(store, id, text);
+    core.act(core.unqueue(id, text));
   };
 
   // The running turn's todos are the first line inside whichever box is at the bottom.
@@ -67,7 +79,7 @@ export function ThreadView({ id }: { id: string }) {
   // What takes the composer's place while the agent asks, the composer otherwise.
   const bottom = (
     <>
-      <Queued messages={fields.queue.map((message) => message.text)} onEdit={editQueued} onRemove={(index) => core.act(core.unqueue(id, fields.queue[index]!.text))} />
+      <Queued messages={fields.queue.map((message) => message.text)} onEdit={editQueued} onRemove={removeQueued} />
       {dialog?.id === 'permission' && <PermissionPanel request={dialog.request} onAnswer={(decision) => core.act(core.answerPermission(id, decision))} />}
       {dialog?.id === 'ask' && (
         <AskPanel
