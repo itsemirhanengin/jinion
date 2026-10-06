@@ -129,7 +129,12 @@ export const sessionFeatures = (session: AgentSession): SessionFeatures => ({
 });
 
 export const PlanDecision = z.union([
-  z.object({ approve: z.literal(true), mode: AgentMode }),
+  z.object({
+    approve: z.literal(true),
+    mode: AgentMode,
+    /** The plan as the user changed it before approving it; the agent is told it changed. */
+    plan: z.string().optional(),
+  }),
   z.object({ approve: z.literal(false), note: z.string().optional() }),
 ]);
 

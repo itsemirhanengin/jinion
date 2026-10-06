@@ -3881,6 +3881,9 @@
             },
             "mode": {
               "$ref": "#/$defs/AgentMode"
+            },
+            "plan": {
+              "type": "string"
             }
           },
           "required": [

@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { type Input, text } from './input.js';
 import { isPlanFile } from './paths.js';
 
@@ -17,6 +17,12 @@ export class PlanFile {
     else if (this.text !== undefined) this.text = this.text.replace(text(input.old_string), text(input.new_string));
 
     return true;
+  }
+
+  /** The plan as the user changed it, in the file Claude Code reads it back from. */
+  rewrite(plan: string) {
+    this.text = plan;
+    if (this.path) writeFileSync(this.path, plan);
   }
 
   /** Falls back to what the calls wrote when the file can't be read, e.g. in a replayed conversation. */

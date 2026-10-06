@@ -140,6 +140,19 @@ describe('CodexSession', () => {
     expect(events.filter((event) => event.type === 'sent')).toHaveLength(2);
   });
 
+  it('carries out the plan as the user changed it, and says they changed it', async () => {
+    const approvePlan = vi.fn(async () => ({ approve: true as const, mode: 'auto' as const, plan: '# Plan\n\n- Only the API' }));
+    const { fake, session } = setup('plan', { mode: 'plan' });
+
+    await collect(session.run({ text: 'Plan it' }, context({ approvePlan })));
+
+    const [, implemented] = fake.sent('turn/start');
+
+    expect(implemented?.params).toMatchObject({
+      input: [{ type: 'text', text: 'Implement the plan.\n\n> The user changed this plan before approving it. Build it as it stands now.\n\n# Plan\n\n- Only the API\n' }],
+    });
+  });
+
   it('compacts as a turn of its own, marked as asked for', async () => {
     const { fake, session } = setup('compact');
 
