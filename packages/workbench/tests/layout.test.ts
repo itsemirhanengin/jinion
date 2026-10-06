@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { closeTab, emptyLayout, keyOf, openTab, pinTab, splitTab, toggleActivity, toggleSidebar } from '../src/layout.js';
+import {
+  canSplit,
+  closeTab,
+  emptyLayout,
+  keyOf,
+  moveTab,
+  openTab,
+  pinTab,
+  resizeSplit,
+  splitTab,
+  splitTo,
+  toggleActivity,
+  toggleSidebar,
+} from '../src/layout.js';
 
 const thread = { kind: 'thread', id: 'a' };
 const other = { kind: 'thread', id: 'b' };
@@ -78,6 +91,59 @@ describe('splitTab', () => {
     const layout = openTab(emptyLayout, thread);
 
     expect(splitTab(layout, 'thread:a')).toBe(layout);
+  });
+});
+
+describe('dragging a tab', () => {
+  const three = openTab(openTab(openTab(emptyLayout, thread), other), diff('x'));
+
+  it('puts it in a group of its own on the side it was dropped, half the room each', () => {
+    const below = splitTo(three, 'thread:a', 'bottom');
+
+    expect(keys(below, 0)).toEqual(['thread:b', 'diff:x']);
+    expect(keys(below, 1)).toEqual(['thread:a']);
+    expect(below).toMatchObject({ split: 'column', share: 0.5, focused: 1 });
+
+    const left = splitTo(three, 'diff:x', 'left');
+
+    expect(keys(left, 0)).toEqual(['diff:x']);
+    expect(left).toMatchObject({ split: 'row', focused: 0 });
+  });
+
+  it('makes no third group, and no split of a group with one tab', () => {
+    const split = splitTo(three, 'thread:a', 'right');
+
+    expect(canSplit(split, 'thread:b')).toBe(false);
+    expect(splitTo(split, 'thread:b', 'left')).toBe(split);
+    expect(canSplit(openTab(emptyLayout, thread), 'thread:a')).toBe(false);
+  });
+
+  it('turns two groups around when the lone tab of one is dropped on the other’s edge', () => {
+    const below = splitTo(splitTo(three, 'thread:a', 'right'), 'thread:a', 'top');
+
+    expect(keys(below, 0)).toEqual(['thread:a']);
+    expect(keys(below, 1)).toEqual(['thread:b', 'diff:x']);
+    expect(below.split).toBe('column');
+  });
+
+  it('moves it into another group at a place, closing the group it empties', () => {
+    const split = splitTo(three, 'thread:a', 'right');
+    const moved = moveTab(split, 'thread:a', 0, 1);
+
+    expect(moved.groups).toHaveLength(1);
+    expect(keys(moved)).toEqual(['thread:b', 'thread:a', 'diff:x']);
+    expect(moved).toMatchObject({ focused: 0, split: undefined, share: undefined });
+    expect(moved.groups[0]!.active).toBe('thread:a');
+  });
+
+  it('moves it along its own row', () => {
+    expect(keys(moveTab(three, 'thread:a', 0, 3))).toEqual(['thread:b', 'diff:x', 'thread:a']);
+    expect(keys(moveTab(three, 'diff:x', 0, 0))).toEqual(['diff:x', 'thread:a', 'thread:b']);
+  });
+
+  it('keeps each group a fifth of the room at least', () => {
+    expect(resizeSplit(three, 0.05).share).toBe(0.2);
+    expect(resizeSplit(three, 0.9).share).toBe(0.8);
   });
 });
 

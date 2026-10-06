@@ -1,6 +1,6 @@
 import type { Activity, Command, Feature, StatusItem, TabKind, View } from './feature.js';
 import * as layouts from './layout.js';
-import type { Layout, OpenOptions, Place, TabRef } from './layout.js';
+import type { Layout, OpenOptions, Place, Side, TabRef } from './layout.js';
 
 /** One project's window: the features in it and how it is laid out, for `useSyncExternalStore`. */
 export class Workbench {
@@ -74,6 +74,22 @@ export class Workbench {
 
   split(key: string) {
     this.update(layouts.splitTab(this.layout, key));
+  }
+
+  moveTab(key: string, group: number, index?: number) {
+    this.update(layouts.moveTab(this.layout, key, group, index));
+  }
+
+  canSplit(key: string) {
+    return layouts.canSplit(this.layout, key);
+  }
+
+  splitTo(key: string, side: Side) {
+    this.update(layouts.splitTo(this.layout, key, side));
+  }
+
+  resizeSplit(share: number) {
+    this.update(layouts.resizeSplit(this.layout, share));
   }
 
   focusGroup(group: number) {

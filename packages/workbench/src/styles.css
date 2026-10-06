@@ -1,2 +1,9 @@
 /* Imported after @jinion/ui's theme, so Tailwind sees the classes of these components. */
 @source "./";
+
+/* While a tab is dragged the hand holds it everywhere, and no text gets selected on the way; unlayered, so it wins. */
+.tab-dragging,
+.tab-dragging * {
+  cursor: grabbing;
+  user-select: none;
+}
