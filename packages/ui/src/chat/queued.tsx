@@ -1,7 +1,8 @@
-import { CornerDownRight, X } from 'lucide-react';
+import { CornerDownRight, Pencil, X } from 'lucide-react';
+import type { ReactNode } from 'react';
 
-/** Messages typed while a turn runs, sent one by one when it ends; each has a remove button when `onRemove` is given. */
-export function Queued({ messages, onRemove }: { messages: string[]; onRemove?: (index: number) => void }) {
+/** Messages typed while a turn runs, sent one by one when it ends; each can go back to the composer or away. */
+export function Queued({ messages, onEdit, onRemove }: { messages: string[]; onEdit?: (index: number) => void; onRemove?: (index: number) => void }) {
   if (messages.length === 0) return null;
 
   return (
@@ -11,18 +12,32 @@ export function Queued({ messages, onRemove }: { messages: string[]; onRemove?: 
           <CornerDownRight className="size-4 shrink-0 text-faint" />
           <span className="min-w-0 flex-1 truncate">{message}</span>
           <span className="pr-1.5 text-faint">queued</span>
+          {onEdit && (
+            <Action label="Edit" onClick={() => onEdit(index)}>
+              <Pencil className="size-3.5" />
+            </Action>
+          )}
           {onRemove && (
-            <button
-              type="button"
-              aria-label="Remove"
-              onClick={() => onRemove(index)}
-              className="flex size-6 cursor-default items-center justify-center rounded-md text-faint hover:bg-shade hover:text-ink"
-            >
+            <Action label="Remove" onClick={() => onRemove(index)}>
               <X className="size-4" />
-            </button>
+            </Action>
           )}
         </div>
       ))}
     </div>
+  );
+}
+
+function Action({ label, onClick, children }: { label: string; onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      onClick={onClick}
+      className="flex size-6 cursor-default items-center justify-center rounded-md text-faint hover:bg-shade hover:text-ink"
+    >
+      {children}
+    </button>
   );
 }

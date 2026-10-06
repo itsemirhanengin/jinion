@@ -4,10 +4,12 @@ import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ChatPieces } from './pages/chat-pieces.js';
 import { Leaf } from './pages/leaf.js';
+import { Menus } from './pages/menus.js';
 import { Primitives } from './pages/primitives.js';
 
 const pages = [
   { id: 'leaf', title: 'Leaf', Page: Leaf },
+  { id: 'menus', title: 'Menus', Page: Menus },
   { id: 'chat', title: 'Conversation', Page: ChatPieces },
   { id: 'primitives', title: 'Primitives', Page: Primitives },
 ];

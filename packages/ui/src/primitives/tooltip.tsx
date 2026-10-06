@@ -9,7 +9,7 @@ const POSITIONER = 'pointer-events-none z-50';
 
 /** As the app's menus look; with no fade when it opens at once, as when the pointer moves on from another. */
 const POPUP =
-  'pointer-events-none rounded-lg bg-floating px-2.5 py-1.5 text-small text-ink shadow-lg ring-1 ring-edge transition-opacity duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0 data-instant:transition-none';
+  'float pointer-events-none rounded-lg px-2 py-1 text-small transition-opacity duration-100 data-ending-style:opacity-0 data-starting-style:opacity-0 data-instant:transition-none';
 
 /**
  * Tooltips that share their wait: the first opens after `delay`, and moving on to another while one shows opens it at
