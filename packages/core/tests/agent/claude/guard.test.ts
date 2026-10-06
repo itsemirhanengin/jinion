@@ -10,7 +10,7 @@ const cwd = '/work/project';
 const bash = (command: string) => guardReason('Bash', { command }, cwd);
 
 describe('Jinion’s own tools', () => {
-  const approvals = new ClaudeApprovals({ project: cwd, cwd: () => cwd, turn: () => undefined, onPlanApproved: async () => {} });
+  const approvals = new ClaudeApprovals({ project: cwd, cwd: () => cwd, turn: () => undefined, onPlanApproved: async () => {}, rewritePlan: () => {} });
   const signal = new AbortController().signal;
   const pre = (name: string, input: object) => approvals.guard({ hook_event_name: 'PreToolUse', tool_name: name, tool_input: input } as never, undefined, { signal });
 

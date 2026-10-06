@@ -1,6 +1,7 @@
 import type { CanUseTool, HookCallback, PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import type { PermissionDecision } from '../permissions.js';
 import type { AgentMode, PlanDecision, RunContext } from '../agent.js';
+import { editedPlan } from '../plans.js';
 import { guardReason, readsRepositories } from './guard.js';
 import type { Input } from './input.js';
 import { isJinionTool, RUN_IN_TERMINAL } from './jinion-tools.js';
@@ -17,6 +18,8 @@ export interface ApprovalsOptions {
   cwd(): string;
   turn(): RunContext | undefined;
   onPlanApproved(mode: AgentMode): Promise<void>;
+  /** Puts the plan the user changed where Claude Code reads the approved plan back from. */
+  rewritePlan(plan: string): void;
 }
 
 export class ClaudeApprovals {
@@ -91,11 +94,16 @@ export class ClaudeApprovals {
       return { behavior: 'deny', message: `The user wants to keep planning${decision.note ? `: ${decision.note}` : '.'}` };
     }
 
+    // Both where Claude Code takes the plan from, its file and the call's input, so the agent gets the user's version
+    // and the line saying they changed it whichever it reads.
+    const plan = decision.plan === undefined ? undefined : editedPlan(decision.plan);
+
+    if (plan) this.options.rewritePlan(plan);
     await this.options.onPlanApproved(decision.mode);
 
     return {
       behavior: 'allow',
-      updatedInput: input,
+      updatedInput: plan ? { ...input, plan } : input,
       updatedPermissions: [{ type: 'setMode', mode: PERMISSION_MODES[decision.mode], destination: 'session' }],
     };
   }

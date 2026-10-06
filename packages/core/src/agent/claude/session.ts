@@ -72,6 +72,7 @@ export class ClaudeSession implements AgentSession {
         this.currentMode = mode;
         await this.claude?.query.applyFlagSettings({ permissions: { ask: askRules(mode) } });
       },
+      rewritePlan: (plan) => this.claude?.events.rewritePlan(plan),
     });
   }
 

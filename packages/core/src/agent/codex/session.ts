@@ -11,6 +11,7 @@ import type { ContextUsage } from '../usage.js';
 import { answer } from './approvals.js';
 import type { CodexConnection } from './connection.js';
 import { CodexEvents, DEFAULT_CONTEXT_WINDOW } from './events.js';
+import { editedPlan } from '../plans.js';
 import { developerInstructions, type JinionTools, jinionToolSpecs } from './jinion-tools.js';
 import { modeSettings } from './modes.js';
 import { changesFrom, previewOf, restore } from './rewind.js';
@@ -277,7 +278,9 @@ export class CodexSession implements AgentSession {
       if (decision.approve) {
         this.currentMode = decision.mode;
         yield { type: 'mode', mode: decision.mode };
-        next = (id) => this.startTurn(id, [text(IMPLEMENT)]);
+        const { plan } = decision;
+
+        next = (id) => this.startTurn(id, [text(plan === undefined ? IMPLEMENT : `${IMPLEMENT}\n\n${editedPlan(plan)}`)]);
       } else if (decision.note) {
         const { note } = decision;
 

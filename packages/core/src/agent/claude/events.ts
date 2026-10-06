@@ -54,6 +54,11 @@ export class ClaudeEvents {
     return this.session;
   }
 
+  /** The plan as the user changed it before approving it. */
+  rewritePlan(plan: string) {
+    this.tools.plan.rewrite(plan);
+  }
+
   compactAt(tokens: number | undefined): AgentEvent | undefined {
     if (this.usage.compactAt === tokens) return undefined;
 
