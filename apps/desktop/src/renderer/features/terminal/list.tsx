@@ -38,8 +38,9 @@ export function TerminalList({ terminals, groups, focused, onFocus, onClose }: T
                 >
                   <button type="button" onClick={() => onFocus(id)} className="flex min-w-0 flex-1 cursor-default items-center gap-2 self-stretch text-left">
                     <TerminalMark terminal={terminal} />
-                    <span className="shrink-0">{terminal.title}</span>
-                    <FadeText className="text-faint">{terminal.cwd.slice(terminal.cwd.lastIndexOf('/') + 1)}</FadeText>
+                    <FadeText>
+                      {terminal.title} <span className="text-faint">{terminal.cwd.slice(terminal.cwd.lastIndexOf('/') + 1)}</span>
+                    </FadeText>
                     <TerminalStatus terminal={terminal} />
                   </button>
                   <button

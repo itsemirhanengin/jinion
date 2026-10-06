@@ -30,8 +30,9 @@ export function TerminalPane({ terminal, focused, split, onFocus, onClose }: Ter
     <div data-terminal-pane className="flex min-w-0 flex-1 flex-col" onMouseDown={onFocus}>
       <div className={classNames('group flex h-8 shrink-0 items-center gap-2 pr-1 pl-3', focused ? 'text-ink' : 'text-muted')}>
         <TerminalMark terminal={terminal} />
-        <span className="shrink-0">{terminal.title}</span>
-        <FadeText className="text-faint">{folderOf(terminal.cwd, core.project.path)}</FadeText>
+        <FadeText>
+          {terminal.title} <span className="text-faint">{folderOf(terminal.cwd, core.project.path)}</span>
+        </FadeText>
         <TerminalStatus terminal={terminal} />
         {split && (
           <span className="opacity-0 group-hover:opacity-100 focus-within:opacity-100">
