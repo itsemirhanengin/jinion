@@ -8,10 +8,12 @@ import { fileReference } from '../../lib/references.js';
 import { Problem } from '../../panels/problem.js';
 import { draftImagesAtom, draftsAtom } from '../../state/app.js';
 import { draftCommentsAtom } from '../../state/comments.js';
+import { planEditsAtom } from '../../state/plans.js';
 import { useCore, useSession } from '../../state/session.js';
 import { openChanges } from '../changes/changes.js';
 import { takeQueued } from '../comments/queued.js';
 import { openFile } from '../files/files.js';
+import { openPlan, plansOf } from '../plan/plans.js';
 import { Composer } from './composer.js';
 import { draftOf } from './draft.js';
 import { Entries } from './entries.js';
@@ -35,9 +37,11 @@ export function ThreadView({ id }: { id: string }) {
 
   const { state, fields } = session;
   const { dialog } = fields;
+  const latestPlan = plansOf(state.entries).at(-1);
 
   const actions = {
     rewind: (entry: string) => core.act(core.rewind(id, entry)),
+    openPlan: (entry: string) => openPlan(workbench, id, entry),
     openChange: (path: string) => openChanges(core, workbench, id, path),
     openFile: (path: string, lines?: string) => openFile(core, workbench, id, path, lines),
     openCode: (code: string) => {
@@ -92,7 +96,13 @@ export function ThreadView({ id }: { id: string }) {
       {dialog?.id === 'plan' && (
         <PlanPanel
           options={dialog.modes.map((mode) => ({ id: mode, label: `Yes, in ${MODES[mode].name}` }))}
-          onDecide={(decision) => core.act(core.answerPlan(id, decision.approve ? { approve: true, mode: decision.option as AgentMode } : decision))}
+          onDecide={(decision) => {
+            // Changes made in the plan's tab go with an answer given here too.
+            const edited = latestPlan && store.get(planEditsAtom)[latestPlan.id];
+
+            core.act(core.answerPlan(id, decision.approve ? { approve: true, mode: decision.option as AgentMode, plan: edited } : decision));
+          }}
+          onEdit={latestPlan && (() => openPlan(workbench, id, latestPlan.id))}
         />
       )}
       {!dialog && <Composer id={id} snapshot={session} large={!started} header={todos} />}
