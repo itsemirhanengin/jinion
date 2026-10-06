@@ -10,9 +10,12 @@ export function ago(time: number, now = Date.now()) {
   return `${Math.floor(seconds / (30 * 86_400))}mo`;
 }
 
-/** How long something took: `4s`, `1m 12s`. */
+/** How long something took: `4s`, `1m 12s`, `2h 5m`. */
 export function took(ms: number) {
   const seconds = Math.max(1, Math.round(ms / 1000));
 
-  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+
+  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
