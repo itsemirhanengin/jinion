@@ -85,6 +85,7 @@ function Screen({ id, focused }: { id: string; focused: boolean }) {
 
     const stopOutput = core.client.on('terminals/output', (output) => {
       if (output.id !== id) return;
+
       if (shown === undefined) early.push(output);
       else write(output);
     });

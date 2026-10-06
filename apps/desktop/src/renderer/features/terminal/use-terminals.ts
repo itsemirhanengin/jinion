@@ -48,6 +48,7 @@ export async function openTerminal(core: Core) {
 /** A new shell beside the one with the keys, in its group; a first one when there is none. */
 export async function splitTerminal(core: Core) {
   const { store } = core.client;
+
   const read = () => {
     const ids = store.get(core.terminalsAtom).map((terminal) => terminal.id);
     const groups = reconcile(store.get(terminalGroupsAtom), ids);
