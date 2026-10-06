@@ -33,7 +33,22 @@ test('reads a line written over as it shows last, as a progress bar does', async
 
   await terminals.settle(id, 5000);
 
-  expect(await terminals.text(id)).toBe('99%\ndone');
+  expect(await terminals.text(id)).toMatch(/^99%\ndone/);
+});
+
+test('gives a prompt once the agent’s command ends, ctrl+c included, and keeps how it ended', async () => {
+  const { id } = await terminals.open({ cwd: tmpdir(), command: 'echo started; sleep 30' });
+
+  await until(async () => (await terminals.text(id)).includes('started'));
+  terminals.write(id, '\x03');
+  await terminals.settle(id, 5000);
+
+  expect(terminals.info(id)).toMatchObject({ running: false, exitCode: 130 });
+
+  terminals.write(id, 'echo "still $((20 + 22))"\r');
+  await until(async () => (await terminals.text(id)).includes('still 42'));
+
+  expect(terminals.has(id)).toBe(true);
 });
 
 test("a user's shell takes input, and goes once it exits", async () => {
