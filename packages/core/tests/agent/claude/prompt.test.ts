@@ -10,6 +10,10 @@ const box = sandboxEach();
 const gitLine = () => systemPrompt(box.project).split('\n').find((line) => line.startsWith('- Git: '));
 
 describe('systemPrompt', () => {
+  it('tells the agent how to write a plan the user reads and may change', () => {
+    expect(systemPrompt(box.project)).toContain('# Plans\nIn plan mode, write the plan as a short document');
+  });
+
   it('tells the agent about the project’s terminals only where a client shows them', () => {
     expect(systemPrompt(box.project)).not.toContain('run_in_terminal');
     expect(systemPrompt(box.project, undefined, true)).toContain('with run_in_terminal rather than Bash in the background');
