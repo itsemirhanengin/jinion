@@ -13,10 +13,12 @@ export interface PlanPanelProps {
   /** The ways to go on and build, such as a permission mode each. */
   options: PlanOption[];
   onDecide: (decision: PlanDecision) => void;
+  /** Opens the plan where it can be changed before the answer. */
+  onEdit?: () => void;
 }
 
 /** Whether to build from the plan the agent wrote above, in the composer's place. */
-export function PlanPanel({ options, onDecide }: PlanPanelProps) {
+export function PlanPanel({ options, onDecide, onEdit }: PlanPanelProps) {
   const [note, setNote] = useState<string>();
 
   const keepPlanning = (event: FormEvent) => {
@@ -40,6 +42,11 @@ export function PlanPanel({ options, onDecide }: PlanPanelProps) {
           <Button size="small" onClick={() => setNote('')}>
             No, keep planning
           </Button>
+          {onEdit && (
+            <Button size="small" onClick={onEdit}>
+              Edit plan
+            </Button>
+          )}
         </div>
       ) : (
         <form className="flex items-center gap-2" onSubmit={keepPlanning}>

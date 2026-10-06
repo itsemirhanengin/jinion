@@ -312,4 +312,35 @@
       @apply font-medium text-muted;
     }
   }
+
+  /* Prose as a document of its own, such as a plan in its tab, edited in place. */
+  .document {
+    & h1 {
+      @apply text-[20px]/7 font-semibold;
+    }
+
+    & ul[data-type="taskList"] {
+      @apply list-none pl-0;
+
+      & li {
+        @apply flex items-start gap-2;
+
+        & > label {
+          @apply mt-0.5 flex shrink-0;
+        }
+
+        & > div {
+          @apply min-w-0 flex-1;
+        }
+      }
+
+      & input[type="checkbox"] {
+        @apply size-3.5 accent-primary;
+      }
+    }
+
+    & .is-empty.is-editor-empty::before {
+      @apply pointer-events-none float-left h-0 text-faint content-[attr(data-placeholder)];
+    }
+  }
 }
