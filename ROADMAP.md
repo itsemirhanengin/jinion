@@ -202,15 +202,19 @@ Steps, design first, as the TUI was built:
    versions locked: `deploy` resolves the Agent SDK's range afresh rather than from the lockfile.
 
 The order agreed for the releases after 0.0.6, one 0.0.x each, with no hurry to 0.1.0: the composer (0.0.7), comments
-on a diff sent to the agent as one message (0.0.8), the terminal (0.0.9), parallel threads in worktrees with a pull
-request flow, and the dev server's preview with picking an element. The plan editor fits in between:
+on a diff sent to the agent as one message (0.0.8), the terminal (0.0.9, fixes in 0.0.10), the plan editor (0.0.11),
+the dev server's preview with picking an element; parallel threads in worktrees with a pull request flow wait for now.
 
-- **Plans of their own.** The right panel gets Plan beside Changes and Tasks, filtered by turn as Changes is, so earlier
-  turns' plans stay at hand. A plan opens as a tab with Approve and Reject in it and an editor to change it before
-  answering: bold, lists, code, headings, and diagrams the planner draws (OMP's plans, with their diagrams, are the bar).
+- **Plans of their own** (done). A plan opens as a tab, a bar over it with where it stands and the answer (Keep
+  planning, Build in a mode), the plan below as a document edited in place: `MarkdownEditor` in `@jinion/ui`, TipTap with
+  Markdown in and out, marks over a selection, task lists, tables, and Mermaid diagrams drawn, their text edited on a
+  click. A changed plan goes to the agent with a line saying the user changed it (`PlanDecision.plan`): Claude reads it
+  from its plan file and the call, Codex in the turn that builds it. The right panel has Plan, the conversation a card
+  that opens it, and the planner is told to write a short document with a diagram, steps, files and risks. Left: `/` for
+  blocks in the editor, and checking against Claude Code itself which of the two places it reads an approved plan from.
 - **The composer on the same editor.** The composer is a textarea: an image is `[Image #1]` at the caret, drawn as a
-  chip by a layer behind the text, so it can only be as wide as its text. On the plan editor's rich text (TipTap or
-  Lexical), images and `@` files become real chips with a name and an icon.
+  chip by a layer behind the text, so it can only be as wide as its text. On `MarkdownEditor`, images and `@` files
+  become real chips with a name and an icon.
 
 ### Codex, the rest
 
