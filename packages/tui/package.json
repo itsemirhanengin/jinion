@@ -33,6 +33,7 @@
     "@jinion/virtualization": "workspace:*",
     "ink": "^7.1.1",
     "marked": "^18.0.0",
+    "shiki": "^4.5.0",
     "string-width": "^8.2.0"
   },
   "peerDependencies": {

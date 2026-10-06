@@ -5,6 +5,7 @@ import { useView } from '../runtime/view.js';
 import { plural } from '../utils/plural.js';
 import { printable } from '../utils/printable.js';
 import { ExpandHint } from './output.js';
+import { type SyntaxToken, useSyntax } from './syntax.js';
 
 export type DiffLineKind = 'context' | 'added' | 'removed' | 'gap';
 
@@ -20,21 +21,22 @@ const HUNK_HEADER = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/;
 
 export interface DiffProps {
   patch: string;
+  language?: string;
   maxLines?: number;
   window?: { start: number; rows: number };
 }
 
-export function Diff({ patch, maxLines = 24, window }: DiffProps) {
+export function Diff({ patch, language, maxLines = 24, window }: DiffProps) {
   const theme = useTheme();
   const { expanded } = useView();
 
   const lines = useMemo(() => parsePatch(patch), [patch]);
+  const sides = useMemo(() => splitSides(lines), [lines]);
+  const before = useSyntax(sides.before, language);
+  const after = useSyntax(sides.after, language);
 
-  const visible = window
-    ? lines.slice(window.start, window.start + window.rows)
-    : expanded
-      ? lines
-      : lines.slice(0, maxLines);
+  const start = window?.start ?? 0;
+  const visible = window ? lines.slice(start, start + window.rows) : expanded ? lines : lines.slice(0, maxLines);
 
   const numberWidth = String(Math.max(0, ...lines.map((line) => line.newNumber ?? line.oldNumber ?? 0))).length;
 
@@ -56,6 +58,8 @@ export function Diff({ patch, maxLines = 24, window }: DiffProps) {
         }[line.kind];
 
         const number = line.kind === 'removed' ? line.oldNumber : line.newNumber;
+        const row = sides.rows[start + index]!;
+        const tokens = (row.side === 'before' ? before : after)?.[row.index] ?? [{ text: line.text }];
         const [from, to] = line.highlight ?? [line.text.length, line.text.length];
 
         return (
@@ -69,9 +73,13 @@ export function Diff({ patch, maxLines = 24, window }: DiffProps) {
             </Box>
             <Box flexShrink={1}>
               <Text color={style.color} wrap={window ? 'truncate-end' : 'wrap'}>
-                {line.text.slice(0, from)}
-                <Text backgroundColor={style.highlight}>{line.text.slice(from, to)}</Text>
-                {line.text.slice(to) || (line.text ? '' : ' ')}
+                {line.text
+                  ? markRange(tokens, from, to).map((segment, key) => (
+                      <Text key={key} color={segment.color} backgroundColor={segment.marked ? style.highlight : undefined}>
+                        {segment.text}
+                      </Text>
+                    ))
+                  : ' '}
               </Text>
             </Box>
           </Box>
@@ -119,6 +127,45 @@ export function countChanges(lines: DiffLine[]) {
     added: lines.filter((line) => line.kind === 'added').length,
     removed: lines.filter((line) => line.kind === 'removed').length,
   };
+}
+
+function splitSides(lines: DiffLine[]) {
+  const before: string[] = [];
+  const after: string[] = [];
+
+  const rows = lines.map((line) => {
+    if (line.kind === 'removed') return { side: 'before', index: before.push(line.text) - 1 };
+
+    if (line.kind === 'context') before.push(line.text);
+
+    return { side: 'after', index: line.kind === 'gap' ? -1 : after.push(line.text) - 1 };
+  });
+
+  return { before: before.join('\n'), after: after.join('\n'), rows };
+}
+
+function markRange(tokens: SyntaxToken[], from: number, to: number) {
+  const segments: (SyntaxToken & { marked: boolean })[] = [];
+  let offset = 0;
+
+  for (const token of tokens) {
+    const end = offset + token.text.length;
+
+    for (const [start, stop, marked] of [
+      [offset, from, false],
+      [from, to, true],
+      [to, end, false],
+    ] as const) {
+      const first = Math.max(start, offset);
+      const last = Math.min(stop, end);
+
+      if (first < last) segments.push({ text: token.text.slice(first - offset, last - offset), color: token.color, marked });
+    }
+
+    offset = end;
+  }
+
+  return segments;
 }
 
 function highlightModifiedLines(lines: DiffLine[]) {

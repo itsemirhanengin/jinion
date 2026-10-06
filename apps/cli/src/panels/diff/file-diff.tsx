@@ -1,4 +1,4 @@
-import { Diff, Panel, parsePatch, Text, useInput, useTheme } from '@jinion/tui';
+import { Diff, extension, Panel, parsePatch, Text, useInput, useTheme } from '@jinion/tui';
 import { PAGER_HINTS, usePager } from '../../ui/use-pager.js';
 import { useAsync } from '../../ui/use-async.js';
 import type { ChangeRow } from './views.js';
@@ -28,7 +28,7 @@ export function FileDiff({ row, onBack }: { row: ChangeRow; onBack(): void }) {
       ) : lines === 0 ? (
         <Text color={theme.muted}>No line changes, e.g. only the file's mode changed.</Text>
       ) : (
-        <Diff patch={patch} window={{ start: pager.top, rows: pager.view }} />
+        <Diff patch={patch} language={extension(row.file)} window={{ start: pager.top, rows: pager.view }} />
       )}
     </Panel>
   );

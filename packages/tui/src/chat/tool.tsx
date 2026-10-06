@@ -83,7 +83,7 @@ export function EditBlock({ path, patch, status, verb = 'Edit' }: EditBlockProps
 
   return (
     <Frame tone={toneOf(status)} title={title}>
-      <Diff patch={patch} />
+      <Diff patch={patch} language={extension(path)} />
     </Frame>
   );
 }
