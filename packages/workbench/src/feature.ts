@@ -41,6 +41,10 @@ export interface View {
   place: Place;
   Content: ComponentType;
   Badge?: ComponentType;
+  /** Buttons in the panel's header while it shows, such as New terminal. */
+  Actions?: ComponentType;
+  /** Whether it has anything to show; one that hasn't is left out of the panel's header, as Tasks is with none. */
+  useVisible?: () => boolean;
 }
 
 export interface StatusItem {

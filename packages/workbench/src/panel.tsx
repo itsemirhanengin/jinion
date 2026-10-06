@@ -2,6 +2,7 @@ import { classNames } from '@jinion/ui';
 import { X } from 'lucide-react';
 import { useLayout, useWorkbench } from './context.js';
 import { IconButton } from './icon-button.js';
+import type { View } from './feature.js';
 import type { Place } from './layout.js';
 import { Splitter } from './splitter.js';
 
@@ -14,10 +15,10 @@ const limits: Record<Place, { min: number; max: number }> = {
 export function Panel({ place }: { place: Place }) {
   const workbench = useWorkbench();
   const panel = useLayout((layout) => layout[place]);
+  const views = useVisibleViews(workbench.viewsAt(place));
 
   if (!panel.open) return place === 'right' ? <div className="w-2 shrink-0" /> : null;
 
-  const views = workbench.viewsAt(place);
   const shown = views.find((view) => view.id === panel.view) ?? views[0];
   const right = place === 'right';
 
@@ -42,6 +43,7 @@ export function Panel({ place }: { place: Place }) {
               </button>
             ))}
             <div className="flex-1" />
+            {shown?.Actions && <shown.Actions />}
             {!right && (
               <IconButton label="Close the panel" onClick={() => workbench.togglePanel(place)}>
                 <X />
@@ -55,4 +57,9 @@ export function Panel({ place }: { place: Place }) {
       </aside>
     </>
   );
+}
+
+function useVisibleViews(views: View[]) {
+  // biome-ignore lint/correctness/useHookAtTopLevel: a workbench's views are set once it is made, so each one's hook runs in the same place on every render
+  return views.filter((view) => view.useVisible?.() ?? true);
 }
