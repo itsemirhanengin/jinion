@@ -1,9 +1,9 @@
-import { Maximize2, Undo2 } from 'lucide-react';
+import { FilePen, Maximize2, Undo2 } from 'lucide-react';
 import { useState } from 'react';
 import { classNames } from '../lib/class-names.js';
 import { Button } from '../primitives/button.js';
 import { LineCounts } from '../primitives/line-counts.js';
-import { WorkLine } from './work-line.js';
+import { WorkBody, WorkLine } from './work-line.js';
 
 export type DiffLineKind = 'context' | 'added' | 'removed';
 
@@ -21,6 +21,10 @@ export interface DiffCardProps {
   folded?: number;
   /** Drawn as the card alone, without the line that opens it, as in a tab of its own. */
   bare?: boolean;
+  /** Whether the line starts opened to its card. */
+  defaultOpen?: boolean;
+  /** The agent is still writing it. */
+  active?: boolean;
   onRevert?: () => void;
   onOpen?: () => void;
 }
@@ -34,8 +38,8 @@ const rows: Record<DiffLineKind, string> = {
 const signs: Record<DiffLineKind, string> = { context: ' ', added: '+', removed: '-' };
 
 /** An edit the agent made: `Edited server.ts +6 -2`, the lines it changed under it. */
-export function DiffCard({ path, lines, folded = 12, bare, onRevert, onOpen }: DiffCardProps) {
-  const [open, setOpen] = useState(true);
+export function DiffCard({ path, lines, folded = 12, bare, defaultOpen = false, active, onRevert, onOpen }: DiffCardProps) {
+  const [open, setOpen] = useState(defaultOpen);
   const [whole, setWhole] = useState(false);
 
   const added = lines.filter((line) => line.kind === 'added').length;
@@ -86,12 +90,15 @@ export function DiffCard({ path, lines, folded = 12, bare, onRevert, onOpen }: D
   if (bare) return card;
 
   return (
-    <div className="flex flex-col gap-2">
-      <WorkLine open={open} onToggle={() => setOpen(!open)}>
-        <span className="truncate">Edited {name}</span>
+    <div className="flex flex-col">
+      <WorkLine icon={<FilePen />} open={open} onToggle={() => setOpen(!open)} active={active}>
+        <span className="shrink-0">{active ? 'Editing' : 'Edited'}</span>
+        <span className="min-w-0 truncate text-ink/75" title={path}>
+          {name}
+        </span>
         <LineCounts added={added} removed={removed} />
       </WorkLine>
-      {open && card}
+      {open && <WorkBody>{card}</WorkBody>}
     </div>
   );
 }

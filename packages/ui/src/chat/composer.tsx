@@ -17,9 +17,11 @@ export interface ComposerProps {
   onDictate?: () => void;
   /** Taller, as alone in the middle of a thread that hasn't started. */
   large?: boolean;
+  /** The first line inside the box, such as the running turn's todos. */
+  header?: ReactNode;
 }
 
-export function Composer({ value, onChange, onSubmit, placeholder, controls, busy, onStop, onAttach, onDictate, large }: ComposerProps) {
+export function Composer({ value, onChange, onSubmit, placeholder, controls, busy, onStop, onAttach, onDictate, large, header }: ComposerProps) {
   const empty = value.trim() === '';
 
   const keyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -32,6 +34,7 @@ export function Composer({ value, onChange, onSubmit, placeholder, controls, bus
 
   return (
     <div className="rounded-2xl bg-floating shadow-sm ring-1 ring-edge">
+      {header}
       <textarea
         name="message"
         aria-label="Message"

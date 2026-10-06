@@ -17,7 +17,7 @@ export function CodeView({ code, path, marked = [] }: CodeViewProps) {
   return (
     <pre className="min-w-fit py-2 font-mono text-mono select-text">
       {lines.map((text, index) => (
-        <div key={index} className={classNames('flex pr-4', marked.includes(index + 1) && 'bg-waiting/10')}>
+        <div key={index} data-line={index + 1} className={classNames('flex pr-4', marked.includes(index + 1) && 'bg-waiting/10')}>
           <span className="w-12 shrink-0 pr-4 text-right text-faint select-none">{index + 1}</span>
           <span className="whitespace-pre">
             <Line tokens={tokens?.[index]} text={text} />

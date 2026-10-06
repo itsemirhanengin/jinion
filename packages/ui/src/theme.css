@@ -35,6 +35,25 @@
       opacity: 0;
     }
   }
+
+  @keyframes shimmer {
+    from {
+      background-position: 100% 0;
+    }
+
+    to {
+      background-position: -100% 0;
+    }
+  }
+}
+
+/* What is still going on, such as Thinking: a light passing over the words, in their own muted color. */
+@utility shimmer {
+  background-image: linear-gradient(90deg, var(--muted) 35%, var(--ink) 50%, var(--muted) 65%);
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 1.8s linear infinite;
 }
 
 /* The window is gray chrome around white sheets; edges and hovers are black at a low opacity, so they suit any gray. */
@@ -162,6 +181,41 @@
 
   ::selection {
     background: var(--selection);
+  }
+
+  /*
+   * A thin rounded thumb on no track, as macOS draws it: unseen until its area scrolls or the pointer is over its strip
+   * (`followScrollbars` marks both), darker under the pointer. The window runs only Chromium.
+   */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    background-color: transparent;
+  }
+
+  [data-scrolling]::-webkit-scrollbar-thumb,
+  [data-scrollbar-hover]::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--ink) 30%, transparent);
+  }
+
+  ::-webkit-scrollbar-thumb:active {
+    background-color: color-mix(in srgb, var(--ink) 40%, transparent);
   }
 }
 
