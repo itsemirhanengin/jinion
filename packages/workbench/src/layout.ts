@@ -26,9 +26,20 @@ export interface Layout {
   sidebarWidth: number;
   groups: Group[];
   focused: number;
+  /** How two groups sit: side by side, the default, or one above the other. */
+  split?: Direction;
+  /** The first of two groups' share of the room, from `MIN_SHARE` to `1 - MIN_SHARE`; half by default. */
+  share?: number;
   right: Panel;
   bottom: Panel;
 }
+
+export type Direction = 'row' | 'column';
+
+/** Where a tab dropped on a group's edge goes, beside the group or above or under it. */
+export type Side = 'left' | 'right' | 'top' | 'bottom';
+
+export const MIN_SHARE = 0.2;
 
 export interface OpenOptions {
   preview?: boolean;
@@ -91,7 +102,7 @@ export function closeTab(layout: Layout, key: string): Layout {
   const tabs = shown.tabs.toSpliced(at, 1);
 
   if (tabs.length === 0 && layout.groups.length > 1) {
-    return { ...layout, groups: layout.groups.toSpliced(index, 1), focused: 0 };
+    return { ...layout, groups: layout.groups.toSpliced(index, 1), focused: 0, split: undefined, share: undefined };
   }
 
   const next = tabs[at] ?? tabs[at - 1];
@@ -121,6 +132,61 @@ export function splitTab(layout: Layout, key: string): Layout {
   const target = closed.groups.length < layout.groups.length ? 0 : other;
 
   return openTab(closed, ref, { group: target });
+}
+
+/**
+ * Moves a tab, as it is dragged, into a group at `index` (at its end without one), shown there and kept for good; a
+ * group it leaves empty closes, unless it is the only one.
+ */
+export function moveTab(layout: Layout, key: string, group: number, index?: number): Layout {
+  const from = groupOf(layout, key);
+  if (from < 0 || !layout.groups[group] || (from === group && layout.groups[from]!.tabs.length === 1)) return layout;
+
+  const ref = layout.groups[from]!.tabs.find((tab) => keyOf(tab) === key)!;
+  const before = layout.groups[from]!.tabs.findIndex((tab) => keyOf(tab) === key);
+  const closed = closeTab(layout, key);
+  const target = closed.groups.length < layout.groups.length && group > from ? group - 1 : group;
+  const at = from === group && index !== undefined && index > before ? index - 1 : index;
+
+  return withGroup({ ...closed, focused: target }, target, (shown) => ({
+    tabs: shown.tabs.toSpliced(at ?? shown.tabs.length, 0, ref),
+    active: key,
+    preview: shown.preview === key ? undefined : shown.preview,
+  }));
+}
+
+/**
+ * Whether a tab dropped on a group's edge can make a split: with one group, when it leaves a tab behind; with two, when
+ * it is the only tab of its group, so the two only change places. There are never more than two.
+ */
+export function canSplit(layout: Layout, key: string) {
+  const from = groupOf(layout, key);
+  if (from < 0) return false;
+
+  return layout.groups.length === 1 ? layout.groups[0]!.tabs.length > 1 : layout.groups[from]!.tabs.length === 1;
+}
+
+/** Puts the tab in a group of its own on `side` of the other, half the room each. */
+export function splitTo(layout: Layout, key: string, side: Side): Layout {
+  if (!canSplit(layout, key)) return layout;
+
+  const from = groupOf(layout, key);
+  const ref = layout.groups[from]!.tabs.find((tab) => keyOf(tab) === key)!;
+  const moved: Group = { tabs: [ref], active: key };
+  const rest = layout.groups.length === 1 ? closeTab(layout, key).groups[0]! : layout.groups[from === 0 ? 1 : 0]!;
+  const first = side === 'left' || side === 'top';
+
+  return {
+    ...layout,
+    groups: first ? [moved, rest] : [rest, moved],
+    focused: first ? 0 : 1,
+    split: side === 'left' || side === 'right' ? 'row' : 'column',
+    share: 0.5,
+  };
+}
+
+export function resizeSplit(layout: Layout, share: number): Layout {
+  return { ...layout, share: Math.min(1 - MIN_SHARE, Math.max(MIN_SHARE, share)) };
 }
 
 export function focusGroup(layout: Layout, group: number): Layout {
@@ -153,6 +219,10 @@ export function resize(layout: Layout, part: 'sidebar' | Place, size: number): L
   if (part === 'sidebar') return { ...layout, sidebarWidth: size };
 
   return { ...layout, [part]: { ...layout[part], size } };
+}
+
+function groupOf(layout: Layout, key: string) {
+  return layout.groups.findIndex((group) => group.tabs.some((tab) => keyOf(tab) === key));
 }
 
 function withGroup(layout: Layout, index: number, change: (group: Group) => Group): Layout {
