@@ -1,5 +1,12 @@
 # @jinion/native-tabs
 
+## 0.0.6
+
+### Patch Changes
+
+- Updated dependencies [a02dd14]
+  - @jinion/ui@0.0.7
+
 ## 0.0.5
 
 ### Patch Changes

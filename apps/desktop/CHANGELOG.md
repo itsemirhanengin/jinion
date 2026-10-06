@@ -1,5 +1,16 @@
 # @jinion/desktop
 
+## 0.0.8
+
+Comments on a diff, sent to the agent as one message.
+
+- In the Changes and Git tabs, the `+` beside a line's number comments on it; dragging it across the numbers comments
+  on several.
+- A comment stays under its lines, follows them as the file changes, and shows as outdated once they are gone.
+- The comments wait in the composer as a pill and go with the next message, each with the lines it is on, or alone
+  from the tab's Send; a click on the pill shows them where they were left.
+- A queued message taken back to edit brings its comments back with it.
+
 ## 0.0.7
 
 A composer that does what the terminal's does.
