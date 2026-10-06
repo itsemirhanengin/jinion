@@ -41,6 +41,8 @@ export interface ComposerProps {
   large?: boolean;
   /** The first line inside the box, such as the running turn's todos. */
   header?: ReactNode;
+  /** What goes with the message besides its text, over the text; with any, a message without text can go. */
+  attachments?: ReactNode;
   /** Takes the focus once it shows, as when it moves from the middle of a new thread to the end of its conversation. */
   focusOnShow?: boolean;
 }
@@ -83,6 +85,7 @@ export function Composer({
   onDictate,
   large,
   header,
+  attachments,
   focusOnShow,
 }: ComposerProps) {
   const card = useRef<HTMLFieldSetElement>(null);
@@ -99,7 +102,7 @@ export function Composer({
   latest.current = value;
 
   const { completion, selected, select, dismiss } = useCompletion(completions, value, Math.min(cursor, value.length));
-  const empty = value.trim() === '';
+  const empty = value.trim() === '' && !attachments;
   const pieces = useMemo(() => piecesOf(value, chips), [value, chips]);
 
   // The list goes over the composer, or under the caret's line when whatever holds the composer would cut it off.
@@ -257,6 +260,7 @@ export function Composer({
         className={classNames('min-w-0 rounded-2xl bg-floating shadow-sm ring-1 transition-shadow', dragging ? 'ring-2 ring-faint' : 'ring-edge')}
       >
         {header}
+        {attachments && <div className="flex flex-wrap items-center gap-1 px-3 pt-2.5">{attachments}</div>}
         <div className="relative">
           {chips && (
             <div ref={behind} aria-hidden className={classNames(TEXT, 'pointer-events-none absolute inset-0 overflow-hidden')}>
