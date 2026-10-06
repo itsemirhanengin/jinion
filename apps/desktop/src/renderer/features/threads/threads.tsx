@@ -47,7 +47,11 @@ export function threads(core: Core): Feature {
         id: 'thread.stop',
         title: 'Stop the turn',
         keys: 'escape',
-        when: () => shown()?.snapshot.fields.working === true,
+        // Escape closes the composer's completions or an image open over the window first, which run after this listener.
+        when: () =>
+          shown()?.snapshot.fields.working === true &&
+          document.activeElement?.getAttribute('aria-expanded') !== 'true' &&
+          !document.querySelector('[role="dialog"]'),
         run: () => core.act(core.interrupt(shown()!.id)),
       },
     ],

@@ -11,7 +11,7 @@ export function NoThread() {
     const text = draft.trim();
 
     setDraft('');
-    core.act(core.open().then((id) => core.submit(id, text)));
+    core.act(core.open().then((id) => core.submit(id, { text })));
   };
 
   return (

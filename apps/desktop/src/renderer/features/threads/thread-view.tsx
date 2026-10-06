@@ -2,20 +2,23 @@ import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import { AskPanel, Conversation, PermissionPanel, PlanPanel, Queued, TodoBar, Working } from '@jinion/ui/chat';
 import { useWorkbench } from '@jinion/workbench';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useStore } from 'jotai';
 import { useEffect } from 'react';
 import { fileReference } from '../../lib/references.js';
 import { Problem } from '../../panels/problem.js';
+import { draftImagesAtom, draftsAtom } from '../../state/app.js';
 import { useCore, useSession } from '../../state/session.js';
 import { openChanges } from '../changes/changes.js';
 import { openFile } from '../files/files.js';
 import { Composer } from './composer.js';
+import { draftOf } from './draft.js';
 import { Entries } from './entries.js';
 
 /** A thread's tab: its conversation, and the composer floating over its end. */
 export function ThreadView({ id }: { id: string }) {
   const core = useCore();
   const workbench = useWorkbench();
+  const store = useStore();
   const session = useSession(core, id);
   const files = useAtomValue(core.filesAtom);
 
@@ -42,13 +45,29 @@ export function ThreadView({ id }: { id: string }) {
     },
   };
 
+  // What is typed already stays, after the message that comes back.
+  const editQueued = async (index: number) => {
+    const submission = await core.unqueue(id, fields.queue[index]!.text).catch((error: Error) => core.client.store.set(core.problemAtom, error.message));
+    if (!submission) return;
+
+    const { text, images } = draftOf(
+      submission,
+      (store.get(draftImagesAtom)[id] ?? []).map((image) => image.name),
+    );
+
+    const typed = store.get(draftsAtom)[id]?.trim();
+
+    store.set(draftsAtom, (drafts) => ({ ...drafts, [id]: typed ? `${text}\n${typed}` : text }));
+    store.set(draftImagesAtom, (all) => ({ ...all, [id]: [...(all[id] ?? []), ...images] }));
+  };
+
   // The running turn's todos are the first line inside whichever box is at the bottom.
   const todos = fields.working && state.todos.length > 0 ? <TodoBar groups={state.todos} /> : undefined;
 
   // What takes the composer's place while the agent asks, the composer otherwise.
   const bottom = (
     <>
-      <Queued messages={fields.queue.map((message) => message.text)} />
+      <Queued messages={fields.queue.map((message) => message.text)} onEdit={editQueued} onRemove={(index) => core.act(core.unqueue(id, fields.queue[index]!.text))} />
       {dialog?.id === 'permission' && <PermissionPanel request={dialog.request} onAnswer={(decision) => core.act(core.answerPermission(id, decision))} />}
       {dialog?.id === 'ask' && (
         <AskPanel

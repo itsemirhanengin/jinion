@@ -106,7 +106,12 @@ function coreFor(path: string) {
     notify: (title, body) => {
       if (!document.hasFocus()) new Notification(title, { body });
     },
-    fillPrompt: (session, text) => core?.client.store.set(draftsAtom, (drafts) => ({ ...drafts, [session]: text })),
+    fillPrompt: (session, text, fill) =>
+      core?.client.store.set(draftsAtom, (drafts) => {
+        const typed = drafts[session]?.trim();
+
+        return { ...drafts, [session]: fill === 'prepend' && typed ? `${text}\n${typed}` : text };
+      }),
   }).then((opened) => {
     core = opened;
     appStore.set(coresAtom, (all) => ({ ...all, [path]: opened }));
@@ -135,6 +140,17 @@ function focusCores(focused: boolean) {
 
 /** What is typed in each thread's composer: the app's, as in the terminal app; in each project's store. */
 export const draftsAtom = atom<Record<string, string>>({});
+
+export interface DraftImage {
+  /** As the file was named, or apart from another of the same name; the chip in the draft that stands for it. */
+  name: string;
+  mediaType: string;
+  /** Base64, as the agent takes it. */
+  data: string;
+}
+
+/** The images put in each thread's composer, sent with its next message if their name is still in it. */
+export const draftImagesAtom = atom<Record<string, DraftImage[]>>({});
 
 // The project tabs come back as they were left; only the one shown starts its core, the others when picked.
 const saved = savedProjects();

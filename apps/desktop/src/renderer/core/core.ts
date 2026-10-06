@@ -1,18 +1,24 @@
-import type { AgentMode, PlanDecision } from '@jinion/core/agent/agent';
+import type { AgentMode, AgentPrompt, PlanDecision } from '@jinion/core/agent/agent';
 import type { ModelSelection } from '@jinion/core/agent/models';
 import type { PermissionDecision } from '@jinion/core/agent/permissions';
 import type { QuestionAnswer } from '@jinion/core/agent/questions';
 import { JinionClient } from '@jinion/core/api/client';
 import { portTransport } from '@jinion/core/api/port-transport';
-import type { RepoChanges } from '@jinion/core/api/protocol';
-import type { MemoryNote, SavedSummary } from '@jinion/core/api/schemas';
+import type { PromptFill, RepoChanges, View } from '@jinion/core/api/protocol';
+import type { Initialized, MemoryNote, SavedSummary } from '@jinion/core/api/schemas';
 import { atom } from 'jotai';
 import type { RecentProject } from '../../main/bridge.js';
 import { waitForPort } from './port.js';
 
 export interface CoreScreen {
   notify(title: string, body: string): void;
-  fillPrompt(session: string, text: string): void;
+  fillPrompt(session: string, text: string, fill: PromptFill): void;
+}
+
+/** What the user sent: `text` as the conversation shows it, `prompt` when the agent gets more, such as images. */
+export interface Submission {
+  text: string;
+  prompt?: AgentPrompt;
 }
 
 /**
@@ -33,8 +39,12 @@ export class Core {
   readonly goneAtom = atom(false);
   /** Why the last call the user made failed, such as a thread another Jinion has open; shown until dismissed. */
   readonly problemAtom = atom<string | undefined>(undefined);
+  /** What a slash command asked to show, until the window shows it; a new object each time, so the same view shows again. */
+  readonly viewAtom = atom<{ view: View } | undefined>(undefined);
   /** Prompts to start with, which the demo backend has. */
   examples: string[] = [];
+  /** Jinion's own slash commands, as the core listed them. */
+  commands: Initialized['commands'] = [];
   private closed?: () => void;
 
   private constructor(
@@ -61,8 +71,8 @@ export class Core {
       notifications: 'desktop',
       followAll: true,
       screen: {
-        view: () => {},
-        fillPrompt: (session, text) => screen.fillPrompt(session, text),
+        view: (view) => this.client.store.set(this.viewAtom, { view }),
+        fillPrompt: (session, text, fill) => screen.fillPrompt(session, text, fill),
         notify: (title, body) => screen.notify(title, body),
         expand: () => {},
         exit: () => {},
@@ -77,9 +87,10 @@ export class Core {
     const port = waitForPort(path);
     const [project, version] = await Promise.all([window.desktop.openProject(path), window.desktop.version()]);
     const core = new Core(project, await port, version, screen);
-    const { info } = await core.client.initialize();
+    const { info, commands } = await core.client.initialize();
 
     core.examples = info.examples ?? [];
+    core.commands = commands;
     void core.refreshSaved();
 
     return core;
@@ -126,8 +137,27 @@ export class Core {
   }
 
   /** A prompt, a message for the turn that runs, or a slash command: the core tells them apart. */
-  submit(session: string, text: string) {
-    return this.client.request('session/submit', { session, text });
+  submit(session: string, submission: Submission) {
+    return this.client.request('session/submit', { session, ...submission });
+  }
+
+  /** Sent once the running turn ends. */
+  queue(session: string, submission: Submission) {
+    return this.client.request('session/queue', { session, ...submission });
+  }
+
+  /** The queued message back as it was sent, or null when the turn ended and sent it meanwhile. */
+  unqueue(session: string, text: string) {
+    return this.client.request('session/unqueue', { session, text });
+  }
+
+  context(session: string) {
+    return this.client.request('session/context', { session });
+  }
+
+  /** A line in the thread's conversation, such as why an image couldn't be attached. */
+  notice(session: string, text: string, tone: 'muted' | 'warning' = 'muted') {
+    return this.client.request('session/notice', { session, text, tone });
   }
 
   interrupt(session: string) {

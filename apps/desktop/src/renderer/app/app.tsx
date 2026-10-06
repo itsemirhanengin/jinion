@@ -12,6 +12,7 @@ import { closeProject, coreAtom, coresAtom, moveProject, openProject, projectAto
 import { statusOf } from '../state/session.js';
 import { ProjectPicker } from './project-picker.js';
 import { useThreadTabs } from './thread-tabs.js';
+import { useViews } from './views.js';
 import { workbenchOf } from './workbench.js';
 
 /** Room at the left of the title bar for macOS's traffic lights. */
@@ -69,6 +70,7 @@ function ProjectWindow({ core }: { core: Core }) {
   const gone = useAtomValue(core.goneAtom);
 
   useThreadTabs(core, workbench);
+  useViews(core, workbench);
 
   if (gone) return <Failed text="This project's core stopped. Open the project again to start it." />;
 
