@@ -48,6 +48,24 @@ describe('account methods', () => {
     expect(link).toHaveBeenCalledWith({ name: 'Work', url: 'https://claude.ai/oauth' });
   });
 
+  it('lists and signs in to another backend’s accounts when a call names it, an account of the same name apart', async () => {
+    const claude = Object.assign(new ScriptedBackend(scenarios, [], 0), { name: 'Claude', accounts: accounts() });
+    const codex = Object.assign(new ScriptedBackend(scenarios, [], 0), { name: 'Codex', accounts: accounts() });
+    const { client } = await serve(box.project, { backends: [claude, codex] }).connect();
+    const link = vi.fn();
+
+    codex.accounts.list = async () => [{ name: 'Claude', signedIn: true, email: 'me@openai.com' }];
+    client.on('accounts/sign-in-link', link);
+
+    await expect(client.request('accounts/list', { agent: 'Codex' })).resolves.toEqual([{ name: 'Claude', signedIn: true, email: 'me@openai.com' }]);
+
+    const signing = client.request('accounts/sign-in', { name: 'Claude', agent: 'Codex' });
+
+    await vi.waitFor(() => expect(link).toHaveBeenCalledWith({ name: 'Claude', agent: 'Codex', url: 'https://claude.ai/oauth' }));
+    await client.request('accounts/sign-in-answer', { name: 'Claude', agent: 'Codex', text: '1234' });
+    await expect(signing).resolves.toEqual({ signedIn: true });
+  });
+
   it('stops signing in when the client cancels', async () => {
     const backend = Object.assign(new ScriptedBackend(scenarios, [], 0), { accounts: accounts() });
     const { client } = await serve(box.project, { backends: [backend] }).connect();

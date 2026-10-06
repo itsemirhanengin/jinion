@@ -5,7 +5,7 @@ import { McpServerInfo } from '../agent/mcp.js';
 import { ModelSelection } from '../agent/models.js';
 import { PermissionDecision } from '../agent/permissions.js';
 import { QuestionAnswer } from '../agent/questions.js';
-import { AgentUsage, ContextUsage, UsageHistory } from '../agent/usage.js';
+import { AgentUsage, ContextUsage, UsageHistory, UsageProfile } from '../agent/usage.js';
 import { PromptFill, RewindPoint, View } from '../controllers/context.js';
 import { NoticeTone } from '../conversation/entries.js';
 import { SentAction } from '../conversation/reducer.js';
@@ -52,6 +52,9 @@ const empty = z.object({});
 const done = z.null();
 
 const name = z.object({ name: z.string() });
+
+/** An account by its name, of the backend the user looks at or of the one `agent` names. */
+const account = name.extend({ agent: z.string().optional() });
 
 const session = z.object({ session: z.string() });
 
@@ -135,14 +138,15 @@ export const requests = {
   /** A file in the folder the session works in, by its path there, as `files/list` names it; any other is refused. */
   'files/read': { params: session.extend({ path: z.string() }), result: z.string() },
 
-  // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on.
-  'accounts/list': { params: empty, result: z.array(AgentAccount) },
-  'accounts/select': { params: name, result: done },
-  'accounts/remove': { params: name, result: done },
+  // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on; an account call
+  // with `agent` is about that backend instead.
+  'accounts/list': { params: z.object({ agent: z.string().optional() }), result: z.array(AgentAccount) },
+  'accounts/select': { params: account, result: done },
+  'accounts/remove': { params: account, result: done },
   /** Answered once signing in ends; meanwhile the link and what to type come as notifications. */
-  'accounts/sign-in': { params: name, result: z.object({ signedIn: z.boolean() }) },
-  'accounts/sign-in-answer': { params: name.extend({ text: z.string() }), result: done },
-  'accounts/sign-in-cancel': { params: name, result: done },
+  'accounts/sign-in': { params: account, result: z.object({ signedIn: z.boolean() }) },
+  'accounts/sign-in-answer': { params: account.extend({ text: z.string() }), result: done },
+  'accounts/sign-in-cancel': { params: account, result: done },
 
   'mcp/servers': { params: empty, result: z.array(McpServerInfo) },
   /** The servers to have on, by name; the others go off. */
@@ -152,6 +156,8 @@ export const requests = {
   'usage/limits': { params: z.object({ drivers: z.boolean().optional() }), result: AgentUsage },
   /** `usage/history-progress` tells how far it got. */
   'usage/history': { params: empty, result: UsageHistory },
+  /** The user as a profile shows them: their name in git, and every backend's history together. */
+  'profile/read': { params: empty, result: z.object({ name: z.string().optional(), usage: UsageProfile }) },
 };
 
 /** What a client tells the server, with no answer. */
@@ -172,9 +178,9 @@ export const notificationsToClient = {
   'screen/notify': z.object({ title: z.string(), body: z.string() }),
   'screen/expand': empty,
   'screen/exit': empty,
-  'accounts/sign-in-link': z.object({ name: z.string(), url: z.string() }),
+  'accounts/sign-in-link': account.extend({ url: z.string() }),
   /** `problem` says why it asks again, e.g. a code that didn't work. */
-  'accounts/sign-in-prompt': z.object({ name: z.string(), prompt: z.string(), problem: z.string().optional() }),
+  'accounts/sign-in-prompt': account.extend({ prompt: z.string(), problem: z.string().optional() }),
   'usage/history-progress': z.object({ done: z.number(), total: z.number() }),
 };
 

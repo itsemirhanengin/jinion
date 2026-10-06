@@ -16,7 +16,10 @@ export interface AccountHooks {
   started(): boolean;
 }
 
-/** The accounts of the backend the user looks at. A switch happens between turns only, so no request is cut off. */
+/**
+ * The accounts of the backend the user looks at, or of another one named. A switch happens between turns only, so no
+ * request is cut off.
+ */
 export class AccountController {
   /** The backends whose new login waits for the running turn to end. */
   private readonly loginWaits = new Set<AgentBackend>();
@@ -43,9 +46,8 @@ export class AccountController {
     store.set(seenLimitsAtom, (seen) => ({ ...seen, [key]: { windows, at: Date.now() } }));
   }
 
-  select(name: string) {
+  select(name: string, backend = this.context.activeBackend()) {
     const { store, notice } = this.context;
-    const backend = this.context.activeBackend();
     const accounts = backend.accounts;
     if (!accounts) return notice(`${backend.name} has a single login.`, 'warning');
     if (name === store.get(accountsAtom)[backend.name]) return notice(`Already using the ${name} account.`, 'muted');
@@ -73,9 +75,8 @@ export class AccountController {
       );
   }
 
-  async remove(name: string) {
+  async remove(name: string, backend = this.context.activeBackend()) {
     const { store, notice } = this.context;
-    const backend = this.context.activeBackend();
     if (!backend.accounts) return notice(`${backend.name} has a single login.`, 'warning');
 
     try {
@@ -89,9 +90,8 @@ export class AccountController {
   }
 
   /** Resolves whether the account is signed in now; a cancelled sign-in says nothing. */
-  async signIn(name: string, options: SignInOptions) {
+  async signIn(name: string, options: SignInOptions, backend = this.context.activeBackend()) {
     const { notice } = this.context;
-    const backend = this.context.activeBackend();
     if (!backend.accounts) return false;
 
     try {
