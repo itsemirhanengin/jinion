@@ -140,11 +140,38 @@ async function pick(picked: PreviewPick | undefined | null, more: boolean) {
   overlay?.hide();
   await frames(2);
 
-  if (picked) await ipcRenderer.invoke('jinion:picked', picked);
+  if (picked) {
+    await ipcRenderer.invoke('jinion:picked', picked);
+    toast(picked.kind === 'area' ? 'Added the area to the message' : `Added ${nameOf(picked)} to the message`);
+  }
+
   if (!more) return end(true);
 
   hovered = undefined;
   overlay?.show();
+}
+
+/** As its chip in the composer names it. */
+const nameOf = ({ tag, components }: PickedElement) => (components[0] ? `${components[0]} ${tag}` : `<${tag}>`);
+
+/** Says the pick went to the message, where the user looks: at the foot of the page, for a moment. */
+function toast(text: string) {
+  const host = document.createElement('div');
+  const pill = document.createElement('div');
+
+  host.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;';
+
+  pill.style.cssText =
+    'position:fixed;left:50%;bottom:16px;transform:translateX(-50%);padding:4px 10px;border-radius:999px;background:#181e33;color:#fff;font:12px/16px -apple-system,system-ui,sans-serif;white-space:nowrap;box-shadow:0 1px 2px rgb(0 0 0 / 0.2);transition:opacity 200ms;';
+
+  pill.textContent = text;
+  host.attachShadow({ mode: 'closed' }).append(pill);
+  document.documentElement.append(host);
+
+  setTimeout(() => {
+    pill.style.opacity = '0';
+    setTimeout(() => host.remove(), 200);
+  }, 1600);
 }
 
 function elementPick(element: Element): PreviewPick {
