@@ -1,12 +1,11 @@
-import { keyOf, type Workbench } from '@jinion/workbench';
+import type { Workbench } from '@jinion/workbench';
 import type { Core } from '../../core/core.js';
 import { previewStatesAtom, previewUrlsAtom } from '../../state/previews.js';
 import { savedPreviews, savePreviews } from '../../state/saved.js';
 import { openBesideThread } from '../beside.js';
 import { addPick } from './picks.js';
 
-/** The one preview a project has for now. */
-export const PREVIEW = { kind: 'preview', id: 'page' };
+export const PREVIEW = 'preview';
 
 const THREAD_SHARE = 0.5;
 
@@ -18,22 +17,40 @@ const loaded = new Set<string>();
 /** Every project's previews share the window, so the main process knows each by its project too. */
 export const bridgeKey = (core: Core, id: string) => `${core.project.path}|${id}`;
 
-/** The project's preview addresses as they were left, kept as they change, and what the main process says of them. */
-export function followPreviews(core: Core) {
+/**
+ * The addresses of the previews that came back with the layout, kept as they change, and what the main process says
+ * of them; a preview closed in an earlier run is forgotten.
+ */
+export function followPreviews(core: Core, workbench: Workbench) {
   const { store } = core.client;
+  const open = new Set(previewTabs(workbench).map((tab) => tab.id));
+  const saved = Object.entries(savedPreviews(core.project.path)).filter(([id]) => open.has(id));
 
   if (cores.size === 0) listen();
   cores.set(core.project.path, core);
-  store.set(previewUrlsAtom, savedPreviews(core.project.path));
+  store.set(previewUrlsAtom, Object.fromEntries(saved));
   store.sub(previewUrlsAtom, () => savePreviews(core.project.path, store.get(previewUrlsAtom)));
 }
 
-/** The preview beside the thread, half the room each; brought to the front when it is open already. */
+/** A new, empty preview: with the other previews when there are some, beside the thread otherwise, half the room each. */
 export function openPreview(core: Core, workbench: Workbench) {
-  const open = workbench.getLayout().groups.some((group) => group.tabs.some((tab) => keyOf(tab) === keyOf(PREVIEW)));
+  const tab = { kind: PREVIEW, id: Math.random().toString(36).slice(2, 10) };
+  const group = workbench.getLayout().groups.findIndex((each) => each.tabs.some((other) => other.kind === PREVIEW));
 
-  if (open) workbench.open(PREVIEW);
-  else openBesideThread(workbench, PREVIEW, core.client.store.get(core.client.shownAtom), THREAD_SHARE);
+  if (group === -1) openBesideThread(workbench, tab, core.client.store.get(core.client.shownAtom), THREAD_SHARE);
+  else workbench.open(tab, { group });
+}
+
+export function previewTabs(workbench: Workbench) {
+  return workbench.getLayout().groups.flatMap((group) => group.tabs.filter((tab) => tab.kind === PREVIEW));
+}
+
+/** The preview in sight: the focused group's, or another group's. */
+export function shownPreview(workbench: Workbench) {
+  const { groups, focused } = workbench.getLayout();
+  const key = [groups[focused], ...groups].map((group) => group?.active).find((active) => active?.startsWith(`${PREVIEW}:`));
+
+  return key?.slice(PREVIEW.length + 1);
 }
 
 /** What the user typed, as an address: `localhost:5173` is taken for `http://localhost:5173`. */

@@ -7,20 +7,20 @@ import type { Core } from '../../core/core.js';
 import { previewStatesAtom, previewUrlsAtom } from '../../state/previews.js';
 import { useCore } from '../../state/session.js';
 import { Empty } from './empty.js';
-import { bridgeKey, closePreview, loadOnce, loadPreview, PREVIEW, togglePoint } from './previews.js';
+import { bridgeKey, closePreview, loadOnce, loadPreview, PREVIEW, shownPreview, togglePoint } from './previews.js';
 
 /** The project's page from its dev server, beside the thread, where pointing at it hands what is picked to the composer. */
 export function preview(core: Core): Feature {
   return {
     id: 'preview',
-    tabs: [{ kind: 'preview', Title: PreviewTitle, Mark: PreviewMark, Content: PreviewTab, onClose: (id) => closePreview(core, id) }],
+    tabs: [{ kind: PREVIEW, Title: PreviewTitle, Mark: PreviewMark, Content: PreviewTab, onClose: (id) => closePreview(core, id) }],
     commands: [
       {
         id: 'preview.point',
         title: 'Point at the page',
         keys: 'mod+shift+c',
-        when: (workbench) => workbench.getLayout().groups.some((group) => group.active === `${PREVIEW.kind}:${PREVIEW.id}`),
-        run: () => togglePoint(core, PREVIEW.id),
+        when: (workbench) => shownPreview(workbench) !== undefined,
+        run: (workbench) => togglePoint(core, shownPreview(workbench)!),
       },
     ],
   };
