@@ -1,13 +1,14 @@
 import type { AgentMode } from '@jinion/core/agent/agent';
-import { MODES } from '@jinion/core/agent/modes';
-import { Button, ChoiceMenu, classNames, MarkdownEditor, Waiting } from '@jinion/ui';
+
+import { ChoiceMenu, classNames, MarkdownEditor, Waiting } from '@jinion/ui';
+import { PlanAnswer, type PlanDecision } from '@jinion/ui/chat';
 import { type Feature, useWorkbench } from '@jinion/workbench';
 import { useAtom } from 'jotai';
 import { ChevronDown, ClipboardList, X } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { useState } from 'react';
 import { planEditsAtom } from '../../state/plans.js';
 import { useCore, useSession } from '../../state/session.js';
-import { openPlan, plansOf, planTab, planTitle } from './plans.js';
+import { openPlan, planOptions, plansOf, planTab, planTitle } from './plans.js';
 
 /** A plan as a tab of its own: read and changed as a document, and answered from the bar over it. */
 export function plan(): Feature {
@@ -60,21 +61,21 @@ function PlanTab({ id }: { id: string }) {
   };
 
   // The changes stay once the plan is built, so the tab goes on showing what was built.
-  const answer = (decision: { approve: true; mode: AgentMode } | { approve: false; note?: string }) =>
-    core.act(core.answerPlan(session, decision.approve ? { ...decision, plan: edited } : decision));
+  const answer = (decision: PlanDecision) =>
+    core.act(core.answerPlan(session, decision.approve ? { approve: true, mode: decision.option as AgentMode, plan: edited } : decision));
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex h-12 shrink-0 items-center gap-3 border-b border-line px-5">
+      <div className="@container flex h-12 shrink-0 items-center gap-2 border-b border-line px-4">
         {waiting ? <Waiting /> : <ClipboardList className="size-4 shrink-0 text-faint" />}
-        <span className="shrink-0 text-ink">{waiting ? 'Waiting for you' : latest ? 'Answered' : 'An earlier plan'}</span>
+        <span className="min-w-0 truncate text-ink">{waiting ? 'Waiting for you' : latest ? 'Answered' : 'An earlier plan'}</span>
         {plans.length > 1 ? (
           <ChoiceMenu
             value={shown.id}
             onChange={(picked) => openPlan(workbench, session, picked)}
             groups={[{ choices: plans.map((each, at) => ({ value: each.id, label: `Plan ${at + 1}`, description: planTitle(each.plan) })) }]}
             trigger={
-              <button type="button" className="flex h-7 min-w-0 cursor-default items-center gap-1 rounded-lg px-1.5 text-faint hover:bg-shade hover:text-ink">
+              <button type="button" className="hidden h-7 min-w-0 cursor-default items-center gap-1 rounded-lg px-1.5 text-faint hover:bg-shade hover:text-ink @[34rem]:flex">
                 <span className="truncate">
                   Plan {index + 1} of {plans.length}
                 </span>
@@ -83,7 +84,7 @@ function PlanTab({ id }: { id: string }) {
             }
           />
         ) : (
-          <span className="min-w-0 truncate text-faint">{snapshot.state.title}</span>
+          <span className="hidden min-w-0 truncate text-faint @[34rem]:block">{snapshot.state.title}</span>
         )}
         {edited !== undefined && (
           <span className={classNames('flex shrink-0 items-center gap-0.5 rounded-[4px] bg-(--tint-blue) pl-1.5 text-small/5 text-(--tint-blue-ink)', !waiting && 'pr-1.5')}>
@@ -96,7 +97,7 @@ function PlanTab({ id }: { id: string }) {
           </span>
         )}
         <div className="flex-1" />
-        {waiting && <Answer modes={dialog.modes} onAnswer={answer} />}
+        {waiting && <PlanAnswer options={planOptions(dialog.modes)} onDecide={answer} />}
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-176 px-8 pt-6 pb-16">
@@ -104,61 +105,6 @@ function PlanTab({ id }: { id: string }) {
         </div>
       </div>
     </div>
-  );
-}
-
-/** Keep planning, with what should change, or build in the first mode offered, or another from the menu beside it. */
-function Answer({ modes, onAnswer }: { modes: AgentMode[]; onAnswer: (decision: { approve: true; mode: AgentMode } | { approve: false; note?: string }) => void }) {
-  const [note, setNote] = useState<string>();
-
-  const [first] = modes;
-
-  const keepPlanning = (event: FormEvent) => {
-    event.preventDefault();
-    onAnswer({ approve: false, note: note?.trim() || undefined });
-  };
-
-  if (note !== undefined) {
-    return (
-      <form className="flex min-w-0 flex-1 items-center justify-end gap-2" onSubmit={keepPlanning}>
-        <input
-          ref={(field) => field?.focus()}
-          value={note}
-          onChange={(event) => setNote(event.target.value)}
-          onKeyDown={(event) => event.key === 'Escape' && setNote(undefined)}
-          placeholder="What should change in the plan?"
-          className="h-8 w-full max-w-96 min-w-0 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
-        />
-        <Button type="submit" variant="primary" size="small">
-          Send
-        </Button>
-      </form>
-    );
-  }
-
-  return (
-    <>
-      <Button size="small" onClick={() => setNote('')}>
-        Keep planning
-      </Button>
-      {first && (
-        <span className="inline-flex">
-          <Button variant="primary" size="small" className="rounded-r-none" onClick={() => onAnswer({ approve: true, mode: first })}>
-            Build in {MODES[first].name}
-          </Button>
-          <ChoiceMenu
-            value={first}
-            onChange={(mode) => onAnswer({ approve: true, mode: mode as AgentMode })}
-            groups={[{ label: 'Build in', choices: modes.map((mode) => ({ value: mode, label: MODES[mode].name, description: MODES[mode].description })) }]}
-            trigger={
-              <Button variant="primary" size="icon" className="w-6 rounded-l-none border-l border-on-primary/20" aria-label="Build in another mode">
-                <ChevronDown />
-              </Button>
-            }
-          />
-        </span>
-      )}
-    </>
   );
 }
 

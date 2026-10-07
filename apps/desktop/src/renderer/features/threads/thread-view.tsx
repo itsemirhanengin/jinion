@@ -1,5 +1,4 @@
 import type { AgentMode } from '@jinion/core/agent/agent';
-import { MODES } from '@jinion/core/agent/modes';
 import { AskPanel, Conversation, PermissionPanel, PlanPanel, Queued, TodoBar, Working } from '@jinion/ui/chat';
 import { useWorkbench } from '@jinion/workbench';
 import { useAtomValue, useStore } from 'jotai';
@@ -13,7 +12,7 @@ import { useCore, useSession } from '../../state/session.js';
 import { openChanges } from '../changes/changes.js';
 import { takeQueued } from '../comments/queued.js';
 import { openFile } from '../files/files.js';
-import { openPlan, plansOf } from '../plan/plans.js';
+import { openPlan, planOptions, plansOf, showPlanBeside } from '../plan/plans.js';
 import { Composer } from './composer.js';
 import { draftOf } from './draft.js';
 import { Entries } from './entries.js';
@@ -32,6 +31,13 @@ export function ThreadView({ id }: { id: string }) {
   useEffect(() => {
     if (files.length === 0) core.act(core.refreshFiles(id));
   }, [core, id]);
+
+  // A plan waiting for the user opens beside the conversation, to be read and changed there.
+  const waitingPlan = session?.fields.dialog?.id === 'plan' ? session && plansOf(session.state.entries).at(-1)?.id : undefined;
+
+  useEffect(() => {
+    if (waitingPlan) showPlanBeside(workbench, id, waitingPlan);
+  }, [workbench, id, waitingPlan]);
 
   if (!session) return null;
 
@@ -95,14 +101,14 @@ export function ThreadView({ id }: { id: string }) {
       )}
       {dialog?.id === 'plan' && (
         <PlanPanel
-          options={dialog.modes.map((mode) => ({ id: mode, label: `Yes, in ${MODES[mode].name}` }))}
+          options={planOptions(dialog.modes)}
           onDecide={(decision) => {
             // Changes made in the plan's tab go with an answer given here too.
             const edited = latestPlan && store.get(planEditsAtom)[latestPlan.id];
 
             core.act(core.answerPlan(id, decision.approve ? { approve: true, mode: decision.option as AgentMode, plan: edited } : decision));
           }}
-          onEdit={latestPlan && (() => openPlan(workbench, id, latestPlan.id))}
+          onShow={latestPlan && (() => openPlan(workbench, id, latestPlan.id))}
         />
       )}
       {!dialog && <Composer id={id} snapshot={session} large={!started} header={todos} />}
@@ -125,7 +131,8 @@ export function ThreadView({ id }: { id: string }) {
     <Conversation footer={bottom}>
       <Problem />
       <Entries state={state} working={fields.working} actions={actions} />
-      {fields.working && state.busySince && <Working since={state.busySince} />}
+      {/* While it asks the user, the agent waits rather than works. */}
+      {fields.working && !dialog && state.busySince && <Working since={state.busySince} />}
     </Conversation>
   );
 }
