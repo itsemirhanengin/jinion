@@ -223,8 +223,10 @@ the dev server's preview with picking an element (0.0.12); parallel threads in w
   element, a drag an area, Esc ends it, shift keeps it on. The point script (`main/preview-preload.cts`) runs in a world
   of its own and draws in a closed shadow root; it reads React's and Vue's components in the page's world through
   `contextBridge.executeInMainWorld`, which is experimental. A pick goes into the composer as a chip, and the agent gets
-  it as `[Element #1]` or `[Area #1]` with what it is and a screenshot. Left: the agent's own tools for the preview (a
-  screenshot, the console), more than one preview, device sizes, a queued message keeping its picks.
+  it as `[Element #1]` or `[Area #1]` with what it is and a screenshot. Previews are as many as the user opens, like a
+  browser's tabs, each new one empty, together in a group beside the threads; they belong to the project and come back
+  with their pages, a closed one forgotten. Left: the agent's own tools for the preview (a screenshot, the console),
+  device sizes, a queued message keeping its picks.
 - **The composer on the same editor.** The composer is a textarea: an image is `[Image #1]` at the caret, drawn as a
   chip by a layer behind the text, so it can only be as wide as its text. On `MarkdownEditor`, images and `@` files
   become real chips with a name and an icon.
