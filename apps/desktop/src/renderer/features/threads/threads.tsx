@@ -1,6 +1,6 @@
 import { nextMode } from '@jinion/core/agent/modes';
 import { StatusIcon } from '@jinion/ui';
-import { type Feature, IconButton } from '@jinion/workbench';
+import { activeTab, type Feature, IconButton } from '@jinion/workbench';
 import { MessagesSquare, Plus } from 'lucide-react';
 import type { Core } from '../../core/core.js';
 import { statusOf, useCore, useSession } from '../../state/session.js';
@@ -47,8 +47,10 @@ export function threads(core: Core): Feature {
         id: 'thread.stop',
         title: 'Stop the turn',
         keys: 'escape',
-        // Escape closes the composer's completions or an image open over the window first, which run after this listener.
-        when: () =>
+        // Escape closes the composer's completions or an image open over the window first, which run after this listener;
+        // in another tab, such as a plan being changed, it belongs to that tab.
+        when: (workbench) =>
+          activeTab(workbench.getLayout())?.kind === 'thread' &&
           shown()?.snapshot.fields.working === true &&
           document.activeElement?.getAttribute('aria-expanded') !== 'true' &&
           !document.querySelector('[role="dialog"]'),
