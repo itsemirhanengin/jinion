@@ -2,6 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { savedSessions } from '@jinion/core/api/saved';
 import { app, BrowserWindow, dialog, ipcMain, Menu, nativeTheme, shell } from 'electron';
 import { connectCore, demo, stopCores } from './cores.js';
+import { answerPreviews } from './previews.js';
 import { forgetProject, recentProjects, rememberProject } from './projects.js';
 import { shellPath } from './shell-path.js';
 
@@ -17,6 +18,7 @@ app.whenReady().then(() => {
 
   Menu.setApplicationMenu(menu());
   answer();
+  answerPreviews();
   openWindow();
 
   app.on('activate', () => {

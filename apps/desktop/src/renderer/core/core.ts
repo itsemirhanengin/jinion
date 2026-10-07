@@ -276,6 +276,16 @@ export class Core {
     return this.client.request('terminals/resize', { terminal, cols, rows });
   }
 
+  /** The addresses the terminals printed whose server answers now. */
+  devServers() {
+    return this.client.request('preview/servers', {});
+  }
+
+  /** The scripts that start a server, in the folder the thread works in. */
+  devScripts(session: string | undefined) {
+    return this.client.request('preview/scripts', { session });
+  }
+
   private async refreshSaved() {
     this.client.store.set(this.savedAtom, await this.client.request('saved/list', {}));
   }

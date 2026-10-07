@@ -10,11 +10,13 @@ import { GitBranch, GitFork, Laptop } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { type DraftImage, draftImagesAtom, draftsAtom } from '../../state/app.js';
 import { type DraftComment, draftCommentsAtom } from '../../state/comments.js';
+import { type DraftPick, draftPicksAtom } from '../../state/previews.js';
 import { useCore } from '../../state/session.js';
 import { withComments } from '../comments/comments.js';
 import { CommentsPill } from '../comments/comments-pill.js';
 import { openComment } from '../comments/open-comment.js';
 import { rememberQueued } from '../comments/queued.js';
+import { pickPattern, withPicks } from '../preview/pick-prompt.js';
 import { completions } from './completions.js';
 import { ContextUsage } from './context-usage.js';
 import { imagePattern, imageSource, readImage, submissionOf, uniqueName } from './draft.js';
@@ -25,6 +27,8 @@ const MODE_DOTS: Record<AgentMode, string> = { manual: 'bg-faint', plan: 'bg-acc
 const NO_IMAGES: DraftImage[] = [];
 
 const NO_COMMENTS: DraftComment[] = [];
+
+const NO_PICKS: DraftPick[] = [];
 
 /** A file after `@`, as the completion puts it in, quoted when its path has a space. */
 const FILE_MENTION = /(?<=^|\s)@(?:"[^"\n]+"|[^\s"]+)/;
@@ -40,6 +44,7 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
   const [drafts, setDrafts] = useAtom(draftsAtom);
   const [allImages, setAllImages] = useAtom(draftImagesAtom);
   const [allComments, setAllComments] = useAtom(draftCommentsAtom);
+  const [allPicks, setAllPicks] = useAtom(draftPicksAtom);
   const [asked, setAsked] = useAtom(core.viewAtom);
   const shown = useAtomValue(core.client.shownAtom);
   const app = useAtomValue(core.appAtom);
@@ -53,6 +58,7 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
   const draft = drafts[id] ?? '';
   const images = allImages[id] ?? NO_IMAGES;
   const comments = allComments[id] ?? NO_COMMENTS;
+  const picks = allPicks[id] ?? NO_PICKS;
   const modes = app?.agents.find((agent) => agent.name === fields.agent)?.modes ?? [fields.mode];
   const models = app?.models ?? {};
   const model = models[fields.agent]?.find((option) => option.id === fields.selection.model);
@@ -87,8 +93,9 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
     setDraft('');
     setImages(() => []);
     setAllComments((all) => ({ ...all, [id]: [] }));
+    setAllPicks((all) => ({ ...all, [id]: [] }));
 
-    return { submission: withComments(typed, comments), typed: typed.text };
+    return { submission: withComments(withPicks(typed, picks), comments), typed: typed.text };
   };
 
   const queue = () => {
@@ -119,13 +126,24 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
   const chips = useMemo(() => {
     const pattern = imagePattern(images);
     const skill = skillMention(skills ?? []);
+    const elements = pickPattern(picks.filter((each) => each.pick.kind === 'element'));
+    const areas = pickPattern(picks.filter((each) => each.pick.kind === 'area'));
+
+    // A pick opens what it showed, as an image does.
+    const viewPick = (name: string) => {
+      const image = picks.find((each) => each.name === name)?.pick.image;
+
+      if (image) setViewing({ name, ...image });
+    };
 
     return [
       ...(pattern ? [{ pattern, tone: 'gray' as const, whole: true, onClick: (name: string) => setViewing(images.find((image) => image.name === name)) }] : []),
+      ...(elements ? [{ pattern: elements, tone: 'blue' as const, whole: true, onClick: viewPick }] : []),
+      ...(areas ? [{ pattern: areas, tone: 'gray' as const, whole: true, onClick: viewPick }] : []),
       { pattern: FILE_MENTION, tone: 'blue' as const },
       ...(skill ? [{ pattern: skill, tone: 'violet' as const }] : []),
     ];
-  }, [images, skills]);
+  }, [images, picks, skills]);
 
   return (
     <>
