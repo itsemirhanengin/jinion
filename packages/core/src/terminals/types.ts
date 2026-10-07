@@ -10,6 +10,8 @@ export const TerminalInfo = z.object({
   running: z.boolean(),
   exitCode: z.number().optional(),
   startedAt: z.number(),
+  /** The local addresses it printed, as a dev server does, in the order they came. */
+  urls: z.array(z.string()).optional(),
 });
 
 export type TerminalInfo = z.infer<typeof TerminalInfo>;

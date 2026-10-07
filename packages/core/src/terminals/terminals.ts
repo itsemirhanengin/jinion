@@ -4,9 +4,12 @@ import { basename, dirname, join } from 'node:path';
 import serialize from '@xterm/addon-serialize';
 import xterm from '@xterm/headless';
 import type { IPty } from 'node-pty';
+import { localUrls } from '../preview/urls.js';
 import type { TerminalInfo, TerminalOutput } from './types.js';
 
 const SCROLLBACK = 5000;
+
+const TAIL = 512;
 
 export interface TerminalStart {
   cwd: string;
@@ -47,7 +50,11 @@ export class Terminals {
     const terminal = new Terminal(info, pty, cols, rows, ended);
 
     this.running.set(id, terminal);
-    pty.onData((data) => this.emitOutput({ id, seq: terminal.wrote(data), data }));
+
+    pty.onData((data) => {
+      this.emitOutput({ id, seq: terminal.wrote(data), data });
+      if (terminal.printedUrls(data)) this.changed();
+    });
 
     // A command that took its shell with it, as `exit 2` does, stays to be read; a shell the user left goes, as a
     // terminal does.
@@ -159,6 +166,8 @@ class Terminal {
   private readonly serializer = new serialize.SerializeAddon();
   private seq = 0;
   private parsed = 0;
+  /** The end of the output so far, so an address split between two writes is still found. */
+  private tail = '';
   /** The pty runs; it outlives the agent's command, as the shell takes its place. */
   private alive = true;
   private readonly ended: Promise<void>;
@@ -194,6 +203,20 @@ class Terminal {
     this.copy.write(data, () => (this.parsed = seq));
 
     return seq;
+  }
+
+  /** Whether `data` brought a local address it hadn't printed before. */
+  printedUrls(data: string) {
+    const text = this.tail + data;
+    const known = this.info.urls ?? [];
+    const found = localUrls(text).filter((url) => !known.includes(url));
+
+    this.tail = text.slice(-TAIL);
+    if (found.length === 0) return false;
+
+    this.info.urls = [...known, ...found];
+
+    return true;
   }
 
   input(data: string) {
