@@ -26,7 +26,7 @@ export function workbenchOf(core: Core) {
 
     made.subscribe(() => saveLayout(path, made.getLayout()));
     followAgentTerminals(core, made);
-    followPreviews(core);
+    followPreviews(core, made);
     workbenches.set(path, made);
     workbench = made;
   }

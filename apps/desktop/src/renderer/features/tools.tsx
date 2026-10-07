@@ -1,5 +1,5 @@
 import { classNames } from '@jinion/ui';
-import { type Feature, keyOf, useLayout, useWorkbench } from '@jinion/workbench';
+import { type Feature, useLayout, useWorkbench } from '@jinion/workbench';
 import { useAtomValue } from 'jotai';
 import { ClipboardList, GitCompare, Globe, ListChecks, SquareTerminal } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
@@ -20,6 +20,7 @@ function Tools() {
   const session = useActiveSession();
   const terminals = useAtomValue(core.terminalsAtom);
   const shown = useLayout((layout) => layout.groups[layout.focused]?.active);
+  const previews = useLayout((layout) => layout.groups.flatMap((group) => group.tabs).filter((tab) => tab.kind === PREVIEW).length);
   const open = useLayout((layout) => (layout.bottom.open ? layout.bottom.view : undefined));
   const hasTasks = useHasTasks();
 
@@ -31,8 +32,6 @@ function Tools() {
   const plans = session ? plansOf(session.state.entries) : [];
   const latestPlan = plans.at(-1);
   const running = session?.fields.tasks.filter((task) => task.status === 'running').length ?? 0;
-  // What a server printed is counted as the terminals show it, so one the agent starts marks the item, not a tab.
-  const servers = new Set(terminals.flatMap((terminal) => terminal.urls ?? [])).size;
 
   // A view of the bottom panel opens there, and closes it when it is the one showing.
   const toggle = (view: string) => (bottom === view ? workbench.togglePanel('bottom') : workbench.showView('bottom', view));
@@ -59,8 +58,8 @@ function Tools() {
     {
       icon: <Globe />,
       label: 'Preview',
-      detail: servers || undefined,
-      active: shown === keyOf(PREVIEW),
+      detail: previews || undefined,
+      active: shown?.startsWith(`${PREVIEW}:`) ?? false,
       onClick: () => openPreview(core, workbench),
     },
     ...(hasTasks ? [{ icon: <ListChecks />, label: 'Tasks', detail: running || undefined, active: bottom === 'tasks', onClick: () => toggle('tasks') }] : []),
