@@ -16,6 +16,8 @@ export { Notice } from './notice.js';
 export type { NoticeTone } from './notice.js';
 export { PermissionPanel } from './permission-panel.js';
 export type { PermissionDecision, PermissionPanelProps, PermissionRequest } from './permission-panel.js';
+export { PlanAnswer } from './plan-answer.js';
+export type { PlanAnswerProps } from './plan-answer.js';
 export { PlanPanel } from './plan-panel.js';
 export type { PlanDecision, PlanOption, PlanPanelProps } from './plan-panel.js';
 export { Prose } from './prose.js';

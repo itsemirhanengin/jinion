@@ -7,9 +7,11 @@ import { Leaf } from './pages/leaf.js';
 import { Menus } from './pages/menus.js';
 import { Primitives } from './pages/primitives.js';
 import { Plan } from './pages/plan.js';
+import { PlanRound } from './pages/plan-round.js';
 import { Terminal } from './pages/terminal.js';
 
 const pages = [
+  { id: 'plan-round', title: 'Plan, round 2', Page: PlanRound },
   { id: 'plan', title: 'Plan', Page: Plan },
   { id: 'terminal', title: 'Terminal', Page: Terminal },
   { id: 'leaf', title: 'Leaf', Page: Leaf },

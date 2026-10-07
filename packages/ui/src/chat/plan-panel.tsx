@@ -1,10 +1,10 @@
-import { ClipboardCheck } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
-import { Button } from '../primitives/button.js';
+import { ClipboardList } from 'lucide-react';
+import { PlanAnswer } from './plan-answer.js';
 
 export interface PlanOption {
   id: string;
   label: string;
+  description?: string;
 }
 
 export type PlanDecision = { approve: true; option: string } | { approve: false; note?: string };
@@ -13,55 +13,23 @@ export interface PlanPanelProps {
   /** The ways to go on and build, such as a permission mode each. */
   options: PlanOption[];
   onDecide: (decision: PlanDecision) => void;
-  /** Opens the plan where it can be changed before the answer. */
-  onEdit?: () => void;
+  /** Shows the plan, open beside the conversation or opened again. */
+  onShow?: () => void;
 }
 
-/** Whether to build from the plan the agent wrote above, in the composer's place. */
-export function PlanPanel({ options, onDecide, onEdit }: PlanPanelProps) {
-  const [note, setNote] = useState<string>();
-
-  const keepPlanning = (event: FormEvent) => {
-    event.preventDefault();
-    onDecide({ approve: false, note: note?.trim() || undefined });
-  };
-
+/** In the composer's place while a plan waits: where to read it, and the same answer its tab has. */
+export function PlanPanel({ options, onDecide, onShow }: PlanPanelProps) {
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-floating p-4 shadow-sm ring-1 ring-edge">
-      <div className="flex items-center gap-2 font-medium">
-        <ClipboardCheck className="size-4 text-primary" />
-        Build from this plan?
-      </div>
-      {note === undefined ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {options.map((option, index) => (
-            <Button key={option.id} variant={index === 0 ? 'primary' : 'outline'} size="small" onClick={() => onDecide({ approve: true, option: option.id })}>
-              {option.label}
-            </Button>
-          ))}
-          <Button size="small" onClick={() => setNote('')}>
-            No, keep planning
-          </Button>
-          {onEdit && (
-            <Button size="small" onClick={onEdit}>
-              Edit plan
-            </Button>
-          )}
-        </div>
-      ) : (
-        <form className="flex items-center gap-2" onSubmit={keepPlanning}>
-          <input
-            ref={(field) => field?.focus()}
-            value={note}
-            onChange={(event) => setNote(event.target.value)}
-            placeholder="What should change in the plan?"
-            className="h-8 min-w-0 flex-1 rounded-lg bg-background px-3 ring-1 ring-edge outline-none placeholder:text-faint focus:ring-primary/40"
-          />
-          <Button type="submit" variant="primary" size="small">
-            Send
-          </Button>
-        </form>
+    <div className="@container flex items-center gap-2 rounded-2xl bg-floating py-3 pr-3 pl-4 shadow-sm ring-1 ring-edge">
+      <ClipboardList className="size-4 shrink-0 text-primary" />
+      <span className="shrink-0 font-medium">The plan is ready</span>
+      {onShow && (
+        <button type="button" onClick={onShow} className="min-w-0 cursor-default truncate text-faint hover:text-ink">
+          Open on the right
+        </button>
       )}
+      <div className="flex-1" />
+      <PlanAnswer options={options} onDecide={onDecide} />
     </div>
   );
 }
