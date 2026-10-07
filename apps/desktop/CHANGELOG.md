@@ -1,5 +1,18 @@
 # @jinion/desktop
 
+## 0.0.11
+
+Plans of their own, read and changed before you answer.
+
+- A plan opens by itself beside its thread, a third of the window, as a document you can change: headings, marks over a
+  selection, lists and task lists, code and tables.
+- Diagrams in a plan are drawn, and edited in a window of their own, the drawing following the text as you type.
+- A bar over the plan answers it, Keep planning or Build in a mode, as the panel under the conversation does.
+- A plan you changed goes to the agent with a line saying you changed it, so it builds your version.
+- The conversation shows a plan as one row that opens it, and draws diagrams too.
+- Plans come as a short document: the goal, a diagram where it helps, the steps, the files and the risks.
+- Esc in a plan no longer stops the turn, and no "Working" shows while a plan waits for you.
+
 ## 0.0.10
 
 Two fixes to the terminals.
