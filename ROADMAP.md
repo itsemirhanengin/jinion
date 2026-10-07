@@ -205,13 +205,15 @@ The order agreed for the releases after 0.0.6, one 0.0.x each, with no hurry to 
 on a diff sent to the agent as one message (0.0.8), the terminal (0.0.9, fixes in 0.0.10), the plan editor (0.0.11),
 the dev server's preview with picking an element; parallel threads in worktrees with a pull request flow wait for now.
 
-- **Plans of their own** (done). A plan opens as a tab, a bar over it with where it stands and the answer (Keep
-  planning, Build in a mode), the plan below as a document edited in place: `MarkdownEditor` in `@jinion/ui`, TipTap with
-  Markdown in and out, marks over a selection, task lists, tables, and Mermaid diagrams drawn, their text edited on a
-  click. A changed plan goes to the agent with a line saying the user changed it (`PlanDecision.plan`): Claude reads it
-  from its plan file and the call, Codex in the turn that builds it. The right panel has Plan, the conversation a card
-  that opens it, and the planner is told to write a short document with a diagram, steps, files and risks. Left: `/` for
-  blocks in the editor, and checking against Claude Code itself which of the two places it reads an approved plan from.
+- **Plans of their own** (done, 0.0.11, after two rounds with the user). A plan opens by itself beside its thread, a
+  third of the room, the keys left with the thread; a bar over it says where it stands and answers it (Keep planning,
+  Build in a mode), the same answer the panel under the conversation has. The plan is a document edited in place:
+  `MarkdownEditor` in `@jinion/ui`, TipTap with Markdown in and out, marks over a selection, task lists, tables, and
+  Mermaid diagrams drawn, edited in a dialog over the window, the text beside its drawing. A changed plan goes to the
+  agent with a line saying the user changed it (`PlanDecision.plan`): Claude reads it from its plan file and the call,
+  Codex in the turn that builds it. The conversation shows a plan as one row that opens it, the right panel has Plan,
+  and the planner is told to write a short document with a diagram, steps, files and risks. Left: `/` for blocks in the
+  editor, and checking against Claude Code itself which of the two places it reads an approved plan from.
 - **The composer on the same editor.** The composer is a textarea: an image is `[Image #1]` at the caret, drawn as a
   chip by a layer behind the text, so it can only be as wide as its text. On `MarkdownEditor`, images and `@` files
   become real chips with a name and an icon.
