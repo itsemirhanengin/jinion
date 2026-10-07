@@ -4,6 +4,9 @@ let mermaid: Promise<Mermaid> | undefined;
 
 let drawn = 0;
 
+// Mermaid keeps what it parses in state of its own, so two diagrams drawn at once mix their edges; one at a time.
+let queue: Promise<unknown> = Promise.resolve();
+
 // Mermaid derives its shades from plain colors, so the window's tokens, some of them translucent, are spelled out here.
 const LIGHT = {
   primaryColor: '#ffffff',
@@ -29,7 +32,15 @@ const DARK = {
  * A diagram's text drawn as SVG in the window's type and colors. Mermaid is large, so it loads with the first diagram;
  * its strict mode cleans what it draws, so a diagram the agent wrote can't run anything.
  */
-export async function drawDiagram(text: string) {
+export function drawDiagram(text: string) {
+  const turn = queue.then(() => draw(text));
+
+  queue = turn.catch(() => {});
+
+  return turn;
+}
+
+async function draw(text: string) {
   mermaid ??= import('mermaid').then((module) => module.default);
 
   const library = await mermaid;

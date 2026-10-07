@@ -1,50 +1,37 @@
 import { NodeViewContent, NodeViewWrapper, type ReactNodeViewProps, useEditorState } from '@tiptap/react';
+import { Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { classNames } from '../lib/class-names.js';
 import { drawDiagram } from './diagram.js';
-
-/** How long the text rests before a diagram is drawn again, so it isn't drawn at every key. */
-const SETTLE = 300;
+import { DiagramEditor } from './diagram-editor.js';
 
 /**
- * A code block, and a Mermaid one as the diagram its text draws: the text shows while the caret is in it, a click on the
- * diagram puts it there, and the drawing stays under it as a preview.
+ * A code block, and a Mermaid one as the diagram its text draws. The text stays out of the page; a click on the
+ * drawing opens it over the window, next to the drawing as it changes.
  */
 export function CodeBlockView({ node, editor, getPos }: ReactNodeViewProps) {
   const diagram = node.attrs.language === 'mermaid';
   const text = node.textContent;
+  const empty = text.trim() === '';
 
-  const [drawing, setDrawing] = useState<{ svg?: string; error?: string }>({});
+  const editable = useEditorState({ editor, selector: ({ editor: current }) => current?.isEditable ?? false });
 
-  const inside = useEditorState({
-    editor,
-    selector: ({ editor: current }) => {
-      const at = getPos();
-      if (at === undefined || !current) return false;
-
-      const { from, to } = current.state.selection;
-
-      return from > at && to < at + node.nodeSize;
-    },
-  });
+  const [svg, setSvg] = useState<string | null>();
+  const [editing, setEditing] = useState<string>();
 
   useEffect(() => {
-    if (!diagram) return;
+    if (!diagram || empty) return;
 
     let current = true;
 
-    const timer = setTimeout(() => {
-      drawDiagram(text).then(
-        (svg) => current && setDrawing({ svg }),
-        (error: Error) => current && setDrawing((before) => ({ svg: before.svg, error: error.message })),
-      );
-    }, SETTLE);
+    drawDiagram(text).then(
+      (drawn) => current && setSvg(drawn),
+      () => current && setSvg(null),
+    );
 
     return () => {
       current = false;
-      clearTimeout(timer);
     };
-  }, [diagram, text]);
+  }, [diagram, empty, text]);
 
   if (!diagram) {
     return (
@@ -56,31 +43,60 @@ export function CodeBlockView({ node, editor, getPos }: ReactNodeViewProps) {
     );
   }
 
-  const edit = () => {
+  const save = (changed: string) => {
     const at = getPos();
+    if (at === undefined || changed === text) return;
 
-    if (at !== undefined && editor.isEditable) editor.chain().focus().setTextSelection(at + node.nodeSize - 1).run();
+    editor
+      .chain()
+      .command(({ tr }) => {
+        if (changed.trim() === '') tr.delete(at, at + node.nodeSize);
+        else tr.insertText(changed, at + 1, at + node.nodeSize - 1);
+
+        return true;
+      })
+      .run();
   };
 
   return (
     <NodeViewWrapper className="not-prose flex flex-col gap-2 rounded-lg bg-raised/60 py-4 ring-1 ring-line">
-      <pre className={classNames('mx-4 rounded-md bg-background px-3 py-2 font-mono text-mono ring-1 ring-edge', !inside && 'hidden')}>
+      {/* The text the drawing comes from, kept in the document for the editor; it shows in the diagram's editor. */}
+      <pre className="hidden">
         <NodeViewContent<'code'> as="code" />
       </pre>
-      {drawing.svg && (
-        // biome-ignore lint/a11y/useKeyWithClickEvents: the diagram's text takes the keys; the click only puts the caret in it
-        // biome-ignore lint/a11y/noStaticElementInteractions: see above
-        <div
+      {empty ? (
+        <button
+          type="button"
           contentEditable={false}
-          onClick={edit}
-          className="flex justify-center px-4 [&_svg]:h-auto [&_svg]:max-w-full"
+          disabled={!editable}
+          onClick={() => setEditing(text)}
+          className="flex cursor-default flex-col items-center gap-1.5 px-4 py-3 text-faint hover:text-ink disabled:pointer-events-none"
+        >
+          <Workflow className="size-5" />
+          {editable ? 'An empty diagram · click to write it' : 'An empty diagram'}
+        </button>
+      ) : svg === null ? (
+        <button type="button" contentEditable={false} disabled={!editable} onClick={() => setEditing(text)} className="mx-4 cursor-default text-left disabled:pointer-events-none">
+          <pre className="overflow-x-auto font-mono text-mono whitespace-pre text-muted">{text}</pre>
+        </button>
+      ) : (
+        <button
+          type="button"
+          contentEditable={false}
+          disabled={!editable}
+          onClick={() => setEditing(text)}
+          className="flex cursor-default justify-center px-4 disabled:pointer-events-none [&_svg]:h-auto [&_svg]:max-w-full"
+          aria-label="Edit the diagram"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Mermaid's strict mode cleans the SVG it draws
-          dangerouslySetInnerHTML={{ __html: drawing.svg }}
+          dangerouslySetInnerHTML={{ __html: svg ?? '' }}
         />
       )}
-      <p contentEditable={false} className={classNames('line-clamp-2 px-4 text-center text-small', drawing.error && inside ? 'text-removed' : 'text-faint')}>
-        {drawing.error && inside ? drawing.error : inside ? 'Diagram text, drawn below as you type' : 'Diagram · click to edit its text'}
-      </p>
+      {editable && !empty && (
+        <p contentEditable={false} className="px-4 text-center text-small text-faint">
+          {svg === null ? "This diagram doesn't draw · click to fix its text" : 'Diagram · click to edit'}
+        </p>
+      )}
+      <DiagramEditor text={editing} onSave={save} onClose={() => setEditing(undefined)} />
     </NodeViewWrapper>
   );
 }
