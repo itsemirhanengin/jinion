@@ -1,8 +1,9 @@
 import type { AgentMode } from '@jinion/core/agent/agent';
 import { MODES } from '@jinion/core/agent/modes';
 import type { Entry } from '@jinion/core/conversation/entries';
-import { keyOf, type Workbench } from '@jinion/workbench';
+import type { Workbench } from '@jinion/workbench';
 import { counted } from '../../lib/numbers.js';
+import { openBesideThread } from '../beside.js';
 
 export interface PlanEntry {
   id: string;
@@ -78,20 +79,7 @@ export function showPlanBeside(workbench: Workbench, session: string, entry: str
   if (shownBeside.has(entry)) return;
 
   shownBeside.add(entry);
-
-  const plan = { kind: 'plan', id: `${session}|${entry}` };
-  const thread = `thread:${session}`;
-  const threadGroup = () => workbench.getLayout().groups.findIndex((group) => group.tabs.some((tab) => keyOf(tab) === thread));
-
-  if (workbench.getLayout().groups.length > 1) {
-    workbench.open(plan, { group: threadGroup() === 0 ? 1 : 0 });
-  } else {
-    workbench.open(plan);
-    workbench.splitTo(keyOf(plan), 'right');
-    workbench.resizeSplit(THREAD_SHARE);
-  }
-
-  workbench.focusGroup(Math.max(0, threadGroup()));
+  openBesideThread(workbench, { kind: 'plan', id: `${session}|${entry}` }, session, THREAD_SHARE);
 }
 
 export function planTab(id: string) {

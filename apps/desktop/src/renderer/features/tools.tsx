@@ -1,11 +1,12 @@
 import { classNames } from '@jinion/ui';
-import { type Feature, useLayout, useWorkbench } from '@jinion/workbench';
+import { type Feature, keyOf, useLayout, useWorkbench } from '@jinion/workbench';
 import { useAtomValue } from 'jotai';
-import { ClipboardList, GitCompare, ListChecks, SquareTerminal } from 'lucide-react';
+import { ClipboardList, GitCompare, Globe, ListChecks, SquareTerminal } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { changesOf, useActiveSession, useCore } from '../state/session.js';
 import { openChanges } from './changes/changes.js';
 import { openPlan, plansOf } from './plan/plans.js';
+import { openPreview, PREVIEW } from './preview/previews.js';
 import { useHasTasks } from './tasks.js';
 
 /** The right panel: what there is to look at in the project, as a list that opens it. */
@@ -30,6 +31,8 @@ function Tools() {
   const plans = session ? plansOf(session.state.entries) : [];
   const latestPlan = plans.at(-1);
   const running = session?.fields.tasks.filter((task) => task.status === 'running').length ?? 0;
+  // What a server printed is counted as the terminals show it, so one the agent starts marks the item, not a tab.
+  const servers = new Set(terminals.flatMap((terminal) => terminal.urls ?? [])).size;
 
   // A view of the bottom panel opens there, and closes it when it is the one showing.
   const toggle = (view: string) => (bottom === view ? workbench.togglePanel('bottom') : workbench.showView('bottom', view));
@@ -53,6 +56,13 @@ function Tools() {
           },
         ]
       : []),
+    {
+      icon: <Globe />,
+      label: 'Preview',
+      detail: servers || undefined,
+      active: shown === keyOf(PREVIEW),
+      onClick: () => openPreview(core, workbench),
+    },
     ...(hasTasks ? [{ icon: <ListChecks />, label: 'Tasks', detail: running || undefined, active: bottom === 'tasks', onClick: () => toggle('tasks') }] : []),
     { icon: <SquareTerminal />, label: 'Terminal', detail: terminals.length || undefined, active: bottom === 'terminal', onClick: () => toggle('terminal') },
   ];
