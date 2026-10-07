@@ -18,3 +18,12 @@ export function openBesideThread(workbench: Workbench, tab: TabRef, session: str
 
   workbench.focusGroup(Math.max(0, threadGroup()));
 }
+
+/** Where a thread's tab goes: with the other threads, or in a group without previews, so it doesn't land among the pages. */
+export function threadGroup(workbench: Workbench) {
+  const { groups } = workbench.getLayout();
+  const threads = groups.findIndex((group) => group.tabs.some((tab) => tab.kind === 'thread'));
+  const free = groups.findIndex((group) => !group.tabs.some((tab) => tab.kind === 'preview'));
+
+  return threads !== -1 ? threads : free !== -1 ? free : undefined;
+}

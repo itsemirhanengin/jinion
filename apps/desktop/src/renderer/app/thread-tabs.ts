@@ -1,11 +1,13 @@
 import { activeTab, keyOf, type Workbench } from '@jinion/workbench';
 import { useEffect } from 'react';
 import type { Core } from '../core/core.js';
-import { PREVIEW } from '../features/preview/previews.js';
+import { threadGroup } from '../features/beside.js';
+import { closingLastAtom, spareThreadAtom } from '../state/threads.js';
 
 /**
  * Keeps the thread tabs and the core's open sessions as one: a session that opens gets a tab, a tab whose session closed
- * goes, the session the core shows is the tab shown, and a thread tab picked is the session the core shows.
+ * goes, the session the core shows is the tab shown, and a thread tab picked is the session the core shows. The spare,
+ * kept once the last thread closed, gets no tab.
  */
 export function useThreadTabs(core: Core, workbench: Workbench) {
   useEffect(() => {
@@ -15,8 +17,19 @@ export function useThreadTabs(core: Core, workbench: Workbench) {
     const sync = () => {
       const open = new Set(store.get(core.sessionsAtom).sessions.map((session) => session.id));
 
-      for (const id of open) if (!known.has(id)) workbench.open({ kind: 'thread', id }, { group: threadGroup(workbench) });
+      for (const id of open) {
+        if (known.has(id) || id === store.get(spareThreadAtom)) continue;
+
+        if (store.get(closingLastAtom)) {
+          store.set(closingLastAtom, false);
+          store.set(spareThreadAtom, id);
+        } else {
+          workbench.open({ kind: 'thread', id }, { group: threadGroup(workbench) });
+        }
+      }
+
       for (const id of threadTabs(workbench)) if (!open.has(id)) workbench.remove(keyOf({ kind: 'thread', id }));
+      if (!open.has(store.get(spareThreadAtom) ?? '')) store.set(spareThreadAtom, undefined);
       known = open;
     };
 
@@ -24,7 +37,9 @@ export function useThreadTabs(core: Core, workbench: Workbench) {
       const shown = store.get(core.client.shownAtom);
       const tab = activeTab(workbench.getLayout());
 
-      if (shown && known.has(shown) && !(tab?.kind === 'thread' && tab.id === shown)) workbench.open({ kind: 'thread', id: shown });
+      if (!shown || !known.has(shown) || shown === store.get(spareThreadAtom)) return;
+
+      if (!(tab?.kind === 'thread' && tab.id === shown)) workbench.open({ kind: 'thread', id: shown });
     };
 
     const follow = () => {
@@ -42,15 +57,6 @@ export function useThreadTabs(core: Core, workbench: Workbench) {
       for (const stop of stops) stop();
     };
   }, [core, workbench]);
-}
-
-/** With the other threads, or in a group without previews, so threads coming back don't land among the pages. */
-function threadGroup(workbench: Workbench) {
-  const { groups } = workbench.getLayout();
-  const threads = groups.findIndex((group) => group.tabs.some((tab) => tab.kind === 'thread'));
-  const free = groups.findIndex((group) => !group.tabs.some((tab) => tab.kind === PREVIEW));
-
-  return threads !== -1 ? threads : free !== -1 ? free : undefined;
 }
 
 function threadTabs(workbench: Workbench) {

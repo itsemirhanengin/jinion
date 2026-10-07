@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import type { Core } from '../../core/core.js';
 import { ago } from '../../lib/time.js';
 import { statusOf, useCore } from '../../state/session.js';
+import { spareThreadAtom } from '../../state/threads.js';
 import { keepOrder } from './order.js';
 
 /** Each project's order of its threads, kept while the app runs, so the sidebar shows them as it left them. */
@@ -87,8 +88,10 @@ function Row({ thread }: { thread: Thread }) {
 function useThreads(): Thread[] {
   const core = useCore();
   const saved = useAtomValue(core.savedAtom);
-  const { sessions } = useAtomValue(core.sessionsAtom);
+  const spare = useAtomValue(spareThreadAtom);
+  const all = useAtomValue(core.sessionsAtom).sessions;
 
+  const sessions = all.filter((session) => session.id !== spare);
   const ids = sessions.map((session) => session.id).join();
   const snapshots = useMemo(() => atom((get) => sessions.map((session) => get(core.session(session.id)) as SessionSnapshot | undefined)), [core, ids]);
   const open = useAtomValue(snapshots);
