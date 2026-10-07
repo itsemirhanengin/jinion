@@ -59,6 +59,6 @@ export interface Command {
   /** As `mod+shift+t`, where mod is ⌘ on a Mac and Ctrl elsewhere. */
   keys?: string;
   /** Its keys do nothing, and go on to the page, unless this holds: Esc stops a turn only while one runs. */
-  when?: () => boolean;
+  when?: (workbench: Workbench) => boolean;
   run: (workbench: Workbench) => void;
 }

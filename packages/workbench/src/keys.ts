@@ -39,7 +39,7 @@ export function useShortcuts(workbench: Workbench) {
     const commands = [...workbench.commands, ...layoutCommands].filter((command) => command.keys);
 
     const keyDown = (event: KeyboardEvent) => {
-      const command = commands.find((candidate) => matches(candidate.keys!, event) && (candidate.when?.() ?? true));
+      const command = commands.find((candidate) => matches(candidate.keys!, event) && (candidate.when?.(workbench) ?? true));
       if (!command) return;
 
       event.preventDefault();
