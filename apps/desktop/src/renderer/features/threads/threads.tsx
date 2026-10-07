@@ -1,9 +1,10 @@
 import { nextMode } from '@jinion/core/agent/modes';
 import { StatusIcon } from '@jinion/ui';
-import { activeTab, type Feature, IconButton } from '@jinion/workbench';
+import { activeTab, type Feature, IconButton, useWorkbench, type Workbench } from '@jinion/workbench';
 import { MessagesSquare, Plus } from 'lucide-react';
 import type { Core } from '../../core/core.js';
 import { statusOf, useCore, useSession } from '../../state/session.js';
+import { closeThread, newThread } from './spare.js';
 import { ThreadList, Waiting } from './thread-list.js';
 import { ThreadView } from './thread-view.js';
 
@@ -16,15 +17,15 @@ export function threads(core: Core): Feature {
     return id && snapshot ? { id, snapshot } : undefined;
   };
 
-  const newThread = () => core.act(core.open());
+  const fresh = (workbench: Workbench) => core.act(newThread(core, workbench));
 
   return {
     id: 'threads',
     activity: { title: 'Threads', icon: <MessagesSquare />, Badge: Waiting, Sidebar: ThreadList, Actions: NewThread },
-    tabs: [{ kind: 'thread', Title: ThreadTitle, Mark: ThreadMark, Content: ThreadView, onClose: (id) => core.act(core.close(id)) }],
+    tabs: [{ kind: 'thread', Title: ThreadTitle, Mark: ThreadMark, Content: ThreadView, onClose: (id) => core.act(closeThread(core, id)) }],
     commands: [
-      { id: 'thread.new', title: 'New thread', keys: 'mod+n', run: newThread },
-      { id: 'thread.new-tab', title: 'New thread', keys: 'mod+t', run: newThread },
+      { id: 'thread.new', title: 'New thread', keys: 'mod+n', run: fresh },
+      { id: 'thread.new-tab', title: 'New thread', keys: 'mod+t', run: fresh },
       {
         id: 'thread.focus',
         title: 'Go to the composer',
@@ -77,9 +78,10 @@ function ThreadMark({ id }: { id: string }) {
 
 function NewThread() {
   const core = useCore();
+  const workbench = useWorkbench();
 
   return (
-    <IconButton label="New thread" onClick={() => core.act(core.open())}>
+    <IconButton label="New thread" onClick={() => core.act(newThread(core, workbench))}>
       <Plus />
     </IconButton>
   );

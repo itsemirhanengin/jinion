@@ -7,6 +7,7 @@ import { LayoutGrid } from 'lucide-react';
 import { useMemo } from 'react';
 import type { Core } from '../core/core.js';
 import { NoThread } from '../features/threads/no-thread.js';
+import { newThread } from '../features/threads/spare.js';
 import { Projects } from '../panels/projects.js';
 import { closeProject, coreAtom, coresAtom, moveProject, openProject, projectAtom, projectsAtom, showProjects } from '../state/app.js';
 import { statusOf } from '../state/session.js';
@@ -74,7 +75,7 @@ function ProjectWindow({ core }: { core: Core }) {
 
   if (gone) return <Failed text="This project's core stopped. Open the project again to start it." />;
 
-  return <WorkbenchView workbench={workbench} onNewTab={() => core.act(core.open())} Empty={NoThread} />;
+  return <WorkbenchView workbench={workbench} onNewTab={() => core.act(newThread(core, workbench))} Empty={NoThread} />;
 }
 
 /** At the left of the title bar: back to the projects screen, pressed while it shows. */
