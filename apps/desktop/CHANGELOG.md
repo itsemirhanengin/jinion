@@ -1,5 +1,19 @@
 # @jinion/desktop
 
+## 0.0.12
+
+A preview of your dev server beside the thread, where you point at the page to tell the agent what you mean.
+
+- Preview in the right panel opens the page beside the thread, half the window, with an address bar, back, forward and
+  reload. Its address comes back with the project.
+- An empty preview lists the servers running in the project's terminals and the dev scripts of package.json; Run starts
+  one in a terminal and opens its page once it says where.
+- Point at the page (⇧⌘C): a click picks an element, a drag picks an area. Esc stops, and shift keeps pointing for more.
+- What you pick goes into the composer as a chip, and a note on the page says so; a click on the chip shows it.
+- The agent gets each pick with the components it is in when the page is React or Vue in development, its selector,
+  text, styles and HTML, and a screenshot.
+- The app's shortcuts keep working while the page has the keys, and links that open a window go to your browser.
+
 ## 0.0.11
 
 Plans of their own, read and changed before you answer.

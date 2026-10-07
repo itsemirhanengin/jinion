@@ -203,7 +203,7 @@ Steps, design first, as the TUI was built:
 
 The order agreed for the releases after 0.0.6, one 0.0.x each, with no hurry to 0.1.0: the composer (0.0.7), comments
 on a diff sent to the agent as one message (0.0.8), the terminal (0.0.9, fixes in 0.0.10), the plan editor (0.0.11),
-the dev server's preview with picking an element; parallel threads in worktrees with a pull request flow wait for now.
+the dev server's preview with picking an element (0.0.12); parallel threads in worktrees with a pull request flow wait for now.
 
 - **Plans of their own** (done, 0.0.11, after two rounds with the user). A plan opens by itself beside its thread, a
   third of the room, the keys left with the thread; a bar over it says where it stands and answers it (Keep planning,
@@ -214,7 +214,7 @@ the dev server's preview with picking an element; parallel threads in worktrees 
   Codex in the turn that builds it. The conversation shows a plan as one row that opens it, the right panel has Plan,
   and the planner is told to write a short document with a diagram, steps, files and risks. Left: `/` for blocks in the
   editor, and checking against Claude Code itself which of the two places it reads an approved plan from.
-- **The dev server's preview** (built on `feat/desktop-preview`, for 0.0.12, waiting on the user's round). A tab
+- **The dev server's preview** (done, 0.0.12, after a round with the user). A tab
   beside the thread, a `WebContentsView` the main process draws over the window where the tab's box is
   (`main/previews.ts`), in a session of its own; Electron advises against `<webview>`. While a menu or dialog of the
   window covers it, the box shows a still of it, since nothing of the window can draw over a view. The core finds the
