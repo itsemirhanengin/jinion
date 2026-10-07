@@ -1052,6 +1052,12 @@
                   },
                   "startedAt": {
                     "type": "number"
+                  },
+                  "urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [
@@ -1114,6 +1120,12 @@
                 },
                 "startedAt": {
                   "type": "number"
+                },
+                "urls": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               },
               "required": [
@@ -1267,6 +1279,80 @@
             },
             "result": {
               "type": "null"
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "preview/servers": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {}
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  },
+                  "terminal": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "url",
+                  "terminal",
+                  "title"
+                ]
+              }
+            }
+          },
+          "required": [
+            "params",
+            "result"
+          ]
+        },
+        "preview/scripts": {
+          "type": "object",
+          "properties": {
+            "params": {
+              "type": "object",
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              }
+            },
+            "result": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "script": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "script",
+                  "command"
+                ]
+              }
             }
           },
           "required": [
@@ -1636,6 +1722,8 @@
         "terminals/write",
         "terminals/resize",
         "terminals/close",
+        "preview/servers",
+        "preview/scripts",
         "accounts/list",
         "accounts/select",
         "accounts/remove",
@@ -1823,6 +1911,12 @@
                   },
                   "startedAt": {
                     "type": "number"
+                  },
+                  "urls": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 },
                 "required": [

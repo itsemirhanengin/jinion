@@ -67,6 +67,19 @@ test("a user's shell takes input, and goes once it exits", async () => {
   expect(changes).toEqual([1, 0]);
 });
 
+test('keeps the local addresses it printed, and says so', async () => {
+  const lists: (string[] | undefined)[] = [];
+
+  terminals.onChange((list) => lists.push(list[0]?.urls));
+
+  const { id } = await terminals.open({ cwd: tmpdir(), command: 'printf "Local: http://localhost:\\033[1m5173\\033[22m/\\n"; printf "again http://localhost:5173\\n"' });
+
+  await terminals.settle(id, 5000);
+
+  expect(terminals.info(id).urls).toEqual(['http://localhost:5173']);
+  expect(lists).toContainEqual(['http://localhost:5173']);
+});
+
 test('numbers the output, so a screen read says how far it goes', async () => {
   const output: TerminalOutput[] = [];
 

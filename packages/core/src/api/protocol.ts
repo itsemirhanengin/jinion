@@ -11,6 +11,7 @@ import { NoticeTone } from '../conversation/entries.js';
 import { SentAction } from '../conversation/reducer.js';
 import { GitStatus, RepoChanges } from '../git/types.js';
 import { MemoryScope } from '../memory/types.js';
+import { DevScript, DevServer } from '../preview/types.js';
 import { Submission } from '../prompt/submission.js';
 import { TerminalInfo, TerminalOutput } from '../terminals/types.js';
 import {
@@ -27,6 +28,7 @@ import {
 export type { AgentInfo, SessionFeatures } from '../agent/agent.js';
 export type { AppInfo, PromptFill, RewindPoint, View } from '../controllers/context.js';
 export type { FileChange, GitStatus, RepoChanges } from '../git/types.js';
+export type { DevScript, DevServer } from '../preview/types.js';
 export type { TerminalInfo, TerminalOutput } from '../terminals/types.js';
 export type * from './schemas.js';
 
@@ -163,6 +165,11 @@ export const requests = {
   'terminals/resize': { params: terminal.extend({ cols: size.unwrap(), rows: size.unwrap() }), result: done },
   /** Ends what runs in it, and takes it out of the list. */
   'terminals/close': { params: terminal, result: done },
+
+  /** The local addresses the terminals printed whose server answers now, for a preview to open. */
+  'preview/servers': { params: empty, result: z.array(DevServer) },
+  /** The scripts that start a server in the folder `session` works in, or in the project without one. */
+  'preview/scripts': { params: z.object({ session: z.string().optional() }), result: z.array(DevScript) },
 
   // Accounts, MCP servers and usage are those of the backend the session the user looks at runs on; an account call
   // with `agent` is about that backend instead.

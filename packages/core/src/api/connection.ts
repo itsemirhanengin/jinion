@@ -5,6 +5,7 @@ import { accountMethods } from './methods/accounts.js';
 import { appMethods } from './methods/app.js';
 import { dialogMethods } from './methods/dialogs.js';
 import { gitMethods } from './methods/git.js';
+import { previewMethods } from './methods/preview.js';
 import { sessionMethods } from './methods/session.js';
 import { sessionsMethods } from './methods/sessions.js';
 import { terminalMethods } from './methods/terminals.js';
@@ -25,7 +26,7 @@ export interface Host {
 /** The methods of one area, such as accounts, registered on each connection. */
 export type Methods = (connection: Connection) => void;
 
-const METHODS: Methods[] = [appMethods, sessionsMethods, sessionMethods, dialogMethods, gitMethods, accountMethods, terminalMethods];
+const METHODS: Methods[] = [appMethods, sessionsMethods, sessionMethods, dialogMethods, gitMethods, accountMethods, terminalMethods, previewMethods];
 
 /** One client: what it asks of the app, and the sessions it follows. */
 export class Connection {
