@@ -1,5 +1,16 @@
 # @jinion/desktop
 
+## 0.0.13
+
+As many previews as you like, and a last thread that closes.
+
+- Preview in the right panel opens a new, empty preview each time, in the group with the others, and counts how many
+  are open. Each keeps its own page.
+- The open previews come back with their pages when the app starts again; a closed one is forgotten.
+- Threads coming back no longer land among the previews.
+- Closing the last thread leaves the window without one, its composer in the middle, rather than bringing a New thread
+  back at once. The next new thread reuses the empty one kept behind it, so empty threads don't pile up.
+
 ## 0.0.12
 
 A preview of your dev server beside the thread, where you point at the page to tell the agent what you mean.
