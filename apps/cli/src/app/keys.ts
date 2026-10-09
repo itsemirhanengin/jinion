@@ -1,11 +1,12 @@
 import { useRef } from 'react';
 import { useInput, usePanels, useSelection, useView } from '@jinion/tui';
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom, useAtomValue, useSetAtom } from 'jotai';
 import { nextMode } from '@jinion/core/agent/modes';
 import { draftAtom } from '../prompt/draft.js';
 import { usePrompt } from '../prompt/use-prompt.js';
 import { agentAtom, busyAtom, dialogAtom, modeAtom, tabsAtom, worktreesAtom } from '../state/session.js';
 import { useApi } from './api.js';
+import { sidebarOpenAtom } from './sidebar.js';
 import { useOpenView } from './use-screen.js';
 
 const DOUBLE_ESCAPE_MS = 600;
@@ -25,6 +26,7 @@ export function useKeys() {
   const tabs = useAtomValue(tabsAtom);
   const { modes } = useAtomValue(agentAtom);
   const [draft, setDraft] = useAtom(draftAtom);
+  const setSidebarOpen = useSetAtom(sidebarOpenAtom);
 
   const lastEscape = useRef(0);
 
@@ -42,6 +44,7 @@ export function useKeys() {
       return tab && api.act(api.request('sessions/activate', { session: tab.id }));
     }
 
+    if (key.ctrl && input === 's') return setSidebarOpen((open) => !open);
     if (key.ctrl && input === 'o') return view.toggleExpanded();
     if (key.ctrl && input === 't' && free) return openView({ id: 'tasks' });
     if (key.ctrl && input === 'b' && busy && free) return api.act(api.inSession('session/background', {}));

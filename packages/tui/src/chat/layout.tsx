@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react';
 import { Box } from 'ink';
 import { PanelOutlet, usePanels } from '../runtime/panels.js';
+import { Inset } from '../runtime/width.js';
 
 export interface ShellProps {
-  /** Above the content, such as tabs; a full-screen panel covers it. */
-  header?: ReactNode;
+  /** Beside everything else, from the top to the status line, such as a list of conversations; a full-screen panel covers it. */
+  sidebar?: { width: number; content: ReactNode };
   content: ReactNode;
   aside?: ReactNode;
   prompt: ReactNode;
   status?: ReactNode;
 }
 
-export function Shell({ header, content, aside, prompt, status }: ShellProps) {
+export function Shell({ sidebar, content, aside, prompt, status }: ShellProps) {
   const { top } = usePanels();
 
   if (top?.placement === 'fullscreen') {
@@ -22,9 +23,8 @@ export function Shell({ header, content, aside, prompt, status }: ShellProps) {
     );
   }
 
-  return (
+  const main = (
     <>
-      {header && <Box flexShrink={0}>{header}</Box>}
       {content}
       <Box flexDirection="column" flexShrink={0}>
         {aside}
@@ -34,5 +34,18 @@ export function Shell({ header, content, aside, prompt, status }: ShellProps) {
         {status}
       </Box>
     </>
+  );
+
+  if (!sidebar) return main;
+
+  return (
+    <Box flexGrow={1} minHeight={0}>
+      <Box width={sidebar.width} flexShrink={0} flexDirection="column">
+        {sidebar.content}
+      </Box>
+      <Box flexDirection="column" flexGrow={1} flexShrink={1} minWidth={0}>
+        <Inset by={sidebar.width}>{main}</Inset>
+      </Box>
+    </Box>
   );
 }

@@ -48,6 +48,14 @@ afterEach(() => {
   box.restore();
 });
 
+/** The sidebar's rows: what stands before its line, at `line`, the column it is drawn in at 120 columns by default. */
+const sidebar = (screen: string, line = 22) =>
+  screen
+    .split('\n')
+    .filter((row) => row[line] === '|')
+    .map((row) => row.slice(0, line).trimEnd())
+    .filter(Boolean);
+
 const below = (screen: string) => {
   const lines = screen.split('\n');
   const rule = lines.findLastIndex((line) => line.startsWith('---'));
@@ -98,15 +106,13 @@ describe('App', () => {
     expect(folded).not.toContain('Step 10');
   });
 
-  it('keeps conversations in tabs: ctrl+n opens one, alt+number goes to one, and each keeps its draft and its question', async () => {
-    const bar = (screen: string) => screen.split('\n').find((line) => line.startsWith('+-') && line.includes(' 2 '));
-
+  it('keeps conversations in a sidebar: ctrl+n opens one, alt+number or a click goes to one, and each keeps its draft and its question', async () => {
     await terminal.waitFor('Ask jinion anything');
-    expect(bar(await terminal.screen())).toBeUndefined();
+    expect(sidebar(await terminal.screen())).toEqual([]);
 
     await terminal.type('half a thought');
     await terminal.press('\x0e');
-    expect(bar(await terminal.waitFor('2 New conversation'))).toMatch(/^\+- 1 New conversation --\[ 2 New conversation \]-+\+$/);
+    expect(sidebar(await terminal.waitFor('2 New conversation'))).toEqual([' 1 New conversation', ' 2 New conversation']);
 
     await terminal.type('add rate limiting to the api');
     await terminal.press(KEYS.enter);
@@ -115,14 +121,32 @@ describe('App', () => {
 
     const first = await terminal.waitFor('half a thought');
 
-    expect(bar(first)).toMatch(/^\+-\[ 1 New conversation \]-- 2 add rate limiting to the api \? -+\+$/);
+    expect(sidebar(first)).toEqual([' 1 New conversation', ' 2 add rate limiti… ?']);
     expect(first).not.toContain('Where should the limiter keep its counters?');
 
     await terminal.press('\x1b2');
     await terminal.waitFor('Where should the limiter keep its counters?');
+    await terminal.click('1 New conversation');
+    await terminal.waitFor('half a thought');
+    await terminal.click('2 add rate limiti');
+    await terminal.waitFor('Where should the limiter keep its counters?');
   });
 
-  it('opens a saved conversation from /resume in a tab of its own', async () => {
+  it('hides the sidebar with ctrl+s, and folds it to numbers and marks in a narrow terminal', async () => {
+    terminal.unmount();
+    terminal = renderTerminal(app(new ScriptedBackend(scenarios, demoCommands, 0)), { columns: 90, rows: 30 });
+    await terminal.waitFor('Ask jinion anything');
+    await terminal.press('\x0e');
+
+    expect(sidebar(await terminal.waitFor(/^ 2 {3}\|/m), 5)).toEqual([' 1', ' 2']);
+
+    await terminal.press('\x13');
+    await vi.waitFor(async () => expect(sidebar(await terminal.screen(), 5)).toEqual([]));
+    await terminal.press('\x13');
+    await terminal.waitFor(/^ 2 {3}\|/m);
+  });
+
+  it('opens a saved conversation from /resume beside the one open', async () => {
     await terminal.waitFor('Ask jinion anything');
     await terminal.type('hello');
     await terminal.press(KEYS.enter);
@@ -135,7 +159,7 @@ describe('App', () => {
     await terminal.waitFor('1 conversations');
     await terminal.press(KEYS.enter);
 
-    expect(await terminal.waitFor(/\+- 1 New conversation --\[ 2 \S/)).toContain('> hello');
+    expect(await terminal.waitFor(/^ 2 \S+.*\|/m)).toContain('> hello');
   });
 
   it('opens on the banner and the prompt', async () => {
@@ -388,8 +412,8 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     await terminal.waitFor('2 messages');
     await terminal.press(KEYS.enter);
-    // The message wraps where the temporary folder's path ends.
-    await terminal.waitFor(/no longer exists\.\s+The\s+conversation\s+continues\s+in\s+the\s+project\s+folder\./);
+    // The message wraps where the temporary folder's path ends, and the sidebar starts each line.
+    await terminal.waitFor(/no longer exists\.[\s|]+The[\s|]+conversation[\s|]+continues[\s|]+in[\s|]+the[\s|]+project[\s|]+folder\./);
     expect(lastFolder()).toBe(box.project);
   });
 

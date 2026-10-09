@@ -8,21 +8,23 @@ Her sekme kendi başına bir konuşmadır: mesajları, taslağı, görevleri ve 
 
 ## Bir sekme açın [#open-a-tab]
 
-`ctrl+n`'ye basın ya da `/tab` yazın. İçinde olduğunuz konuşmanın yanında yeni bir konuşma açılır ve konuşmanın
-üstünde bir sekme satırı görünür:
+`ctrl+n`'ye basın ya da `/tab` yazın. İçinde olduğunuz konuşmanın yanında yeni bir konuşma açılır ve sekmeler solda,
+her biri bir satırda, bir sütun olarak görünür:
 
 ```terminal
-{border|+-} {muted|1 Fix the flaky checkout test} {border|--[} {accent|2} {accent,bold|New conversation} {border|]-------------------------------------+}
+{muted| 1} Fix the flaky check…   {border||}
+{accent| 2} {accent,bold|New conversation}     {border||}
 ```
 
-İçinde olduğunuz sekme köşeli parantez içindekidir. Satır iki sekme olduğunda görünür; böylece tek bir konuşma bütün
-alanı kullanır. Dar bir pencerede başlıklar satırı tek satırda tutmak için kısalır.
+İçinde olduğunuz sekme parlak olanıdır. Sütun iki sekme olduğunda görünür; böylece tek bir konuşma bütün alanı
+kullanır. 100 sütundan dar bir pencerede yalnızca her sekmenin numarası ve işareti kalır. `ctrl+s` sütunu gizler ve
+yeniden gösterir.
 
 `/resume` de kayıtlı bir konuşmayı bir sekmede açar. O konuşma zaten açıksa sekmesi öne gelir.
 
 ## Sekmeler arasında geçin [#move-between-tabs]
 
-`alt+1` ile `alt+9` arası o sekmeye gider. Bir sekmeye tıklamak da aynısını yapar.
+`alt+1` ile `alt+9` arası o sekmeye gider. Satırının herhangi bir yerine tıklamak da aynısını yapar.
 
 <Callout title="macOS'ta">
   `alt+1` için Option tuşunun Meta göndermesi gerekir. iTerm2'de bunu Settings, Profiles, Keys, Left Option key
