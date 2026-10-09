@@ -127,7 +127,7 @@ function daily(value: (at: number) => number, until = Date.parse(NOW)) {
 }
 
 /** The turns of the 7 days before `at`. */
-function lastWeek(turns: Turn[], at: number) {
+export function lastWeek(turns: Turn[], at: number) {
   const from = weekStart(at);
 
   return turns.filter((turn) => {

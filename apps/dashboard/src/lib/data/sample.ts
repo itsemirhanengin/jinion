@@ -97,6 +97,14 @@ const odds: [Signal, number][] = [
   ['plan-rejected', 0.01],
 ];
 
+// How much more often than usual turns go wrong by agent, client and kind of work, so comparing them shows something:
+// Codex asks for more permissions, the desktop app froze for one person, and frontend work is where Jinion is best.
+const TROUBLE = {
+  backend: { Claude: 0.9, Codex: 1.45 } as Record<Backend, number>,
+  client: { cli: 0.9, desktop: 1.3 } as Record<Client, number>,
+  category: { frontend: 0.7, backend: 1, tests: 1.45, refactor: 1.25, docs: 0.8, other: 1.1 } as Record<Category, number>,
+};
+
 export const turns: Turn[] = profiles.flatMap(turnsOf).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
 
 export const feedback: Feedback[] = [
@@ -258,8 +266,11 @@ function turnsOf(profile: Profile): Turn[] {
       }
 
       const backend = rand.pick(profile.backends);
+      const client = rand.pick(profile.clients);
+      const category = rand.pick(categories);
       const lateAtNight = new Date(time).getUTCHours() >= 18;
-      const signals = odds.flatMap(([signal, chance]) => (rand.chance(chance * profile.trouble) ? [signal] : []));
+      const trouble = profile.trouble * TROUBLE.backend[backend] * TROUBLE.client[client] * TROUBLE.category[category];
+      const signals = odds.flatMap(([signal, chance]) => (rand.chance(chance * trouble) ? [signal] : []));
 
       if (profile.hitsLimits && lateAtNight && day % 3 === 0 && rand.chance(0.25)) signals.push('limit');
       if (signals.includes('failed') && signals.includes('interrupted')) signals.splice(signals.indexOf('interrupted'), 1);
@@ -273,11 +284,11 @@ function turnsOf(profile: Profile): Turn[] {
         project,
         startedAt: new Date(time).toISOString(),
         durationMs: Math.round(6000 + rand.next() ** 2 * 360_000),
-        client: rand.pick(profile.clients),
+        client,
         backend,
         model: rand.pick(models[backend]),
         outcome: signals.includes('failed') || signals.includes('limit') ? 'failed' : signals.includes('interrupted') ? 'interrupted' : 'done',
-        category: rand.pick(categories),
+        category,
         tokens: { input, output: rand.between(3, 120) * 100, cached: Math.round(input * (0.55 + rand.next() * 0.4)) },
         tools: rand.between(0, 28),
         signals,
