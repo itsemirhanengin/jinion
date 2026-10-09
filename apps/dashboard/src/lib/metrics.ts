@@ -1,7 +1,7 @@
 import { BETA_START, NOW } from '@/lib/clock';
-import type { Goal, MetricId, Turn, User } from '@/lib/data';
+import type { MetricId, Turn, User } from '@/lib/data';
 import { DAY, dayOf, endOfDay, weekStart } from '@/lib/days';
-import { formatMetric, judgeGoal, metricOf } from '@/lib/metric-defs';
+import { formatMetric, metricOf } from '@/lib/metric-defs';
 import { hasProblem } from '@/lib/problems';
 
 /** The metric over the 7 days before `at`. */
@@ -40,7 +40,7 @@ export function measure(id: MetricId, turns: Turn[], users: User[], at: number):
 
 /** The metric at the end of each day from the beta's start to `until`, as a chart draws it. */
 export function series(id: MetricId, turns: Turn[], users: User[], until = Date.parse(NOW)) {
-  return daily((at) => measure(id, turns, users, at), until);
+  return daily((at) => measure(id, turns, users, at), until).slice(metricOf(id).measurableAfterDays ?? 0);
 }
 
 /** A metric as a strip of figures shows it: its value now, its change over a week, and both weeks' days. */
@@ -55,20 +55,25 @@ export function weeklyFigure(label: string, hint: string, turns: Turn[], value: 
   return figureOf(label, hint, daily((at) => value(lastWeek(turns, at))), format);
 }
 
-export function goalProgress(goal: Goal, turns: Turn[], users: User[]) {
-  return judgeGoal(goal, measure(goal.metric, turns, users, Math.min(Date.parse(goal.deadline), Date.parse(NOW))));
-}
-
 // A person is either active or not, so for metrics about the group a person's own share of it is their active days.
 const PERSONAL: Partial<Record<MetricId, MetricId>> = { 'active-users': 'active-days', retained: 'active-days' };
 
-/** Each person's own value of the metric, or the closest personal one, over the 7 days before `at`. */
+// A share or an average of turns has no value for someone who ran none.
+const OF_TURNS: MetricId[] = ['success-rate', 'problem-rate', 'turns-per-day'];
+
+/**
+ * Each person's own value of the metric, or the closest personal one, over the 7 days before `at`; for a metric of
+ * turns, those who ran none that week apart, as `idle`.
+ */
 export function byPerson(id: MetricId, turns: Turn[], users: User[], at = Date.parse(NOW)) {
   const metric = metricOf(PERSONAL[id] ?? id);
+  const ranTurns = (user: User) => lastWeek(turns, at).some((turn) => turn.user === user.id);
+  const counted = OF_TURNS.includes(metric.id) ? users.filter(ranTurns) : users;
 
   return {
     metric,
-    people: users.map((user) => ({ name: user.name, value: measure(metric.id, turns.filter((turn) => turn.user === user.id), [user], at) })),
+    people: counted.map((user) => ({ name: user.name, value: measure(metric.id, turns.filter((turn) => turn.user === user.id), [user], at) })),
+    idle: users.filter((user) => !counted.includes(user)).map((user) => user.name),
   };
 }
 

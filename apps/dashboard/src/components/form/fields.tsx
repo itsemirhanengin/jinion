@@ -47,6 +47,14 @@ export function TextField({ label, description, aside, ...props }: TextProps & O
   );
 }
 
+export function TextArea({ label, description, aside, ...props }: TextProps & Omit<React.ComponentProps<'textarea'>, 'id'>) {
+  return (
+    <Field label={label} description={description} aside={aside}>
+      {(id) => <textarea id={id} rows={3} className={`${input} resize-y`} {...props} />}
+    </Field>
+  );
+}
+
 export function Select({ id, options, value, label, onChange }: { id?: string; options: Option[]; value: string; label?: string; onChange: (value: string) => void }) {
   return (
     <SelectPrimitive.Root items={options} value={value} onValueChange={(next: string | null) => onChange(next ?? '')}>

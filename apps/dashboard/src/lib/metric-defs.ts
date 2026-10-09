@@ -1,8 +1,6 @@
-import { NOW } from '@/lib/clock';
-import type { Goal, MetricId } from '@/lib/data/types';
-import { DAY } from '@/lib/days';
+import type { MetricId } from '@/lib/data/types';
 
-// What each metric means and how a goal on it is judged; no data here, so the browser can use it too.
+// What each metric means; no data here, so the browser can use it too.
 
 export type Unit = 'users' | 'percent' | 'days' | 'turns';
 
@@ -13,6 +11,8 @@ export interface Metric {
   unit: Unit;
   /** Whether a lower value is the better one. */
   lowerIsBetter?: boolean;
+  /** Days into the beta before it means anything, e.g. a week for who is still around a week later. */
+  measurableAfterDays?: number;
 }
 
 export const METRICS: Metric[] = [
@@ -22,6 +22,7 @@ export const METRICS: Metric[] = [
     label: 'Still using it',
     description: 'Of the people who joined a week or more ago, the share who ran a turn in the last 7 days.',
     unit: 'percent',
+    measurableAfterDays: 7,
   },
   {
     id: 'active-days',
@@ -48,17 +49,6 @@ export const METRICS: Metric[] = [
 export const metricOf = (id: MetricId) => METRICS.find((metric) => metric.id === id)!;
 
 export type GoalStatus = 'on-track' | 'at-risk' | 'met' | 'missed';
-
-/** Where a goal stands with its metric at `value`: how far along it is, and whether it holds. */
-export function judgeGoal(goal: Goal, value: number) {
-  const metric = metricOf(goal.metric);
-  const ended = goal.deadline <= NOW;
-  const meets = metric.lowerIsBetter ? value <= goal.target : value >= goal.target;
-  const progress = metric.lowerIsBetter ? (value ? Math.min(1, goal.target / value) : 1) : Math.min(1, value / goal.target);
-  const status: GoalStatus = ended ? (meets ? 'met' : 'missed') : meets ? 'on-track' : 'at-risk';
-
-  return { metric, value, progress, status, daysLeft: Math.max(0, Math.ceil((Date.parse(goal.deadline) - Date.parse(NOW)) / DAY)) };
-}
 
 export function formatMetric(value: number, unit: Unit) {
   switch (unit) {
