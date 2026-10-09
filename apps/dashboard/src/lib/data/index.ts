@@ -106,17 +106,20 @@ function stepsOf(turn: Turn): TurnStep[] {
   const rand = random(seedOf(turn.id));
   const steps: TurnStep[] = [{ offsetMs: 0, kind: 'prompt', label: 'Message sent' }];
   const count = Math.min(turn.tools, 12);
-  const step = turn.durationMs / (count + 2);
+  // Each step gets a random share of the turn, so some take seconds and a test run takes most of a minute.
+  const weights = Array.from({ length: count + 1 }, () => 0.2 + rand.next() ** 2 * 3);
+  const unit = (turn.durationMs * 0.9) / weights.reduce((sum, weight) => sum + weight, 0);
   let at = rand.between(800, 3000);
 
-  steps.push({ offsetMs: at, kind: 'thinking', label: 'Thought', durationMs: Math.round(step * 0.6) });
+  steps.push({ offsetMs: at, kind: 'thinking', label: 'Thought', durationMs: Math.round(weights[0]! * unit * 0.8) });
 
   for (let index = 0; index < count; index++) {
     const [name, target] = rand.pick(tools);
     const ok = !(turn.signals.includes('failed') && index === count - 1);
+    const took = Math.round(weights[index + 1]! * unit);
 
-    at += Math.round(step);
-    steps.push({ offsetMs: at, kind: 'tool', label: name, detail: target, durationMs: Math.round(step * 0.8), ok });
+    at += Math.round(weights[index]! * unit);
+    steps.push({ offsetMs: at, kind: 'tool', label: name, detail: target, durationMs: Math.round(took * 0.85), ok });
 
     if (turn.signals.includes('corrected') && index === Math.floor(count / 2)) {
       steps.push({ offsetMs: at + 500, kind: 'steer', label: 'User steered the turn', detail: 'no, keep the existing props' });

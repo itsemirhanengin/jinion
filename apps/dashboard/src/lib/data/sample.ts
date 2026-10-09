@@ -295,7 +295,8 @@ function turnsOf(profile: Profile): Turn[] {
 function feedbackOn(userId: string, day: number, kind: Feedback['kind']): Omit<Feedback, 'status'> {
   const start = Date.parse(BETA_START) + day * DAY;
   const theirs = turns.filter((turn) => turn.user === userId && Date.parse(turn.startedAt) >= start && Date.parse(turn.startedAt) < start + DAY);
-  const turn = theirs.find((candidate) => candidate.signals.length > 0) ?? theirs[0];
+  // A like goes with a turn that went well, anything else with one that had trouble.
+  const turn = theirs.findLast((candidate) => (kind === 'liked') === (candidate.signals.length === 0)) ?? theirs.at(-1);
   if (!turn) throw new Error(`The sample data has no turn of ${userId} on day ${day}.`);
 
   if (kind === 'disliked') turn.signals.push('disliked');

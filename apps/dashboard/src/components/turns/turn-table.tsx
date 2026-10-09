@@ -48,11 +48,15 @@ export function TurnTable({ turns, people, emptyText }: { turns: Turn[]; people?
   );
 }
 
-/** A turn's signals, the problems first; the ordinary ones in grey. */
-export function SignalBadges({ signals }: { signals: Turn['signals'] }) {
-  if (signals.length === 0) return <span className="text-neutral-400">—</span>;
+// The outcome next to the signals already says these.
+const SAID_BY_OUTCOME: Turn['signals'] = ['failed', 'interrupted'];
 
-  const sorted = [...signals].sort((a, b) => Number(isProblem(b)) - Number(isProblem(a)));
+/** A turn's signals beyond its outcome, the problems first; the ordinary ones in grey. */
+export function SignalBadges({ signals, dashWhenNone = true }: { signals: Turn['signals']; dashWhenNone?: boolean }) {
+  const shown = signals.filter((signal) => !SAID_BY_OUTCOME.includes(signal));
+  if (shown.length === 0) return dashWhenNone ? <span className="text-neutral-400">—</span> : null;
+
+  const sorted = shown.sort((a, b) => Number(isProblem(b)) - Number(isProblem(a)));
 
   return (
     <span className="inline-flex flex-wrap gap-1">

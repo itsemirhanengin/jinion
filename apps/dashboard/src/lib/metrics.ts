@@ -47,13 +47,7 @@ export const metricOf = (id: MetricId) => METRICS.find((metric) => metric.id ===
 /** The metric over the 7 days before `at`. */
 export function measure(id: MetricId, turns: Turn[], users: User[], at: number): number {
   const from = weekStart(at);
-
-  const window = turns.filter((turn) => {
-    const time = Date.parse(turn.startedAt);
-
-    return time < at && time >= from;
-  });
-
+  const window = lastWeek(turns, at);
   const active = new Set(window.map((turn) => turn.user));
   const settled = users.filter((user) => Date.parse(user.joinedAt) <= from);
   const joined = users.filter((user) => Date.parse(user.joinedAt) <= at);
@@ -86,32 +80,57 @@ export function measure(id: MetricId, turns: Turn[], users: User[], at: number):
 
 /** The metric at the end of each day from the beta's start to `until`, as a chart draws it. */
 export function series(id: MetricId, turns: Turn[], users: User[], until = Date.parse(NOW)) {
-  const points: { day: string; value: number }[] = [];
-
-  for (let end = endOfDay(Date.parse(BETA_START)); end - DAY < until; end += DAY) {
-    const at = Math.min(end, until);
-
-    points.push({ day: new Date(at - 1).toISOString(), value: measure(id, turns, users, at) });
-  }
-
-  return points;
+  return daily((at) => measure(id, turns, users, at), until);
 }
 
 /** A metric as a strip of figures shows it: its value now, its change over a week, and both weeks' days. */
 export function figure(id: MetricId, turns: Turn[], users: User[]) {
   const metric = metricOf(id);
-  const points = series(id, turns, users).map((point) => point.value);
+
+  return figureOf(metric.label, metric.description, series(id, turns, users), (value) => formatMetric(value, metric.unit));
+}
+
+/** A figure for a value of a week's turns that isn't one of the metrics, e.g. how long they took on average. */
+export function weeklyFigure(label: string, hint: string, turns: Turn[], value: (week: Turn[]) => number, format: (value: number) => string) {
+  return figureOf(label, hint, daily((at) => value(lastWeek(turns, at))), format);
+}
+
+function figureOf(label: string, hint: string, series: { value: number }[], format: (value: number) => string) {
+  const points = series.map((point) => point.value);
   const value = points.at(-1) ?? 0;
   const weekBefore = points.at(-8);
-  const change = weekBefore ? ((value - weekBefore) / weekBefore) * 100 : null;
 
   return {
-    label: metric.label,
-    hint: metric.description,
-    value: formatMetric(value, metric.unit),
-    change,
+    label,
+    hint,
+    value: format(value),
+    change: weekBefore ? ((value - weekBefore) / weekBefore) * 100 : null,
     trend: { current: points.slice(-7), previous: points.slice(-14, -7) },
   };
+}
+
+/** A value at the end of each day from the beta's start to `until`. */
+function daily(value: (at: number) => number, until = Date.parse(NOW)) {
+  const points: { day: string; value: number }[] = [];
+
+  for (let end = endOfDay(Date.parse(BETA_START)); end - DAY < until; end += DAY) {
+    const at = Math.min(end, until);
+
+    points.push({ day: new Date(at - 1).toISOString(), value: value(at) });
+  }
+
+  return points;
+}
+
+/** The turns of the 7 days before `at`. */
+function lastWeek(turns: Turn[], at: number) {
+  const from = weekStart(at);
+
+  return turns.filter((turn) => {
+    const time = Date.parse(turn.startedAt);
+
+    return time < at && time >= from;
+  });
 }
 
 export type GoalStatus = 'on-track' | 'at-risk' | 'met' | 'missed';
