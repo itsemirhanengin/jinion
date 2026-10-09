@@ -53,7 +53,7 @@ export interface AgentSession {
   setMode(mode: AgentMode): Promise<void>;
   /** Skills and MCP prompts arrive as `$name` mentions, anywhere in the prompt and several at once. */
   run(prompt: AgentPrompt, context: RunContext): AsyncIterable<AgentEvent>;
-  /** Adds a message to the running turn; `undefined` when no turn runs to take it. */
+  /** Adds a message to the running turn, with an id a `read` event names; `undefined` when no turn runs to take it. */
   steer?(prompt: AgentPrompt): string | undefined;
   /** `undefined` when there is nothing to restore. */
   rewindPreview?(id: string): Promise<FileChanges | undefined>;

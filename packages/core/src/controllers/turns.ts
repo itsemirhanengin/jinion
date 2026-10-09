@@ -53,7 +53,20 @@ export class TurnController {
     const id = this.context.agent.steer?.(sent);
     if (id === undefined) return this.enqueue(submission);
 
-    this.dispatch({ type: 'steer', text, prompt: sent.text === text ? undefined : sent.text, id });
+    const steered = { id, text, prompt: sent.text === text ? undefined : sent.text };
+
+    this.context.store.set(this.context.atoms.unread, (unread) => [...unread, steered]);
+  }
+
+  /** A steered message joins the conversation where the agent reads it, not where the user sent it. */
+  read(id: string) {
+    const { store, atoms } = this.context;
+    const unread = store.get(atoms.unread);
+    const steered = unread.find((message) => message.id === id);
+    if (!steered) return;
+
+    store.set(atoms.unread, unread.filter((message) => message !== steered));
+    this.dispatch({ type: 'steer', ...steered });
   }
 
   enqueue(submission: Submission) {
@@ -123,9 +136,12 @@ export class TurnController {
     try {
       for await (const event of events(this.runContext(abort))) this.hooks.apply(event);
 
+      this.readTheRest();
       this.dispatch({ type: 'finish', outcome: 'done' });
       notifyIfLong(`Done with ${label} after ${elapsed(Date.now() - started)}.`);
     } catch (error) {
+      this.readTheRest();
+
       if (abort.signal.aborted) this.dispatch({ type: 'finish', outcome: 'interrupted' });
       else {
         const message = errorMessage(error);
@@ -177,6 +193,11 @@ export class TurnController {
       },
       asksBeforeCommits: () => asksBeforeCommits(this.context.info.cwd),
     };
+  }
+
+  /** The agent got them even when it didn't say it read them, so they stay in the conversation, in this turn. */
+  private readTheRest() {
+    for (const { id } of this.context.store.get(this.context.atoms.unread)) this.read(id);
   }
 
   private returnQueueToPrompt() {

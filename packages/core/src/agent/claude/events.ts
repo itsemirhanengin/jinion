@@ -82,6 +82,14 @@ export class ClaudeEvents {
   }
 
   private *events(message: SDKMessage): Generator<AgentEvent> {
+    const read = readCommand(message);
+
+    if (read) {
+      yield { type: 'read', id: read };
+
+      return;
+    }
+
     switch (message.type) {
       case 'system': {
         if (message.subtype === 'status' || message.subtype === 'compact_boundary') {
@@ -281,6 +289,15 @@ function resultText(content: unknown) {
     .filter((block) => isObject(block) && block.type === 'text')
     .map((block) => text((block as Input).text))
     .join('\n');
+}
+
+// Claude Code sends `command_lifecycle` outside the SDK's types: a prompt is `started` when the model gets it.
+function readCommand(message: object) {
+  if (!('type' in message) || message.type !== 'command_lifecycle') return undefined;
+
+  const { state, command_uuid } = message as { state?: unknown; command_uuid?: unknown };
+
+  return state === 'started' && typeof command_uuid === 'string' ? command_uuid : undefined;
 }
 
 /** Claude Code echoes some messages back, e.g. a command's output, which nobody new said. */

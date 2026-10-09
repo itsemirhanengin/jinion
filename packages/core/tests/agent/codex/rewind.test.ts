@@ -15,7 +15,7 @@ const turn = (id: string, changes: FileUpdateChange[]): Turn => ({
   id,
   status: 'completed',
   error: null,
-  items: [{ type: 'userMessage', id: `${id}-message` }, { type: 'fileChange', id: `${id}-patch`, changes, status: 'completed' }],
+  items: [{ type: 'userMessage', id: `${id}-message`, content: [] }, { type: 'fileChange', id: `${id}-patch`, changes, status: 'completed' }],
 });
 
 describe('Codex rewind', () => {

@@ -19,8 +19,8 @@ export const appFields = {
 } satisfies FieldAtoms<AppFields>;
 
 /** Where the server reads a session's `SessionFields` from. */
-export const sessionFields = ({ agent, features, selection, mode, tasks, dialog, queue, wantsWorktree, working }: SessionAtoms) =>
-  ({ agent, features, selection, mode, tasks, dialog, queue, wantsWorktree, working }) satisfies FieldAtoms<SessionFields>;
+export const sessionFields = ({ agent, features, selection, mode, tasks, dialog, queue, steering, wantsWorktree, working }: SessionAtoms) =>
+  ({ agent, features, selection, mode, tasks, dialog, queue, steering, wantsWorktree, working }) satisfies FieldAtoms<SessionFields>;
 
 export function readFields<V>(store: Store, fields: FieldAtoms<V>) {
   return Object.fromEntries(Object.entries<Atom<unknown>>(fields).map(([name, atom]) => [name, store.get(atom)])) as V;

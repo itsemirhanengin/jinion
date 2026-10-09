@@ -32,6 +32,8 @@ export const AgentEvent = z.discriminatedUnion('type', [
   z.object({ type: z.literal('mode'), mode: AgentMode }),
   z.object({ type: z.literal('commands'), commands: z.array(AgentCommand) }),
   z.object({ type: z.literal('sent'), id: z.string() }),
+  /** The agent began reading a prompt, by the id `steer` gave it; a steered one waits until then. */
+  z.object({ type: z.literal('read'), id: z.string() }),
   z.object({ type: z.literal('tasks'), tasks: z.array(BackgroundTask) }),
   z.object({ type: z.literal('task-end'), task: BackgroundTask, summary: z.string().optional() }),
   /** Between turns: a turn the agent started itself, e.g. for a task that ended; `Agent.join` follows it. */

@@ -236,6 +236,9 @@ export class Session {
 
       case 'turn-start':
         return this.turns.followAgent();
+
+      case 'read':
+        return this.turns.read(event.id);
     }
 
     this.dispatch({ type: 'event', event });

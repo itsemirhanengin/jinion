@@ -3638,6 +3638,12 @@
             "$ref": "#/$defs/Submission"
           }
         },
+        "steering": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
         "wantsWorktree": {
           "type": "boolean"
         },
@@ -5070,6 +5076,22 @@
           "properties": {
             "type": {
               "type": "string",
+              "const": "read"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "type",
+            "id"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
               "const": "tasks"
             },
             "tasks": {
@@ -5883,6 +5905,28 @@
             "session",
             "name",
             "value"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "session": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string",
+              "const": "steering"
+            },
+            "value": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "session",
+            "name"
           ]
         },
         {
