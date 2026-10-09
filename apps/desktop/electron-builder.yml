@@ -9,7 +9,8 @@ mac:
   target:
     - target: dmg
       arch: [arm64]
-  # Unsigned until there is a Developer ID to sign and notarize with; the first open asks the user to confirm.
-  identity: null
+  # Signed with the Developer ID Application certificate in the keychain, every binary inside too, and notarized with
+  # the notarytool profile `scripts/package.ts` names.
+  notarize: true
 dmg:
   title: Jinion ${version}

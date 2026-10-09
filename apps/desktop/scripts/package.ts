@@ -13,6 +13,18 @@ const electron = (createRequire(import.meta.url)('electron/package.json') as { v
 const config = fileURLToPath(new URL('../electron-builder.yml', import.meta.url));
 // From the repository rather than the app folder, which holds only what the app runs with.
 const icon = fileURLToPath(new URL('../resources/icon.icns', import.meta.url));
+const entitlements = fileURLToPath(new URL('../resources/entitlements.mac.plist', import.meta.url));
+
+// electron-builder skips signing quietly when it finds no certificate, which would make a release macOS refuses.
+const identities = spawnSync('security', ['find-identity', '-v', '-p', 'codesigning'], { encoding: 'utf8' }).stdout;
+
+if (!identities.includes('Developer ID Application')) {
+  console.error('No Developer ID Application certificate in the keychain, so the app could not be signed.');
+  process.exit(1);
+}
+
+// Made once with `xcrun notarytool store-credentials jinion`; the password stays in the keychain.
+process.env.APPLE_KEYCHAIN_PROFILE ??= 'jinion';
 
 rmSync(out, { recursive: true, force: true });
 
@@ -41,7 +53,18 @@ for (const platform of readdirSync(prebuilds)) {
   if (existsSync(helper)) chmodSync(helper, 0o755);
 }
 
-run('electron-builder', ['--mac', '--projectDir', app, '--config', config, `-c.electronVersion=${electron}`, `-c.directories.output=${out}`, `-c.mac.icon=${icon}`]);
+run('electron-builder', [
+  '--mac',
+  '--projectDir',
+  app,
+  '--config',
+  config,
+  `-c.electronVersion=${electron}`,
+  `-c.directories.output=${out}`,
+  `-c.mac.icon=${icon}`,
+  `-c.mac.entitlements=${entitlements}`,
+  `-c.mac.entitlementsInherit=${entitlements}`,
+]);
 
 const { version } = JSON.parse(readFileSync(`${app}/package.json`, 'utf8')) as { version: string };
 
