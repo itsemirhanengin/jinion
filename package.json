@@ -10,6 +10,7 @@
     "dev": "pnpm --filter @jinion/cli dev",
     "dev:docs": "pnpm --filter @jinion/docs dev",
     "dev:website": "pnpm --filter @jinion/website dev",
+    "dev:dashboard": "pnpm --filter @jinion/dashboard dev",
     "dev:ui": "pnpm --filter @jinion/ui dev",
     "dev:workbench": "pnpm --filter @jinion/workbench dev",
     "dev:desktop": "pnpm --filter @jinion/desktop dev",

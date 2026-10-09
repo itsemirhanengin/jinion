@@ -150,6 +150,16 @@
           }
         }
       }
+    },
+    {
+      // Safari drops a list's semantics once its bullets are styled away, so the dashboard's lists say role="list".
+      "includes": ["apps/dashboard/src/**"],
+      "linter": { "rules": { "a11y": { "noRedundantRoles": "off" } } }
+    },
+    {
+      // Reduced motion has to win over every animation class, which only !important does.
+      "includes": ["apps/dashboard/src/app/globals.css"],
+      "linter": { "rules": { "complexity": { "noImportantStyles": "off" } } }
     }
   ]
 }

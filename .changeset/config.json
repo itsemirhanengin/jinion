@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@4.0.1/schema.json",
   "baseBranch": "main",
   "access": "public",
-  "ignore": ["@jinion/docs", "@jinion/website", "@jinion/spacing"],
+  "ignore": ["@jinion/docs", "@jinion/website", "@jinion/dashboard", "@jinion/spacing"],
   "privatePackages": { "version": true, "tag": true },
   "fixed": [],
   "linked": [],

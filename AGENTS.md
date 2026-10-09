@@ -16,7 +16,9 @@ drives it, `packages/tui` the terminal UI framework the app is built on (Ink and
 list virtualizer under its scroll view, `apps/desktop` the desktop app in Electron (`pnpm dev:desktop`, with `--demo`
 for the scripted backend), `packages/ui` its design system (React and Tailwind, drawn in its playground with
 `pnpm dev:ui`), `packages/spacing` the checker for the vertical layout below, `apps/docs` the docs site, `apps/website`
-the page at jinion.co. `ROADMAP.md` has what is left to build, the desktop app first.
+the page at jinion.co, `apps/dashboard` the private beta's dashboard at dashboard.jinion.co (Next.js, in Sit's design
+language, on sample data in `src/lib/data` until its API is there; `pnpm dev:dashboard`). `ROADMAP.md` has what is left
+to build, the desktop app first.
 
 ## Architecture
 
@@ -146,8 +148,8 @@ or a one-line fix, can go straight to `main`.
 
 ## Versions and releases
 
-Changesets keeps the versions. `core`, `cli`, `tui`, `ui` and `virtualization` each have their own; `docs`, `website` and
-`spacing` have none (`ignore` in `.changeset/config.json`). The products are what users install: `@jinion/cli` now, the
+Changesets keeps the versions. `core`, `cli`, `tui`, `ui` and `virtualization` each have their own; `docs`, `website`,
+`dashboard` and `spacing` have none (`ignore` in `.changeset/config.json`). The products are what users install: `@jinion/cli` now, the
 desktop app later. Each has its own version and releases on its own; they aren't kept in step.
 
 - A branch that changes a published package carries a changeset for it: a file in `.changeset/` naming each package

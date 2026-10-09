@@ -1,0 +1,298 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --animate-glow-drift: glow-drift 6s ease-in-out infinite;
+
+  @keyframes glow-drift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: "InterVariable", sans-serif;
+  --font-sans--font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+
+  /* Buttons, and links drawn as buttons, give a little under the finger. */
+  button,
+  a[class*="rounded-lg"],
+  a[class*="rounded-full"] {
+    transition-property: color, background-color, box-shadow, opacity, scale;
+    transition-duration: 150ms;
+    transition-timing-function: var(--ease-motion);
+  }
+  button:not(:disabled):active,
+  a[class*="rounded-lg"]:active,
+  a[class*="rounded-full"]:active {
+    scale: 0.97;
+    transition-duration: 60ms;
+  }
+}
+
+/* ─── Motion ──────────────────────────────────────────────────────────────── */
+
+:root {
+  --ease-motion: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Only the page content and the named highlights move; the sidebar and the rest of the screen hold still. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition {
+  pointer-events: none;
+}
+
+@keyframes vt-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-rise {
+  from {
+    translate: 0 12px;
+    filter: blur(3px);
+  }
+}
+@keyframes vt-from-x {
+  from {
+    translate: var(--vt-offset) 0;
+  }
+}
+@keyframes vt-to-x {
+  to {
+    translate: var(--vt-offset) 0;
+  }
+}
+@keyframes vt-from-y {
+  from {
+    translate: 0 var(--vt-offset);
+  }
+}
+@keyframes vt-to-y {
+  to {
+    translate: 0 var(--vt-offset);
+  }
+}
+
+/* Sidebar navigation: the old page fades out fast, the new one rises in. */
+::view-transition-old(.page) {
+  animation: 120ms ease-in both vt-out;
+}
+::view-transition-new(.page) {
+  animation:
+    240ms var(--ease-motion) 80ms both vt-in,
+    380ms var(--ease-motion) 80ms both vt-rise;
+}
+
+/* Into a record (list → detail, "new" buttons) the content moves left; coming back it moves right. */
+::view-transition-old(.nav-forward),
+::view-transition-old(.step-forward) {
+  --vt-offset: -32px;
+  animation:
+    140ms ease-in both vt-out,
+    240ms ease-in both vt-to-x;
+}
+::view-transition-new(.nav-forward),
+::view-transition-new(.step-forward) {
+  --vt-offset: 48px;
+  animation:
+    220ms var(--ease-motion) 90ms both vt-in,
+    420ms var(--ease-motion) both vt-from-x;
+}
+::view-transition-old(.nav-back),
+::view-transition-old(.step-back) {
+  --vt-offset: 32px;
+  animation:
+    140ms ease-in both vt-out,
+    240ms ease-in both vt-to-x;
+}
+::view-transition-new(.nav-back),
+::view-transition-new(.step-back) {
+  --vt-offset: -48px;
+  animation:
+    220ms var(--ease-motion) 90ms both vt-in,
+    420ms var(--ease-motion) both vt-from-x;
+}
+
+/* Previous and next record follow the up and down arrows. */
+::view-transition-old(.nav-next) {
+  --vt-offset: -24px;
+  animation:
+    140ms ease-in both vt-out,
+    240ms ease-in both vt-to-y;
+}
+::view-transition-new(.nav-next) {
+  --vt-offset: 32px;
+  animation:
+    220ms var(--ease-motion) 90ms both vt-in,
+    400ms var(--ease-motion) both vt-from-y;
+}
+::view-transition-old(.nav-prev) {
+  --vt-offset: 24px;
+  animation:
+    140ms ease-in both vt-out,
+    240ms ease-in both vt-to-y;
+}
+::view-transition-new(.nav-prev) {
+  --vt-offset: -32px;
+  animation:
+    220ms var(--ease-motion) 90ms both vt-in,
+    400ms var(--ease-motion) both vt-from-y;
+}
+
+/* The menu and step highlights glide to their new item. */
+::view-transition-group(nav-highlight),
+::view-transition-group(step-highlight) {
+  animation-duration: 360ms;
+  animation-timing-function: var(--ease-motion);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  button:active,
+  a:active {
+    scale: none !important;
+  }
+}

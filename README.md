@@ -27,6 +27,7 @@ apps/cli                 @jinion/cli              the `jinion` command, a termin
 apps/desktop             @jinion/desktop          the desktop app, in Electron, on the core
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
+apps/dashboard           @jinion/dashboard        dashboard.jinion.co, the private beta's invites, users and goals
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React
 packages/ui              @jinion/ui               the desktop app's design system, on React and Tailwind
 packages/virtualization  @jinion/virtualization   mounts only what is in view of a long list
@@ -39,6 +40,7 @@ pnpm dev                 # run the CLI from source, in this repository
 pnpm dev --demo          # the scripted demo
 pnpm dev:docs            # the docs at http://localhost:3000
 pnpm dev:website         # jinion.co
+pnpm dev:dashboard       # the beta's dashboard at http://localhost:3010, on sample data
 pnpm dev:ui              # the desktop app's pieces, drawn from sample conversations
 pnpm dev:desktop         # the desktop app in its own window; --demo for the scripted backend
 pnpm --filter @jinion/desktop package   # an unsigned .dmg in apps/desktop/release
