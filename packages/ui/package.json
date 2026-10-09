@@ -1,6 +1,6 @@
 {
   "name": "@jinion/ui",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Jinion's design system for the desktop app, on React and Tailwind",
   "license": "MIT",
   "homepage": "https://jinion.co",

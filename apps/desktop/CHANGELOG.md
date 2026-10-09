@@ -1,5 +1,15 @@
 # @jinion/desktop
 
+## 0.0.14
+
+### Patch Changes
+
+- ebe5ef4: A message sent while the agent works waits above the prompt until the agent reads it, as soon as its current step is
+  done, and then joins the conversation at that point. Before, it showed in the conversation at once, so it was hard to
+  tell when the agent picked it up. Works with Claude and Codex.
+- Updated dependencies [ebe5ef4]
+  - @jinion/core@0.0.11
+
 ## 0.0.13
 
 As many previews as you like, and a last thread that closes.

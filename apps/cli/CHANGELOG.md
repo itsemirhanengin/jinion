@@ -1,5 +1,23 @@
 # @jinion/cli
 
+## 0.1.0
+
+### Minor Changes
+
+- ebe5ef4: Open conversations move from the row of tabs above the conversation to a column on the left, one per row, with a
+  spinner while one works and `?` while it waits on you. A click anywhere on a row goes to it. In a terminal narrower than
+  100 columns the column keeps only each number and mark, and `ctrl+s` hides it and shows it again.
+- ebe5ef4: A message sent while the agent works waits above the prompt until the agent reads it, as soon as its current step is
+  done, and then joins the conversation at that point. Before, it showed in the conversation at once, so it was hard to
+  tell when the agent picked it up. Works with Claude and Codex.
+
+### Patch Changes
+
+- Updated dependencies [ebe5ef4]
+- Updated dependencies [ebe5ef4]
+  - @jinion/tui@0.0.3
+  - @jinion/core@0.0.11
+
 ## 0.0.11
 
 ### Patch Changes

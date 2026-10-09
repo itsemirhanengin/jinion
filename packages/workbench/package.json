@@ -1,6 +1,6 @@
 {
   "name": "@jinion/workbench",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "The desktop app's window frame: the activity bar, sidebars, tabs, panels and status bar that features fill",
   "license": "MIT",
   "homepage": "https://jinion.co",

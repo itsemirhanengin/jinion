@@ -1,7 +1,7 @@
 {
   "name": "@jinion/desktop",
   "productName": "Jinion",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Jinion's desktop app, in Electron",
   "license": "MIT",
   "homepage": "https://jinion.co",

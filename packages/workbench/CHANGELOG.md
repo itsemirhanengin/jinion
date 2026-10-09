@@ -1,5 +1,12 @@
 # @jinion/workbench
 
+## 0.0.10
+
+### Patch Changes
+
+- Updated dependencies [ebe5ef4]
+  - @jinion/ui@0.0.9
+
 ## 0.0.9
 
 ### Patch Changes
