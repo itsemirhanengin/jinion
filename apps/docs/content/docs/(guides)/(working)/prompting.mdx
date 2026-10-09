@@ -12,8 +12,9 @@ line with `\`. The prompt grows up to 20 lines, then scrolls.
 
 ## Steer while it works
 
-The prompt stays open while the agent works. Press `enter` to steer: your message joins the turn, shows marked
-`while working`, and the agent reads it as soon as its current step is done.
+The prompt stays open while the agent works. Press `enter` to steer: your message joins the turn and waits above the
+prompt as `steering: …` until the agent reads it, as soon as its current step is done. Then it moves into the
+conversation at that point, marked `while working`.
 
 ```text
 use the existing TooManyRequests error, don't add a new one

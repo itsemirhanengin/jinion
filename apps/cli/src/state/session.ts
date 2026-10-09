@@ -69,6 +69,9 @@ export const workingAtom = atom((get) => fields(get).working);
 
 export const queueAtom = atom((get) => fields(get).queue);
 
+/** Steered into the running turn; each joins the conversation once the agent reads it. */
+export const steeringAtom = atom((get) => fields(get).steering ?? []);
+
 export const selectionAtom = atom((get) => fields(get).selection);
 
 export const modeAtom = atom((get) => fields(get).mode);

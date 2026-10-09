@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Box, Text, useTheme } from '@jinion/tui';
 import { TodoPanel, Working } from '@jinion/tui/chat';
 import { useAtomValue } from 'jotai';
-import { busyAtom, dialogAtom, queueAtom, sessionAtom, tasksAtom, todosAtom } from '../state/session.js';
+import { busyAtom, dialogAtom, queueAtom, sessionAtom, steeringAtom, tasksAtom, todosAtom } from '../state/session.js';
 import { activity, hasWorkLeft } from './activity.js';
 import { TaskLine } from './task-line.js';
 
@@ -51,16 +51,20 @@ function Activity() {
   );
 }
 
+/** Steered messages first: the agent reads them in this turn, queued ones go after it. */
 function Queue() {
   const theme = useTheme();
+  const steering = useAtomValue(steeringAtom);
   const queued = useAtomValue(queueAtom);
-  if (queued.length === 0) return null;
+
+  const waiting = [...steering.map((text) => `steering: ${text}`), ...queued.map(({ text }) => `queued: ${text}`)];
+  if (waiting.length === 0) return null;
 
   return (
     <Box marginTop={1} flexDirection="column" paddingX={1}>
-      {queued.map(({ text }, index) => (
+      {waiting.map((line, index) => (
         <Text key={index} color={theme.muted} wrap="truncate-end">
-          queued: {text}
+          {line}
         </Text>
       ))}
     </Box>
