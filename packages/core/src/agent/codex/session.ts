@@ -56,6 +56,8 @@ export class CodexSession implements AgentSession {
   private thread?: string;
   private resume?: string;
   private turn?: RunningTurn;
+  /** Steered into the running turn and not read yet; Codex names none of them, so they are known by their text. */
+  private unread: { id: string; text: string }[] = [];
   /** The project's sandbox as Codex resolved it, which every mode but manual writes in. */
   private workspace: SandboxPolicy = DEFAULT_WORKSPACE;
   private readonly events = new CodexEvents(() => this.thread);
@@ -120,7 +122,11 @@ export class CodexSession implements AgentSession {
       this.host.options.debug?.write('error', { message: `Couldn't steer: ${errorMessage(error)}` }),
     );
 
-    return randomUUID();
+    const id = randomUUID();
+
+    this.unread.push({ id, text: prompt.text });
+
+    return id;
   }
 
   compact(_focus: string | undefined, context: RunContext): AsyncIterable<AgentEvent> {
@@ -319,6 +325,10 @@ export class CodexSession implements AgentSession {
           break;
         }
 
+        const read = this.read(notification, threadId);
+
+        if (read) yield read;
+
         for (const event of this.events.map(notification)) {
           if (event.type === 'usage') this.usage = event.usage;
           yield event;
@@ -332,8 +342,25 @@ export class CodexSession implements AgentSession {
     } finally {
       context.signal.removeEventListener('abort', interrupt);
       this.events.compacting = false;
+      this.unread = [];
       if (this.turn === turn) this.turn = undefined;
     }
+  }
+
+  /** Codex starts a user message item for a steered message as the model gets it. */
+  private read(notification: Notification, threadId: string): AgentEvent | undefined {
+    if (notification.method !== 'item/started' || notification.params.threadId !== threadId) return undefined;
+
+    const { item } = notification.params;
+    if (item.type !== 'userMessage') return undefined;
+
+    const said = item.content.find((input) => input.type === 'text')?.text;
+    const steered = this.unread.find(({ text }) => text === said);
+    if (!steered) return undefined;
+
+    this.unread = this.unread.filter((unread) => unread !== steered);
+
+    return { type: 'read', id: steered.id };
   }
 
   /** Every turn says how Codex acts, since what one sets holds for those after it. */

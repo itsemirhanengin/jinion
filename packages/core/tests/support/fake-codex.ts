@@ -53,6 +53,11 @@ export class FakeCodex {
     return this.received.filter((message) => message.method === method);
   }
 
+  /** A notification the fixture doesn't have, such as the item a steered message starts as the model gets it. */
+  notify(method: string, params: Message) {
+    this.send({ method, params });
+  }
+
   /** The app-server stops, as when it crashes. */
   crash() {
     this.exit?.(new Error('Codex stopped (exit code 1): it crashed.'));

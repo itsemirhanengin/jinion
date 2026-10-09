@@ -21,6 +21,13 @@ export interface SessionStart {
   worktree: boolean;
 }
 
+/** `id` is the one the agent's `steer` gave it; `prompt` what the agent got when pastes made it longer. */
+export interface Steered {
+  id: string;
+  text: string;
+  prompt?: string;
+}
+
 /** One session's atoms, in the app's one store. Its controllers read and write these only, never another session's. */
 export function sessionAtoms({ state: initial, features, selection: initialSelection, mode, worktree }: SessionStart) {
   const state = atom(initial);
@@ -35,6 +42,7 @@ export function sessionAtoms({ state: initial, features, selection: initialSelec
 
   /** Includes the command or subagent the turn waits for, as `foreground`. */
   const tasks = atom<BackgroundTask[]>([]);
+  const unread = atom<Steered[]>([]);
 
   return {
     state,
@@ -51,6 +59,10 @@ export function sessionAtoms({ state: initial, features, selection: initialSelec
     turnAbort,
     working: atom((get) => get(busy) || get(turnAbort) !== undefined),
     queue: atom<Submission[]>([]),
+    /** Steered into the running turn and not read by the agent yet; each joins the conversation once it is. */
+    unread,
+    /** What a client shows of them, above the prompt. */
+    steering: atom((get) => get(unread).map(({ text }) => text)),
     agent,
     features: atom(features),
     selection,

@@ -116,9 +116,16 @@ describe('ClaudeSession', () => {
 
     expect(steered).toMatchObject({ uuid: id, priority: 'next', message: { content: 'also the docs' } });
 
-    fake.reply(claudeSays.text('Both done'), { ...claudeSays.result(uuid!), user_message_uuids: [uuid!, steered.uuid!] } as never);
+    fake.reply(
+      { type: 'command_lifecycle', command_uuid: steered.uuid, state: 'queued' } as never,
+      { type: 'command_lifecycle', command_uuid: steered.uuid, state: 'started' } as never,
+      claudeSays.text('Both done'),
+      { ...claudeSays.result(uuid!), user_message_uuids: [uuid!, steered.uuid!] } as never,
+    );
+
     await running;
 
+    expect(events.filter((event) => event.type === 'read')).toEqual([{ type: 'read', id }]);
     expect(events).toContainEqual({ type: 'text', delta: 'Both done' });
   });
 

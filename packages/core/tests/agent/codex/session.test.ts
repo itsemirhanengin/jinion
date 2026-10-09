@@ -302,4 +302,30 @@ describe('CodexSession', () => {
     abort.abort();
     await running;
   });
+
+  it('says a steered message is read once Codex starts its user message item, matched by its text', async () => {
+    const { fake, session } = setup('interrupt', { fake: { holdUntilInterrupt: true } });
+    const abort = new AbortController();
+    const events: AgentEvent[] = [];
+
+    const running = (async () => {
+      for await (const event of session.run({ text: 'Sleep' }, context({ signal: abort.signal }))) events.push(event);
+    })().catch(() => {});
+
+    await vi.waitFor(() => expect(fake.sent('turn/start')).toHaveLength(1));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    session.steer({ text: 'first' });
+    const second = session.steer({ text: 'second' });
+    const said = (text: string) => ({ threadId: fake.thread, turnId: 'turn', item: { type: 'userMessage', id: text, content: [{ type: 'text', text, text_elements: [] }] } });
+
+    fake.notify('item/started', said('second'));
+    fake.notify('item/started', said('someone else'));
+    await vi.waitFor(() => expect(events).toContainEqual({ type: 'read', id: second }));
+
+    expect(events.filter((event) => event.type === 'read')).toEqual([{ type: 'read', id: second }]);
+
+    abort.abort();
+    await running;
+  });
 });

@@ -155,6 +155,48 @@ describe('session methods', () => {
     await expect(client.request('session/unqueue', { session, text: 'first' })).resolves.toBeNull();
   });
 
+  it('holds a steered message above the prompt until the agent reads it, and keeps one it never said it read', async () => {
+    const steps = [Promise.withResolvers<void>(), Promise.withResolvers<void>()];
+
+    const steered: Scenario = {
+      title: 'Steered',
+      async *play(script) {
+        yield* script.say('looking');
+        await steps[0]!.promise;
+        yield { type: 'read', id: 'steer-1' };
+        yield* script.say('on it');
+        await steps[1]!.promise;
+      },
+    };
+
+    const { server, connect } = serve(box.project, { backends: [new ScriptedBackend([steered], [], 0)] });
+    const { client, session } = await connect();
+    const { store } = server.app;
+    const { atoms, agent } = server.app.session;
+    const ids = ['steer-1', 'steer-2'];
+    const said = () => store.get(atoms.entries).flatMap((entry) => (entry.kind === 'user' || entry.kind === 'text' ? [entry.text] : []));
+
+    Object.assign(agent, { steer: () => ids.shift() });
+    await client.follow(session);
+    await client.request('session/submit', { session, text: 'go' });
+    await vi.waitFor(() => expect(said()).toEqual(['go', 'looking']));
+    await client.request('session/submit', { session, text: 'and the docs' });
+    await client.request('session/submit', { session, text: 'and the tests' });
+
+    await vi.waitFor(() => expect(client.store.get(client.session(session))?.fields.steering).toEqual(['and the docs', 'and the tests']));
+    expect(said()).toEqual(['go', 'looking']);
+
+    steps[0]!.resolve();
+    await vi.waitFor(() => expect(said()).toEqual(['go', 'looking', 'and the docs', 'on it']));
+    expect(store.get(atoms.steering)).toEqual(['and the tests']);
+
+    steps[1]!.resolve();
+    await vi.waitFor(() => expect(store.get(atoms.working)).toBe(false));
+    expect(said()).toEqual(['go', 'looking', 'and the docs', 'on it', 'and the tests']);
+    expect(store.get(atoms.entries).filter((entry) => entry.kind === 'user' && entry.steered)).toHaveLength(2);
+    expect(store.get(atoms.steering)).toEqual([]);
+  });
+
   it('opens the rewind on the client that asked, or says there is nothing to go back to', async () => {
     const { server, connect } = serve(box.project);
     const { client, screen, session } = await connect();

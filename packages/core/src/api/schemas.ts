@@ -46,6 +46,8 @@ export const SessionFields = z.object({
   tasks: z.array(BackgroundTask),
   dialog: Dialog.optional(),
   queue: z.array(Submission),
+  /** Messages steered into the running turn that the agent hasn't read yet, oldest first. */
+  steering: z.array(z.string()).optional(),
   wantsWorktree: z.boolean(),
   working: z.boolean(),
 });

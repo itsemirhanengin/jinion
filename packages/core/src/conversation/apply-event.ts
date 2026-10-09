@@ -57,6 +57,10 @@ export function applyEvent(session: SessionState, event: AgentEvent, at: number)
     case 'turn-start':
       // Kept by the app: they belong to the account or the agent's process and outlive the conversation on screen.
       return session;
+
+    case 'read':
+      // The session adds the steered message as an action of its own.
+      return session;
   }
 }
 

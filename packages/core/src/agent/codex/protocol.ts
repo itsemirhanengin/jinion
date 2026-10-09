@@ -67,7 +67,7 @@ export interface FileUpdateChange {
 export type CollabAgentTool = 'spawnAgent' | 'sendInput' | 'resumeAgent' | 'wait' | 'closeAgent' | 'sendMessage' | 'followupTask' | 'interruptAgent' | 'listAgents';
 
 export type ThreadItem =
-  | { type: 'userMessage'; id: string }
+  | { type: 'userMessage'; id: string; content: UserInput[] }
   | { type: 'agentMessage'; id: string; text: string }
   | { type: 'plan'; id: string; text: string }
   | { type: 'reasoning'; id: string; summary: string[] }
