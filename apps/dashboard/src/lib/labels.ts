@@ -35,7 +35,7 @@ export const CATEGORIES: Record<Category, string> = {
 };
 
 export const INVITE_STATUSES: Record<InviteStatus, { label: string; tone: Tone }> = {
-  active: { label: 'Active', tone: 'green' },
+  active: { label: 'Waiting', tone: 'green' },
   used: { label: 'Used', tone: 'neutral' },
   expired: { label: 'Expired', tone: 'amber' },
   revoked: { label: 'Revoked', tone: 'red' },

@@ -40,8 +40,8 @@ export type DataTableProps<T> = {
   actions?: HeaderAction[];
   rows: T[];
   getRowId: (row: T) => string;
-  /** The always-visible first column; it links to the row's detail page, which receives the list state. */
-  primary: { label: string; text: (row: T) => React.ReactNode; href: (row: T) => string };
+  /** The always-visible first column; it links to the row's detail page, which receives the list state, or opens it in place. */
+  primary: { label: string; text: (row: T) => React.ReactNode } & ({ href: (row: T) => string } | { onSelect: (row: T) => void });
   columns: Column<T>[];
   defaultVisible: string[];
   list: ListConfig<T>;
@@ -247,13 +247,19 @@ export function DataTable<T>({
             {pageRows.map((row) => (
               <tr key={getRowId(row)} className="*:border-b *:border-neutral-950/8 *:py-1.5">
                 <td className="px-2 pl-3">
-                  <Link
-                    transitionTypes={['nav-forward']}
-                    href={listQuery ? `${primary.href(row)}?${listQuery}` : primary.href(row)}
-                    className="hover:underline"
-                  >
-                    {primary.text(row)}
-                  </Link>
+                  {'href' in primary ? (
+                    <Link
+                      transitionTypes={['nav-forward']}
+                      href={listQuery ? `${primary.href(row)}?${listQuery}` : primary.href(row)}
+                      className="hover:underline"
+                    >
+                      {primary.text(row)}
+                    </Link>
+                  ) : (
+                    <button type="button" onClick={() => primary.onSelect(row)} className="hover:underline">
+                      {primary.text(row)}
+                    </button>
+                  )}
                 </td>
                 {shownColumns.map((column) => (
                   <td key={column.key} className={`px-2 tabular-nums last:pr-3 ${column.align === 'right' ? 'text-right' : ''}`}>
