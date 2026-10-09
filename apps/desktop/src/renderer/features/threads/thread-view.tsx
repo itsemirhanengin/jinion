@@ -89,6 +89,7 @@ export function ThreadView({ id }: { id: string }) {
   // What takes the composer's place while the agent asks, the composer otherwise.
   const bottom = (
     <>
+      <Queued messages={fields.steering ?? []} label="not read yet" />
       <Queued messages={fields.queue.map((message) => message.text)} onEdit={editQueued} onRemove={removeQueued} />
       {dialog?.id === 'permission' && <PermissionPanel request={dialog.request} onAnswer={(decision) => core.act(core.answerPermission(id, decision))} />}
       {dialog?.id === 'ask' && (

@@ -2,7 +2,17 @@ import { CornerDownRight, Pencil, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 /** Messages typed while a turn runs, sent one by one when it ends; each can go back to the composer or away. */
-export function Queued({ messages, onEdit, onRemove }: { messages: string[]; onEdit?: (index: number) => void; onRemove?: (index: number) => void }) {
+export function Queued({
+  messages,
+  label = 'queued',
+  onEdit,
+  onRemove,
+}: {
+  messages: string[];
+  label?: string;
+  onEdit?: (index: number) => void;
+  onRemove?: (index: number) => void;
+}) {
   if (messages.length === 0) return null;
 
   return (
@@ -11,7 +21,7 @@ export function Queued({ messages, onEdit, onRemove }: { messages: string[]; onE
         <div key={index} className="flex h-8 items-center gap-2 rounded-lg bg-floating pr-1 pl-3 text-muted shadow-xs ring-1 ring-edge">
           <CornerDownRight className="size-4 shrink-0 text-faint" />
           <span className="min-w-0 flex-1 truncate">{message}</span>
-          <span className="pr-1.5 text-faint">queued</span>
+          <span className="pr-1.5 text-faint">{label}</span>
           {onEdit && (
             <Action label="Edit" onClick={() => onEdit(index)}>
               <Pencil className="size-3.5" />
