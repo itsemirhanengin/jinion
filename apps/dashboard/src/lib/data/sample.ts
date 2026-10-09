@@ -1,6 +1,6 @@
 import { BETA_START, NOW } from '@/lib/clock';
 import { random } from './random';
-import type { Backend, Category, Client, Feedback, Goal, Invite, Signal, Turn, User } from './types';
+import type { Backend, Category, Client, Feedback, Invite, Signal, Turn, User } from './types';
 
 const DAY = 24 * 60 * 60 * 1000;
 const BETA_DAYS = 15;
@@ -182,49 +182,6 @@ export const invites: Invite[] = [
     maxUses: 1,
     usedBy: [],
     revokedAt: '2026-10-12T08:41:00.000Z',
-  },
-];
-
-export const goals: Goal[] = [
-  {
-    id: 'still-using',
-    name: 'Still using it after two weeks',
-    metric: 'retained',
-    target: 80,
-    startsAt: BETA_START,
-    deadline: '2026-10-25T20:59:00.000Z',
-    ifMet: 'Open a second round to 20–30 people I don’t know.',
-    ifMissed: 'Talk to everyone who stopped before inviting anyone else.',
-  },
-  {
-    id: 'clean-turns',
-    name: 'Turns that go well',
-    metric: 'success-rate',
-    target: 85,
-    startsAt: BETA_START,
-    deadline: '2026-11-08T20:59:00.000Z',
-    ifMet: 'Spend the next month on new features rather than fixes.',
-    ifMissed: 'Freeze features and fix the top three signals first.',
-  },
-  {
-    id: 'daily-habit',
-    name: 'Part of the week',
-    metric: 'active-days',
-    target: 4,
-    startsAt: BETA_START,
-    deadline: '2026-11-01T20:59:00.000Z',
-    ifMet: 'Jinion is a habit: start on paid token plans.',
-    ifMissed: 'Find out what they open instead, and why.',
-  },
-  {
-    id: 'problem-turns',
-    name: 'Few turns go wrong',
-    metric: 'problem-rate',
-    target: 12,
-    startsAt: BETA_START,
-    deadline: '2026-11-08T20:59:00.000Z',
-    ifMet: 'Keep the weekly bug-fix round as it is.',
-    ifMissed: 'Double the bug-fix rounds until it is under 12%.',
   },
 ];
 

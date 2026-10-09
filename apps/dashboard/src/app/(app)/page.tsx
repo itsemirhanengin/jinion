@@ -1,24 +1,19 @@
 import { House } from 'lucide-react';
 import { StatStrip } from '@/components/detail/stat-strip';
-import { ActivityGrid } from '@/components/overview/activity-grid';
-import { CompareBars } from '@/components/overview/compare-bars';
-import { GoalBars } from '@/components/overview/goal-bars';
-import { NeedsALook } from '@/components/overview/needs-a-look';
-import { Panel } from '@/components/overview/panel';
-import { SignalsChart } from '@/components/overview/signals-chart';
-import { TokensChart } from '@/components/overview/tokens-chart';
-import { TurnsChart } from '@/components/overview/turns-chart';
+import { OverviewCharts } from '@/components/overview-charts';
 import { PageBody, PageHeader } from '@/components/page';
 import { PageTransition } from '@/components/page-transition';
-import { admin } from '@/lib/admin';
 import { NOW } from '@/lib/clock';
-import { formatCount, formatStamp } from '@/lib/format';
-import { overview } from '@/lib/overview';
+import { listTurns } from '@/lib/data';
+import { formatCount, formatPercent, formatStamp } from '@/lib/format';
+import { activeUsers } from '@/lib/metrics';
 
 export default async function OverviewPage() {
-  const data = await overview();
-  const { summary, compare } = data;
-  const overall = (100 - summary.wentWell) / 100;
+  const days = activeUsers(await listTurns());
+  const today = days.at(-1) ?? { dau: 0, wau: 0, mau: 0, turns: 0 };
+  const weekAgo = days.at(-8);
+  const trend = (key: 'dau' | 'wau' | 'mau' | 'turns') => ({ current: days.slice(-7).map((day) => day[key]), previous: days.slice(-14, -7).map((day) => day[key]) });
+  const change = (key: 'dau' | 'wau' | 'mau' | 'turns') => (weekAgo?.[key] ? ((today[key] - weekAgo[key]) / weekAgo[key]) * 100 : null);
 
   return (
     <PageTransition>
@@ -28,75 +23,28 @@ export default async function OverviewPage() {
             <House className="size-4 shrink-0 stroke-neutral-600" />
             Overview
           </h1>
-          <p className="truncate text-sm/6 text-neutral-500 tabular-nums sm:text-xs/6">The last 7 days, to {formatStamp(NOW)}</p>
+          <p className="truncate text-sm/6 text-neutral-500 tabular-nums sm:text-xs/6">To {formatStamp(NOW)}</p>
         </div>
       </PageHeader>
 
       <PageBody className="pb-24">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 pt-8">
-          <div>
-            <p className="text-neutral-500">{greeting()}, {admin.name.split(' ')[0]}</p>
-            <p className="text-2xl/8 font-semibold tracking-tight text-balance">
-              {summary.active} of {summary.people} people used Jinion this week, and {Math.round(summary.wentWell)}% of their{' '}
-              {formatCount(summary.turnsThisWeek)} turns went well.
-              {summary.atRisk > 0 && (
-                <span className="text-amber-700">
-                  {' '}
-                  {summary.atRisk} {summary.atRisk === 1 ? 'goal is' : 'goals are'} at risk.
-                </span>
-              )}
-            </p>
-          </div>
-
-          <StatStrip stats={data.figures} />
-
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-            <Panel title="Needs a look" description="What waits on you today.">
-              <NeedsALook attention={data.attention} goals={data.goals} />
-            </Panel>
-            <Panel title="Goals" description="Where each metric is, and the mark it has to reach." more={{ href: '/goals', label: 'All goals' }}>
-              <GoalBars goals={data.goals} />
-            </Panel>
-          </div>
-
-          <Panel title="Who uses it" description="Each person's turns, day by day since the beta began." more={{ href: '/users', label: 'All users' }}>
-            <ActivityGrid activity={data.activity} />
-          </Panel>
-
-          <Panel title="Turns and problems" description="Every turn each day, and the share of them that had a problem." more={{ href: '/turns', label: 'All turns' }}>
-            <TurnsChart days={data.days} />
-          </Panel>
-
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Panel title="What goes wrong" description="Each kind of problem, this week against the week before.">
-              <SignalsChart signals={data.signals} />
-            </Panel>
-            <Panel title="Where it goes wrong" description="The share of turns with a problem this week; the line is everyone's.">
-              <div className="flex flex-col gap-5">
-                <CompareBars title="By agent" shares={compare.agent} overall={overall} />
-                <CompareBars title="By client" shares={compare.client} overall={overall} />
-                <CompareBars title="By kind of work" shares={compare.work} overall={overall} />
-              </div>
-            </Panel>
-          </div>
-
-          <Panel
-            title="Tokens"
-            description={`Input and output tokens each day, by agent.${data.limitsThisWeek ? ` Usage limits ran out ${data.limitsThisWeek} times this week.` : ''}`}
-          >
-            <TokensChart days={data.tokens} />
-          </Panel>
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 pt-6">
+          <StatStrip
+            stats={[
+              { label: 'DAU', value: today.dau, hint: 'People who ran a turn today.', change: change('dau'), trend: trend('dau') },
+              { label: 'WAU', value: today.wau, hint: 'People who ran a turn in the last 7 days.', change: change('wau'), trend: trend('wau') },
+              { label: 'MAU', value: today.mau, hint: 'People who ran a turn in the last 30 days.', change: change('mau'), trend: trend('mau') },
+              {
+                label: 'Stickiness',
+                value: formatPercent(today.mau ? today.dau / today.mau : 0),
+                hint: 'DAU over MAU: on an average day, the share of this month’s people who come back.',
+              },
+              { label: 'Turns today', value: formatCount(today.turns), change: change('turns'), trend: trend('turns') },
+            ]}
+          />
+          <OverviewCharts days={days} />
         </div>
       </PageBody>
     </PageTransition>
   );
-}
-
-function greeting() {
-  const hour = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: 'Europe/Istanbul' }).format(new Date(NOW)));
-
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-
-  return 'Good evening';
 }

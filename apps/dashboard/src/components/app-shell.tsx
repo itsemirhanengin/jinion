@@ -3,7 +3,7 @@
 import { Suspense, ViewTransition } from 'react';
 import Link from 'next/link';
 import { useSelectedLayoutSegments } from 'next/navigation';
-import { House, Menu, MessageSquareText, Search, Target, Ticket, Users, Workflow } from 'lucide-react';
+import { House, Menu, MessageSquareText, Search, Ticket, Users, Workflow } from 'lucide-react';
 import { touchTarget } from '@/components/page';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { admin } from '@/lib/admin';
@@ -16,7 +16,6 @@ type NavItem = {
 
 const nav: NavItem[] = [
   { label: 'Overview', href: '/', icon: House },
-  { label: 'Goals', href: '/goals', icon: Target },
   { label: 'Users', href: '/users', icon: Users },
   { label: 'Turns', href: '/turns', icon: Workflow },
   { label: 'Feedback', href: '/feedback', icon: MessageSquareText },

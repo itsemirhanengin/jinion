@@ -17,7 +17,8 @@ list virtualizer under its scroll view, `apps/desktop` the desktop app in Electr
 for the scripted backend), `packages/ui` its design system (React and Tailwind, drawn in its playground with
 `pnpm dev:ui`), `packages/spacing` the checker for the vertical layout below, `apps/docs` the docs site, `apps/website`
 the page at jinion.co, `apps/dashboard` the private beta's dashboard at dashboard.jinion.co (Next.js, in Sit's design
-language, on sample data in `src/lib/data` until its API is there; `pnpm dev:dashboard`). `ROADMAP.md` has what is left
+language, on sample data in `src/lib/data` until its API is there; `pnpm dev:dashboard`): users, turns, feedback,
+invites and active users, while charts and product analytics live in PostHog. `ROADMAP.md` has what is left
 to build, the desktop app first.
 
 ## Architecture

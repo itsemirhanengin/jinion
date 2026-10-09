@@ -48,8 +48,6 @@ export const METRICS: Metric[] = [
 
 export const metricOf = (id: MetricId) => METRICS.find((metric) => metric.id === id)!;
 
-export type GoalStatus = 'on-track' | 'at-risk' | 'met' | 'missed';
-
 export function formatMetric(value: number, unit: Unit) {
   switch (unit) {
     case 'percent':

@@ -1,6 +1,6 @@
 import { BETA_START, NOW } from '@/lib/clock';
 import type { MetricId, Turn, User } from '@/lib/data';
-import { DAY, dayOf, endOfDay, weekStart } from '@/lib/days';
+import { DAY, dayOf, endOfDay, startOfDay, weekStart } from '@/lib/days';
 import { formatMetric, metricOf } from '@/lib/metric-defs';
 import { hasProblem } from '@/lib/problems';
 
@@ -55,48 +55,35 @@ export function weeklyFigure(label: string, hint: string, turns: Turn[], value: 
   return figureOf(label, hint, daily((at) => value(lastWeek(turns, at))), format);
 }
 
-// A person is either active or not, so for metrics about the group a person's own share of it is their active days.
-const PERSONAL: Partial<Record<MetricId, MetricId>> = { 'active-users': 'active-days', retained: 'active-days' };
-
-// A share or an average of turns has no value for someone who ran none.
-const OF_TURNS: MetricId[] = ['success-rate', 'problem-rate', 'turns-per-day'];
-
 /**
- * Each person's own value of the metric, or the closest personal one, over the 7 days before `at`; for a metric of
- * turns, those who ran none that week apart, as `idle`.
+ * For each day from the beta's start: who ran a turn that day (DAU), in the 7 days to it (WAU) and in the 30 days to
+ * it (MAU), and how many turns ran that day.
  */
-export function byPerson(id: MetricId, turns: Turn[], users: User[], at = Date.parse(NOW)) {
-  const metric = metricOf(PERSONAL[id] ?? id);
-  const ranTurns = (user: User) => lastWeek(turns, at).some((turn) => turn.user === user.id);
-  const counted = OF_TURNS.includes(metric.id) ? users.filter(ranTurns) : users;
-
-  return {
-    metric,
-    people: counted.map((user) => ({ name: user.name, value: measure(metric.id, turns.filter((turn) => turn.user === user.id), [user], at) })),
-    idle: users.filter((user) => !counted.includes(user)).map((user) => user.name),
-  };
-}
-
-/** Each day's turns, split by whether they went well, and how many people ran one. */
-export function dayByDay(turns: Turn[], until = Date.parse(NOW)) {
-  const days = new Map<string, { clean: number; problem: number; people: Set<string> }>();
+export function activeUsers(turns: Turn[], until = Date.parse(NOW)) {
+  const byDay = new Map<string, { people: Set<string>; turns: number }>();
 
   for (const turn of turns) {
-    if (Date.parse(turn.startedAt) >= until) continue;
-
     const day = dayOf(turn.startedAt);
-    const entry = days.get(day) ?? { clean: 0, problem: 0, people: new Set<string>() };
-
-    if (hasProblem(turn)) entry.problem++;
-    else entry.clean++;
+    const entry = byDay.get(day) ?? { people: new Set<string>(), turns: 0 };
 
     entry.people.add(turn.user);
-    days.set(day, entry);
+    entry.turns++;
+    byDay.set(day, entry);
   }
 
-  return [...days]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([day, entry]) => ({ day: `${day}T12:00:00.000Z`, clean: entry.clean, problem: entry.problem, people: entry.people.size }));
+  const days: string[] = [];
+
+  for (let at = startOfDay(Date.parse(BETA_START)); at < until; at += DAY) days.push(dayOf(new Date(at + 1).toISOString()));
+
+  const within = (index: number, length: number) => new Set(days.slice(Math.max(0, index - length + 1), index + 1).flatMap((day) => [...(byDay.get(day)?.people ?? [])])).size;
+
+  return days.map((day, index) => ({
+    day: `${day}T12:00:00.000Z`,
+    dau: byDay.get(day)?.people.size ?? 0,
+    wau: within(index, 7),
+    mau: within(index, 30),
+    turns: byDay.get(day)?.turns ?? 0,
+  }));
 }
 
 function figureOf(label: string, hint: string, series: { value: number }[], format: (value: number) => string) {
@@ -127,7 +114,7 @@ function daily(value: (at: number) => number, until = Date.parse(NOW)) {
 }
 
 /** The turns of the 7 days before `at`. */
-export function lastWeek(turns: Turn[], at: number) {
+function lastWeek(turns: Turn[], at: number) {
   const from = weekStart(at);
 
   return turns.filter((turn) => {

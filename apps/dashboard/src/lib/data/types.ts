@@ -90,15 +90,3 @@ export interface Invite {
 export type InviteStatus = 'active' | 'used' | 'expired' | 'revoked';
 
 export type MetricId = 'active-users' | 'retained' | 'active-days' | 'success-rate' | 'problem-rate' | 'turns-per-day';
-
-export interface Goal {
-  id: string;
-  name: string;
-  metric: MetricId;
-  target: number;
-  startsAt: string;
-  deadline: string;
-  /** What the admin decided to do when the goal is met, and when it is missed. */
-  ifMet: string;
-  ifMissed: string;
-}

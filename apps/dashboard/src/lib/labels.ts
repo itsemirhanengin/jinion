@@ -1,6 +1,5 @@
 import type { Tone } from '@/components/ui/status-badge';
 import type { Backend, Category, Client, Feedback, FeedbackStatus, InviteStatus, Outcome, Signal } from '@/lib/data';
-import type { GoalStatus } from '@/lib/metric-defs';
 
 export const SIGNALS: Record<Signal, { label: string; description: string; tone: Tone }> = {
   failed: { label: 'Error', description: 'The turn ended with an error.', tone: 'red' },
@@ -51,11 +50,4 @@ export const FEEDBACK_STATUSES: Record<FeedbackStatus, { label: string; tone: To
   new: { label: 'New', tone: 'sky' },
   reviewed: { label: 'Reviewed', tone: 'neutral' },
   resolved: { label: 'Resolved', tone: 'green' },
-};
-
-export const GOAL_STATUSES: Record<GoalStatus, { label: string; tone: Tone }> = {
-  'on-track': { label: 'On track', tone: 'green' },
-  'at-risk': { label: 'At risk', tone: 'amber' },
-  met: { label: 'Met', tone: 'green' },
-  missed: { label: 'Missed', tone: 'red' },
 };

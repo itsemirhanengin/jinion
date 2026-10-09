@@ -27,7 +27,7 @@ apps/cli                 @jinion/cli              the `jinion` command, a termin
 apps/desktop             @jinion/desktop          the desktop app, in Electron, on the core
 apps/docs                @jinion/docs             docs.jinion.co
 apps/website             @jinion/website          jinion.co
-apps/dashboard           @jinion/dashboard        dashboard.jinion.co, the private beta's invites, users and goals
+apps/dashboard           @jinion/dashboard        dashboard.jinion.co, the private beta's users, turns, feedback and invites
 packages/tui             @jinion/tui              the terminal UI framework, on Ink and React
 packages/ui              @jinion/ui               the desktop app's design system, on React and Tailwind
 packages/virtualization  @jinion/virtualization   mounts only what is in view of a long list

@@ -2,7 +2,7 @@ import { NOW } from '@/lib/clock';
 import { dayOf, weekStart } from '@/lib/days';
 import { hasProblem } from '@/lib/problems';
 import { random, seedOf } from './random';
-import { feedback, goals, invites, turns, users } from './sample';
+import { feedback, invites, turns, users } from './sample';
 import type { Invite, InviteStatus, Turn, TurnStep, User } from './types';
 
 // The one way the screens reach their data. It reads the sample data until the API is there; then only these
@@ -47,14 +47,6 @@ export async function listFeedback(filter: { user?: string } = {}) {
 
 export async function listInvites() {
   return [...invites].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export async function listGoals() {
-  return goals;
-}
-
-export async function getGoal(id: string) {
-  return goals.find((goal) => goal.id === id) ?? null;
 }
 
 export function inviteStatus(invite: Invite): InviteStatus {
