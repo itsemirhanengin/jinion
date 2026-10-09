@@ -6,7 +6,7 @@ import { primaryButton, secondaryButton } from '@/components/data-table/buttons'
 import { CopyButton, Reference } from '@/components/detail/parts';
 import { SelectField, TextField } from '@/components/form/fields';
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { NOW } from '@/lib/data';
+import { NOW } from '@/lib/clock';
 import { DAY } from '@/lib/days';
 import { formatDate } from '@/lib/format';
 import { type InviteRow, newInviteCode } from '@/lib/lists/invites';

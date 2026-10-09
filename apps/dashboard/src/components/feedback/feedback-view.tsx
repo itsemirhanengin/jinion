@@ -6,7 +6,8 @@ import { DetailTabs } from '@/components/detail/detail-tabs';
 import { StatStrip } from '@/components/detail/stat-strip';
 import { FeedbackList } from '@/components/feedback/feedback-list';
 import { PageBody, PageHeader } from '@/components/page';
-import { type Feedback, type FeedbackStatus, NOW } from '@/lib/data';
+import { NOW } from '@/lib/clock';
+import type { Feedback, FeedbackStatus } from '@/lib/data';
 import { weekStart } from '@/lib/days';
 import { formatCount } from '@/lib/format';
 

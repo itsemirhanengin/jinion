@@ -6,7 +6,7 @@ import { useSelectedLayoutSegments } from 'next/navigation';
 import { House, Menu, MessageSquareText, Search, Target, Ticket, Users, Workflow } from 'lucide-react';
 import { touchTarget } from '@/components/page';
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { admin } from '@/lib/data';
+import { admin } from '@/lib/admin';
 
 type NavItem = {
   label: string;

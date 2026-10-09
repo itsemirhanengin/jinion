@@ -2,7 +2,8 @@ import { Suspense } from 'react';
 import { PageSkeleton } from '@/components/page-skeleton';
 import { PageTransition } from '@/components/page-transition';
 import { UsersView } from '@/components/users/users-view';
-import { listTurns, listUsers, NOW } from '@/lib/data';
+import { NOW } from '@/lib/clock';
+import { listTurns, listUsers } from '@/lib/data';
 import { figure } from '@/lib/metrics';
 
 export default async function UsersPage() {

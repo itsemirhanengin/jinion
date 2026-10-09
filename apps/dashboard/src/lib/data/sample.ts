@@ -1,9 +1,6 @@
+import { BETA_START, NOW } from '@/lib/clock';
 import { random } from './random';
 import type { Backend, Category, Client, Feedback, Goal, Invite, Signal, Turn, User } from './types';
-
-// Two weeks into a beta that starts on Sunday, October 11; the sample data's "now", so the screens look lived in.
-export const NOW = '2026-10-25T14:00:00.000Z';
-export const BETA_START = '2026-10-11T05:00:00.000Z';
 
 const DAY = 24 * 60 * 60 * 1000;
 const BETA_DAYS = 15;

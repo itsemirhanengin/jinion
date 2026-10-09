@@ -1,4 +1,4 @@
-import { NOW } from '@/lib/data';
+import { NOW } from '@/lib/clock';
 
 const timeZone = 'Europe/Istanbul';
 const dateFormat = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone });

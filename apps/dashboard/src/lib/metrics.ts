@@ -1,48 +1,8 @@
-import { BETA_START, type Goal, hasProblem, type MetricId, NOW, type Turn, type User } from '@/lib/data';
+import { BETA_START, NOW } from '@/lib/clock';
+import type { Goal, MetricId, Turn, User } from '@/lib/data';
 import { DAY, dayOf, endOfDay, weekStart } from '@/lib/days';
-
-export type Unit = 'users' | 'percent' | 'days' | 'turns';
-
-export interface Metric {
-  id: MetricId;
-  label: string;
-  description: string;
-  unit: Unit;
-  /** Whether a lower value is the better one. */
-  lowerIsBetter?: boolean;
-}
-
-export const METRICS: Metric[] = [
-  { id: 'active-users', label: 'Active users', description: 'People who ran at least one turn in the last 7 days.', unit: 'users' },
-  {
-    id: 'retained',
-    label: 'Still using it',
-    description: 'Of the people who joined a week or more ago, the share who ran a turn in the last 7 days.',
-    unit: 'percent',
-  },
-  {
-    id: 'active-days',
-    label: 'Active days a week',
-    description: 'On how many of the last 7 days each person ran a turn, on average.',
-    unit: 'days',
-  },
-  { id: 'success-rate', label: 'Turns that went well', description: 'Turns in the last 7 days with no sign of a problem.', unit: 'percent' },
-  {
-    id: 'problem-rate',
-    label: 'Turns with a problem',
-    description: 'Turns in the last 7 days with a sign of a problem: an error, an interruption, a correction, a dislike…',
-    unit: 'percent',
-    lowerIsBetter: true,
-  },
-  {
-    id: 'turns-per-day',
-    label: 'Turns a day',
-    description: 'Turns per person on the days they used Jinion, over the last 7 days.',
-    unit: 'turns',
-  },
-];
-
-export const metricOf = (id: MetricId) => METRICS.find((metric) => metric.id === id)!;
+import { formatMetric, judgeGoal, metricOf } from '@/lib/metric-defs';
+import { hasProblem } from '@/lib/problems';
 
 /** The metric over the 7 days before `at`. */
 export function measure(id: MetricId, turns: Turn[], users: User[], at: number): number {
@@ -95,6 +55,45 @@ export function weeklyFigure(label: string, hint: string, turns: Turn[], value: 
   return figureOf(label, hint, daily((at) => value(lastWeek(turns, at))), format);
 }
 
+export function goalProgress(goal: Goal, turns: Turn[], users: User[]) {
+  return judgeGoal(goal, measure(goal.metric, turns, users, Math.min(Date.parse(goal.deadline), Date.parse(NOW))));
+}
+
+// A person is either active or not, so for metrics about the group a person's own share of it is their active days.
+const PERSONAL: Partial<Record<MetricId, MetricId>> = { 'active-users': 'active-days', retained: 'active-days' };
+
+/** Each person's own value of the metric, or the closest personal one, over the 7 days before `at`. */
+export function byPerson(id: MetricId, turns: Turn[], users: User[], at = Date.parse(NOW)) {
+  const metric = metricOf(PERSONAL[id] ?? id);
+
+  return {
+    metric,
+    people: users.map((user) => ({ name: user.name, value: measure(metric.id, turns.filter((turn) => turn.user === user.id), [user], at) })),
+  };
+}
+
+/** Each day's turns, split by whether they went well, and how many people ran one. */
+export function dayByDay(turns: Turn[], until = Date.parse(NOW)) {
+  const days = new Map<string, { clean: number; problem: number; people: Set<string> }>();
+
+  for (const turn of turns) {
+    if (Date.parse(turn.startedAt) >= until) continue;
+
+    const day = dayOf(turn.startedAt);
+    const entry = days.get(day) ?? { clean: 0, problem: 0, people: new Set<string>() };
+
+    if (hasProblem(turn)) entry.problem++;
+    else entry.clean++;
+
+    entry.people.add(turn.user);
+    days.set(day, entry);
+  }
+
+  return [...days]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, entry]) => ({ day: `${day}T12:00:00.000Z`, clean: entry.clean, problem: entry.problem, people: entry.people.size }));
+}
+
 function figureOf(label: string, hint: string, series: { value: number }[], format: (value: number) => string) {
   const points = series.map((point) => point.value);
   const value = points.at(-1) ?? 0;
@@ -132,29 +131,3 @@ function lastWeek(turns: Turn[], at: number) {
     return time < at && time >= from;
   });
 }
-
-export type GoalStatus = 'on-track' | 'at-risk' | 'met' | 'missed';
-
-export function goalProgress(goal: Goal, turns: Turn[], users: User[]) {
-  const metric = metricOf(goal.metric);
-  const ended = goal.deadline <= NOW;
-  const value = measure(goal.metric, turns, users, Math.min(Date.parse(goal.deadline), Date.parse(NOW)));
-  const meets = metric.lowerIsBetter ? value <= goal.target : value >= goal.target;
-  const progress = metric.lowerIsBetter ? (value ? Math.min(1, goal.target / value) : 1) : Math.min(1, value / goal.target);
-  const status: GoalStatus = ended ? (meets ? 'met' : 'missed') : meets ? 'on-track' : 'at-risk';
-
-  return { metric, value, progress, status, daysLeft: Math.max(0, Math.ceil((Date.parse(goal.deadline) - Date.parse(NOW)) / DAY)) };
-}
-
-export function formatMetric(value: number, unit: Unit) {
-  switch (unit) {
-    case 'percent':
-      return `${value.toLocaleString('en-US', { maximumFractionDigits: 1 })}%`;
-    case 'days':
-      return value.toLocaleString('en-US', { maximumFractionDigits: 1 });
-    case 'users':
-    case 'turns':
-      return value.toLocaleString('en-US', { maximumFractionDigits: unit === 'turns' ? 1 : 0 });
-  }
-}
-

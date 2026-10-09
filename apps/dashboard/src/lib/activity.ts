@@ -1,5 +1,6 @@
-import { hasProblem, isProblem, type Signal, type Turn } from '@/lib/data';
+import type { Signal, Turn } from '@/lib/data';
 import { dayOf } from '@/lib/days';
+import { hasProblem, isProblem } from '@/lib/problems';
 
 export interface DayActivity {
   day: string;

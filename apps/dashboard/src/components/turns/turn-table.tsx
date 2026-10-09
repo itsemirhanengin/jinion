@@ -1,8 +1,9 @@
 import Link from 'next/link';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { isProblem, type Turn } from '@/lib/data';
+import type { Turn } from '@/lib/data';
 import { formatCompact, formatDuration, formatStamp } from '@/lib/format';
 import { OUTCOMES, SIGNALS } from '@/lib/labels';
+import { isProblem } from '@/lib/problems';
 
 /** A short list of turns, newest first, each a link to its page; for detail pages and the overview. */
 export function TurnTable({ turns, people, emptyText }: { turns: Turn[]; people?: Map<string, string>; emptyText: string }) {

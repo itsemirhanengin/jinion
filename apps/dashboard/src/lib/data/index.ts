@@ -1,22 +1,14 @@
+import { NOW } from '@/lib/clock';
 import { dayOf, weekStart } from '@/lib/days';
+import { hasProblem } from '@/lib/problems';
 import { random, seedOf } from './random';
-import { feedback, goals, invites, NOW, turns, users } from './sample';
-import type { Admin, Invite, InviteStatus, Signal, Turn, TurnStep, User } from './types';
+import { feedback, goals, invites, turns, users } from './sample';
+import type { Invite, InviteStatus, Turn, TurnStep, User } from './types';
 
 // The one way the screens reach their data. It reads the sample data until the API is there; then only these
-// functions change, so they are already async.
+// functions change, so they are already async. What runs in the browser takes only types from here.
 
-export { BETA_START, NOW } from './sample';
 export type * from './types';
-
-export const admin: Admin = { name: 'Emirhan Engin', initials: 'EE', email: 'emirhan@example.com' };
-
-// Ordinary events a turn can have that say nothing bad about it.
-const NEUTRAL: Signal[] = ['compacted', 'permission-denied'];
-
-export const isProblem = (signal: Signal) => !NEUTRAL.includes(signal);
-
-export const hasProblem = (turn: Turn) => turn.signals.some(isProblem);
 
 export interface UserSummary extends User {
   lastSeenAt: string | null;

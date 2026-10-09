@@ -1,6 +1,7 @@
-import { hasProblem, type Signal, type Turn, type User } from '@/lib/data';
+import type { Signal, Turn, User } from '@/lib/data';
 import type { ListConfig } from '@/lib/data-table';
 import { BACKENDS, CATEGORIES, CLIENTS, OUTCOMES, SIGNALS } from '@/lib/labels';
+import { hasProblem } from '@/lib/problems';
 
 /** A turn as its list shows it: with its person's name, and whether anyone said something about it. */
 export interface TurnRow extends Turn {

@@ -9,7 +9,7 @@ import { none } from '@/components/empty-value';
 import { InviteSheet } from '@/components/invites/invite-sheet';
 import { NewInviteSheet } from '@/components/invites/new-invite-sheet';
 import { StatusBadge } from '@/components/ui/status-badge';
-import { NOW } from '@/lib/data';
+import { NOW } from '@/lib/clock';
 import type { Column } from '@/lib/data-table';
 import { formatPercent, formatShortDate } from '@/lib/format';
 import { INVITE_STATUSES } from '@/lib/labels';

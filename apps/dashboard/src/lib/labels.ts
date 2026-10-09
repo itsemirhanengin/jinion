@@ -1,6 +1,6 @@
 import type { Tone } from '@/components/ui/status-badge';
 import type { Backend, Category, Client, Feedback, FeedbackStatus, InviteStatus, Outcome, Signal } from '@/lib/data';
-import type { GoalStatus } from '@/lib/metrics';
+import type { GoalStatus } from '@/lib/metric-defs';
 
 export const SIGNALS: Record<Signal, { label: string; description: string; tone: Tone }> = {
   failed: { label: 'Error', description: 'The turn ended with an error.', tone: 'red' },
