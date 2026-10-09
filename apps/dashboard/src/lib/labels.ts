@@ -1,5 +1,5 @@
 import type { Tone } from '@/components/ui/status-badge';
-import type { Backend, Category, Client, FeedbackStatus, InviteStatus, Outcome, Signal } from '@/lib/data';
+import type { Backend, Category, Client, Feedback, FeedbackStatus, InviteStatus, Outcome, Signal } from '@/lib/data';
 import type { GoalStatus } from '@/lib/metrics';
 
 export const SIGNALS: Record<Signal, { label: string; description: string; tone: Tone }> = {
@@ -39,6 +39,12 @@ export const INVITE_STATUSES: Record<InviteStatus, { label: string; tone: Tone }
   used: { label: 'Used', tone: 'neutral' },
   expired: { label: 'Expired', tone: 'amber' },
   revoked: { label: 'Revoked', tone: 'red' },
+};
+
+export const FEEDBACK_KINDS: Record<Feedback['kind'], { label: string; tone: Tone }> = {
+  disliked: { label: 'Disliked', tone: 'red' },
+  liked: { label: 'Liked', tone: 'green' },
+  note: { label: 'Note', tone: 'neutral' },
 };
 
 export const FEEDBACK_STATUSES: Record<FeedbackStatus, { label: string; tone: Tone }> = {
