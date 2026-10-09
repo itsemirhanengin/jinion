@@ -13,8 +13,8 @@ import { Aside } from './aside.js';
 import { useDialogs } from './dialogs.js';
 import { useKeys } from './keys.js';
 import { PromptArea } from './prompt-area.js';
+import { useSidebar } from './sidebar.js';
 import { StatusLine } from './status-line.js';
-import { TabBar } from './tab-bar.js';
 import { useScreen } from './use-screen.js';
 
 export interface AppProps {
@@ -90,8 +90,9 @@ function Ready({ api }: { api: Api }) {
 function Layout() {
   useKeys();
   useDialogs();
+  const sidebar = useSidebar();
 
-  return <Shell header={<TabBar />} content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
+  return <Shell sidebar={sidebar} content={<Conversation />} aside={<Aside />} prompt={<PromptArea />} status={<StatusLine />} />;
 }
 
 function Conversation() {
