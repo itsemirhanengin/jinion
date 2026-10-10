@@ -161,9 +161,12 @@ desktop app later. Each has its own version and releases on its own; they aren't
   `CHANGELOG.md`, then `pnpm changeset git-tag` tags each package, as `@jinion/cli@0.2.0`. It takes every changeset waiting
   on `main`, which is one more reason only finished work is merged.
 - A GitHub release is made for a product's tag only, titled with the product (`Jinion CLI 0.2.0`), with that version's
-  section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its `.dmg`, built after
-  `changeset version` so it has the new version (`pnpm --filter @jinion/desktop package`). The other packages get
-  tags and no release. Tags and releases go out once the user approves.
+  section of the product's `CHANGELOG.md` as its notes; the desktop app's carries its `.dmg`, and the `.zip` and its
+  `.blockmap` the updater downloads, built after `changeset version` so they have the new version
+  (`pnpm --filter @jinion/desktop package`). The other packages get tags and no release. Tags and releases go out once
+  the user approves.
 - GitHub marks one release "Latest", whichever product came last, so the desktop app's updater reads an address of its
-  own rather than the latest release.
+  own rather than the latest release: `latest-mac.yml` in the `desktop-latest` release, which names the files in the
+  version's release. Each desktop release replaces it there (`gh release upload desktop-latest
+  apps/desktop/release/latest-mac.yml --clobber`), after the version's release is up.
 - `PROTOCOL_VERSION` is separate: it follows the API's rule above, not the packages.
