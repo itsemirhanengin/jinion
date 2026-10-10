@@ -232,7 +232,10 @@ export class Core {
   }
 
   async refreshGit(session: string) {
-    this.client.store.set(this.gitAtom, await this.client.request('git/changes', { session, uncommitted: true }));
+    const repos = await this.client.request('git/changes', { session, uncommitted: true });
+
+    // Read again every few seconds: what stays the same doesn't draw a large folder's changes again.
+    if (JSON.stringify(repos) !== JSON.stringify(this.client.store.get(this.gitAtom))) this.client.store.set(this.gitAtom, repos);
   }
 
   /** A changed file's diff against the last commit, by its absolute path. */

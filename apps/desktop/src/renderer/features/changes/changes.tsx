@@ -1,10 +1,11 @@
 import { changedFiles, editTurns } from '@jinion/core/conversation/edits';
-import { ChoiceMenu, LineCounts, Pill } from '@jinion/ui';
+import { ChoiceMenu, LineCounts, Pill, VirtualList, type VirtualListHandle } from '@jinion/ui';
 import { DiffCard } from '@jinion/ui/chat';
 import type { Feature, Workbench } from '@jinion/workbench';
 import { useRef, useState } from 'react';
 import type { Core } from '../../core/core.js';
 import { diffLines } from '../../lib/diff.js';
+import { diffHeight, drawable, SHOWN_LINES } from '../../lib/diff-view.js';
 import { reveal, useReveal } from '../../state/reveal.js';
 import { changesOf, useCore, useSession } from '../../state/session.js';
 import { CommentsBar } from '../comments/comments-bar.js';
@@ -28,7 +29,7 @@ function ChangesTab({ id }: { id: string }) {
   const snapshot = useSession(core, id);
 
   const [turn, setTurn] = useState(ALL);
-  const list = useRef<HTMLDivElement>(null);
+  const list = useRef<VirtualListHandle>(null);
 
   const commentsOn = useComments(id, 'changes');
 
@@ -38,15 +39,22 @@ function ChangesTab({ id }: { id: string }) {
   const added = files.reduce((sum, file) => sum + file.added, 0);
   const removed = files.reduce((sum, file) => sum + file.removed, 0);
 
-  useReveal(`changes:${id}`, list, files.length);
+  useReveal(`changes:${id}`, (path) => list.current?.scrollTo(path), files.length);
 
   if (!snapshot) return <Note>This thread is closed, and its changes with it.</Note>;
   if (turns.length === 0) return <Note>The files this thread changes show here, each with its diff.</Note>;
 
   return (
-    <div ref={list} className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-240 flex-col gap-4 px-8 py-6">
-        <div className="flex items-center gap-3">
+    <VirtualList
+      handle={list}
+      items={files}
+      keyOf={(file) => file.path}
+      estimate={(file) => diffHeight(file.added, file.removed)}
+      gap={16}
+      className="h-full"
+      innerClassName="mx-auto max-w-240 px-8 py-6"
+      header={
+        <div className="flex items-center gap-3 pb-4">
           <p className="font-medium">
             {files.length} {files.length === 1 ? 'file' : 'files'} changed
           </p>
@@ -66,17 +74,14 @@ function ChangesTab({ id }: { id: string }) {
             trigger={<Pill className="max-w-80">{picked ? firstLine(picked.prompt) : 'The whole thread'}</Pill>}
           />
         </div>
-        {files.map((file) => {
-          const lines = diffLines(file.patch);
+      }
+    >
+      {(file) => {
+        const lines = diffLines(file.patch);
 
-          return (
-            <div key={file.path} data-path={file.path} className="scroll-mt-4">
-              <DiffCard path={file.path} lines={lines} folded={Number.POSITIVE_INFINITY} bare {...commentsOn(file.path, lines)} />
-            </div>
-          );
-        })}
-      </div>
-    </div>
+        return <DiffCard path={file.path} lines={drawable(lines)} folded={SHOWN_LINES} bare {...commentsOn(file.path, lines)} />;
+      }}
+    </VirtualList>
   );
 }
 

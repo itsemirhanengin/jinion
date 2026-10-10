@@ -31,10 +31,11 @@ const EXPLORING = new Set<ToolRun['name']>(['read', 'grep', 'glob']);
 const OWN_PLACE = new Set<ToolRun['name']>(['todo', 'plan']);
 
 /**
- * The conversation's entries as the window draws them: reads and searches in a row fold into one line, and the steps
- * between the agent's words into one block, live while the turn works on it, folded into a line once done.
+ * The conversation's entries as the window draws them, a keyed element for each turn, so the conversation can draw only
+ * those in view: reads and searches in a row fold into one line, and the steps between the agent's words into one block,
+ * live while the turn works on it, folded into a line once done.
  */
-export function Entries({ state, working, actions }: { state: SessionState; working: boolean; actions: EntryActions }) {
+export function entryTurns({ state, working, actions }: { state: SessionState; working: boolean; actions: EntryActions }) {
   const steps: Step[] = [];
   const latestTodos = latestTodosOfEachTurn(state.entries);
 

@@ -1,5 +1,5 @@
 import type { FileChange, RepoChanges } from '@jinion/core/api/protocol';
-import { Button, classNames } from '@jinion/ui';
+import { Button, classNames, VirtualList } from '@jinion/ui';
 import { useWorkbench } from '@jinion/workbench';
 import { atom, useAtom } from 'jotai';
 import { FolderGit2, GitBranch } from 'lucide-react';
@@ -12,25 +12,50 @@ import { useGit } from './use-git.js';
 /** What is typed in each repository's commit box, by its root, so it outlives the sidebar closing. */
 const messagesAtom = atom<Record<string, string>>({});
 
+type Item = { kind: 'repo'; repo: RepoChanges } | { kind: 'file'; change: FileChange };
+
+const HEAD = 176;
+const EMPTY = 32;
+const ROW = 28;
+
+/** Each repository's commit box and its changed files, only the rows in view drawn, however many files changed. */
 export function GitSidebar() {
+  const core = useCore();
+  const workbench = useWorkbench();
   const { shown, repos } = useGit();
 
   if (!shown) return <Note>Open a thread to see the git changes in its folder.</Note>;
   if (!repos) return null;
   if (repos.length === 0) return <Note>This folder isn't in a git repository, and holds none.</Note>;
 
+  const items: Item[] = repos.flatMap((repo) => [{ kind: 'repo' as const, repo }, ...repo.changes.map((change) => ({ kind: 'file' as const, change }))]);
+
+  const open = (change: FileChange) => {
+    workbench.open(GIT_TAB);
+    reveal(core, 'git:changes', change.absolute);
+  };
+
   return (
-    <div className="flex flex-col gap-5">
-      {repos.map((repo) => (
-        <Repo key={repo.repo.root} session={shown} repo={repo} titled={repos.length > 1} />
-      ))}
-    </div>
+    <VirtualList
+      items={items}
+      keyOf={(item) => (item.kind === 'repo' ? `repo:${item.repo.repo.root}` : item.change.absolute)}
+      estimate={(item) => (item.kind === 'file' ? ROW : item.repo.changes.length > 0 ? HEAD : EMPTY)}
+      className="h-full"
+    >
+      {(item) =>
+        item.kind === 'repo' ? (
+          <Repo session={shown} repo={item.repo} titled={repos.length > 1} />
+        ) : (
+          <Row change={item.change} onStage={(on) => core.act(core.stage(shown, [item.change.absolute], on))} onOpen={() => open(item.change)} />
+        )
+      }
+    </VirtualList>
   );
 }
 
+/** A repository's head: its name when the folder holds several, the commit box, Stage All and Commit, and how much changed. */
 function Repo({ session, repo, titled }: { session: string; repo: RepoChanges; titled: boolean }) {
   const core = useCore();
-  const workbench = useWorkbench();
   const [messages, setMessages] = useAtom(messagesAtom);
 
   const [busy, setBusy] = useState(false);
@@ -73,13 +98,8 @@ function Repo({ session, repo, titled }: { session: string; repo: RepoChanges; t
     }
   };
 
-  const open = (change: FileChange) => {
-    workbench.open(GIT_TAB);
-    reveal(core, 'git:changes', change.absolute);
-  };
-
   return (
-    <section className="flex flex-col gap-2">
+    <section className="flex flex-col gap-2 pt-3 pb-1 first:pt-0">
       {titled && (
         <div className="flex h-6 items-center gap-2 px-1">
           <FolderGit2 className="size-4 shrink-0 text-faint" />
@@ -118,11 +138,6 @@ function Repo({ session, repo, titled }: { session: string; repo: RepoChanges; t
             {repo.changes.length} changed {repo.changes.length === 1 ? 'file' : 'files'}
             {staged.length > 0 && `, ${staged.length} staged`}
           </p>
-          <ul className="flex flex-col">
-            {repo.changes.map((change) => (
-              <Row key={change.absolute} change={change} onStage={(on) => stage([change], on)} onOpen={() => open(change)} />
-            ))}
-          </ul>
         </>
       )}
     </section>
@@ -134,7 +149,7 @@ function Row({ change, onStage, onOpen }: { change: FileChange; onStage: (on: bo
   const folder = change.file.slice(0, -name.length - 1);
 
   return (
-    <li className="flex h-7 items-center gap-2 rounded-lg px-1 hover:bg-shade">
+    <div className="flex h-7 items-center gap-2 rounded-lg px-1 hover:bg-shade">
       <input
         type="checkbox"
         aria-label={`Stage ${change.file}`}
@@ -150,7 +165,7 @@ function Row({ change, onStage, onOpen }: { change: FileChange; onStage: (on: bo
         <span className={classNames('shrink-0', change.kind === 'deleted' && 'text-muted line-through')}>{name}</span>
         <span className="min-w-0 truncate text-faint">{folder}</span>
       </button>
-    </li>
+    </div>
   );
 }
 
