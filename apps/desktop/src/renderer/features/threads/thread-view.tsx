@@ -15,7 +15,8 @@ import { openFile } from '../files/files.js';
 import { openPlan, planOptions, plansOf, showPlanBeside } from '../plan/plans.js';
 import { Composer } from './composer.js';
 import { draftOf } from './draft.js';
-import { Entries } from './entries.js';
+import { entryTurns } from './entries.js';
+import { ProjectStatus } from './project-status.js';
 
 /** A thread's tab: its conversation, and the composer floating over its end. */
 export function ThreadView({ id }: { id: string }) {
@@ -112,26 +113,24 @@ export function ThreadView({ id }: { id: string }) {
           onShow={latestPlan && (() => openPlan(workbench, id, latestPlan.id))}
         />
       )}
-      {!dialog && <Composer id={id} snapshot={session} large={!started} header={todos} />}
+      {!dialog && <Composer id={id} snapshot={session} header={todos} />}
     </>
   );
 
-  // A thread that hasn't started is only its composer, larger, in the middle.
+  // A thread that hasn't started shows where the project stands, its composer at the foot.
   if (!started) {
     return (
-      <div className="flex h-full items-center justify-center overflow-y-auto px-8 pb-[8vh]">
-        <div className="flex w-full max-w-176 flex-col gap-3">
-          <Problem />
-          {bottom}
-        </div>
-      </div>
+      <ProjectStatus>
+        <Problem />
+        {bottom}
+      </ProjectStatus>
     );
   }
 
   return (
     <Conversation footer={bottom}>
       <Problem />
-      <Entries state={state} working={fields.working} actions={actions} />
+      {entryTurns({ state, working: fields.working, actions })}
       {/* While it asks the user, the agent waits rather than works. */}
       {fields.working && !dialog && state.busySince && <Working since={state.busySince} />}
     </Conversation>

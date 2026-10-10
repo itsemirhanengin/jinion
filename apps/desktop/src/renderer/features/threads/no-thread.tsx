@@ -2,9 +2,10 @@ import { Composer } from '@jinion/ui/chat';
 import { useWorkbench } from '@jinion/workbench';
 import { useState } from 'react';
 import { useCore } from '../../state/session.js';
+import { ProjectStatus } from './project-status.js';
 import { newThread } from './spare.js';
 
-/** With no thread open, the composer alone in the middle, as a thread that hasn't started; sending opens the thread. */
+/** With no thread open, where the project stands and the composer at the foot, as a thread that hasn't started; sending opens the thread. */
 export function NoThread() {
   const core = useCore();
   const workbench = useWorkbench();
@@ -19,10 +20,8 @@ export function NoThread() {
   };
 
   return (
-    <div className="flex h-full items-center justify-center overflow-y-auto px-8 pb-[8vh]">
-      <div className="w-full max-w-176">
-        <Composer value={draft} onChange={setDraft} onSubmit={submit} placeholder="Ask for a change. / for commands" large />
-      </div>
-    </div>
+    <ProjectStatus>
+      <Composer value={draft} onChange={setDraft} onSubmit={submit} placeholder="Ask for a change. / for commands" />
+    </ProjectStatus>
   );
 }
