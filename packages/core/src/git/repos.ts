@@ -1,5 +1,6 @@
 import { execFile, execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync } from 'node:fs';
+import { readFile, stat } from 'node:fs/promises';
 import { basename, join, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { stagedFiles } from './staging.js';
@@ -102,11 +103,14 @@ export async function repoChanges(repo: Repo, since?: string): Promise<FileChang
     ...(staged.has(file) && { staged: staged.get(file) }),
   }));
 
-  for (const file of untracked.split('\0').filter(Boolean)) {
-    const lines = countLines(join(repo.root, file));
+  const files = untracked.split('\0').filter(Boolean);
+  const counts = await countAll(repo.root, files);
+
+  files.forEach((file, index) => {
+    const lines = counts[index];
 
     changes.push({ file, absolute: join(repo.root, file), kind: 'untracked', insertions: lines ?? 0, deletions: 0, binary: lines === undefined });
-  }
+  });
 
   return changes.sort((a, b) => a.file.localeCompare(b.file));
 }
@@ -115,7 +119,7 @@ export async function fileDiff(repo: Repo, change: FileChange, since?: string): 
   if (change.binary) return '';
 
   if (change.kind === 'untracked') {
-    const lines = readFileSync(change.absolute, 'utf8').replace(/\n$/, '').split('\n');
+    const lines = (await readFile(change.absolute, 'utf8')).replace(/\n$/, '').split('\n');
 
     return [`@@ -0,0 +1,${lines.length} @@`, ...lines.map((line) => `+${line}`)].join('\n');
   }
@@ -214,15 +218,57 @@ function parseNameStatus(output: string) {
   return kinds;
 }
 
-function countLines(path: string) {
+/** Larger untracked files count as binary: no lines are counted or shown. */
+const MAX_COUNTED = 4 * 1024 * 1024;
+
+/** How many untracked files are read at once, well under the files a process may hold open. */
+const READING = 16;
+
+/**
+ * Each repository's untracked files' line counts, kept while a file's size and modification time stay the same, so a
+ * folder with thousands of them, read again every few seconds, only reads what changed.
+ */
+const counted = new Map<string, Map<string, { stamp: string; lines: number | undefined }>>();
+
+/** The files' line counts, undefined for a binary or too large one, read without holding up the process. */
+async function countAll(root: string, files: string[]) {
+  const before = counted.get(root) ?? new Map();
+  const now = new Map<string, { stamp: string; lines: number | undefined }>();
+  const counts: (number | undefined)[] = [];
+  let next = 0;
+
+  const read = async () => {
+    while (next < files.length) {
+      const index = next++;
+      const path = join(root, files[index]!);
+
+      counts[index] = await countLines(path, before, now);
+    }
+  };
+
+  await Promise.all(Array.from({ length: Math.min(READING, files.length) }, read));
+  counted.set(root, now);
+
+  return counts;
+}
+
+async function countLines(path: string, before: Map<string, { stamp: string; lines: number | undefined }>, now: typeof before) {
   try {
-    if (statSync(path).size > 4 * 1024 * 1024) return undefined;
+    const { size, mtimeMs } = await stat(path);
+    const stamp = `${size}:${mtimeMs}`;
+    const known = before.get(path);
+    const lines = known?.stamp === stamp ? known.lines : size > MAX_COUNTED ? undefined : linesOf(await readFile(path, 'utf8'));
 
-    const text = readFileSync(path, 'utf8');
-    if (text.includes('\0')) return undefined;
+    now.set(path, { stamp, lines });
 
-    return text ? text.replace(/\n$/, '').split('\n').length : 0;
+    return lines;
   } catch {
     return undefined;
   }
+}
+
+function linesOf(text: string) {
+  if (text.includes('\0')) return undefined;
+
+  return text ? text.replace(/\n$/, '').split('\n').length : 0;
 }

@@ -69,6 +69,20 @@ describe('repoChanges', () => {
     expect(modified).toContain('-two\n+TWO\n+three');
     expect(await fileDiff(api!, changes[1]!)).toBe('@@ -0,0 +1,3 @@\n+a\n+b\n+c');
   });
+
+  it("counts a new file's lines again once it changes, and keeps the count while it doesn't", async () => {
+    repo(box.project, (path) => box.write(join(path, 'README.md'), 'readme\n'));
+    box.write(join(box.project, 'fresh.ts'), 'a\nb\n');
+    const [found] = findRepos(box.project);
+    const fresh = async () => (await repoChanges(found!)).find((change) => change.file === 'fresh.ts')?.insertions;
+
+    expect(await fresh()).toBe(2);
+    expect(await fresh()).toBe(2);
+
+    box.write(join(box.project, 'fresh.ts'), 'a\nb\nc\nd\n');
+
+    expect(await fresh()).toBe(4);
+  });
 });
 
 describe('branchBase', () => {
