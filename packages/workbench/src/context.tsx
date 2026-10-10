@@ -20,6 +20,13 @@ export function useLayout<T>(select: (layout: Layout) => T) {
   return useSyncExternalStore(workbench.subscribe, () => select(workbench.getLayout()));
 }
 
+/** The mode shown; the component redraws when it changes. */
+export function useMode() {
+  const workbench = useWorkbench();
+
+  return useSyncExternalStore(workbench.subscribe, workbench.getMode);
+}
+
 /** Inside a tab's content: its key, and `pin` to keep a preview once the user works in it. */
 export function useTab() {
   const workbench = useWorkbench();

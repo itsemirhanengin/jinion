@@ -9,11 +9,12 @@ import { DropCaret, DropPreview, useTabDrag } from './tab-drag.js';
 export interface GroupProps {
   index: number;
   onNewTab?: () => void;
+  newTabLabel?: string;
   Empty?: ComponentType;
 }
 
 /** A row of tabs and the one shown; the sheet holds one or two of them, beside or above each other. */
-export function Group({ index, onNewTab, Empty }: GroupProps) {
+export function Group({ index, onNewTab, newTabLabel = 'New tab', Empty }: GroupProps) {
   const workbench = useWorkbench();
   const group = useLayout((layout) => layout.groups[index]);
 
@@ -32,7 +33,7 @@ export function Group({ index, onNewTab, Empty }: GroupProps) {
           <DropCaret group={index} />
         </div>
         {onNewTab && (
-          <IconButton label="New thread" onClick={onNewTab}>
+          <IconButton label={newTabLabel} onClick={onNewTab}>
             <Plus />
           </IconButton>
         )}

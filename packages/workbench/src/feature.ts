@@ -12,12 +12,12 @@ export interface Feature {
   commands?: Command[];
 }
 
-/** An item of the activity bar: it opens its sidebar, its page as a tab, or both. */
+/** A view of the sidebar, in the row at its top when its mode has several: it opens its sidebar, its page as a tab, or both. */
 export interface Activity {
   title: string;
   icon: ReactNode;
-  /** At the bar's foot, as settings and the account are. */
-  foot?: boolean;
+  /** The mode whose sidebar it is in; in every mode without one. */
+  mode?: string;
   Badge?: ComponentType;
   Sidebar?: ComponentType;
   /** Buttons at the end of the sidebar's header, such as New thread. */
@@ -27,6 +27,8 @@ export interface Activity {
 
 export interface TabKind {
   kind: string;
+  /** The mode its tabs always open in, as a thread's in Agent; in the mode shown without one. */
+  mode?: string;
   Title: ComponentType<{ id: string }>;
   /** Drawn before the title: a file's icon, a thread's state. */
   Mark?: ComponentType<{ id: string }>;

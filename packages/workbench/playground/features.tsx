@@ -32,6 +32,7 @@ export const features: Feature[] = [
     activity: {
       title: 'Threads',
       icon: <MessagesSquare />,
+      mode: 'agent',
       Badge: () => ([...threads.values()].some((thread) => thread.state === 'waiting') ? <Dot tone="warning" /> : null),
       Sidebar: ThreadList,
       Actions: () => {
@@ -47,6 +48,7 @@ export const features: Feature[] = [
     tabs: [
       {
         kind: 'thread',
+        mode: 'agent',
         Title: ({ id }) => threads.get(id)?.title,
         Mark: ({ id }) => <StateMark state={threads.get(id)?.state ?? 'idle'} />,
         Content: ({ id }) => <ThreadView thread={threads.get(id)!} changes={changes} />,
@@ -56,11 +58,11 @@ export const features: Feature[] = [
   },
   {
     id: 'search',
-    activity: { title: 'Search', icon: <Search />, Sidebar: () => <p className="px-2 text-muted">Search the project.</p> },
+    activity: { title: 'Search', icon: <Search />, mode: 'code', Sidebar: () => <p className="px-2 text-muted">Search the project.</p> },
   },
   {
     id: 'changes',
-    activity: { title: 'Changes', icon: <GitCompare />, Badge: () => <Dot />, Sidebar: ChangeList },
+    activity: { title: 'Changes', icon: <GitCompare />, mode: 'code', Badge: () => <Dot />, Sidebar: ChangeList },
     tabs: [{ kind: 'diff', Title: ({ id }) => id.split('/').at(-1), Content: ({ id }) => <DiffView path={id} /> }],
   },
   {
@@ -70,7 +72,7 @@ export const features: Feature[] = [
   },
   {
     id: 'settings',
-    activity: { title: 'Settings', icon: <SettingsIcon />, foot: true, page: { kind: 'page', id: 'settings' } },
+    activity: { title: 'Settings', icon: <SettingsIcon />, page: { kind: 'page', id: 'settings' } },
   },
   {
     id: 'tools',
