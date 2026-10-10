@@ -2,7 +2,10 @@ import '@jinion/ui/theme.css';
 import { classNames } from '@jinion/ui';
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AskAnywhere } from './pages/ask-anywhere/ask-anywhere.js';
 import { ChatPieces } from './pages/chat-pieces.js';
+import { Layouts } from './pages/layouts/layouts.js';
+import { ThreadsComposer } from './pages/threads-composer/threads-composer.js';
 import { Leaf } from './pages/leaf.js';
 import { Menus } from './pages/menus.js';
 import { Primitives } from './pages/primitives.js';
@@ -12,6 +15,9 @@ import { Preview } from './pages/preview.js';
 import { Terminal } from './pages/terminal.js';
 
 const pages = [
+  { id: 'ask-anywhere', title: 'Ask anywhere', Page: AskAnywhere },
+  { id: 'threads-composer', title: 'Sidebar & composer', Page: ThreadsComposer },
+  { id: 'layouts', title: 'Layouts', Page: Layouts },
   { id: 'preview', title: 'Preview', Page: Preview },
   { id: 'plan-round', title: 'Plan, round 2', Page: PlanRound },
   { id: 'plan', title: 'Plan', Page: Plan },
