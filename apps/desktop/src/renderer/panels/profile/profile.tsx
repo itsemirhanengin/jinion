@@ -1,29 +1,17 @@
-import type { UsageProfile } from '@jinion/core/agent/usage';
-import { Spinner } from '@jinion/ui';
-import { useAtomValue } from 'jotai';
-import { useEffect, useState } from 'react';
+import { classNames, Spinner } from '@jinion/ui';
+import { useAtom } from 'jotai';
 import { compact, counted } from '../../lib/numbers.js';
-import { useCore } from '../../state/session.js';
+import { ACCENTS, accentAtom } from '../../state/accent.js';
+import { appStore } from '../../state/app.js';
+import { useProfile } from '../../state/profile.js';
 import { Accounts } from './accounts.js';
 import { Activity } from './activity.js';
 
 const dayLabel = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric', year: 'numeric' });
 
-/** The user as Jinion knows them: their name, what they have done with every backend over time, and their accounts. */
+/** The user as Jinion knows them: their name, the window's color, what they have done with every backend over time, and their accounts. */
 export function Profile() {
-  const core = useCore();
-  const app = useAtomValue(core.appAtom);
-
-  const [profile, setProfile] = useState<{ name?: string; usage: UsageProfile }>();
-  const [problem, setProblem] = useState<string>();
-
-  useEffect(() => {
-    core.client.request('profile/read', {}).then(setProfile, (error: Error) => setProblem(error.message));
-  }, [core]);
-
-  const email = Object.values(app?.identities ?? {}).find((identity) => identity.email)?.email;
-  const name = profile?.name ?? email?.split('@')[0] ?? 'You';
-  const usage = profile?.usage;
+  const { name, email, usage, problem } = useProfile();
 
   return (
     <div className="h-full overflow-y-auto">
@@ -35,6 +23,7 @@ export function Profile() {
             {email && <span className="text-muted">{email}</span>}
           </div>
         </header>
+        <Colors />
         {!usage && !problem && (
           <p className="flex items-center justify-center gap-2 text-muted">
             <Spinner />
@@ -86,6 +75,37 @@ export function Profile() {
         <Accounts />
       </div>
     </div>
+  );
+}
+
+/** The accent the window takes, each drawn in its own chrome and strong color. */
+function Colors() {
+  const [accent, setAccent] = useAtom(accentAtom, { store: appStore });
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="font-medium">Color</h2>
+      <div className="flex flex-wrap gap-1.5">
+        {ACCENTS.map((each) => (
+          <button
+            key={each.id}
+            type="button"
+            aria-pressed={each.id === accent}
+            onClick={() => setAccent(each.id)}
+            className={classNames(
+              'flex h-8 cursor-default items-center gap-2 rounded-full pr-3.5 pl-1.5',
+              each.id === accent ? 'bg-selected text-ink' : 'text-muted hover:bg-shade hover:text-ink',
+            )}
+          >
+            {/* Light whatever the window is, so every accent shows as it is picked. */}
+            <span data-accent={each.id} className="light flex size-5 items-center justify-center rounded-full bg-chrome ring-1 ring-edge">
+              <span className="size-3 rounded-full bg-primary" />
+            </span>
+            {each.name}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 

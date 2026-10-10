@@ -4,6 +4,7 @@ import { Provider } from 'jotai';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/app.js';
+import './state/accent.js';
 import { appStore } from './state/app.js';
 
 // The window takes macOS's appearance, and changes with it.
