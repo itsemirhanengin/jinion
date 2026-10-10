@@ -12,7 +12,7 @@ import { openPlan, planOptions, plansOf, planTab, planTitle } from './plans.js';
 
 /** A plan as a tab of its own: read and changed as a document, and answered from the bar over it. */
 export function plan(): Feature {
-  return { id: 'plan', tabs: [{ kind: 'plan', Title: PlanTitle, Mark: () => <ClipboardList className="size-4 shrink-0 text-faint" />, Content: PlanTab }] };
+  return { id: 'plan', tabs: [{ kind: 'plan', mode: 'agent', Title: PlanTitle, Mark: () => <ClipboardList className="size-4 shrink-0 text-faint" />, Content: PlanTab }] };
 }
 
 function PlanTitle({ id }: { id: string }) {
