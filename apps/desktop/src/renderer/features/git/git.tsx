@@ -9,7 +9,7 @@ export const GIT_TAB = { kind: 'git', id: 'changes' };
 export function git(): Feature {
   return {
     id: 'git',
-    activity: { title: 'Git', icon: <GitBranch />, Sidebar: GitSidebar, page: GIT_TAB },
+    activity: { title: 'Git', icon: <GitBranch />, mode: 'code', Sidebar: GitSidebar, page: GIT_TAB },
     tabs: [{ kind: 'git', Title: () => 'Git', Content: GitDiffs }],
   };
 }

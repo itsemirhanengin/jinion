@@ -71,8 +71,8 @@ function openWindow() {
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 16, y: 16 },
-    // The chrome's color in the system's appearance, so the window shows no other while the page loads.
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#18181b' : '#f4f4f5',
+    // The chrome's color in the system's appearance, Navy's being the default accent, so the window shows no other while the page loads.
+    backgroundColor: nativeTheme.shouldUseDarkColors ? '#16181f' : '#eceef3',
     webPreferences: {
       sandbox: true,
       contextIsolation: true,

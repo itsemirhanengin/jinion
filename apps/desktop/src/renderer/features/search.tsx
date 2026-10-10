@@ -3,13 +3,14 @@ import { type Feature, useWorkbench } from '@jinion/workbench';
 import { useAtomValue } from 'jotai';
 import { FileText, Search as SearchIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
+import { filesByName } from '../lib/find.js';
 import { useCore } from '../state/session.js';
 
 const SHOWN = 50;
 
 /** Finds the project's files and threads by name, each opening in a tab. */
 export function search(): Feature {
-  return { id: 'search', activity: { title: 'Search', icon: <SearchIcon />, Sidebar: Search } };
+  return { id: 'search', activity: { title: 'Search', icon: <SearchIcon />, mode: 'code', Sidebar: Search } };
 }
 
 function Search() {
@@ -34,7 +35,7 @@ function Search() {
     thread.title.toLowerCase().includes(wanted),
   );
 
-  const found = wanted ? byName(files.filter((path) => !path.endsWith('/')), wanted).slice(0, SHOWN) : [];
+  const found = wanted ? filesByName(files, wanted).slice(0, SHOWN) : [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -83,14 +84,6 @@ function Search() {
       )}
     </div>
   );
-}
-
-/** The files whose name holds the query first, then those whose folders do. */
-function byName(paths: string[], query: string) {
-  const named = paths.filter((path) => path.slice(path.lastIndexOf('/') + 1).toLowerCase().includes(query));
-  const foldered = paths.filter((path) => !named.includes(path) && path.toLowerCase().includes(query));
-
-  return [...named, ...foldered];
 }
 
 function Group({ title, children }: { title: string; children: ReactNode }) {

@@ -3,10 +3,10 @@ import type { RecentProject } from '../../main/bridge.js';
 import { Core } from '../core/core.js';
 import { saveProjects, savedProjects } from './saved.js';
 
-/** The app's own store: which projects are open as tabs, and the one shown. Each project's window reads its core's store. */
+/** The app's own store: which projects are open, and the one shown. Each project's window reads its core's store. */
 export const appStore = createStore();
 
-/** The folders open as tabs along the top, in their order. */
+/** The folders open, as the project menu lists them, in the order they were opened. */
 export const projectsAtom = atom<string[]>([]);
 
 /** The folder shown; undefined on the projects screen. */
@@ -83,17 +83,6 @@ export function closeProject(path: string) {
 export function showProjects() {
   appStore.set(projectAtom, undefined);
   appStore.set(coreAtom, undefined);
-}
-
-export function moveProject(from: number, to: number) {
-  appStore.set(projectsAtom, (open) => {
-    const next = [...open];
-    const [path] = next.splice(from, 1);
-
-    next.splice(to, 0, path!);
-
-    return next;
-  });
 }
 
 function coreFor(path: string) {
