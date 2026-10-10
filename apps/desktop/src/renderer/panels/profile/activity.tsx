@@ -31,8 +31,11 @@ interface Cell {
   future: boolean;
 }
 
-/** A year of tokens, a column a week and a square a day, as a day's own, its week's or all of them up to it. */
-export function Activity({ days }: { days: { date: string; tokens: number }[] }) {
+/**
+ * A year of tokens, a column a week and a square a day, as a day's own, its week's or all of them up to it; without its
+ * title inside a card that names it.
+ */
+export function Activity({ days, titled = true }: { days: { date: string; tokens: number }[]; titled?: boolean }) {
   const [mode, setMode] = useState<Mode>('daily');
 
   const tip = useMemo(() => tooltipHandle<Note>(), []);
@@ -42,7 +45,7 @@ export function Activity({ days }: { days: { date: string; tokens: number }[] })
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-3">
-        <h2 className="flex-1 font-medium">Token activity</h2>
+        <h2 className="flex-1 font-medium">{titled && 'Token activity'}</h2>
         {MODES.map((each) => (
           <button
             key={each.mode}
