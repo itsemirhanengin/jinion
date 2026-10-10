@@ -1,50 +1,63 @@
 import type { FileChange, RepoChanges } from '@jinion/core/api/protocol';
-import { LineCounts } from '@jinion/ui';
+import { LineCounts, VirtualList, type VirtualListHandle } from '@jinion/ui';
 import { DiffCard, type DiffCardProps, type DiffLine } from '@jinion/ui/chat';
 import { FolderGit2, GitBranch } from 'lucide-react';
 import { type ReactNode, useEffect, useReducer, useRef } from 'react';
 import { diffLines } from '../../lib/diff.js';
+import { diffHeight, drawable, SHOWN_LINES } from '../../lib/diff-view.js';
 import { useReveal } from '../../state/reveal.js';
 import { useCore } from '../../state/session.js';
 import { CommentsBar } from '../comments/comments-bar.js';
 import { useComments } from '../comments/use-comments.js';
 import { useGit } from './use-git.js';
 
-/** Every uncommitted file's diff one under another, a heading for each repository when the folder holds several. */
+type Item = { kind: 'heading'; repo: RepoChanges; first: boolean } | { kind: 'change'; change: FileChange };
+
+const HEADING = 44;
+const BINARY = 36;
+
+/**
+ * Every uncommitted file's diff one under another, a heading for each repository when the folder holds several. Only
+ * the files in view are drawn, and each reads its diff once it comes into view, so a folder of thousands stays light.
+ */
 export function GitDiffs() {
   const { shown, repos } = useGit();
-  const { diffs, read } = useDiffs(shown, repos);
+  const { diffOf, read, drawn } = useDiffs(shown);
   const commentsOn = useComments(shown, 'git');
-  const list = useRef<HTMLDivElement>(null);
+  const list = useRef<VirtualListHandle>(null);
 
   const changed = (repos ?? []).filter((repo) => repo.changes.length > 0);
 
-  useReveal('git:changes', list, read);
+  useReveal('git:changes', (path) => list.current?.scrollTo(path), drawn);
 
   if (!shown) return <Note>Open a thread to see the git changes in its folder.</Note>;
   if (!repos) return null;
   if (repos.length === 0) return <Note>This folder isn't in a git repository, and holds none.</Note>;
   if (changed.length === 0) return <Note>Nothing to commit. What changes in the folder's repositories shows here, file by file.</Note>;
 
-  return (
-    <div ref={list} className="h-full overflow-y-auto">
-      <div className="mx-auto flex max-w-240 flex-col gap-8 px-8 py-6">
-        {changed.map((repo, index) => (
-          <section key={repo.repo.root} className="flex flex-col gap-4">
-            <Heading repo={repo} titled={repos.length > 1} end={index === 0 && <CommentsBar session={shown} />} />
-            {repo.changes.map((change) => {
-              const lines = diffs.get(change.absolute)?.lines;
+  const items: Item[] = changed.flatMap((repo, index) => [
+    { kind: 'heading' as const, repo, first: index === 0 },
+    ...repo.changes.map((change) => ({ kind: 'change' as const, change })),
+  ]);
 
-              return (
-                <div key={change.absolute} data-path={change.absolute} className="scroll-mt-4">
-                  <Diff change={change} lines={lines} comments={lines && commentsOn(change.absolute, lines)} />
-                </div>
-              );
-            })}
-          </section>
-        ))}
-      </div>
-    </div>
+  return (
+    <VirtualList
+      handle={list}
+      items={items}
+      keyOf={(item) => (item.kind === 'heading' ? `repo:${item.repo.repo.root}` : item.change.absolute)}
+      estimate={(item) => (item.kind === 'heading' ? HEADING : item.change.binary ? BINARY : diffHeight(item.change.insertions, item.change.deletions))}
+      gap={16}
+      className="h-full"
+      innerClassName="mx-auto max-w-240 px-8 py-6"
+    >
+      {(item) => {
+        if (item.kind === 'heading') return <Heading repo={item.repo} titled={changed.length > 1} end={item.first && <CommentsBar session={shown} />} />;
+
+        const lines = diffOf(item.change);
+
+        return <Diff change={item.change} lines={lines} comments={lines && commentsOn(item.change.absolute, lines)} onShow={() => read(item.change)} />;
+      }}
+    </VirtualList>
   );
 }
 
@@ -53,7 +66,7 @@ function Heading({ repo, titled, end }: { repo: RepoChanges; titled: boolean; en
   const removed = repo.changes.reduce((sum, change) => sum + change.deletions, 0);
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 pt-2">
       {titled && <FolderGit2 className="size-4 shrink-0 text-faint" />}
       <p className="font-medium">
         {titled ? `${repo.repo.label}, ` : ''}
@@ -76,11 +89,16 @@ function Heading({ repo, titled, end }: { repo: RepoChanges; titled: boolean; en
   );
 }
 
-function Diff({ change, lines, comments }: { change: FileChange; lines?: DiffLine[]; comments?: Partial<DiffCardProps> }) {
+/** A file's diff, asked for as it comes into view; a long one shows its first lines until it is opened in full. */
+function Diff({ change, lines, comments, onShow }: { change: FileChange; lines?: DiffLine[]; comments?: Partial<DiffCardProps>; onShow: () => void }) {
+  useEffect(() => {
+    if (!change.binary) onShow();
+  }, [change.absolute, change.insertions, change.deletions, change.kind, change.staged]);
+
   if (change.binary) return <Placeholder path={change.file} text="A binary file, with no lines to show." />;
   if (!lines) return <Placeholder path={change.file} text="Reading the diff" />;
 
-  return <DiffCard path={change.file} lines={lines} folded={Number.POSITIVE_INFINITY} bare {...comments} />;
+  return <DiffCard path={change.file} lines={drawable(lines)} folded={SHOWN_LINES} bare {...comments} />;
 }
 
 function Placeholder({ path, text }: { path: string; text: string }) {
@@ -92,34 +110,32 @@ function Placeholder({ path, text }: { path: string; text: string }) {
   );
 }
 
-/** Each file's diff, read again only when the file's change is no longer the one it was read for. */
-function useDiffs(session: string | undefined, repos: RepoChanges[] | undefined) {
+/** Each file's diff, read when its card asks, and again only once the file's change is no longer the one it was read for. */
+function useDiffs(session: string | undefined) {
   const core = useCore();
   const cache = useRef(new Map<string, { key: string; lines?: DiffLine[] }>());
-  const [read, redraw] = useReducer((count: number) => count + 1, 0);
+  const [drawn, redraw] = useReducer((count: number) => count + 1, 0);
 
-  useEffect(() => {
-    if (!session || !repos) return;
+  const keyOf = (change: FileChange) => `${change.kind}|${change.insertions}|${change.deletions}|${change.staged ?? ''}`;
 
-    for (const change of repos.flatMap((repo) => repo.changes)) {
-      const key = `${change.kind}|${change.insertions}|${change.deletions}|${change.staged ?? ''}`;
-      if (change.binary || cache.current.get(change.absolute)?.key === key) continue;
+  const read = (change: FileChange) => {
+    const key = keyOf(change);
+    if (!session || cache.current.get(change.absolute)?.key === key) return;
 
-      cache.current.set(change.absolute, { key, lines: cache.current.get(change.absolute)?.lines });
+    cache.current.set(change.absolute, { key, lines: cache.current.get(change.absolute)?.lines });
 
-      void core.gitDiff(session, change.absolute).then(
-        (patch) => {
-          if (cache.current.get(change.absolute)?.key !== key) return;
+    void core.gitDiff(session, change.absolute).then(
+      (patch) => {
+        if (cache.current.get(change.absolute)?.key !== key) return;
 
-          cache.current.set(change.absolute, { key, lines: diffLines(patch) });
-          redraw();
-        },
-        () => {},
-      );
-    }
-  }, [core, session, repos]);
+        cache.current.set(change.absolute, { key, lines: diffLines(patch) });
+        redraw();
+      },
+      () => {},
+    );
+  };
 
-  return { diffs: cache.current, read };
+  return { diffOf: (change: FileChange) => cache.current.get(change.absolute)?.lines, read, drawn };
 }
 
 function Note({ children }: { children: string }) {

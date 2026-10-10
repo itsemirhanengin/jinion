@@ -1,5 +1,5 @@
 import { atom, useAtomValue } from 'jotai';
-import { type RefObject, useEffect } from 'react';
+import { useEffect } from 'react';
 import type { Core } from '../core/core.js';
 
 /** A file to scroll to in a tab of diffs one under another; `at` tells the same file asked for twice apart. */
@@ -9,16 +9,16 @@ export function reveal(core: Core, tab: string, path: string) {
   core.client.store.set(revealAtom, { tab, path, at: Date.now() });
 }
 
-/** How long after the ask the tab follows the file, while the diffs above it are still being drawn. */
+/** How long after the ask the tab follows the file, while the diffs above it are still being drawn and measured. */
 const FOLLOW = 1500;
 
-/** Scrolls the tab to the file asked for, again as diffs are drawn; each file's diff carries its path as `data-path`. */
-export function useReveal(tab: string, list: RefObject<HTMLElement | null>, drawn: unknown) {
+/** Scrolls the tab to the file asked for, again as diffs are drawn, through its list's own `scrollTo`. */
+export function useReveal(tab: string, scrollTo: (path: string) => void, drawn: unknown) {
   const target = useAtomValue(revealAtom);
 
   useEffect(() => {
     if (target?.tab !== tab || Date.now() - target.at > FOLLOW) return;
 
-    list.current?.querySelector(`[data-path="${CSS.escape(target.path)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-  }, [target, tab, list, drawn]);
+    scrollTo(target.path);
+  }, [target, tab, drawn]);
 }
