@@ -412,8 +412,9 @@ describe('App', () => {
     await terminal.press(KEYS.enter);
     await terminal.waitFor('2 messages');
     await terminal.press(KEYS.enter);
-    // The message wraps where the temporary folder's path ends, and the sidebar starts each line.
-    await terminal.waitFor(/no longer exists\.[\s|]+The[\s|]+conversation[\s|]+continues[\s|]+in[\s|]+the[\s|]+project[\s|]+folder\./);
+    // The message wraps at a word that moves with the temporary folder's path and the worktree's random name, and the
+    // sidebar starts each line.
+    await terminal.waitFor(/no[\s|]+longer[\s|]+exists\.[\s|]+The[\s|]+conversation[\s|]+continues[\s|]+in[\s|]+the[\s|]+project[\s|]+folder\./);
     expect(lastFolder()).toBe(box.project);
   });
 
