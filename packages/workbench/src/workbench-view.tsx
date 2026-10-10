@@ -1,6 +1,5 @@
 import { classNames } from '@jinion/ui';
 import { type ComponentType, Fragment, type PointerEvent, type ReactNode, useLayoutEffect, useRef, useState } from 'react';
-import { ActivityBar } from './activity-bar.js';
 import { useLayout, useWorkbench, WorkbenchContext } from './context.js';
 import { Group } from './group.js';
 import { useShortcuts } from './keys.js';
@@ -16,27 +15,28 @@ export function WorkbenchProvider({ workbench, children }: { workbench: Workbenc
 
 export interface WorkbenchViewProps {
   workbench: Workbench;
-  /** What `+` in a row of tabs does: in Jinion, a new thread rather than a file. */
+  /** What `+` in a row of tabs does, such as a new thread in Jinion's Agent mode. */
   onNewTab?: () => void;
+  /** What `+` says it does. */
+  newTabLabel?: string;
   /** What a group with no tab shows. */
   Empty?: ComponentType;
 }
 
 /**
- * A project's window under the row of project tabs: gray chrome holding the activity bar, the sidebar and the right
- * panel, around a white sheet with the tabs and the bottom panel.
+ * A project's window under the title bar: the chrome holding the sidebar and the right panel, around a white sheet with
+ * the tabs, split or not, and the bottom panel, all of the mode shown.
  */
-export function WorkbenchView({ workbench, onNewTab, Empty }: WorkbenchViewProps) {
+export function WorkbenchView({ workbench, onNewTab, newTabLabel, Empty }: WorkbenchViewProps) {
   useShortcuts(workbench);
 
   return (
     <WorkbenchProvider workbench={workbench}>
       <div className="flex h-full min-h-0 animate-fade flex-col bg-chrome text-ink">
         <div className="flex min-h-0 flex-1">
-          <ActivityBar />
           <Sidebar />
           <div className="mb-2 flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl bg-background shadow-xs ring-1 ring-edge">
-            <Groups onNewTab={onNewTab} Empty={Empty} />
+            <Groups onNewTab={onNewTab} newTabLabel={newTabLabel} Empty={Empty} />
             <Panel place="bottom" />
           </div>
           <Panel place="right" />
@@ -51,7 +51,7 @@ export function WorkbenchView({ workbench, onNewTab, Empty }: WorkbenchViewProps
  * The groups, one or two beside or above each other, the line between them dragged to share the room. A new second
  * group grows from nothing to its share, so a split opens rather than appears.
  */
-function Groups({ onNewTab, Empty }: Omit<WorkbenchViewProps, 'workbench'>) {
+function Groups({ onNewTab, newTabLabel, Empty }: Omit<WorkbenchViewProps, 'workbench'>) {
   const workbench = useWorkbench();
   const count = useLayout((layout) => layout.groups.length);
   const direction = useLayout((layout) => layout.split ?? 'row');
@@ -130,7 +130,7 @@ function Groups({ onNewTab, Empty }: Omit<WorkbenchViewProps, 'workbench'>) {
                 !resizing && 'transition-[flex-basis] duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
               )}
             >
-              <Group index={index} onNewTab={onNewTab} Empty={Empty} />
+              <Group index={index} onNewTab={onNewTab} newTabLabel={newTabLabel} Empty={Empty} />
             </div>
           </Fragment>
         ))}

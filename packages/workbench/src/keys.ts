@@ -7,6 +7,7 @@ const mac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
 
 /** What the window does by itself, before the features' own commands. */
 export const layoutCommands: Command[] = [
+  { id: 'workbench.mode', title: 'Next mode', keys: 'mod+e', run: (workbench) => workbench.nextMode() },
   { id: 'workbench.sidebar', title: 'Toggle the sidebar', keys: 'mod+b', run: (workbench) => workbench.toggleSidebar() },
   { id: 'workbench.bottom', title: 'Toggle the bottom panel', keys: 'mod+j', run: (workbench) => workbench.togglePanel('bottom') },
   { id: 'workbench.right', title: 'Toggle the right panel', keys: 'mod+alt+b', run: (workbench) => workbench.togglePanel('right') },

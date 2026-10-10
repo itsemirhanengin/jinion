@@ -1,4 +1,4 @@
-export { useLayout, useTab, useWorkbench } from './context.js';
+export { useLayout, useMode, useTab, useWorkbench } from './context.js';
 export { Count, Dot } from './count.js';
 export type { Activity, Command, Feature, StatusItem, TabKind, View } from './feature.js';
 export { IconButton } from './icon-button.js';
@@ -10,5 +10,6 @@ export { LayoutToggles } from './layout-toggles.js';
 export { StatusButton } from './status-bar.js';
 export type { StatusButtonProps } from './status-bar.js';
 export { Workbench } from './workbench.js';
+export type { WorkbenchState } from './workbench.js';
 export { WorkbenchProvider, WorkbenchView } from './workbench-view.js';
 export type { WorkbenchViewProps } from './workbench-view.js';

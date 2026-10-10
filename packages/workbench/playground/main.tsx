@@ -2,7 +2,7 @@ import './playground.css';
 import { WindowTabs } from '@jinion/native-tabs';
 import { StatusIcon } from '@jinion/ui';
 import { emptyLayout, IconButton, LayoutToggles, Workbench, WorkbenchProvider, WorkbenchView } from '@jinion/workbench';
-import { Moon, Plus, Sun } from 'lucide-react';
+import { Code, Moon, Plus, Sun } from 'lucide-react';
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { features, NewThread, newThread } from './features.js';
@@ -13,9 +13,17 @@ const projects = [
   { id: 'jinion', title: 'jinion', mark: <StatusIcon status="idle" /> },
 ];
 
-const layout = { ...emptyLayout, activity: 'threads', lastActivity: 'threads', right: { open: true, size: 224, view: 'tools' } };
+const right = { open: true, size: 224, view: 'tools' };
 
-const workbenches = new Map(projects.map((project) => [project.id, new Workbench(features, layout)]));
+const state = {
+  mode: 'agent',
+  layouts: {
+    agent: { ...emptyLayout, activity: 'threads', lastActivity: 'threads', right },
+    code: { ...emptyLayout, activity: 'search', lastActivity: 'search', right },
+  },
+};
+
+const workbenches = new Map(projects.map((project) => [project.id, new Workbench(features, state)]));
 
 function Playground() {
   const [tabs, setTabs] = useState(projects);
@@ -51,6 +59,9 @@ function Playground() {
           inset={12}
           trailing={
             <>
+              <IconButton label="Agent or Code" onClick={() => workbench.setMode(workbench.getMode() === 'agent' ? 'code' : 'agent')}>
+                <Code />
+              </IconButton>
               <IconButton label={scheme === 'light' ? 'Dark' : 'Light'} onClick={() => setScheme(scheme === 'light' ? 'dark' : 'light')}>
                 {scheme === 'light' ? <Moon /> : <Sun />}
               </IconButton>
