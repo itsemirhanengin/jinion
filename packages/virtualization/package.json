@@ -1,6 +1,6 @@
 {
   "name": "@jinion/virtualization",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Mounts only what is in view of a long list of items of different heights, with an Ink hook",
   "license": "MIT",
   "homepage": "https://jinion.co",

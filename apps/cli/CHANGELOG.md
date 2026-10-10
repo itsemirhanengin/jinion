@@ -1,5 +1,15 @@
 # @jinion/cli
 
+## 0.1.1
+
+### Patch Changes
+
+- 468baeb: A folder with thousands of changed files no longer freezes the changes: the lines changed are counted in the
+  background, and again only once a file changes.
+- Updated dependencies [468baeb]
+  - @jinion/core@0.0.12
+  - @jinion/tui@0.0.4
+
 ## 0.1.0
 
 ### Minor Changes

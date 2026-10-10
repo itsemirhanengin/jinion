@@ -1,5 +1,24 @@
 # @jinion/desktop
 
+## 0.0.15
+
+A new layout in two modes, and an app that keeps itself up to date.
+
+- Agent and Code, switched from the title bar (⌘E). Agent has the threads, their tabs, and cards on the right for the
+  threads at work, the changes, the preview and the terminals; Code has the files, search and Git.
+- Threads sit in a compact list on the left, grouped by month, with a search.
+- Projects move into a menu in the title bar, and the search in its middle (⌘K) finds threads, files and commands.
+- A new thread opens on where the project stands: what waits on you, what runs, what changed since you were last here,
+  and your activity.
+- In Code, selecting lines shows a bar under them to ask about them or to add them to a thread; ⌘L asks about the
+  selection, or about the whole file.
+- The composer is a capsule that grows into a box as you write, and the conversation is wider.
+- Profile picks the accent color: Navy, Ocean, Plum, Clay or Graphite.
+- A folder with thousands of changed files no longer freezes Git or Changes: only the rows in view are drawn, each diff
+  loads as it shows, and the lines changed are counted in the background.
+- The app keeps itself up to date: a newer version downloads in the background, and an Update button at the top right
+  restarts the app on it. It works from this version on, so this is the last one to install by hand.
+
 ## 0.0.14
 
 ### Patch Changes

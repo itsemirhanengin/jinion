@@ -1,6 +1,6 @@
 {
   "name": "@jinion/tui",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Terminal UI framework for Jinion, built on Ink and React",
   "license": "MIT",
   "homepage": "https://jinion.co",
