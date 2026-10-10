@@ -1,8 +1,10 @@
 import type { ContextUsage as Usage } from '@jinion/core/agent/usage';
-import { classNames, Pill, Popover, Spinner } from '@jinion/ui';
+import { classNames, Popover, Spinner } from '@jinion/ui';
 import { useEffect, useState } from 'react';
 import { compact } from '../../lib/numbers.js';
 import { useCore } from '../../state/session.js';
+
+const AROUND = 2 * Math.PI * 6;
 
 /** Under the composer, how full the context is; open, what fills it, as `/context` shows it. */
 export function ContextUsage({ id, full, open, onOpenChange }: { id: string; full: number; open: boolean; onOpenChange: (open: boolean) => void }) {
@@ -25,9 +27,15 @@ export function ContextUsage({ id, full, open, onOpenChange }: { id: string; ful
       side="top"
       align="end"
       trigger={
-        <Pill chevron={false} className="text-faint tabular-nums">
-          {full}% of context
-        </Pill>
+        <button
+          type="button"
+          aria-label={`${full}% of context`}
+          title={`${full}% of context`}
+          className="flex h-6 shrink-0 cursor-default items-center gap-1.5 tabular-nums hover:text-ink data-popup-open:text-ink"
+        >
+          <Ring full={full} />
+          {full}%
+        </button>
       }
     >
       <div className="flex flex-col gap-0.5 p-1">
@@ -59,5 +67,15 @@ export function ContextUsage({ id, full, open, onOpenChange }: { id: string; ful
         )}
       </div>
     </Popover>
+  );
+}
+
+/** How full the context is, as a ring filled that far. */
+function Ring({ full }: { full: number }) {
+  return (
+    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="2" />
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeWidth="2" strokeDasharray={`${(Math.min(full, 100) / 100) * AROUND} ${AROUND}`} transform="rotate(-90 8 8)" />
+    </svg>
   );
 }

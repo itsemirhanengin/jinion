@@ -6,7 +6,7 @@ import { ChoiceMenu, classNames, ImageViewer, Pill } from '@jinion/ui';
 import { Composer as ComposerBox, ComposerFooter } from '@jinion/ui/chat';
 import { useWorkbench } from '@jinion/workbench';
 import { useAtom, useAtomValue, useStore } from 'jotai';
-import { GitBranch, GitFork, Laptop } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 import { type ReactNode, useEffect, useMemo, useState } from 'react';
 import { type DraftImage, draftImagesAtom, draftsAtom } from '../../state/app.js';
 import { type DraftComment, draftCommentsAtom } from '../../state/comments.js';
@@ -36,8 +36,7 @@ const FILE_MENTION = /(?<=^|\s)@(?:"[^"\n]+"|[^\s"]+)/;
 /** What a slash command opens in the composer itself rather than elsewhere in the window. */
 type Opened = 'mode' | 'model' | 'context';
 
-/** `large` stands alone in the middle of a thread that hasn't started. */
-export function Composer({ id, snapshot, large, header }: { id: string; snapshot: SessionSnapshot; large?: boolean; header?: ReactNode }) {
+export function Composer({ id, snapshot, header }: { id: string; snapshot: SessionSnapshot; header?: ReactNode }) {
   const core = useCore();
   const workbench = useWorkbench();
   const store = useStore();
@@ -156,9 +155,8 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
         completions={sources}
         onImages={attach}
         chips={chips}
-        placeholder={fields.working ? 'Tell the agent something while it works. Tab to send it after the turn' : 'Ask for a change. / for commands, @ for files'}
+        placeholder={fields.working ? 'Steer the agent, or Tab to send after the turn' : 'Ask for a change. / for commands, @ for files'}
         busy={fields.working}
-        large={large}
         header={header}
         attachments={
           comments.length > 0 && (
@@ -211,9 +209,13 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
         start={
           <>
             {branch && (
-              <Pill icon={<GitBranch />} chevron={false}>
-                {branch}
-              </Pill>
+              <>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <GitBranch className="size-3.5 shrink-0" />
+                  <span className="truncate">{branch}</span>
+                </span>
+                <span>·</span>
+              </>
             )}
             <ChoiceMenu
               side="top"
@@ -227,7 +229,11 @@ export function Composer({ id, snapshot, large, header }: { id: string; snapshot
                   ],
                 },
               ]}
-              trigger={<Pill icon={fields.wantsWorktree ? <GitFork /> : <Laptop />}>{fields.wantsWorktree ? 'Worktree' : 'Local'}</Pill>}
+              trigger={
+                <button type="button" className="flex h-6 shrink-0 cursor-default items-center hover:text-ink data-popup-open:text-ink">
+                  {fields.wantsWorktree ? 'Worktree' : 'Local'}
+                </button>
+              }
             />
           </>
         }
