@@ -29,20 +29,28 @@ export interface VirtualWindow {
 }
 
 export interface VirtualizerOptions {
-  estimate?: number;
+  /** An item's height before it is measured: one for all, or each its own, as a diff's from its count of lines. */
+  estimate?: number | ((key: ItemKey) => number);
 }
 
 export class Virtualizer {
   private readonly heights = new Map<ItemKey, number>();
-  private readonly estimate: number;
+  private readonly estimate: (key: ItemKey) => number;
   private width: number | undefined;
 
   constructor({ estimate = 2 }: VirtualizerOptions = {}) {
-    this.estimate = estimate;
+    this.estimate = typeof estimate === 'number' ? () => estimate : estimate;
+  }
+
+  /** Where the item starts, from the heights known and estimated, to scroll to one not drawn. */
+  startOf(keys: readonly ItemKey[], key: ItemKey) {
+    const index = keys.indexOf(key);
+
+    return keys.slice(0, Math.max(0, index)).reduce<number>((sum, each) => sum + (this.heights.get(each) ?? this.estimate(each)), 0);
   }
 
   window(keys: readonly ItemKey[], { height, top }: View): VirtualWindow {
-    const sizes = keys.map((key) => this.heights.get(key) ?? this.estimate);
+    const sizes = keys.map((key) => this.heights.get(key) ?? this.estimate(key));
     const total = sizes.reduce((sum, size) => sum + size, 0);
     const maxTop = Math.max(0, total - height);
     const follows = top === undefined;
@@ -85,7 +93,7 @@ export class Virtualizer {
       const known = this.heights.get(key);
       if (height === known) continue;
 
-      const assumed = known ?? this.estimate;
+      const assumed = known ?? this.estimate(key);
       const start = starts.get(key);
 
       if (!window.follows && start !== undefined && start + assumed <= window.first) shift += height - assumed;

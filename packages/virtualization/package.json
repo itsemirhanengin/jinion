@@ -10,6 +10,11 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./virtualizer": {
+      "development": "./src/virtualizer.ts",
+      "types": "./dist/virtualizer.d.ts",
+      "default": "./dist/virtualizer.js"
     }
   },
   "files": [
