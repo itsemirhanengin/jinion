@@ -70,4 +70,25 @@ describe('Virtualizer', () => {
     expect(window).toMatchObject({ total: 6, first: 0, maxTop: 0, before: 0, after: 0 });
     expect(window.slots).toHaveLength(3);
   });
+
+  it('takes each item’s own estimate until it is measured', () => {
+    const virtualizer = new Virtualizer({ estimate: (key) => (key === 'item-1' ? 30 : 10) });
+    const window = virtualizer.window(keys(3), { height: 100, top: 0 });
+
+    expect(window.total).toBe(50);
+
+    virtualizer.measure(window, new Map([['item-1', 12]]), 40);
+
+    expect(virtualizer.window(keys(3), { height: 100, top: 0 }).total).toBe(32);
+  });
+
+  it('tells where an item starts, from the heights it knows and estimates, to scroll to one not drawn', () => {
+    const virtualizer = new Virtualizer({ estimate: 10 });
+    const window = virtualizer.window(keys(5), { height: 100, top: 0 });
+
+    virtualizer.measure(window, new Map([['item-0', 25]]), 40);
+
+    expect(virtualizer.startOf(keys(5), 'item-0')).toBe(0);
+    expect(virtualizer.startOf(keys(5), 'item-3')).toBe(25 + 10 + 10);
+  });
 });
