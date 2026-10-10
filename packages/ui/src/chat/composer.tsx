@@ -1,4 +1,4 @@
-import { ArrowUp, ImagePlus, Mic } from 'lucide-react';
+import { ArrowUp, Mic, Plus } from 'lucide-react';
 import {
   type ClipboardEvent,
   type DragEvent,
@@ -13,6 +13,7 @@ import {
 } from 'react';
 import { caretLineBottom, clipTop } from '../lib/caret.js';
 import { classNames } from '../lib/class-names.js';
+import { MOTION, reducedMotion } from '../lib/motion.js';
 import { Button } from '../primitives/button.js';
 import { type CompletionSource, useCompletion } from './completion.js';
 import { CompletionList } from './completion-list.js';
@@ -37,14 +38,14 @@ export interface ComposerProps {
   /** What in the text is drawn as a pill, such as a file after `@`; the first kind that matches a piece of text wins. */
   chips?: ChipKind[];
   onDictate?: () => void;
-  /** Taller, as alone in the middle of a thread that hasn't started. */
-  large?: boolean;
-  /** The first line inside the box, such as the running turn's todos. */
+  /** The first line inside the box, such as the running turn's todos; with one, the composer is a box from the start. */
   header?: ReactNode;
-  /** What goes with the message besides its text, over the text; with any, a message without text can go. */
+  /** What goes with the message besides its text, before the text; with any, a message without text can go. */
   attachments?: ReactNode;
   /** Takes the focus once it shows, as when it moves from the middle of a new thread to the end of its conversation. */
   focusOnShow?: boolean;
+  /** Escape in the text with no list open, such as to put the composer away. */
+  onEscape?: () => void;
 }
 
 export interface ChipKind {
@@ -68,8 +69,22 @@ const TONES: Record<ChipKind['tone'], string> = {
  * The textarea's own text is clear, and the layer behind it draws the same text, laid out alike, with the pills tinted;
  * the textarea keeps the caret, the selection and the typing.
  */
-const TEXT = 'block w-full resize-none px-4 pt-3 whitespace-pre-wrap break-words';
+const TEXT = 'block w-full resize-none whitespace-pre-wrap break-words leading-6';
 
+/** Where the text sits in the capsule, and in the box it grows into. */
+const PADDING = { capsule: 'px-1 py-1.5', box: 'px-4 pt-3 pb-1' };
+
+/** What the text may come short of the capsule's width by before the box goes back to one, so the two never flip back and forth. */
+const SLACK = 24;
+
+/** The least room the capsule leaves its text; narrower, as in a split, the composer is a box, its choices under the text. */
+const NARROWEST = 120;
+
+/**
+ * One line in a capsule, what goes with the message and its choices beside the text; once the text takes more than the
+ * line, or a header shows, a box with the text over the choices. The textarea stays the same element in both, so the
+ * caret and the focus stay where they are.
+ */
 export function Composer({
   value,
   onChange,
@@ -83,20 +98,27 @@ export function Composer({
   onImages,
   chips,
   onDictate,
-  large,
   header,
   attachments,
   focusOnShow,
+  onEscape,
 }: ComposerProps) {
+  const holder = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLFieldSetElement>(null);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const behind = useRef<HTMLDivElement>(null);
   const picker = useRef<HTMLInputElement>(null);
   const caret = useRef<number>(undefined);
   const latest = useRef(value);
+  const capsule = useRef({ text: 0, card: 0 });
+  const shape = useRef<Shape>(undefined);
+  const turning = useRef(false);
+  const moving = useRef<Animation[]>([]);
   const [cursor, setCursor] = useState(value.length);
   const [dragging, setDragging] = useState(false);
   const [listTop, setListTop] = useState<number>();
+  const [long, setLong] = useState(false);
+  const [width, setWidth] = useState(0);
   const listId = useId();
 
   latest.current = value;
@@ -104,6 +126,68 @@ export function Composer({
   const { completion, selected, select, dismiss } = useCompletion(completions, value, Math.min(cursor, value.length));
   const empty = value.trim() === '' && !attachments;
   const pieces = useMemo(() => piecesOf(value, chips), [value, chips]);
+  const boxed = Boolean(header) || long;
+  const padding = boxed ? PADDING.box : PADDING.capsule;
+
+  useLayoutEffect(() => {
+    const observer = new ResizeObserver(([entry]) => setWidth(entry!.contentRect.width));
+
+    if (holder.current) observer.observe(holder.current);
+
+    return () => observer.disconnect();
+  }, []);
+
+  // The capsule turns into the box once its line wraps or it leaves the text too little room, and back once the text
+  // would fit the capsule's line again; what sits beside the text keeps its width, so the capsule's room follows the card's.
+  useLayoutEffect(() => {
+    const box = textarea.current;
+    const fieldset = card.current;
+    if (!box || !fieldset) return;
+
+    const style = getComputedStyle(box);
+
+    if (!boxed) {
+      capsule.current = { text: box.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight), card: fieldset.clientWidth };
+
+      const line = Number.parseFloat(style.lineHeight) + Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+
+      if ((value !== '' && box.scrollHeight > line + 1) || capsule.current.text < NARROWEST) turn(true);
+
+      return;
+    }
+
+    const room = capsule.current.text + fieldset.clientWidth - capsule.current.card;
+
+    if (long && room >= NARROWEST && !value.includes('\n') && widthOf(value, style.font) <= room - SLACK) turn(false);
+  }, [value, boxed, width]);
+
+  // The capsule and the box morph into each other: the card's height eases while each part slides from where it was.
+  useLayoutEffect(() => {
+    const fieldset = card.current;
+    if (!fieldset) return;
+
+    // About to turn, this layout is never painted, so the one painted last stays the one to move from.
+    if (turning.current) {
+      turning.current = false;
+
+      return;
+    }
+
+    const before = shape.current;
+    const turned = before !== undefined && before.boxed !== boxed;
+
+    // A turn starts from where the last one was going, since halfway through, what is on screen is neither shape.
+    if (turned) for (const animation of moving.current) animation.cancel();
+    else if (moving.current.some((animation) => animation.playState === 'running')) return;
+
+    shape.current = shapeOf(fieldset, boxed);
+    if (turned && !reducedMotion()) moving.current = morph(fieldset, before, shape.current);
+  });
+
+  const turn = (next: boolean) => {
+    turning.current = true;
+    setLong(next);
+  };
 
   // The list goes over the composer, or under the caret's line when whatever holds the composer would cut it off.
   useLayoutEffect(() => {
@@ -115,8 +199,12 @@ export function Composer({
     setListTop(list.offsetHeight <= room ? undefined : textarea.current.offsetTop + caretLineBottom(textarea.current) + 4);
   }, [completion, value, cursor]);
 
+  // A draft already there is carried on from its end.
   useLayoutEffect(() => {
-    if (focusOnShow) textarea.current?.focus();
+    if (!focusOnShow || !textarea.current) return;
+
+    textarea.current.focus();
+    textarea.current.setSelectionRange(value.length, value.length);
   }, []);
 
   // What was put in puts the caret after itself, once the text has it.
@@ -164,6 +252,7 @@ export function Composer({
     if (event.nativeEvent.isComposing) return;
     if (completion && completionKey(event)) return;
     if (event.key === 'Backspace' && removeChip(event)) return;
+    if (event.key === 'Escape' && onEscape) return onEscape();
 
     if (event.key === 'Tab' && !event.shiftKey && busy && onQueue) {
       event.preventDefault();
@@ -246,8 +335,14 @@ export function Composer({
     void attach(imageFiles(event.dataTransfer.files));
   };
 
+  const add = onImages && (
+    <Button size="icon" data-part="add" aria-label="Attach an image" title="Attach an image" onClick={() => picker.current?.click()}>
+      <Plus />
+    </Button>
+  );
+
   return (
-    <div className="relative">
+    <div ref={holder} className="relative">
       {completion && (
         <CompletionList id={listId} top={listTop} completion={completion} selected={selected} onSelect={select} onPick={() => pick(completion.items[selected]?.submit ?? Boolean(completion.submit))} />
       )}
@@ -257,13 +352,22 @@ export function Composer({
         onDragOver={dragOver}
         onDragLeave={(event) => !event.currentTarget.contains(event.relatedTarget as Node | null) && setDragging(false)}
         onDrop={drop}
-        className={classNames('min-w-0 rounded-2xl bg-floating shadow-sm ring-1 transition-shadow', dragging ? 'ring-2 ring-faint' : 'ring-edge')}
+        className={classNames(
+          'flex min-w-0 bg-floating shadow-[0_6px_24px_-12px_rgb(0_0_0/0.25)] ring-1',
+          boxed ? 'flex-col rounded-3xl' : classNames('min-h-12 items-center gap-1 rounded-[26px] py-1.5 pr-1.5', onImages ? 'pl-2' : 'pl-3'),
+          dragging ? 'ring-2 ring-faint' : 'ring-edge',
+        )}
       >
-        {header}
-        {attachments && <div className="flex flex-wrap items-center gap-1 px-3 pt-2.5">{attachments}</div>}
-        <div className="relative">
+        {header && <div data-part="header">{header}</div>}
+        {!boxed && add}
+        {attachments && (
+          <div data-part="attachments" className={classNames('flex shrink-0 items-center gap-1', boxed && 'flex-wrap px-3 pt-2.5')}>
+            {attachments}
+          </div>
+        )}
+        <div data-part="text" className="relative min-w-0 flex-1">
           {chips && (
-            <div ref={behind} aria-hidden className={classNames(TEXT, 'pointer-events-none absolute inset-0 overflow-hidden')}>
+            <div ref={behind} aria-hidden className={classNames(TEXT, padding, 'pointer-events-none absolute inset-0 overflow-hidden')}>
               {pieces.map((piece, index) =>
                 piece.kind ? (
                   <span key={index} data-chip={index} className={classNames('rounded-[4px]', TONES[piece.kind.tone])}>
@@ -285,7 +389,7 @@ export function Composer({
             aria-controls={completion && listId}
             aria-activedescendant={completion && `${listId}-${selected}`}
             value={value}
-            rows={2}
+            rows={1}
             placeholder={placeholder}
             onChange={(event) => {
               setCursor(event.target.selectionStart);
@@ -307,69 +411,163 @@ export function Composer({
             }}
             className={classNames(
               TEXT,
+              padding,
               'relative field-sizing-content max-h-72 bg-transparent outline-none placeholder:text-faint',
               chips && 'text-transparent caret-ink selection:bg-accent/20',
-              large ? 'min-h-32' : 'min-h-16',
+              // The capsule keeps to one line however long the placeholder.
+              !boxed && 'placeholder:truncate',
+              boxed && 'min-h-16',
             )}
           />
         </div>
-        <div className="flex items-center gap-1 px-2 pb-2">
-          {controls}
+        <div className={classNames('flex shrink-0 items-center gap-1', boxed && 'px-2 pb-2')}>
+          {boxed && add}
+          {controls && (
+            <div data-part="controls" className="flex min-w-0 flex-wrap items-center gap-1">
+              {controls}
+            </div>
+          )}
           <span className="flex-1" />
           {onDictate && (
-            <Button size="icon" aria-label="Dictate" title="Dictate" onClick={onDictate}>
+            <Button size="icon" data-part="dictate" aria-label="Dictate" title="Dictate" onClick={onDictate}>
               <Mic />
             </Button>
           )}
-          {onImages && (
-            <>
-              <Button size="icon" aria-label="Attach an image" title="Attach an image" onClick={() => picker.current?.click()}>
-                <ImagePlus />
-              </Button>
-              <input
-                ref={picker}
-                type="file"
-                accept="image/*"
-                multiple
-                hidden
-                onChange={(event) => {
-                  void attach(imageFiles(event.target.files));
-                  event.target.value = '';
-                }}
-              />
-            </>
-          )}
           {busy ? (
-            <button type="button" aria-label="Stop" title="Stop" onClick={onStop} className="flex size-7 cursor-default items-center justify-center rounded-full bg-primary">
+            <button
+              type="button"
+              data-part="send"
+              aria-label="Stop"
+              title="Stop"
+              onClick={onStop}
+              className="flex size-8 shrink-0 cursor-default items-center justify-center rounded-full bg-primary"
+            >
               <span className="size-2.5 rounded-[2px] bg-on-primary" />
             </button>
           ) : (
             <button
               type="button"
+              data-part="send"
               aria-label="Send"
               title="Send"
               disabled={empty}
               onClick={() => onSubmit(value)}
-              className={classNames('flex size-7 cursor-default items-center justify-center rounded-full text-on-primary', empty ? 'bg-primary/30' : 'bg-primary')}
+              className={classNames('flex size-8 shrink-0 cursor-default items-center justify-center rounded-full text-on-primary', empty ? 'bg-primary/30' : 'bg-primary')}
             >
               <ArrowUp className="size-4 shrink-0" />
             </button>
           )}
         </div>
+        {onImages && (
+          <input
+            ref={picker}
+            type="file"
+            accept="image/*"
+            multiple
+            hidden
+            onChange={(event) => {
+              void attach(imageFiles(event.target.files));
+              event.target.value = '';
+            }}
+          />
+        )}
       </fieldset>
     </div>
   );
 }
 
-/** The row under the composer: the branch, where the agent works, how full the context is. */
+/** The faint line under the composer: the branch, where the agent works, how full the context is. */
 export function ComposerFooter({ start, end }: { start?: ReactNode; end?: ReactNode }) {
   return (
-    <div className="flex items-center gap-1 px-1 pt-2 text-muted">
+    <div className="flex items-center gap-1 px-4 pt-1.5 text-small text-faint">
       {start}
       <span className="flex-1" />
       {end}
     </div>
   );
+}
+
+/** The card's height and where each of its parts starts in it, and how wide its content is, as last painted. */
+interface Shape {
+  boxed: boolean;
+  height: number;
+  parts: Map<string, { x: number; y: number; width: number }>;
+}
+
+function shapeOf(card: HTMLElement, boxed: boolean): Shape {
+  const frame = card.getBoundingClientRect();
+  const parts = new Map<string, { x: number; y: number; width: number }>();
+
+  for (const part of card.querySelectorAll<HTMLElement>('[data-part]')) {
+    const rect = part.getBoundingClientRect();
+    // The text's padding differs between the two, so where its first letter sits, and how wide its lines run, is what moves.
+    const text = part.querySelector('textarea');
+    const style = text && getComputedStyle(text);
+    const left = style ? Number.parseFloat(style.paddingLeft) : 0;
+
+    parts.set(part.dataset.part!, {
+      x: rect.left - frame.left + left,
+      y: rect.top - frame.top + (style ? Number.parseFloat(style.paddingTop) : 0),
+      width: rect.width - left,
+    });
+  }
+
+  return { boxed, height: frame.height, parts };
+}
+
+/** From the last shape to this one: the height eases, the parts that were there slide over, the new ones fade in. */
+function morph(card: HTMLElement, from: Shape, to: Shape) {
+  const animations = [
+    card.animate(
+      [
+        { height: `${from.height}px`, overflow: 'hidden' },
+        { height: `${to.height}px`, overflow: 'hidden' },
+      ],
+      MOTION,
+    ),
+  ];
+
+  // The capsule centres its parts in the card, so while its height eases they ride its middle, not its top.
+  const middle = (shape: Shape) => (to.boxed ? 0 : shape.height / 2);
+
+  for (const part of card.querySelectorAll<HTMLElement>('[data-part]')) {
+    const start = from.parts.get(part.dataset.part!);
+    const end = to.parts.get(part.dataset.part!)!;
+
+    if (!start) {
+      animations.push(part.animate([{ opacity: 0 }, { opacity: 1 }], MOTION));
+      continue;
+    }
+
+    // The text's lines, once wider than before, open up from where they ended, rather than over what sat beside them.
+    const cut = part.dataset.part === 'text' ? Math.max(0, end.width - start.width) : 0;
+    const x = start.x - end.x;
+    const y = start.y - middle(from) - (end.y - middle(to));
+
+    if (x !== 0 || y !== 0 || cut > 0) {
+      animations.push(
+        part.animate(
+          [
+            { transform: `translate(${x}px, ${y}px)`, clipPath: `inset(0 ${cut}px 0 0)` },
+            { transform: 'none', clipPath: 'inset(0)' },
+          ],
+          MOTION,
+        ),
+      );
+    }
+  }
+
+  return animations;
+}
+
+let measure: CanvasRenderingContext2D | undefined;
+
+/** How wide the text is in the font, on one line. */
+function widthOf(text: string, font: string) {
+  measure ??= document.createElement('canvas').getContext('2d')!;
+  measure.font = font;
+
+  return measure.measureText(text).width;
 }
 
 /** The text cut where the chips are, each piece with the kind it is a chip of. */
