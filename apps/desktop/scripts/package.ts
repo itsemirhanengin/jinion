@@ -55,6 +55,9 @@ for (const platform of readdirSync(prebuilds)) {
 
 run('electron-builder', [
   '--mac',
+  // The release goes up by hand, with its notes; electron-builder only writes the files.
+  '--publish',
+  'never',
   '--projectDir',
   app,
   '--config',
@@ -67,6 +70,12 @@ run('electron-builder', [
 ]);
 
 const { version } = JSON.parse(readFileSync(`${app}/package.json`, 'utf8')) as { version: string };
+
+// The feed sits in a release of its own, and the files it names stay in this version's release, so it names them in full.
+const feed = join(out, 'latest-mac.yml');
+const files = `https://github.com/itsemirhanengin/jinion/releases/download/${encodeURIComponent(`@jinion/desktop@${version}`)}/`;
+
+writeFileSync(feed, readFileSync(feed, 'utf8').replace(/^(\s*(?:- )?(?:url|path): )(\S+)$/gm, `$1${files}$2`));
 
 rmSync(app, { recursive: true, force: true });
 console.log(`\nJinion ${version} is in ${out}`);

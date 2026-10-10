@@ -5,6 +5,7 @@ import { connectCore, demo, stopCores } from './cores.js';
 import { answerPreviews } from './previews.js';
 import { forgetProject, recentProjects, rememberProject } from './projects.js';
 import { shellPath } from './shell-path.js';
+import { watchUpdates } from './updates.js';
 
 const devServer = process.env.VITE_DEV_SERVER_URL;
 let quitting = false;
@@ -19,6 +20,7 @@ app.whenReady().then(() => {
   Menu.setApplicationMenu(menu());
   answer();
   answerPreviews();
+  watchUpdates();
   openWindow();
 
   app.on('activate', () => {

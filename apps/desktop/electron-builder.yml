@@ -9,8 +9,16 @@ mac:
   target:
     - target: dmg
       arch: [arm64]
+    # What the app's updater downloads; the dmg is for the first install.
+    - target: zip
+      arch: [arm64]
   # Signed with the Developer ID Application certificate in the keychain, every binary inside too, and notarized with
   # the notarytool profile `scripts/package.ts` names.
   notarize: true
 dmg:
   title: Jinion ${version}
+# Where the app looks for a newer version: a release of its own that holds only `latest-mac.yml`, since GitHub marks the
+# latest release of any product as the latest. Each desktop release replaces the file there.
+publish:
+  provider: generic
+  url: https://github.com/itsemirhanengin/jinion/releases/download/desktop-latest

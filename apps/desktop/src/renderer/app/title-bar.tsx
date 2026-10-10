@@ -1,10 +1,13 @@
-import { PillTabs } from '@jinion/ui';
+import { classNames, PillTabs } from '@jinion/ui';
 import { IconButton, useMode, useWorkbench } from '@jinion/workbench';
 import { useAtomValue } from 'jotai';
-import { BookOpen, Brain, Code, MessagesSquare, UserRound } from 'lucide-react';
+import { BookOpen, Brain, Code, MessagesSquare, RefreshCw, UserRound } from 'lucide-react';
+import { useState } from 'react';
 import { QuickOpen } from '../features/quick-open.js';
 import { Waiting } from '../features/threads/thread-list.js';
+import { appStore } from '../state/app.js';
 import { useCore } from '../state/session.js';
+import { updateAtom } from '../state/updates.js';
 import { ProjectSwitcher } from './project-switcher.js';
 
 /** Room at the left for macOS's traffic lights. */
@@ -32,8 +35,35 @@ export function TitleBar({ project }: { project?: boolean }) {
         </div>
       </div>
       {project ? <QuickOpen /> : <span />}
-      <div className="flex items-center justify-end">{project && <Pages />}</div>
+      <div className="flex items-center justify-end gap-3">
+        <UpdateButton />
+        {project && <Pages />}
+      </div>
     </header>
+  );
+}
+
+/** Once a newer version is downloaded: the app restarts on it. */
+function UpdateButton() {
+  const version = useAtomValue(updateAtom, { store: appStore });
+  const [restarting, setRestarting] = useState(false);
+
+  if (!version) return null;
+
+  return (
+    <button
+      type="button"
+      title={`Restart on Jinion ${version}`}
+      disabled={restarting}
+      onClick={() => {
+        setRestarting(true);
+        window.desktop.installUpdate();
+      }}
+      className="flex h-7 animate-enter cursor-default items-center gap-1.5 rounded-full bg-primary pr-3 pl-2.5 font-medium text-on-primary hover:bg-primary/90 disabled:opacity-70 [-webkit-app-region:no-drag] [&_svg]:size-3.5 [&_svg]:shrink-0"
+    >
+      <RefreshCw className={classNames(restarting && 'animate-spin')} />
+      {restarting ? 'Restarting' : 'Update'}
+    </button>
   );
 }
 
