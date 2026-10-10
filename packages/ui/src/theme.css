@@ -83,22 +83,25 @@
   color: var(--faint);
 }
 
-/* The window is gray chrome around white sheets; edges and hovers are black at a low opacity, so they suit any gray. */
+/*
+ * The window is chrome around white sheets, the chrome tinted by the accent (Navy unless another is picked, below);
+ * edges and hovers are the ink at a low opacity, so they suit any tint.
+ */
 :root,
 .light {
   color-scheme: light;
 
-  --chrome: #f4f4f5;
+  --chrome: #eceef3;
   --background: #ffffff;
-  --raised: #fafafa;
+  --raised: #f4f5f8;
   --floating: #ffffff;
-  --ink: #09090b;
-  --muted: #71717a;
-  --faint: #a1a1aa;
-  --line: rgb(0 0 0 / 0.06);
-  --edge: rgb(0 0 0 / 0.08);
-  --shade: rgb(9 9 11 / 0.05);
-  --selected: rgb(9 9 11 / 0.06);
+  --ink: #12162a;
+  --muted: #5c6275;
+  --faint: #989dae;
+  --line: rgb(18 22 42 / 0.07);
+  --edge: rgb(18 22 42 / 0.1);
+  --shade: rgb(18 22 42 / 0.045);
+  --selected: rgb(18 22 42 / 0.07);
   --selection: #c9d7f5;
   --float-shadow: 0 6px 24px -8px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.1);
   --tint-blue: rgb(37 99 235 / 0.1);
@@ -124,10 +127,10 @@
 .dark {
   color-scheme: dark;
 
-  --chrome: #18181b;
-  --background: #0f0f11;
-  --raised: #141416;
-  --floating: #242427;
+  --chrome: #16181f;
+  --background: #0e1015;
+  --raised: #13151b;
+  --floating: #22252e;
   --ink: #fafafa;
   --muted: #a1a1aa;
   --faint: #71717a;
@@ -155,6 +158,98 @@
   --removed-surface: rgb(239 68 68 / 0.1);
   --added-ink: #d1fae5;
   --removed-ink: #fee2e2;
+}
+
+/*
+ * The accents a user picks from, on the root as `data-accent`: each tints the chrome and gives the one strong color, in
+ * light and in dark. To change one, change its two blocks; to add one, add two blocks and its name to the app's list.
+ */
+[data-accent="ocean"]:not(.dark) {
+  --chrome: #e7eef4;
+  --raised: #f1f5f9;
+  --ink: #0f1a24;
+  --muted: #566876;
+  --faint: #91a1ae;
+  --line: rgb(15 26 36 / 0.07);
+  --edge: rgb(15 26 36 / 0.1);
+  --shade: rgb(15 26 36 / 0.045);
+  --selected: rgb(15 26 36 / 0.07);
+  --primary: #1f5a85;
+}
+
+.dark[data-accent="ocean"] {
+  --chrome: #141a1f;
+  --background: #0d1216;
+  --raised: #11171c;
+  --floating: #1f272e;
+  --primary: #cfe2f1;
+  --on-primary: #123a57;
+}
+
+[data-accent="plum"]:not(.dark) {
+  --chrome: #f0ebf1;
+  --raised: #f7f4f8;
+  --ink: #1c1421;
+  --muted: #6a5e70;
+  --faint: #a497a9;
+  --line: rgb(28 20 33 / 0.07);
+  --edge: rgb(28 20 33 / 0.1);
+  --shade: rgb(28 20 33 / 0.045);
+  --selected: rgb(28 20 33 / 0.07);
+  --primary: #5a3266;
+}
+
+.dark[data-accent="plum"] {
+  --chrome: #1b1620;
+  --background: #120e15;
+  --raised: #17121a;
+  --floating: #27212b;
+  --primary: #ead9f0;
+  --on-primary: #3d1f47;
+}
+
+[data-accent="clay"]:not(.dark) {
+  --chrome: #f3ece6;
+  --raised: #f9f5f1;
+  --ink: #201813;
+  --muted: #6f6158;
+  --faint: #a8998e;
+  --line: rgb(32 24 19 / 0.07);
+  --edge: rgb(32 24 19 / 0.1);
+  --shade: rgb(32 24 19 / 0.045);
+  --selected: rgb(32 24 19 / 0.07);
+  --primary: #9a4a2a;
+}
+
+.dark[data-accent="clay"] {
+  --chrome: #1d1815;
+  --background: #13100d;
+  --raised: #181411;
+  --floating: #2a2420;
+  --primary: #f2dccf;
+  --on-primary: #5c2a16;
+}
+
+[data-accent="graphite"]:not(.dark) {
+  --chrome: #ececec;
+  --raised: #f5f5f5;
+  --ink: #151515;
+  --muted: #656565;
+  --faint: #a0a0a0;
+  --line: rgb(21 21 21 / 0.07);
+  --edge: rgb(21 21 21 / 0.1);
+  --shade: rgb(21 21 21 / 0.045);
+  --selected: rgb(21 21 21 / 0.07);
+  --primary: #202020;
+}
+
+.dark[data-accent="graphite"] {
+  --chrome: #18181b;
+  --background: #0f0f11;
+  --raised: #141416;
+  --floating: #242427;
+  --primary: #e4e4e7;
+  --on-primary: #18181b;
 }
 
 @theme inline {
