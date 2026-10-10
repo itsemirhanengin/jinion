@@ -13,6 +13,12 @@ export interface DesktopBridge {
   projectSessions(path: string): Promise<SavedSummary[]>;
   /** Called with the folder whose core stopped, so the page can say so. */
   onCoreExit(listener: (path: string) => void): void;
+  /** The newer version downloaded and waiting for a restart, if there is one yet. */
+  updateReady(): Promise<string | undefined>;
+  /** Called with the version once a newer one is downloaded. */
+  onUpdateReady(listener: (version: string) => void): void;
+  /** Quits, installs the version downloaded and opens again on it. */
+  installUpdate(): void;
   preview: PreviewBridge;
 }
 

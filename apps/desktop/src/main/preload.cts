@@ -24,6 +24,9 @@ const desktop: DesktopBridge = {
   forgetProject: (path) => ipcRenderer.invoke('projects:forget', path),
   projectSessions: (path) => ipcRenderer.invoke('projects:sessions', path),
   onCoreExit: (listener) => ipcRenderer.on('core-exit', (_event, { path }: { path: string }) => listener(path)),
+  updateReady: () => ipcRenderer.invoke('updates:ready'),
+  onUpdateReady: (listener) => ipcRenderer.on('updates:ready', (_event, version: string) => listener(version)),
+  installUpdate: () => ipcRenderer.send('updates:install'),
 };
 
 contextBridge.exposeInMainWorld('desktop', desktop);
